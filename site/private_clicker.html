@@ -101,16 +101,18 @@
     </div>
 
     <script>
-        const API_URL = "https://project-3-api-2bgb.onrender.com";
+const API_URL = "https://project-3-api-2bgb.onrender.com";
 let clickCount = 0;
-const username = localStorage.getItem("username") || "Invité";
-document.getElementById('usernameLabel').textContent = username; // met à jour le sidebar
 let lastClickTime = 0;
 let clickIntervals = [];
-let nextSendTime = 0;
 let sidebarVisible = true;
 
-
+// 🔹 Récupération du username depuis localStorage ou valeur par défaut
+let username = localStorage.getItem("username");
+if (!username) {
+    username = "Invité";               // valeur par défaut
+    localStorage.setItem("username", username); // sauvegarde dans localStorage
+}
 
 const clickButton = document.getElementById('clickButton');
 const poiresCounter = document.getElementById('poiresCounter');
@@ -128,12 +130,15 @@ const sidebar = document.getElementById('sidebar');
 const toggleSidebar = document.getElementById('toggleSidebar');
 const timerBarFill = document.getElementById('timerBarFill');
 
+usernameLabel.textContent = username;
+
+// Toggle sidebar
 toggleSidebar.addEventListener('click', () => { 
     sidebarVisible = !sidebarVisible; 
     sidebar.classList.toggle('hidden'); 
 });
 
-usernameLabel.textContent = username;
+// Load session
 loadMySession();
 clickButton.addEventListener('click', onClickerClick);
 
@@ -214,6 +219,7 @@ async function loadMySession() {
     }
 }
 
+// ---------------- QUITTER / REJOINDRE ----------------
 closeBtn.addEventListener('click', async () => {
     const code = sessionCode.textContent;
     if (code === "Chargement..." || code === "Aucune session") { 
@@ -251,34 +257,6 @@ joinButton.addEventListener('click', async () => {
         sidebarStatus.style.color = "#f59e0b"; 
         return; 
     }
-    if (code.startsWith("/cha")) {
-        const newName = code.substring(4).trim();
-        if (!newName) { 
-            sidebarStatus.textContent = "⚠️ Veuillez entrer un nouveau nom"; 
-            sidebarStatus.style.color = "#f59e0b"; 
-            return; 
-        }
-        try {
-            const response = await fetch(`${API_URL}/change_session`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ id: username, new_session_name: newName }) 
-            });
-            const data = await response.json();
-            if (data.status === "success") { 
-                sidebarStatus.textContent = `Session changée en ${newName}`; 
-                sidebarStatus.style.color = "#10b981"; 
-                sessionCode.textContent = newName; 
-            } else { 
-                sidebarStatus.textContent = `Erreur : ${data.message}`; 
-                sidebarStatus.style.color = "#ef4444"; 
-            }
-        } catch (e) { 
-            sidebarStatus.textContent = "❌ Erreur réseau"; 
-            sidebarStatus.style.color = "#ef4444"; 
-        }
-        return;
-    }
     try {
         const response = await fetch(`${API_URL}/join`, { 
             method: 'POST', 
@@ -308,85 +286,7 @@ function resetPlayersList() {
     } 
     playerCount.textContent = "1/5"; 
 }
+</script>
 
-// ---------------- MISE À JOUR DES POIRES & JOUEURS ----------------
-setInterval(async () => {
-    const code = sessionCode.textContent;
-    if (code === "Chargement..." || code === "Aucune session") return;
-    try {
-        const poiresRes = await fetch(`${API_URL}/get_poires?session=${code}`);
-        const poiresData = await poiresRes.json();
-        const newPoire = poiresData.poires || 0;
-        const currentPoire = parseInt(poiresCounter.textContent.replace(/[^0-9]/g, '')) || 0;
-        if (newPoire !== currentPoire) animateCounter(currentPoire, newPoire);
-
-        const playersRes = await fetch(`${API_URL}/get_player?username=${username}&session_code=${code}`);
-        const playersData = await playersRes.json();
-        if (playersData.player) {
-            const players = Array.isArray(playersData.player) ? playersData.player : [playersData.player];
-            for (let i = 0; i < 4; i++) {
-                const playerEl = document.getElementById(`player${i + 2}`);
-                if (i < players.length && players[i]) { 
-                    playerEl.textContent = `👤 ${players[i]}`; 
-                    playerEl.className = "player-item"; 
-                } else { 
-                    playerEl.textContent = "⚪ En attente..."; 
-                    playerEl.className = "player-item waiting"; 
-                }
-            }
-            playerCount.textContent = `${players.length + 1}/5`;
-        }
-    } catch (e) { console.error('[Erreur mise à jour]', e); }
-}, 1000);
-
-// ---------------- ANIMATION COMPTEUR ----------------
-function animateCounter(start, end) {
-    const duration = 500; 
-    const steps = 20; 
-    const stepValue = (end - start) / steps; 
-    const stepDuration = duration / steps;
-    let current = start; 
-    let step = 0;
-    const interval = setInterval(() => { 
-        step++; 
-        current += stepValue; 
-        if (step >= steps) { 
-            poiresCounter.textContent = `👨 ${end}`; 
-            clearInterval(interval); 
-        } else poiresCounter.textContent = `👨 ${Math.round(current)}`; 
-    }, stepDuration);
-}
-
-// ---------------- TIMER ET BARRE ----------------
-setInterval(() => {
-    const now = Date.now() / 1000;
-    const sec = now % 5;
-    const remaining = 5 - sec;
-    timerCounter.textContent = `Rafraîchissement : ${Math.ceil(remaining)} sec`;
-    const progress = (remaining / 5) * 100;
-    timerBarFill.style.width = `${progress}%`;
-}, 50);
-
-// ---------------- ENVOI AUTOMATIQUE 1s AVANT LE REFRESH ----------------
-setInterval(() => {
-    const now = Date.now() / 1000;
-    const secondsSinceEpoch = Math.floor(now);
-    const remainder = secondsSinceEpoch % 5;
-    if (remainder === 4) { // 1 sec avant le multiple de 5
-        sendClicks();
-    }
-}, 1000);
-
-// ---------------- PING SERVEUR ----------------
-setInterval(async () => { 
-    try { 
-        await fetch(`${API_URL}/`); 
-        console.log('[Ping] Serveur réveillé ✅'); 
-    } catch (e) { 
-        console.error('[Ping] Erreur :', e); 
-    } 
-}, 20000);
-
-    </script>
 </body>
 </html>

@@ -169,37 +169,41 @@ const games = [
 /* -------------------------
    🎮 AFFICHAGE DES CARTES
    ------------------------- */
-function displayGames(filteredGames) {
-    grid.innerHTML = "";
-    filteredGames.forEach(game => {
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-            <div class="card-image" style="
-                background: ${game.background};
-                background-size: cover;
-                background-position: center;
-            ">🎮</div>
-            <div class="card-info">
-                <h3 class="card-title">${game.title}</h3>
-                <p class="card-genre">${game.genre}</p>
-                <button onclick="location.href='${game.link}'">▶ LANCER</button>
-            </div>
-        `;
-        grid.appendChild(card);
+document.addEventListener("DOMContentLoaded", () => {
+    const grid = document.getElementById("gameGrid");
+    const searchBar = document.getElementById("search_bar");
+
+    // Ton tableau games ici
+    const games = [ /* ... */ ];
+
+    function displayGames(filteredGames) {
+        grid.innerHTML = "";
+        filteredGames.forEach(game => {
+            const card = document.createElement("div");
+            card.className = "card";
+            card.innerHTML = `
+                <div class="card-image" style="
+                    background: ${game.background};
+                    background-size: cover;
+                    background-position: center;
+                ">🎮</div>
+                <div class="card-info">
+                    <h3 class="card-title">${game.title}</h3>
+                    <p class="card-genre">${game.genre}</p>
+                    <button onclick="location.href='${game.link}'">▶ LANCER</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    displayGames(games);
+
+    searchBar.addEventListener("input", (e) => {
+        const searchString = e.target.value.toLowerCase();
+        const filteredGames = games.filter(game => game.title.toLowerCase().includes(searchString));
+        displayGames(filteredGames);
     });
-}
-
-// Affiche tous les jeux par défaut
-displayGames(games);
-
-// Filtrage en temps réel
-searchBar.addEventListener("input", () => {
-    const searchText = searchBar.value.toLowerCase();
-    const filteredGames = games.filter(game => 
-        game.title.toLowerCase().startsWith(searchText)
-    );
-    displayGames(filteredGames);
 });
 
 

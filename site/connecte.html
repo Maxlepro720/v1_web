@@ -44,20 +44,8 @@ p.subtitle { color: #888899; margin-bottom: 20px; font-size: 14px; }
 <div class="container" id="authContainer">
     <div class="logo">🎮</div>
     <!-- Ajoute ce bouton dans ton container, juste après la div.logo par exemple -->
-    <button id="themeToggle" style="
-        position: absolute;
-        top: 15px;
-        right: 15px;
-        background: #4a9eff;
-        color: white;
-        border: none;
-        padding: 8px 12px;
-        border-radius: 10px;
-        cursor: pointer;
-        font-weight: bold;
-        z-index: 1000;
-        transition: all 0.3s ease;
-    ">🌙</button>
+    <!-- BOUTON TOGGLE EN HAUT À DROITE -->
+
 
     <h1 id="title">Se connecter</h1>
     <p class="subtitle" id="subtitle">Accédez à votre espace de jeu</p>
@@ -82,6 +70,21 @@ p.subtitle { color: #888899; margin-bottom: 20px; font-size: 14px; }
 
     <button class="switch-mode" id="switchBtn">Créer un compte</button>
 </div>
+<!-- BOUTON TOGGLE EN HAUT À DROITE -->
+<button id="themeToggle" style="
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    background-color: #FBA002; /* couleur initiale sombre */
+    color: #fff;
+">🌙</button>
+
 
 <script>
 const switchBtn = document.getElementById('switchBtn');
@@ -144,7 +147,7 @@ submitBtn.addEventListener('click', async () => {
         alert("Erreur réseau : " + err);
     }
 });
->
+
 const themeToggle = document.getElementById('themeToggle');
 let darkMode = true; // par défaut sombre
 

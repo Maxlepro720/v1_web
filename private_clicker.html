@@ -8,7 +8,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #232323; overflow: hidden; }
         .container { display: flex; width: 100vw; height: 100vh; position: relative; overflow: hidden; }
-        .main-area { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; min-width: 0; }
+        .main-area { flex: 1; background: #1b1b1b; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; min-width: 0; }
         .title { color: #ffffff; font-size: clamp(32px, 6vw, 60px); font-weight: bold; margin-bottom: 15px; text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); }
         .poires-counter { color: #ffffff; font-size: clamp(20px, 3vw, 32px); font-weight: bold; margin-bottom: 10px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); background: rgba(255, 255, 255, 0.1); padding: 8px 25px; border-radius: 20px; backdrop-filter: blur(10px); }
         .to-send { color: #ffffff; font-size: clamp(14px, 2vw, 20px); margin-bottom: 30px; opacity: 0.9; }
@@ -59,7 +59,7 @@
             <button class="back-btn" onclick="location.href='menu.html'">←</button>
 
             <div class="title">Clicker</div>
-            <div class="poires-counter" id="poiresCounter">👨 0</div>
+            <div class="poires-counter" id="poiresCounter">0</div>
             <div class="to-send" id="toSend">-- 0 --</div>
             <button class="click-button" id="clickButton"></button>
             <div class="timer-bar">
@@ -249,7 +249,7 @@
                 const poiresRes = await fetch(`${API_URL}/get_poires?session=${code}`);
                 const poiresData = await poiresRes.json();
                 const newPoire = poiresData.poires || 0;
-                const currentPoire = parseInt(poiresCounter.textContent.replace('👨 ', '')) || 0;
+                const currentPoire = parseInt(poiresCounter.textContent.replace('')) || 0;
                 if (newPoire !== currentPoire) animateCounter(currentPoire, newPoire);
 
                 const playersRes = await fetch(`${API_URL}/get_player?username=${username}&session_code=${code}`);

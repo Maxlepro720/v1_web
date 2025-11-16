@@ -103,8 +103,7 @@
     <script>
         const API_URL = "https://project-3-api-2bgb.onrender.com";
 let clickCount = 0;
-const urlParams = new URLSearchParams(window.location.search);
-let username = urlParams.get('username') || "Invité"; // récupère le username ou "Invité" par défaut
+const username = localStorage.getItem("username") || "Invité";
 document.getElementById('usernameLabel').textContent = username; // met à jour le sidebar
 let lastClickTime = 0;
 let clickIntervals = [];

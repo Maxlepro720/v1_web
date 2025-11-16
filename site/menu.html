@@ -172,8 +172,7 @@ const games = [
 /* -------------------------
    🧑‍💻 RÉCUPÉRATION DU USERNAME
    ------------------------- */
-const urlParams = new URLSearchParams(window.location.search);
-const username = urlParams.get('username') || "Invité"; // récupère le username ou "Invité" par défaut
+const username = localStorage.getItem("username") || "Invité";
 
 /* -------------------------
    🎮 AFFICHAGE DES CARTES

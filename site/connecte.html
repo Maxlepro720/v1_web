@@ -95,6 +95,7 @@ submitBtn.addEventListener('click', async () => {
         if (result.status === "success") {
             // Stockage du username dans localStorage
             localStorage.setItem("username", username);
+            alert(username)
 
             // Redirection vers menu.html
             window.location.href = "menu.html";

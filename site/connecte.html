@@ -223,7 +223,7 @@ submitBtn.addEventListener('click', async () => {
         const result = await response.json();
 
         if (result.status === "success") {
-            // Stockage du username
+            // Stocke le username dans localStorage si besoin
             localStorage.setItem("username", username);
             // Redirection avec username dans l'URL
             window.location.href = `menu.html?username=${encodeURIComponent(username)}`;
@@ -234,7 +234,6 @@ submitBtn.addEventListener('click', async () => {
         alert("Erreur réseau : " + err);
     }
 });
-
 </script>
 
 </body>

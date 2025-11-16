@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Epic Game Launcher</title>
+<title>Launcher</title>
 
 <style>
     body {
@@ -11,7 +11,6 @@
         font-family: Arial, sans-serif;
         background: #0f1419;
         color: white;
-        overflow-x: hidden;
     }
 
     /* HEADER */
@@ -29,11 +28,6 @@
         margin: 0;
     }
 
-    nav {
-        display: flex;
-        flex: 1;
-    }
-
     nav button {
         background: #1f2937;
         color: white;
@@ -42,15 +36,10 @@
         margin-right: 10px;
         cursor: pointer;
         border-radius: 6px;
-        transition: 0.2s;
     }
 
     nav button:hover {
         background: #374151;
-    }
-
-    .btn-right {
-        margin-left: auto;
     }
 
     /* SECTION */
@@ -121,59 +110,22 @@
         background: #2563eb;
     }
 
-    /* SIDEBAR AMIS */
-    #friendsSidebar {
-        position: fixed;
-        top: 0;
-        right: -300px;
-        width: 300px;
-        height: 100%;
-        background: #111827;
-        border-left: 3px solid #1f2937;
-        transition: 0.3s ease;
-        padding: 20px;
-    }
-
-    #friendsSidebar.open {
-        right: 0;
-    }
-
-    #friendsSidebar h2 {
-        margin-top: 0;
-        font-size: 22px;
-        color: #60a5fa;
-    }
-
-    .friend {
-        padding: 10px 0;
-        border-bottom: 1px solid #1f2937;
-    }
 </style>
 </head>
 <body>
 
 <header>
     <h1>🎮 EPIC LAUNCHER</h1>
-
     <nav>
         <button>📚 Bibliothèque</button>
         <button>🛒 Store</button>
-        <button class="btn-right" id="friendsBtn">👥 Amis</button>
+        <button>👥 Amis</button>
     </nav>
 </header>
 
 <h2 class="section-title">Ma Bibliothèque</h2>
 
 <div class="game-grid" id="gameGrid"></div>
-
-<!-- 🔥 SIDEBAR AMIS -->
-<div id="friendsSidebar">
-    <h2>Amis en ligne</h2>
-    <div id="friendsList">
-        <!-- (Liste d'amis affichée ici plus tard) -->
-    </div>
-</div>
-
 
 <script>
 /* -------------------------
@@ -253,22 +205,20 @@ games.forEach(game => {
     grid.appendChild(card);
 });
 
+
 /* -------------------------
-   🔌 ONLINE / LOGOUT
+   🔌 ONLINE / LOGOUT (atexit)
    ------------------------- */
+
+/* → Signal ONLINE quand la page est ouverte */
 fetch("/online", { method: "POST" })
     .catch(err => console.log("Erreur ONLINE :", err));
 
+/* → Signal LOGOUT quand l’onglet se ferme */
 window.addEventListener("beforeunload", () => {
-    navigator.sendBeacon("/logout");
+    navigator.sendBeacon("/logout"); 
 });
 
-/* -------------------------
-   👥 SIDEBAR AMIS
-   ------------------------- */
-document.getElementById("friendsBtn").addEventListener("click", () => {
-    document.getElementById("friendsSidebar").classList.toggle("open");
-});
 </script>
 
 </body>

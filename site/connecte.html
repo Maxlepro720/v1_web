@@ -277,7 +277,7 @@
                 statusLabel.textContent = "Connexion réussie";
                 statusLabel.style.color = "lightgreen";
                 setTimeout(() => {
-                    window.location.href = "menu.html";
+                    window.location.href = `menu.html?username=${usernameParam}`;
                 }, 1000);
             } else {
                 statusLabel.textContent = result.message || "ID ou mot de passe incorrect";

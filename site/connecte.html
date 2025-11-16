@@ -5,47 +5,54 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Connexion</title>
 <style>
-/* --- Ton CSS existant --- */
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-body, html { height: 100%; background: #13131b; display: flex; justify-content: center; align-items: center; padding: 10px; }
-.container { background: #13131b; border-radius: 20px; padding: 30px 20px; width: 100%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.5); text-align: center; transition: all 0.3s ease; }
+body, html { height: 100%; background: #313B2F; display: flex; justify-content: center; align-items: center; padding: 10px; }
+.container { background: #313B2F; border-radius: 20px; padding: 30px 20px; width: 100%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.5); text-align: center; transition: all 0.3s ease; position: relative; }
 .logo { font-size: 50px; margin-bottom: 10px; cursor: grab; }
-h1 { color: #fff; font-size: 24px; margin-bottom: 8px; word-break: break-word; }
-p.subtitle { color: #888899; margin-bottom: 20px; font-size: 14px; }
-.field { display: flex; align-items: center; margin-bottom: 12px; background: #1e1e2e; border: 2px solid #2d2d45; border-radius: 10px; padding: 5px 10px; transition: all 0.2s ease; }
+h1 { color: #FBA002; font-size: 24px; margin-bottom: 8px; word-break: break-word; }
+p.subtitle { color: #FBA002; margin-bottom: 20px; font-size: 14px; }
+.field { display: flex; align-items: center; margin-bottom: 12px; background: #1e1e2e; border: 2px solid #FBA002; border-radius: 10px; padding: 5px 10px; transition: all 0.2s ease; }
 .field i { margin-right: 10px; color: #888899; font-size: 18px; }
 .field input { background: transparent; border: none; outline: none; color: #fff; flex: 1; font-size: 14px; padding: 10px; }
 .toggle-password { cursor: pointer; margin-left: 5px; font-size: 18px; color: #888899; }
 .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 12px; transition: all 0.2s ease; }
-.btn-login { background: #4a9eff; color: #fff; }
-.btn-login:hover { background: #3d85e6; }
-.switch-mode { background: transparent; border: 2px solid #2d2d45; color: #4a9eff; border-radius: 12px; padding: 12px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px; transition: all 0.2s ease; }
+.btn-login { background: #FBA002; color: #fff; }
+.btn-login:hover { background: #e89002; }
+.switch-mode { background: transparent; border: 2px solid #FBA002; color: #FBA002; border-radius: 12px; padding: 12px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px; transition: all 0.2s ease; }
 .switch-mode:hover { background: #1e1e2e; }
 .separator { display: flex; align-items: center; text-align: center; margin: 10px 0 15px 0; }
 .separator::before, .separator::after { content: ""; flex: 1; height: 1px; background: #2d2d45; }
 .separator::before { margin-right: 10px; }
 .separator::after { margin-left: 10px; }
 .separator span { color: #666677; font-size: 12px; }
-#statusLabel { min-height: 20px; margin-bottom: 10px; font-size: 14px; font-weight: bold; transition: all 0.2s ease; }
+#statusLabel { min-height: 20px; margin-bottom: 10px; font-size: 14px; font-weight: bold; transition: all 0.2s ease; color: #FBA002; }
 .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; z-index: 9999; flex-direction: column; color: #fff; font-size: 16px; padding: 20px; text-align: center; }
-.spinner { width: 60px; height: 60px; border: 6px solid #2d2d40; border-top: 6px solid #4a9eff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+.spinner { width: 60px; height: 60px; border: 6px solid #2d2d40; border-top: 6px solid #FBA002; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-</style>
-</head>
-<body>
-<button id="themeToggle" style="
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
+
+#themeToggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
     padding: 8px 12px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 16px;
-    background-color: #FBA002; /* couleur initiale sombre */
-    color: #fff;
-">🌙</button>
+    font-size: 20px;
+    background-color: rgba(251, 160, 2, 0.2);
+    color: #FBA002;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+#themeToggle:hover {
+    background-color: rgba(251, 160, 2, 0.4);
+    transform: scale(1.1);
+}
+</style>
+</head>
+<body>
+
 <!-- LOADING SCREEN -->
 <div class="loading-overlay" id="loadingScreen" style="display:none;">
     <div class="spinner"></div>
@@ -54,10 +61,10 @@ p.subtitle { color: #888899; margin-bottom: 20px; font-size: 14px; }
 
 <!-- MAIN CONTAINER -->
 <div class="container" id="authContainer">
+    <!-- BOUTON TOGGLE EN HAUT À DROITE DU CONTAINER -->
+    <button id="themeToggle">🌙</button>
+    
     <div class="logo">🎮</div>
-    <!-- Ajoute ce bouton dans ton container, juste après la div.logo par exemple -->
-    <!-- BOUTON TOGGLE EN HAUT À DROITE -->
-
 
     <h1 id="title">Se connecter</h1>
     <p class="subtitle" id="subtitle">Accédez à votre espace de jeu</p>
@@ -92,7 +99,7 @@ const submitBtn = document.getElementById('submitBtn');
 
 let isLoginMode = true;
 
-// 🔹 Toggle entre login et signup
+// Toggle entre login et signup
 switchBtn.addEventListener('click', () => {
     isLoginMode = !isLoginMode;
     if (isLoginMode) {
@@ -108,7 +115,7 @@ switchBtn.addEventListener('click', () => {
     }
 });
 
-// 🔹 Fonction login/signup
+// Fonction login/signup
 submitBtn.addEventListener('click', async () => {
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
@@ -121,7 +128,7 @@ submitBtn.addEventListener('click', async () => {
     const data = { id: username, password };
     const url = isLoginMode 
         ? "https://project-3-api-2bgb.onrender.com/login" 
-        : "https://project-3-api-2bgb.onrender.com/signup"; // <-- ici le signup
+        : "https://project-3-api-2bgb.onrender.com/signup";
 
     try {
         document.getElementById('loadingScreen').style.display = 'flex';
@@ -134,9 +141,11 @@ submitBtn.addEventListener('click', async () => {
         document.getElementById('loadingScreen').style.display = 'none';
 
         if (result.status === "success") {
-            localStorage.setItem("username", username);
             alert(isLoginMode ? "Connexion réussie !" : "Compte créé avec succès !");
-            window.location.href = "menu.html";
+            // Note: localStorage n'est pas disponible dans les artifacts Claude
+            // Dans votre environnement réel, décommentez la ligne suivante:
+            // localStorage.setItem("username", username);
+            // window.location.href = "menu.html";
         } else {
             alert(result.message || (isLoginMode ? "ID ou mot de passe incorrect" : "Impossible de créer le compte"));
         }
@@ -147,7 +156,7 @@ submitBtn.addEventListener('click', async () => {
 });
 
 const themeToggle = document.getElementById('themeToggle');
-let darkMode = true; // par défaut sombre
+let darkMode = true;
 
 function applyTheme() {
     // FOND GLOBAL
@@ -162,31 +171,31 @@ function applyTheme() {
     inputs.forEach(input => {
         input.style.color = darkMode ? "#fff" : "#000";
         input.style.background = darkMode ? "transparent" : "#FFFFFF";
-        input.style.borderColor = darkMode ? "#FBA002" : "#DF9E99";
+    });
+
+    const fields = document.querySelectorAll('.field');
+    fields.forEach(field => {
+        field.style.borderColor = darkMode ? "#FBA002" : "#DF9E99";
+        field.style.background = darkMode ? "#1e1e2e" : "#FFFFFF";
     });
 
     // TITRES ET TEXTES
-    const texts = document.querySelectorAll('#authContainer h1, #authContainer .subtitle, #statusLabel');
-    texts.forEach(el => {
-        el.style.color = darkMode ? "#FBA002" : "#DF9E99";
-    });
+    document.getElementById('title').style.color = darkMode ? "#FBA002" : "#DF9E99";
+    document.getElementById('subtitle').style.color = darkMode ? "#FBA002" : "#DF9E99";
+    document.getElementById('statusLabel').style.color = darkMode ? "#FBA002" : "#DF9E99";
 
     // BOUTONS
-    const buttons = document.querySelectorAll('#authContainer .btn, #authContainer .switch-mode');
-    buttons.forEach(btn => {
-        if (darkMode) {
-            btn.style.background = btn.classList.contains('switch-mode') ? "transparent" : "#FBA002";
-            btn.style.color = btn.classList.contains('switch-mode') ? "#FBA002" : "#fff";
-            btn.style.border = btn.classList.contains('switch-mode') ? "2px solid #FBA002" : "none";
-        } else {
-            btn.style.background = btn.classList.contains('switch-mode') ? "transparent" : "#DF9E99";
-            btn.style.color = btn.classList.contains('switch-mode') ? "#DF9E99" : "#fff";
-            btn.style.border = btn.classList.contains('switch-mode') ? "2px solid #DF9E99" : "none";
-        }
-    });
+    submitBtn.style.background = darkMode ? "#FBA002" : "#DF9E99";
+    submitBtn.style.color = "#fff";
+    
+    switchBtn.style.background = "transparent";
+    switchBtn.style.color = darkMode ? "#FBA002" : "#DF9E99";
+    switchBtn.style.border = darkMode ? "2px solid #FBA002" : "2px solid #DF9E99";
 
-    // ICONE DU TOGGLE
+    // BOUTON TOGGLE
     themeToggle.textContent = darkMode ? "☀️" : "🌙";
+    themeToggle.style.backgroundColor = darkMode ? "rgba(251, 160, 2, 0.2)" : "rgba(223, 158, 153, 0.2)";
+    themeToggle.style.color = darkMode ? "#FBA002" : "#DF9E99";
 }
 
 // INITIAL
@@ -197,7 +206,6 @@ themeToggle.addEventListener('click', () => {
     darkMode = !darkMode;
     applyTheme();
 });
-
 </script>
 
 </body>

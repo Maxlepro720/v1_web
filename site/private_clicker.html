@@ -43,11 +43,8 @@
         .join-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
         .join-button:active { transform: translateY(0); }
         .sidebar-status { color: #94a3b8; font-size: clamp(11px, 1.5vw, 12px); margin-top: 10px; min-height: 20px; word-break: break-word; }
-
-        /* Bouton retour */
         .back-btn { position: absolute; top: 20px; left: 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; width: clamp(40px, 6vw, 50px); height: clamp(40px, 6vw, 50px); border-radius: 50%; cursor: pointer; font-size: clamp(18px, 3vw, 24px); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); transition: all 0.3s ease; z-index: 102; }
         .back-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6); }
-
         @media (max-width: 768px) { .sidebar { width: 85vw; } .main-area { padding: 15px; } .click-button { width: min(40vw, 40vh, 200px); height: min(40vw, 40vh, 200px); } }
         @media (max-width: 480px) { .sidebar { width: 90vw; } .click-button { width: min(50vw, 45vh, 180px); height: min(50vw, 45vh, 180px); } }
     </style>
@@ -55,8 +52,7 @@
 <body>
     <div class="container">
         <div class="main-area">
-            <!-- Bouton retour -->
-            <button class="back-btn" onclick="location.href='menu.html'">←</button>
+            <button class="back-btn" onclick="handleBackButton()">←</button>
 
             <div class="title">Clicker</div>
             <div class="poires-counter" id="poiresCounter">0</div>
@@ -107,11 +103,13 @@ let lastClickTime = 0;
 let clickIntervals = [];
 let sidebarVisible = true;
 
-// 🔹 Récupération du username depuis localStorage ou valeur par défaut
-let username = localStorage.getItem("username");
-if (!username) {
-    username = "Invité";               // valeur par défaut
-    localStorage.setItem("username", username); // sauvegarde dans localStorage
+// 🔹 Récupération du username depuis localStorage
+let username = localStorage.getItem("clickerUsername");
+
+// Si pas de username, redirection vers le menu
+if (!username || username.trim() === "") {
+    alert("⚠️ Aucun nom d'utilisateur trouvé. Veuillez vous connecter.");
+    window.location.href = "menu.html";
 }
 
 const clickButton = document.getElementById('clickButton');
@@ -141,6 +139,43 @@ toggleSidebar.addEventListener('click', () => {
 // Load session
 loadMySession();
 clickButton.addEventListener('click', onClickerClick);
+
+// 🔹 Quitter la session automatiquement lors de la fermeture de la page
+window.addEventListener('beforeunload', async (e) => {
+    await leaveSessionSilently();
+});
+
+// 🔹 Quitter la session lors du retour au menu
+async function handleBackButton() {
+    await leaveSessionSilently();
+    window.location.href = "menu.html";
+}
+
+// 🔹 Fonction pour quitter la session silencieusement
+async function leaveSessionSilently() {
+    const code = sessionCode.textContent;
+    if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
+        return;
+    }
+    
+    try {
+        // Utilisation de sendBeacon pour une requête asynchrone garantie
+        const data = JSON.stringify({ code: code, id: username });
+        navigator.sendBeacon(`${API_URL}/leave`, data);
+        
+        // Alternative si sendBeacon n'est pas supporté
+        if (!navigator.sendBeacon) {
+            await fetch(`${API_URL}/leave`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: data,
+                keepalive: true // Important pour les requêtes lors de beforeunload
+            });
+        }
+    } catch (e) {
+        console.error("Erreur lors de la déconnexion:", e);
+    }
+}
 
 // ---------------- CLICKER ----------------
 function onClickerClick() {
@@ -201,7 +236,7 @@ async function sendClicks() {
 // ---------------- SESSION ----------------
 async function loadMySession() {
     try {
-        const response = await fetch(`${API_URL}/session?user=${username}`);
+        const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
         const data = await response.json();
         if (data.status === "success" && data.code) {
             sessionCode.textContent = data.code;
@@ -227,6 +262,9 @@ closeBtn.addEventListener('click', async () => {
         sidebarStatus.style.color = "#f59e0b"; 
         return; 
     }
+    
+    closeBtn.disabled = true;
+    
     try {
         const response = await fetch(`${API_URL}/leave`, { 
             method: 'POST', 
@@ -239,7 +277,6 @@ closeBtn.addEventListener('click', async () => {
             sidebarStatus.style.color = "#10b981"; 
             sessionCode.textContent = "Aucune session"; 
             resetPlayersList(); 
-            loadMySession(); 
         } else { 
             sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`; 
             sidebarStatus.style.color = "#ef4444"; 
@@ -247,6 +284,8 @@ closeBtn.addEventListener('click', async () => {
     } catch (e) { 
         sidebarStatus.textContent = "❌ Erreur réseau"; 
         sidebarStatus.style.color = "#ef4444"; 
+    } finally {
+        closeBtn.disabled = false;
     }
 });
 
@@ -257,6 +296,9 @@ joinButton.addEventListener('click', async () => {
         sidebarStatus.style.color = "#f59e0b"; 
         return; 
     }
+    
+    joinButton.disabled = true;
+    
     try {
         const response = await fetch(`${API_URL}/join`, { 
             method: 'POST', 
@@ -267,14 +309,17 @@ joinButton.addEventListener('click', async () => {
         if (data.status === "success") { 
             sidebarStatus.textContent = "✅ Session rejointe"; 
             sidebarStatus.style.color = "#10b981"; 
-            sessionCode.textContent = code; 
+            sessionCode.textContent = code;
+            joinInput.value = '';
         } else { 
-            sidebarStatus.textContent = "❌ Code introuvable"; 
+            sidebarStatus.textContent = `❌ ${data.message || 'Code introuvable'}`; 
             sidebarStatus.style.color = "#ef4444"; 
         }
     } catch (e) { 
         sidebarStatus.textContent = "❌ Erreur réseau"; 
         sidebarStatus.style.color = "#ef4444"; 
+    } finally {
+        joinButton.disabled = false;
     }
 });
 

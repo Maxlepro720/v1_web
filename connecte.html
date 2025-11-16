@@ -3,42 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Connexion - Project 3</title>
+<title>Connexion</title>
 <style>
     /* RESET */
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-    body, html { height: 100%; background: #0a0a0f; display: flex; justify-content: center; align-items: center; }
+    body, html { height: 100%; background: #13131b; display: flex; justify-content: center; align-items: center; padding: 10px; }
 
     /* CONTAINER PRINCIPAL */
     .container {
-        background: #13131d;
+        background: #13131b;
         border-radius: 20px;
-        padding: 40px 30px;
-        width: 90%;
+        padding: 30px 20px;
+        width: 100%;
         max-width: 400px;
         box-shadow: 0 0 20px rgba(0,0,0,0.5);
         text-align: center;
+        transition: all 0.3s ease;
     }
 
     /* HEADER / LOGO */
     .logo {
-        font-size: 60px;
+        font-size: 50px;
         margin-bottom: 10px;
         cursor: grab;
     }
 
-    h1 { color: #fff; font-size: 28px; margin-bottom: 10px; }
-    p.subtitle { color: #888899; margin-bottom: 25px; }
+    h1 { color: #fff; font-size: 24px; margin-bottom: 8px; word-break: break-word; }
+    p.subtitle { color: #888899; margin-bottom: 20px; font-size: 14px; }
 
     /* CHAMPS INPUT */
     .field {
         display: flex;
         align-items: center;
-        margin-bottom: 15px;
+        margin-bottom: 12px;
         background: #1e1e2e;
         border: 2px solid #2d2d45;
         border-radius: 10px;
         padding: 5px 10px;
+        transition: all 0.2s ease;
     }
     .field i { margin-right: 10px; color: #888899; font-size: 18px; }
     .field input {
@@ -62,13 +64,14 @@
     /* BOUTONS */
     .btn {
         width: 100%;
-        padding: 15px;
+        padding: 14px;
         border: none;
         border-radius: 12px;
         font-size: 16px;
         font-weight: bold;
         cursor: pointer;
-        margin-bottom: 15px;
+        margin-bottom: 12px;
+        transition: all 0.2s ease;
     }
     .btn-login { background: #4a9eff; color: #fff; }
     .btn-login:hover { background: #3d85e6; }
@@ -85,6 +88,8 @@
         cursor: pointer;
         width: 100%;
         font-weight: bold;
+        font-size: 14px;
+        transition: all 0.2s ease;
     }
     .switch-mode:hover { background: #1e1e2e; }
 
@@ -93,7 +98,7 @@
         display: flex;
         align-items: center;
         text-align: center;
-        margin: 15px 0;
+        margin: 10px 0 15px 0;
     }
     .separator::before, .separator::after {
         content: "";
@@ -117,19 +122,38 @@
         z-index: 9999;
         flex-direction: column;
         color: #fff;
-        font-size: 18px;
+        font-size: 16px;
+        padding: 20px;
+        text-align: center;
     }
     .spinner {
-        width: 80px;
-        height: 80px;
-        border: 8px solid #2d2d40;
-        border-top: 8px solid #4a9eff;
+        width: 60px;
+        height: 60px;
+        border: 6px solid #2d2d40;
+        border-top: 6px solid #4a9eff;
         border-radius: 50%;
         animation: spin 1s linear infinite;
         margin-bottom: 15px;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+    /* MEDIA QUERIES */
+    @media (max-width: 480px) {
+        .container { padding: 20px 15px; }
+        h1 { font-size: 22px; }
+        p.subtitle { font-size: 13px; }
+        .btn { font-size: 15px; padding: 12px; }
+        .switch-mode { font-size: 13px; padding: 10px; }
+        .logo { font-size: 45px; }
+    }
+
+    @media (max-width: 360px) {
+        h1 { font-size: 20px; }
+        p.subtitle { font-size: 12px; }
+        .btn { font-size: 14px; padding: 10px; }
+        .switch-mode { font-size: 12px; padding: 8px; }
+        .logo { font-size: 40px; }
+    }
 </style>
 </head>
 <body>
@@ -169,9 +193,7 @@
     const apiSignup = "https://project-3-api-2bgb.onrender.com/signup";
 
     const loadingScreen = document.getElementById('loadingScreen');
-    const authContainer = document.getElementById('authContainer');
 
-    // SIMULER LE CHECK SERVER
     window.addEventListener('load', () => {
         setTimeout(() => {
             loadingScreen.style.display = 'none';
@@ -236,7 +258,6 @@
 
             if(result.status === "success") {
                 alert(mode === 'login' ? "Connexion réussie !" : "Compte créé !");
-                // Ici tu pourrais rediriger ou lancer le jeu
             } else {
                 alert(result.message || "Erreur inconnue");
             }

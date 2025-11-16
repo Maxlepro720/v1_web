@@ -223,9 +223,10 @@ submitBtn.addEventListener('click', async () => {
         const result = await response.json();
 
         if (result.status === "success") {
-            // Stocke le username dans localStorage si besoin
+            // Stockage optionnel
             localStorage.setItem("username", username);
-            // Redirection avec username dans l'URL
+
+            // 🔹 Redirection vers menu.html avec username dans l'URL
             window.location.href = `menu.html?username=${encodeURIComponent(username)}`;
         } else {
             alert(result.message || "ID ou mot de passe incorrect");
@@ -235,6 +236,7 @@ submitBtn.addEventListener('click', async () => {
     }
 });
 </script>
+
 
 </body>
 </html>

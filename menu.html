@@ -19,7 +19,7 @@
         display: flex;
         align-items: center;
         padding: 20px 30px;
-        gap: 40px;
+        gap: 20px;
     }
 
     header h1 {
@@ -28,17 +28,43 @@
         margin: 0;
     }
 
+    nav {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
     nav button {
         background: #1f2937;
         color: white;
         border: none;
         padding: 12px 20px;
-        margin-right: 10px;
         cursor: pointer;
         border-radius: 6px;
+        font-size: 15px;
     }
 
     nav button:hover {
+        background: #374151;
+    }
+
+    /* Barre de recherche stylisée comme un bouton */
+    #search_bar {
+        padding: 12px 20px;
+        border-radius: 6px;
+        border: none;
+        outline: none;
+        font-size: 15px;
+        background: #1f2937;
+        color: white;
+        transition: background 0.2s;
+    }
+
+    #search_bar::placeholder {
+        color: #d1d5db;
+    }
+
+    #search_bar:focus {
         background: #374151;
     }
 
@@ -118,7 +144,8 @@
     <h1>🎮 EPIC LAUNCHER</h1>
     <nav>
         <button>📚 Bibliothèque</button>
-        <input id="search_bar" placeholder="Rechercher"></input>
+        <input id="search_bar" placeholder="Rechercher">
+        <button id="search_btn">🔍 Rechercher</button>
         <button>👥 Amis</button>
     </nav>
 </header>
@@ -129,94 +156,60 @@
 
 <script>
 /* -------------------------
-   📦 LISTE DES JEUX (JS)
+   📦 LISTE DES JEUX
    ------------------------- */
 const games = [
-    {
-        id: 1,
-        title: "Multiplayer Clicker",
-        genre: "Clicker",
-        image: "https://via.placeholder.com/400x200/8b5cf6/FFFFFF?text=Cyber+Warriors",
-        link: "multiplayer_clicker.html",
-        color: "#8b5cf6"
-    },
-    {
-        id: 2,
-        title: "Fantasy Realm",
-        genre: "RPG",
-        image: "https://via.placeholder.com/400x200/f97316/FFFFFF?text=Fantasy+Realm",
-        link: "fantasy_realm.html",
-        color: "#f97316"
-    },
-    {
-        id: 3,
-        title: "Space Odyssey",
-        genre: "Aventure",
-        image: "https://via.placeholder.com/400x200/06b6d4/FFFFFF?text=Space+Odyssey",
-        link: "space_odyssey.html",
-        color: "#06b6d4"
-    },
-    {
-        id: 4,
-        title: "Racing Fury",
-        genre: "Course",
-        image: "https://via.placeholder.com/400x200/eab308/FFFFFF?text=Racing+Fury",
-        link: "racing_fury.html",
-        color: "#eab308"
-    },
-    {
-        id: 5,
-        title: "Battle Royale X",
-        genre: "Battle Royale",
-        image: "https://via.placeholder.com/400x200/14b8a6/FFFFFF?text=Battle+Royale+X",
-        link: "battle_royale.html",
-        color: "#14b8a6"
-    },
-    {
-        id: 6,
-        title: "Medieval Conquest",
-        genre: "Stratégie",
-        image: "https://via.placeholder.com/400x200/ec4899/FFFFFF?text=Medieval+Conquest",
-        link: "medieval_conquest.html",
-        color: "#ec4899"
-    }
+    { id: 1, title: "Multiplayer Clicker", genre: "Clicker", link: "multiplayer_clicker.html", color: "#8b5cf6" },
+    { id: 2, title: "Fantasy Realm", genre: "RPG", link: "fantasy_realm.html", color: "#f97316" },
+    { id: 3, title: "Space Odyssey", genre: "Aventure", link: "space_odyssey.html", color: "#06b6d4" },
+    { id: 4, title: "Racing Fury", genre: "Course", link: "racing_fury.html", color: "#eab308" },
+    { id: 5, title: "Battle Royale X", genre: "Battle Royale", link: "battle_royale.html", color: "#14b8a6" },
+    { id: 6, title: "Medieval Conquest", genre: "Stratégie", link: "medieval_conquest.html", color: "#ec4899" }
 ];
 
 /* -------------------------
-   🎮 GÉNÉRATION DES CARTES
+   🎮 AFFICHAGE DES CARTES
    ------------------------- */
 const grid = document.getElementById("gameGrid");
+const searchBar = document.getElementById("search_bar");
+const searchBtn = document.getElementById("search_btn");
 
-games.forEach(game => {
-    const card = document.createElement("div");
-    card.className = "card";
+function displayGames(filteredGames) {
+    grid.innerHTML = "";
+    filteredGames.forEach(game => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+            <div class="card-image" style="background: ${game.color}">🎮</div>
+            <div class="card-info">
+                <h3 class="card-title">${game.title}</h3>
+                <p class="card-genre">${game.genre}</p>
+                <button onclick="location.href='${game.link}'">▶ LANCER</button>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
 
-    card.innerHTML = `
-        <div class="card-image" style="background: ${game.color}">
-            🎮
-        </div>
-        <div class="card-info">
-            <h3 class="card-title">${game.title}</h3>
-            <p class="card-genre">${game.genre}</p>
-            <button onclick="location.href='${game.link}'">▶ LANCER</button>
-        </div>
-    `;
+// Affiche tous les jeux par défaut
+displayGames(games);
 
-    grid.appendChild(card);
+// Filtrage en temps réel
+searchBar.addEventListener("input", () => {
+    const searchText = searchBar.value.toLowerCase();
+    const filteredGames = games.filter(game => 
+        game.title.toLowerCase().startsWith(searchText)
+    );
+    displayGames(filteredGames);
 });
 
-
-/* -------------------------
-   🔌 ONLINE / LOGOUT (atexit)
-   ------------------------- */
-
-/* → Signal ONLINE quand la page est ouverte */
-fetch("/online", { method: "POST" })
-    .catch(err => console.log("Erreur ONLINE :", err));
-
-/* → Signal LOGOUT quand l’onglet se ferme */
-window.addEventListener("beforeunload", () => {
-    navigator.sendBeacon("/logout"); 
+// Filtrage avec le bouton "Rechercher"
+searchBtn.addEventListener("click", () => {
+    const searchText = searchBar.value.toLowerCase();
+    const filteredGames = games.filter(game => 
+        game.title.toLowerCase().startsWith(searchText)
+    );
+    displayGames(filteredGames);
 });
 
 </script>

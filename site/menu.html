@@ -169,16 +169,17 @@ const games = [
 /* -------------------------
    🎮 AFFICHAGE DES CARTES
    ------------------------- */
-const grid = document.getElementById("gameGrid");
-const searchBar = document.getElementById("search_bar");
-
 function displayGames(filteredGames) {
     grid.innerHTML = "";
     filteredGames.forEach(game => {
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `
-            <div class="card-image" style="background: ${game.color}">🎮</div>
+            <div class="card-image" style="
+                background: ${game.background};
+                background-size: cover;
+                background-position: center;
+            ">🎮</div>
             <div class="card-info">
                 <h3 class="card-title">${game.title}</h3>
                 <p class="card-genre">${game.genre}</p>

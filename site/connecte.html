@@ -201,94 +201,23 @@
 </div>
 
 <script>
-    const apiLogin = "https://project-3-api-2bgb.onrender.com/login";
-    const apiSignup = "https://project-3-api-2bgb.onrender.com/signup";
+// Récupère le username depuis l'URL ou localStorage
+const urlParams = new URLSearchParams(window.location.search);
+const username = urlParams.get('username') || localStorage.getItem("username") || "Invité";
 
-    const loadingScreen = document.getElementById('loadingScreen');
+// Exemple d'utilisation du username
+console.log("Utilisateur :", username);
 
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            loadingScreen.style.display = 'none';
-        }, 1000);
-    });
+let clickCount = 0;
+const poiresCounter = document.getElementById('poiresCounter');
+const clickButton = document.getElementById('clickButton');
 
-    // TOGGLE PASSWORD
-    const togglePassword = document.getElementById('togglePassword');
-    const passwordInput = document.getElementById('password');
-    let showPassword = false;
-    togglePassword.addEventListener('click', () => {
-        showPassword = !showPassword;
-        passwordInput.type = showPassword ? 'text' : 'password';
-        togglePassword.textContent = showPassword ? '🙈' : '👁';
-    });
+clickButton.addEventListener('click', ()=>{
+    clickCount++;
+    poiresCounter.textContent = clickCount;
+    // Ici tu peux envoyer au serveur avec `username`
+});
 
-    // SWITCH LOGIN/SIGNUP
-    const switchBtn = document.getElementById('switchBtn');
-    const title = document.getElementById('title');
-    const subtitle = document.getElementById('subtitle');
-    const submitBtn = document.getElementById('submitBtn');
-    const statusLabel = document.getElementById('statusLabel');
-    let mode = 'login';
-
-    switchBtn.addEventListener('click', () => {
-        if(mode === 'login') {
-            mode = 'signup';
-            title.textContent = "Créer un compte";
-            subtitle.textContent = "Rejoignez la communauté";
-            submitBtn.textContent = "S'inscrire";
-            submitBtn.classList.replace('btn-login', 'btn-signup');
-            switchBtn.textContent = "Déjà un compte ? Se connecter";
-        } else {
-            mode = 'login';
-            title.textContent = "Se connecter";
-            subtitle.textContent = "Accédez à votre espace de jeu";
-            submitBtn.textContent = "Se connecter";
-            submitBtn.classList.replace('btn-signup', 'btn-login');
-            switchBtn.textContent = "Créer un compte";
-        }
-        statusLabel.textContent = ""; // Réinitialise le statut lors du switch
-    });
-
-    // SUBMIT FORM
-    submitBtn.addEventListener('click', async () => {
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value.trim();
-
-        statusLabel.textContent = ""; // Réinitialise le statut
-
-        if(!username || !password) {
-            statusLabel.textContent = "Veuillez remplir tous les champs !";
-            statusLabel.style.color = "orange";
-            return;
-        }
-
-        const data = { id: username, password: password };
-
-        try {
-            const url = mode === 'login' ? apiLogin : apiSignup;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const result = await response.json();
-
-            if(result.status === "success") {
-                statusLabel.textContent = "Connexion réussie";
-                statusLabel.style.color = "lightgreen";
-                setTimeout(() => {
-                    window.location.href = `menu.html?username=${usernameParam}`;
-                }, 1000);
-            } else {
-                statusLabel.textContent = result.message || "ID ou mot de passe incorrect";
-                statusLabel.style.color = "red";
-            }
-        } catch(err) {
-            statusLabel.textContent = "Erreur réseau";
-            statusLabel.style.color = "red";
-            console.error(err);
-        }
-    });
 </script>
 
 </body>

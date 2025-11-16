@@ -33,7 +33,19 @@ p.subtitle { color: #888899; margin-bottom: 20px; font-size: 14px; }
 </style>
 </head>
 <body>
-
+<button id="themeToggle" style="
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    background-color: #FBA002; /* couleur initiale sombre */
+    color: #fff;
+">🌙</button>
 <!-- LOADING SCREEN -->
 <div class="loading-overlay" id="loadingScreen" style="display:none;">
     <div class="spinner"></div>
@@ -70,20 +82,6 @@ p.subtitle { color: #888899; margin-bottom: 20px; font-size: 14px; }
 
     <button class="switch-mode" id="switchBtn">Créer un compte</button>
 </div>
-<!-- BOUTON TOGGLE EN HAUT À DROITE -->
-<button id="themeToggle" style="
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1000;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    background-color: #FBA002; /* couleur initiale sombre */
-    color: #fff;
-">🌙</button>
 
 
 <script>

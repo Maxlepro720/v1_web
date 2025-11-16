@@ -145,7 +145,6 @@
     <nav>
         <button>📚 Bibliothèque</button>
         <input id="search_bar" placeholder="Rechercher">
-        <button id="search_btn">🔍 Rechercher</button>
         <button>👥 Amis</button>
     </nav>
 </header>
@@ -172,7 +171,6 @@ const games = [
    ------------------------- */
 const grid = document.getElementById("gameGrid");
 const searchBar = document.getElementById("search_bar");
-const searchBtn = document.getElementById("search_btn");
 
 function displayGames(filteredGames) {
     grid.innerHTML = "";
@@ -203,14 +201,6 @@ searchBar.addEventListener("input", () => {
     displayGames(filteredGames);
 });
 
-// Filtrage avec le bouton "Rechercher"
-searchBtn.addEventListener("click", () => {
-    const searchText = searchBar.value.toLowerCase();
-    const filteredGames = games.filter(game => 
-        game.title.toLowerCase().startsWith(searchText)
-    );
-    displayGames(filteredGames);
-});
 
 </script>
 

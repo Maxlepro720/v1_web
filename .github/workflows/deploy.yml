@@ -3,28 +3,28 @@ name: Deploy to InfinityFree
 on:
   push:
     branches:
-      - main
+      - main  # Branche à partir de laquelle déployer
 
 jobs:
   ftp-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Récupère le code du dépôt
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Étape debug pour voir les fichiers
+      # 2️⃣ Debug - liste tous les fichiers pour vérifier que GitHub voit ton site
       - name: Debug - list files in site
         run: ls -R site
 
-      # Étape upload FTP
+      # 3️⃣ Upload via FTP
       - name: Upload website via FTP
         uses: SamKirkland/FTP-Deploy-Action@4.3.0
         with:
-          server: ftpupload.net      # serveur FTP
-          port: 21                   # port FTP
-          username: if0_40433041     # ton username FTP
-          password: Almax1202        # ton password FTP
-          server-dir: /htdocs        # dossier cible sur InfinityFree
-          local-dir: site            # dossier local à envoyer
-
+          server: ftpupload.net
+          port: 21
+          username: if0_40433041
+          password: Almax1202
+          server-dir: /htdocs
+          local-dir: site

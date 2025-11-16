@@ -26,5 +26,5 @@ jobs:
           port: 21
           username: if0_40433041
           password: Almax1202
-          server-dir: /htdocs
+          server-dir: /htdocs/
           local-dir: site/

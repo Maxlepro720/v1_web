@@ -106,6 +106,9 @@ let sidebarVisible = true;
 // 🔹 Récupération du username depuis localStorage
 let username = localStorage.getItem("username");
 
+// Debug : afficher le username récupéré
+console.log("Username récupéré du localStorage:", username);
+
 // Si pas de username, redirection vers le menu
 if (!username || username.trim() === "") {
     alert("⚠️ Aucun nom d'utilisateur trouvé. Veuillez vous connecter.");

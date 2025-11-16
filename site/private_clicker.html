@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clicker Game</title>
+    <title>Private Clicker Game</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #232323; overflow: hidden; }
@@ -103,11 +103,15 @@
     <script>
         const API_URL = "https://project-3-api-2bgb.onrender.com";
 let clickCount = 0;
-let username = "admin";
+const urlParams = new URLSearchParams(window.location.search);
+let username = urlParams.get('username') || "Invité"; // récupère le username ou "Invité" par défaut
+document.getElementById('usernameLabel').textContent = username; // met à jour le sidebar
 let lastClickTime = 0;
 let clickIntervals = [];
 let nextSendTime = 0;
 let sidebarVisible = true;
+
+
 
 const clickButton = document.getElementById('clickButton');
 const poiresCounter = document.getElementById('poiresCounter');

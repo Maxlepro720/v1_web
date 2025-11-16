@@ -6,13 +6,12 @@
     <title>Clicker Game</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f1f5f9; overflow: hidden; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #232323; overflow: hidden; }
         .container { display: flex; width: 100vw; height: 100vh; position: relative; overflow: hidden; }
         .main-area { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; min-width: 0; }
         .title { color: #ffffff; font-size: clamp(32px, 6vw, 60px); font-weight: bold; margin-bottom: 15px; text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); }
         .poires-counter { color: #ffffff; font-size: clamp(20px, 3vw, 32px); font-weight: bold; margin-bottom: 10px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); background: rgba(255, 255, 255, 0.1); padding: 8px 25px; border-radius: 20px; backdrop-filter: blur(10px); }
         .to-send { color: #ffffff; font-size: clamp(14px, 2vw, 20px); margin-bottom: 30px; opacity: 0.9; }
-        .click-button { width: min(30vh, 30vw, 220px); height: min(30vh, 30vw, 220px); max-width: 220px; max-height: 220px; aspect-ratio: 1/1; border-radius: 50%; background: linear-gradient(145deg, #ffd966, #ffb84d); border: 6px solid #ff6b35; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 10px 30px rgba(255, 107, 53, 0.4); position: relative; overflow: hidden; flex-shrink: 0; }
         .click-button::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 85%; background-image: url('https://static.wikia.nocookie.net/simpsons/images/6/63/Homer_Simpson.png'); background-size: cover; background-position: center; border-radius: 50%; }
         .click-button:hover { transform: scale(1.1); box-shadow: 0 15px 40px rgba(255, 107, 53, 0.6); }
         .click-button:active { transform: scale(0.95); box-shadow: 0 5px 20px rgba(255, 107, 53, 0.3); }

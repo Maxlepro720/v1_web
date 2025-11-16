@@ -19,8 +19,9 @@ jobs:
         run: ls -R site
 
         with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASS }}
+          server: ftpupload.net
+          username: if0_40433041
+          port: 21  
+          password: Almax1202
           server-dir: /htdocs
           local-dir: site

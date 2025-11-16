@@ -18,7 +18,7 @@ jobs:
       - name: Debug - list files in site
         run: ls -R site
 
-      # 3️⃣ Upload via FTP
+      # Upload via FTP
       - name: Upload website via FTP
         uses: SamKirkland/FTP-Deploy-Action@4.3.0
         with:

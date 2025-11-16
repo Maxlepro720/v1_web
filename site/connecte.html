@@ -110,6 +110,15 @@
     .separator::after { margin-left: 10px; }
     .separator span { color: #666677; font-size: 12px; }
 
+    /* STATUS LABEL */
+    #statusLabel {
+        min-height: 20px;
+        margin-bottom: 10px;
+        font-size: 14px;
+        font-weight: bold;
+        transition: all 0.2s ease;
+    }
+
     /* LOADING */
     .loading-overlay {
         position: fixed;
@@ -183,6 +192,9 @@
 
     <button class="btn btn-login" id="submitBtn">Se connecter</button>
 
+    <!-- STATUS LABEL -->
+    <div id="statusLabel"></div>
+
     <div class="separator"><span>ou</span></div>
 
     <button class="switch-mode" id="switchBtn">Créer un compte</button>
@@ -215,6 +227,7 @@
     const title = document.getElementById('title');
     const subtitle = document.getElementById('subtitle');
     const submitBtn = document.getElementById('submitBtn');
+    const statusLabel = document.getElementById('statusLabel');
     let mode = 'login';
 
     switchBtn.addEventListener('click', () => {
@@ -233,6 +246,7 @@
             submitBtn.classList.replace('btn-signup', 'btn-login');
             switchBtn.textContent = "Créer un compte";
         }
+        statusLabel.textContent = ""; // Réinitialise le statut lors du switch
     });
 
     // SUBMIT FORM
@@ -240,8 +254,11 @@
         const username = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value.trim();
 
+        statusLabel.textContent = ""; // Réinitialise le statut
+
         if(!username || !password) {
-            alert("Veuillez remplir tous les champs !");
+            statusLabel.textContent = "Veuillez remplir tous les champs !";
+            statusLabel.style.color = "orange";
             return;
         }
 
@@ -257,15 +274,21 @@
             const result = await response.json();
 
             if(result.status === "success") {
-                window.location.href = "menu.html";
+                statusLabel.textContent = "Connexion réussie";
+                statusLabel.style.color = "lightgreen";
+                setTimeout(() => {
+                    window.location.href = "menu.html";
+                }, 1000);
             } else {
-                alert(result.message || "Erreur inconnue");
+                statusLabel.textContent = result.message || "ID ou mot de passe incorrect";
+                statusLabel.style.color = "red";
             }
         } catch(err) {
-            alert("Erreur réseau : " + err);
+            statusLabel.textContent = "Erreur réseau";
+            statusLabel.style.color = "red";
+            console.error(err);
         }
     });
-
 </script>
 
 </body>

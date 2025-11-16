@@ -257,7 +257,7 @@
             const result = await response.json();
 
             if(result.status === "success") {
-                alert(mode === 'login' ? "Connexion réussie !" : "Compte créé !");
+                window.location.href = "menu.html";
             } else {
                 alert(result.message || "Erreur inconnue");
             }

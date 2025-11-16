@@ -1,11 +1,225 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menu</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Epic Game Launcher</title>
+
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #0f1419;
+        color: white;
+    }
+
+    /* HEADER */
+    header {
+        background: black;
+        display: flex;
+        align-items: center;
+        padding: 20px 30px;
+        gap: 40px;
+    }
+
+    header h1 {
+        font-size: 26px;
+        color: #60a5fa;
+        margin: 0;
+    }
+
+    nav button {
+        background: #1f2937;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        margin-right: 10px;
+        cursor: pointer;
+        border-radius: 6px;
+    }
+
+    nav button:hover {
+        background: #374151;
+    }
+
+    /* SECTION */
+    .section-title {
+        font-size: 30px;
+        margin-left: 30px;
+        margin-top: 20px;
+    }
+
+    /* GRID */
+    .game-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        padding: 20px 30px;
+    }
+
+    /* GAME CARD */
+    .card {
+        background: #1e293b;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: 0.2s;
+    }
+
+    .card:hover {
+        background: #2d3748;
+        transform: scale(1.02);
+    }
+
+    .card-image {
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 70px;
+        color: white;
+    }
+
+    .card-info {
+        padding: 15px;
+    }
+
+    .card-title {
+        font-size: 20px;
+        margin: 0;
+    }
+
+    .card-genre {
+        font-size: 14px;
+        opacity: 0.7;
+        margin-top: 6px;
+        margin-bottom: 12px;
+    }
+
+    .card button {
+        width: 100%;
+        background: #3b82f6;
+        border: none;
+        padding: 12px;
+        color: white;
+        cursor: pointer;
+        font-size: 15px;
+        border-radius: 6px;
+    }
+
+    .card button:hover {
+        background: #2563eb;
+    }
+
+</style>
 </head>
 <body>
-    
+
+<header>
+    <h1>🎮 EPIC LAUNCHER</h1>
+    <nav>
+        <button>📚 Bibliothèque</button>
+        <button>🛒 Store</button>
+        <button>👥 Amis</button>
+    </nav>
+</header>
+
+<h2 class="section-title">Ma Bibliothèque</h2>
+
+<div class="game-grid" id="gameGrid"></div>
+
+<script>
+/* -------------------------
+   📦 LISTE DES JEUX (JS)
+   ------------------------- */
+const games = [
+    {
+        id: 1,
+        title: "Multiplayer Clicker",
+        genre: "Clicker",
+        image: "https://via.placeholder.com/400x200/8b5cf6/FFFFFF?text=Cyber+Warriors",
+        link: "multiplayer_clicker.html",
+        color: "#8b5cf6"
+    },
+    {
+        id: 2,
+        title: "Fantasy Realm",
+        genre: "RPG",
+        image: "https://via.placeholder.com/400x200/f97316/FFFFFF?text=Fantasy+Realm",
+        link: "fantasy_realm.html",
+        color: "#f97316"
+    },
+    {
+        id: 3,
+        title: "Space Odyssey",
+        genre: "Aventure",
+        image: "https://via.placeholder.com/400x200/06b6d4/FFFFFF?text=Space+Odyssey",
+        link: "space_odyssey.html",
+        color: "#06b6d4"
+    },
+    {
+        id: 4,
+        title: "Racing Fury",
+        genre: "Course",
+        image: "https://via.placeholder.com/400x200/eab308/FFFFFF?text=Racing+Fury",
+        link: "racing_fury.html",
+        color: "#eab308"
+    },
+    {
+        id: 5,
+        title: "Battle Royale X",
+        genre: "Battle Royale",
+        image: "https://via.placeholder.com/400x200/14b8a6/FFFFFF?text=Battle+Royale+X",
+        link: "battle_royale.html",
+        color: "#14b8a6"
+    },
+    {
+        id: 6,
+        title: "Medieval Conquest",
+        genre: "Stratégie",
+        image: "https://via.placeholder.com/400x200/ec4899/FFFFFF?text=Medieval+Conquest",
+        link: "medieval_conquest.html",
+        color: "#ec4899"
+    }
+];
+
+/* -------------------------
+   🎮 GÉNÉRATION DES CARTES
+   ------------------------- */
+const grid = document.getElementById("gameGrid");
+
+games.forEach(game => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+        <div class="card-image" style="background: ${game.color}">
+            🎮
+        </div>
+        <div class="card-info">
+            <h3 class="card-title">${game.title}</h3>
+            <p class="card-genre">${game.genre}</p>
+            <button onclick="location.href='${game.link}'">▶ LANCER</button>
+        </div>
+    `;
+
+    grid.appendChild(card);
+});
+
+
+/* -------------------------
+   🔌 ONLINE / LOGOUT (atexit)
+   ------------------------- */
+
+/* → Signal ONLINE quand la page est ouverte */
+fetch("/online", { method: "POST" })
+    .catch(err => console.log("Erreur ONLINE :", err));
+
+/* → Signal LOGOUT quand l’onglet se ferme */
+window.addEventListener("beforeunload", () => {
+    navigator.sendBeacon("/logout"); 
+});
+
+</script>
+
 </body>
 </html>

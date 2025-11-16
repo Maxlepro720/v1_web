@@ -43,6 +43,22 @@ p.subtitle { color: #888899; margin-bottom: 20px; font-size: 14px; }
 <!-- MAIN CONTAINER -->
 <div class="container" id="authContainer">
     <div class="logo">🎮</div>
+    <!-- Ajoute ce bouton dans ton container, juste après la div.logo par exemple -->
+    <button id="themeToggle" style="
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: #4a9eff;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: bold;
+        z-index: 1000;
+        transition: all 0.3s ease;
+    ">🌙</button>
+
     <h1 id="title">Se connecter</h1>
     <p class="subtitle" id="subtitle">Accédez à votre espace de jeu</p>
 
@@ -128,6 +144,59 @@ submitBtn.addEventListener('click', async () => {
         alert("Erreur réseau : " + err);
     }
 });
+>
+const themeToggle = document.getElementById('themeToggle');
+let darkMode = true; // par défaut sombre
+
+function applyTheme() {
+    // FOND GLOBAL
+    document.body.style.background = darkMode ? "#313B2F" : "#EFE9E0";
+    document.getElementById('authContainer').style.background = darkMode ? "#313B2F" : "#EFE9E0";
+    document.getElementById('authContainer').style.boxShadow = darkMode 
+        ? "0 0 20px rgba(0,0,0,0.5)" 
+        : "0 0 20px rgba(0,0,0,0.2)";
+
+    // INPUTS
+    const inputs = document.querySelectorAll('#authContainer input');
+    inputs.forEach(input => {
+        input.style.color = darkMode ? "#fff" : "#000";
+        input.style.background = darkMode ? "transparent" : "#FFFFFF";
+        input.style.borderColor = darkMode ? "#FBA002" : "#DF9E99";
+    });
+
+    // TITRES ET TEXTES
+    const texts = document.querySelectorAll('#authContainer h1, #authContainer .subtitle, #statusLabel');
+    texts.forEach(el => {
+        el.style.color = darkMode ? "#FBA002" : "#DF9E99";
+    });
+
+    // BOUTONS
+    const buttons = document.querySelectorAll('#authContainer .btn, #authContainer .switch-mode');
+    buttons.forEach(btn => {
+        if (darkMode) {
+            btn.style.background = btn.classList.contains('switch-mode') ? "transparent" : "#FBA002";
+            btn.style.color = btn.classList.contains('switch-mode') ? "#FBA002" : "#fff";
+            btn.style.border = btn.classList.contains('switch-mode') ? "2px solid #FBA002" : "none";
+        } else {
+            btn.style.background = btn.classList.contains('switch-mode') ? "transparent" : "#DF9E99";
+            btn.style.color = btn.classList.contains('switch-mode') ? "#DF9E99" : "#fff";
+            btn.style.border = btn.classList.contains('switch-mode') ? "2px solid #DF9E99" : "none";
+        }
+    });
+
+    // ICONE DU TOGGLE
+    themeToggle.textContent = darkMode ? "☀️" : "🌙";
+}
+
+// INITIAL
+applyTheme();
+
+// TOGGLE
+themeToggle.addEventListener('click', () => {
+    darkMode = !darkMode;
+    applyTheme();
+});
+
 </script>
 
 </body>

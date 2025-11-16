@@ -7,13 +7,13 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
 body, html { height: 100%; background: #313B2F; display: flex; justify-content: center; align-items: center; padding: 10px; }
-.container { background: #313B2F; border-radius: 20px; padding: 30px 20px; width: 100%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.5); text-align: center; transition: all 0.3s ease; position: relative; }
+.container { background: #ffffff; border-radius: 20px; padding: 30px 20px; width: 100%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.5); text-align: center; transition: all 0.3s ease; position: relative; }
 .logo { font-size: 50px; margin-bottom: 10px; cursor: grab; }
 h1 { color: #FBA002; font-size: 24px; margin-bottom: 8px; word-break: break-word; }
 p.subtitle { color: #FBA002; margin-bottom: 20px; font-size: 14px; }
-.field { display: flex; align-items: center; margin-bottom: 12px; background: #1e1e2e; border: 2px solid #FBA002; border-radius: 10px; padding: 5px 10px; transition: all 0.2s ease; }
+.field { display: flex; align-items: center; margin-bottom: 12px; background: #ffffff; border: 2px solid #FBA002; border-radius: 10px; padding: 5px 10px; transition: all 0.2s ease; }
 .field i { margin-right: 10px; color: #888899; font-size: 18px; }
-.field input { background: transparent; border: none; outline: none; color: #fff; flex: 1; font-size: 14px; padding: 10px; }
+.field input { background: #ffffff; border: none; outline: none; color: #000; flex: 1; font-size: 14px; padding: 10px; }
 .toggle-password { cursor: pointer; margin-left: 5px; font-size: 18px; color: #888899; }
 .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 12px; transition: all 0.2s ease; }
 .btn-login { background: #FBA002; color: #fff; }
@@ -159,9 +159,11 @@ const themeToggle = document.getElementById('themeToggle');
 let darkMode = true;
 
 function applyTheme() {
-    // FOND GLOBAL
-    document.body.style.background = darkMode ? "#313B2F" : "#EFE9E0";
-    document.getElementById('authContainer').style.background = darkMode ? "#313B2F" : "#EFE9E0";
+    // FOND GLOBAL - Change le body aussi
+    const bgColor = darkMode ? "#313B2F" : "#ffffff";
+    document.body.style.background = bgColor;
+    document.documentElement.style.background = bgColor;
+    document.getElementById('authContainer').style.background = bgColor;
     document.getElementById('authContainer').style.boxShadow = darkMode 
         ? "0 0 20px rgba(0,0,0,0.5)" 
         : "0 0 20px rgba(0,0,0,0.2)";
@@ -169,14 +171,14 @@ function applyTheme() {
     // INPUTS
     const inputs = document.querySelectorAll('#authContainer input');
     inputs.forEach(input => {
-        input.style.color = darkMode ? "#fff" : "#000";
-        input.style.background = darkMode ? "transparent" : "#FFFFFF";
+        input.style.color = "#000";
+        input.style.background = "#ffffff";
     });
 
     const fields = document.querySelectorAll('.field');
     fields.forEach(field => {
         field.style.borderColor = darkMode ? "#FBA002" : "#DF9E99";
-        field.style.background = darkMode ? "#1e1e2e" : "#FFFFFF";
+        field.style.background = "#ffffff";
     });
 
     // TITRES ET TEXTES

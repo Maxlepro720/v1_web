@@ -102,183 +102,288 @@
 
     <script>
         const API_URL = "https://project-3-api-2bgb.onrender.com";
-        let clickCount = 0;
-        let poire = 0;
-        let username = "admin";
-        let lastClickTime = 0;
-        let clickIntervals = [];
-        let nextSendTime = 0;
-        let sidebarVisible = true;
+let clickCount = 0;
+let username = "admin";
+let lastClickTime = 0;
+let clickIntervals = [];
+let nextSendTime = 0;
+let sidebarVisible = true;
 
-        const clickButton = document.getElementById('clickButton');
-        const poiresCounter = document.getElementById('poiresCounter');
-        const toSend = document.getElementById('toSend');
-        const timerCounter = document.getElementById('timerCounter');
-        const statusLabel = document.getElementById('statusLabel');
-        const sessionCode = document.getElementById('sessionCode');
-        const usernameLabel = document.getElementById('usernameLabel');
-        const playerCount = document.getElementById('playerCount');
-        const joinInput = document.getElementById('joinInput');
-        const joinButton = document.getElementById('joinButton');
-        const closeBtn = document.getElementById('closeBtn');
-        const sidebarStatus = document.getElementById('sidebarStatus');
-        const sidebar = document.getElementById('sidebar');
-        const toggleSidebar = document.getElementById('toggleSidebar');
-        const timerBarFill = document.getElementById('timerBarFill');
+const clickButton = document.getElementById('clickButton');
+const poiresCounter = document.getElementById('poiresCounter');
+const toSend = document.getElementById('toSend');
+const timerCounter = document.getElementById('timerCounter');
+const statusLabel = document.getElementById('statusLabel');
+const sessionCode = document.getElementById('sessionCode');
+const usernameLabel = document.getElementById('usernameLabel');
+const playerCount = document.getElementById('playerCount');
+const joinInput = document.getElementById('joinInput');
+const joinButton = document.getElementById('joinButton');
+const closeBtn = document.getElementById('closeBtn');
+const sidebarStatus = document.getElementById('sidebarStatus');
+const sidebar = document.getElementById('sidebar');
+const toggleSidebar = document.getElementById('toggleSidebar');
+const timerBarFill = document.getElementById('timerBarFill');
 
-        toggleSidebar.addEventListener('click', () => { sidebarVisible = !sidebarVisible; sidebar.classList.toggle('hidden'); });
+toggleSidebar.addEventListener('click', () => { 
+    sidebarVisible = !sidebarVisible; 
+    sidebar.classList.toggle('hidden'); 
+});
 
-        usernameLabel.textContent = username;
-        loadMySession();
-        clickButton.addEventListener('click', onClickerClick);
+usernameLabel.textContent = username;
+loadMySession();
+clickButton.addEventListener('click', onClickerClick);
 
-        function onClickerClick() {
-            const now = Date.now() / 1000;
-            let freq = 0;
-            if (lastClickTime !== 0) {
-                const interval = now - lastClickTime;
-                clickIntervals.push(interval);
-                if (clickIntervals.length > 5) clickIntervals.shift();
-                const avg = clickIntervals.reduce((a, b) => a + b, 0) / clickIntervals.length;
-                freq = avg > 0 ? 1 / avg : 0;
-            }
-            lastClickTime = now;
+// ---------------- CLICKER ----------------
+function onClickerClick() {
+    const now = Date.now() / 1000;
 
-            if (freq > 20) {
-                statusLabel.textContent = "⚠️ Autoclicker détecté ⚠️";
-                statusLabel.style.color = "#f87171";
-                setTimeout(() => { statusLabel.textContent = ""; }, 1000);
-                return;
-            }
+    // Détection d'autoclicker
+    let freq = 0;
+    if (lastClickTime !== 0) {
+        const interval = now - lastClickTime;
+        clickIntervals.push(interval);
+        if (clickIntervals.length > 5) clickIntervals.shift();
+        const avg = clickIntervals.reduce((a, b) => a + b, 0) / clickIntervals.length;
+        freq = avg > 0 ? 1 / avg : 0;
+    }
+    lastClickTime = now;
 
-            clickCount++;
-            toSend.textContent = `-- ${clickCount} --`;
+    if (freq > 20) {
+        statusLabel.textContent = "⚠️ Autoclicker détecté ⚠️";
+        statusLabel.style.color = "#f87171";
+        setTimeout(() => { statusLabel.textContent = ""; }, 1000);
+        return;
+    }
 
-            const currentTime = Date.now() / 1000;
-            const seconds = Math.floor(currentTime) % 60;
-            const remainder = seconds % 5;
-            const nextSend = currentTime - remainder + 5;
+    clickCount++;
+    toSend.textContent = `-- ${clickCount} --`;
+}
 
-            if (nextSendTime === 0) nextSendTime = nextSend;
+// ---------------- ENVOI DES POIRES ----------------
+async function sendClicks() {
+    const code = sessionCode.textContent;
+    if (code === "Chargement..." || code === "Aucune session") {
+        statusLabel.textContent = "⚠️ Session non disponible";
+        statusLabel.style.color = "#f59e0b";
+        return;
+    }
+    const toSendValue = clickCount;
+    clickCount = 0;
 
-            if (currentTime >= nextSendTime) { nextSendTime = nextSend; sendClicks(); }
-        }
-
-        async function sendClicks() {
-            const code = sessionCode.textContent;
-            if (code === "Chargement..." || code === "Aucune session") {
-                statusLabel.textContent = "⚠️ Session non disponible";
-                statusLabel.style.color = "#f59e0b";
-                return;
-            }
-            const toSendValue = clickCount;
-            clickCount = 0;
-
-            try {
-                const response = await fetch(`${API_URL}/poire`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: code, click: toSendValue, id: username }) });
-                const data = await response.json();
-                if (data.status !== "success") {
-                    statusLabel.textContent = `Erreur : ${data.message}`;
-                    statusLabel.style.color = "#ef4444";
-                } else statusLabel.textContent = "";
-            } catch (e) {
-                statusLabel.textContent = "❌ Erreur réseau";
-                statusLabel.style.color = "#ef4444";
-            }
-        }
-
-        async function loadMySession() {
-            try {
-                const response = await fetch(`${API_URL}/session?user=${username}`);
-                const data = await response.json();
-                if (data.status === "success" && data.code) {
-                    sessionCode.textContent = data.code;
-                    sidebarStatus.textContent = "✅ Session chargée";
-                    sidebarStatus.style.color = "#10b981";
-                } else {
-                    sessionCode.textContent = "Aucune session";
-                    sidebarStatus.textContent = "ℹ️ Aucune session trouvée";
-                    sidebarStatus.style.color = "#94a3b8";
-                }
-            } catch (e) {
-                sessionCode.textContent = "Erreur";
-                sidebarStatus.textContent = "❌ Erreur réseau";
-                sidebarStatus.style.color = "#ef4444";
-            }
-        }
-
-        closeBtn.addEventListener('click', async () => {
-            const code = sessionCode.textContent;
-            if (code === "Chargement..." || code === "Aucune session") { sidebarStatus.textContent = "⚠️ Pas de session active"; sidebarStatus.style.color = "#f59e0b"; return; }
-            try {
-                const response = await fetch(`${API_URL}/leave`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: code, id: username }) });
-                const data = await response.json();
-                if (data.status === "success") { sidebarStatus.textContent = "✅ Session quittée"; sidebarStatus.style.color = "#10b981"; sessionCode.textContent = "Aucune session"; resetPlayersList(); loadMySession(); }
-                else { sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`; sidebarStatus.style.color = "#ef4444"; }
-            } catch (e) { sidebarStatus.textContent = "❌ Erreur réseau"; sidebarStatus.style.color = "#ef4444"; }
+    try {
+        const response = await fetch(`${API_URL}/poire`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ session: code, click: toSendValue, id: username }) 
         });
-
-        joinButton.addEventListener('click', async () => {
-            const code = joinInput.value.trim();
-            if (!code) { sidebarStatus.textContent = "⚠️ Veuillez entrer un code"; sidebarStatus.style.color = "#f59e0b"; return; }
-            if (code.startsWith("/cha")) {
-                const newName = code.substring(4).trim();
-                if (!newName) { sidebarStatus.textContent = "⚠️ Veuillez entrer un nouveau nom"; sidebarStatus.style.color = "#f59e0b"; return; }
-                try {
-                    const response = await fetch(`${API_URL}/change_session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: username, new_session_name: newName }) });
-                    const data = await response.json();
-                    if (data.status === "success") { sidebarStatus.textContent = `Session changée en ${newName}`; sidebarStatus.style.color = "#10b981"; sessionCode.textContent = newName; }
-                    else { sidebarStatus.textContent = `Erreur : ${data.message}`; sidebarStatus.style.color = "#ef4444"; }
-                } catch (e) { sidebarStatus.textContent = "❌ Erreur réseau"; sidebarStatus.style.color = "#ef4444"; }
-                return;
-            }
-            try {
-                const response = await fetch(`${API_URL}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: code, id: username }) });
-                const data = await response.json();
-                if (data.status === "success") { sidebarStatus.textContent = "✅ Session rejointe"; sidebarStatus.style.color = "#10b981"; sessionCode.textContent = code; }
-                else { sidebarStatus.textContent = "❌ Code introuvable"; sidebarStatus.style.color = "#ef4444"; }
-            } catch (e) { sidebarStatus.textContent = "❌ Erreur réseau"; sidebarStatus.style.color = "#ef4444"; }
-        });
-
-        function resetPlayersList() { for (let i = 2; i <= 5; i++) { const player = document.getElementById(`player${i}`); player.textContent = "⚪ En attente..."; player.className = "player-item waiting"; } playerCount.textContent = "1/5"; }
-
-        setInterval(async () => {
-            const code = sessionCode.textContent;
-            if (code === "Chargement..." || code === "Aucune session") return;
-            try {
-                const poiresRes = await fetch(`${API_URL}/get_poires?session=${code}`);
-                const poiresData = await poiresRes.json();
-                const newPoire = poiresData.poires || 0;
-                const currentPoire = parseInt(poiresCounter.textContent.replace('')) || 0;
-                if (newPoire !== currentPoire) animateCounter(currentPoire, newPoire);
-
-                const playersRes = await fetch(`${API_URL}/get_player?username=${username}&session_code=${code}`);
-                const playersData = await playersRes.json();
-                if (playersData.player) {
-                    const players = Array.isArray(playersData.player) ? playersData.player : [playersData.player];
-                    for (let i = 0; i < 4; i++) {
-                        const playerEl = document.getElementById(`player${i + 2}`);
-                        if (i < players.length && players[i]) { playerEl.textContent = `👤 ${players[i]}`; playerEl.className = "player-item"; }
-                        else { playerEl.textContent = "⚪ En attente..."; playerEl.className = "player-item waiting"; }
-                    }
-                    playerCount.textContent = `${players.length + 1}/5`;
-                }
-            } catch (e) { console.error('[Erreur mise à jour]', e); }
-        }, 1000);
-
-        function animateCounter(start, end) {
-            const duration = 500; const steps = 20; const stepValue = (end - start) / steps; const stepDuration = duration / steps;
-            let current = start; let step = 0;
-            const interval = setInterval(() => { step++; current += stepValue; if (step >= steps) { poiresCounter.textContent = `👨 ${end}`; clearInterval(interval); } else poiresCounter.textContent = `👨 ${Math.round(current)}`; }, stepDuration);
+        const data = await response.json();
+        if (data.status !== "success") {
+            statusLabel.textContent = `Erreur : ${data.message}`;
+            statusLabel.style.color = "#ef4444";
+        } else {
+            statusLabel.textContent = "";
         }
+    } catch (e) {
+        statusLabel.textContent = "❌ Erreur réseau";
+        statusLabel.style.color = "#ef4444";
+    }
+}
 
-        setInterval(() => {
-            const now = Date.now() / 1000; const sec = now % 5; const remaining = 5 - sec; const countdown = Math.ceil(remaining);
-            timerCounter.textContent = `Rafraîchissement : ${countdown} sec`;
-            const progress = (remaining / 5) * 100; timerBarFill.style.width = `${progress}%`;
-        }, 50);
+// ---------------- SESSION ----------------
+async function loadMySession() {
+    try {
+        const response = await fetch(`${API_URL}/session?user=${username}`);
+        const data = await response.json();
+        if (data.status === "success" && data.code) {
+            sessionCode.textContent = data.code;
+            sidebarStatus.textContent = "✅ Session chargée";
+            sidebarStatus.style.color = "#10b981";
+        } else {
+            sessionCode.textContent = "Aucune session";
+            sidebarStatus.textContent = "ℹ️ Aucune session trouvée";
+            sidebarStatus.style.color = "#94a3b8";
+        }
+    } catch (e) {
+        sessionCode.textContent = "Erreur";
+        sidebarStatus.textContent = "❌ Erreur réseau";
+        sidebarStatus.style.color = "#ef4444";
+    }
+}
 
-        setInterval(async () => { try { await fetch(`${API_URL}/`); console.log('[Ping] Serveur réveillé ✅'); } catch (e) { console.error('[Ping] Erreur :', e); } }, 20000);
+closeBtn.addEventListener('click', async () => {
+    const code = sessionCode.textContent;
+    if (code === "Chargement..." || code === "Aucune session") { 
+        sidebarStatus.textContent = "⚠️ Pas de session active"; 
+        sidebarStatus.style.color = "#f59e0b"; 
+        return; 
+    }
+    try {
+        const response = await fetch(`${API_URL}/leave`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ code: code, id: username }) 
+        });
+        const data = await response.json();
+        if (data.status === "success") { 
+            sidebarStatus.textContent = "✅ Session quittée"; 
+            sidebarStatus.style.color = "#10b981"; 
+            sessionCode.textContent = "Aucune session"; 
+            resetPlayersList(); 
+            loadMySession(); 
+        } else { 
+            sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`; 
+            sidebarStatus.style.color = "#ef4444"; 
+        }
+    } catch (e) { 
+        sidebarStatus.textContent = "❌ Erreur réseau"; 
+        sidebarStatus.style.color = "#ef4444"; 
+    }
+});
+
+joinButton.addEventListener('click', async () => {
+    const code = joinInput.value.trim();
+    if (!code) { 
+        sidebarStatus.textContent = "⚠️ Veuillez entrer un code"; 
+        sidebarStatus.style.color = "#f59e0b"; 
+        return; 
+    }
+    if (code.startsWith("/cha")) {
+        const newName = code.substring(4).trim();
+        if (!newName) { 
+            sidebarStatus.textContent = "⚠️ Veuillez entrer un nouveau nom"; 
+            sidebarStatus.style.color = "#f59e0b"; 
+            return; 
+        }
+        try {
+            const response = await fetch(`${API_URL}/change_session`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ id: username, new_session_name: newName }) 
+            });
+            const data = await response.json();
+            if (data.status === "success") { 
+                sidebarStatus.textContent = `Session changée en ${newName}`; 
+                sidebarStatus.style.color = "#10b981"; 
+                sessionCode.textContent = newName; 
+            } else { 
+                sidebarStatus.textContent = `Erreur : ${data.message}`; 
+                sidebarStatus.style.color = "#ef4444"; 
+            }
+        } catch (e) { 
+            sidebarStatus.textContent = "❌ Erreur réseau"; 
+            sidebarStatus.style.color = "#ef4444"; 
+        }
+        return;
+    }
+    try {
+        const response = await fetch(`${API_URL}/join`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ code: code, id: username }) 
+        });
+        const data = await response.json();
+        if (data.status === "success") { 
+            sidebarStatus.textContent = "✅ Session rejointe"; 
+            sidebarStatus.style.color = "#10b981"; 
+            sessionCode.textContent = code; 
+        } else { 
+            sidebarStatus.textContent = "❌ Code introuvable"; 
+            sidebarStatus.style.color = "#ef4444"; 
+        }
+    } catch (e) { 
+        sidebarStatus.textContent = "❌ Erreur réseau"; 
+        sidebarStatus.style.color = "#ef4444"; 
+    }
+});
+
+function resetPlayersList() { 
+    for (let i = 2; i <= 5; i++) { 
+        const player = document.getElementById(`player${i}`); 
+        player.textContent = "⚪ En attente..."; 
+        player.className = "player-item waiting"; 
+    } 
+    playerCount.textContent = "1/5"; 
+}
+
+// ---------------- MISE À JOUR DES POIRES & JOUEURS ----------------
+setInterval(async () => {
+    const code = sessionCode.textContent;
+    if (code === "Chargement..." || code === "Aucune session") return;
+    try {
+        const poiresRes = await fetch(`${API_URL}/get_poires?session=${code}`);
+        const poiresData = await poiresRes.json();
+        const newPoire = poiresData.poires || 0;
+        const currentPoire = parseInt(poiresCounter.textContent.replace(/[^0-9]/g, '')) || 0;
+        if (newPoire !== currentPoire) animateCounter(currentPoire, newPoire);
+
+        const playersRes = await fetch(`${API_URL}/get_player?username=${username}&session_code=${code}`);
+        const playersData = await playersRes.json();
+        if (playersData.player) {
+            const players = Array.isArray(playersData.player) ? playersData.player : [playersData.player];
+            for (let i = 0; i < 4; i++) {
+                const playerEl = document.getElementById(`player${i + 2}`);
+                if (i < players.length && players[i]) { 
+                    playerEl.textContent = `👤 ${players[i]}`; 
+                    playerEl.className = "player-item"; 
+                } else { 
+                    playerEl.textContent = "⚪ En attente..."; 
+                    playerEl.className = "player-item waiting"; 
+                }
+            }
+            playerCount.textContent = `${players.length + 1}/5`;
+        }
+    } catch (e) { console.error('[Erreur mise à jour]', e); }
+}, 1000);
+
+// ---------------- ANIMATION COMPTEUR ----------------
+function animateCounter(start, end) {
+    const duration = 500; 
+    const steps = 20; 
+    const stepValue = (end - start) / steps; 
+    const stepDuration = duration / steps;
+    let current = start; 
+    let step = 0;
+    const interval = setInterval(() => { 
+        step++; 
+        current += stepValue; 
+        if (step >= steps) { 
+            poiresCounter.textContent = `👨 ${end}`; 
+            clearInterval(interval); 
+        } else poiresCounter.textContent = `👨 ${Math.round(current)}`; 
+    }, stepDuration);
+}
+
+// ---------------- TIMER ET BARRE ----------------
+setInterval(() => {
+    const now = Date.now() / 1000;
+    const sec = now % 5;
+    const remaining = 5 - sec;
+    timerCounter.textContent = `Rafraîchissement : ${Math.ceil(remaining)} sec`;
+    const progress = (remaining / 5) * 100;
+    timerBarFill.style.width = `${progress}%`;
+}, 50);
+
+// ---------------- ENVOI AUTOMATIQUE 1s AVANT LE REFRESH ----------------
+setInterval(() => {
+    const now = Date.now() / 1000;
+    const secondsSinceEpoch = Math.floor(now);
+    const remainder = secondsSinceEpoch % 5;
+    if (remainder === 4) { // 1 sec avant le multiple de 5
+        sendClicks();
+    }
+}, 1000);
+
+// ---------------- PING SERVEUR ----------------
+setInterval(async () => { 
+    try { 
+        await fetch(`${API_URL}/`); 
+        console.log('[Ping] Serveur réveillé ✅'); 
+    } catch (e) { 
+        console.error('[Ping] Erreur :', e); 
+    } 
+}, 20000);
+
     </script>
 </body>
 </html>

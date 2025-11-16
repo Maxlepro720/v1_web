@@ -15,6 +15,9 @@ jobs:
 
       - name: Upload website via FTP
         uses: SamKirkland/FTP-Deploy-Action@4.3.0
+      - name: Debug - list files in site
+        run: ls -R site
+
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}

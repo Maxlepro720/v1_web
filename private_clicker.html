@@ -1,0 +1,770 @@
+.close-btn {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            width: clamp(35px, 5vw, 40px);
+            height: clamp(35px, 5vw, 40px);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: clamp(18px, 3vw, 24px);
+            font-weight: bold;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5);
+        }
+
+        .close-<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clicker Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f1f5f9;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Zone centrale */
+        .main-area {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            min-width: 0;
+        }
+
+        .title {
+            color: #ffffff;
+            font-size: clamp(32px, 6vw, 60px);
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .poires-counter {
+            color: #ffffff;
+            font-size: clamp(20px, 3vw, 32px);
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 25px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .to-send {
+            color: #ffffff;
+            font-size: clamp(14px, 2vw, 20px);
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .click-button {
+            width: min(30vh, 30vw, 220px);
+            height: min(30vh, 30vw, 220px);
+            max-width: 220px;
+            max-height: 220px;
+            aspect-ratio: 1/1;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #ffd966, #ffb84d);
+            border: 6px solid #ff6b35;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.4);
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .click-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85%;
+            height: 85%;
+            background-image: url('https://static.wikia.nocookie.net/simpsons/images/6/63/Homer_Simpson.png');
+            background-size: cover;
+            background-position: center;
+            border-radius: 50%;
+        }
+
+        .click-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 40px rgba(255, 107, 53, 0.6);
+        }
+
+        .click-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 20px rgba(255, 107, 53, 0.3);
+        }
+
+        .timer-counter {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #FFFFFF;
+            font-size: clamp(12px, 1.5vw, 16px);
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 25px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .timer-bar {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(250px, 80%);
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .timer-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #3b82f6);
+            border-radius: 2px;
+            transition: width 0.1s linear;
+        }
+
+        .status-label {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #FFFFFF;
+            font-size: clamp(11px, 1.5vw, 14px);
+            padding: 6px 14px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            max-width: 90%;
+            text-align: center;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: clamp(280px, 30vw, 350px);
+            max-width: 100vw;
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            padding: 20px;
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100vh;
+            transform: translateX(0);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            overflow-y: auto;
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar.hidden {
+            transform: translateX(100%);
+        }
+
+        .toggle-sidebar-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            width: clamp(40px, 6vw, 50px);
+            height: clamp(40px, 6vw, 50px);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: clamp(18px, 3vw, 24px);
+            z-index: 101;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-sidebar-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .close-btn {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: bold;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3);
+        }
+
+        .close-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5);
+        }
+
+        .close-btn:disabled {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .sidebar-title {
+            color: #f8fafc;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            color: #cbd5e1;
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .session-code {
+            color: #60a5fa;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 8px rgba(96, 165, 250, 0.3);
+        }
+
+        .username-label {
+            color: #f8fafc;
+            font-size: 16px;
+        }
+
+        .player-count {
+            color: #f8fafc;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .player-item {
+            color: #10b981;
+            font-size: 15px;
+            margin: 10px 0;
+            padding: 10px 15px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 10px;
+            border-left: 3px solid #10b981;
+            transition: all 0.3s ease;
+        }
+
+        .player-item:hover {
+            background: rgba(16, 185, 129, 0.2);
+            transform: translateX(5px);
+        }
+
+        .player-item.waiting {
+            color: #64748b;
+            background: rgba(100, 116, 139, 0.1);
+            border-left: 3px solid #64748b;
+        }
+
+        .join-input {
+            width: 100%;
+            height: 45px;
+            border-radius: 12px;
+            border: 2px solid #475569;
+            background: rgba(51, 65, 85, 0.6);
+            color: #f8fafc;
+            padding: 0 16px;
+            font-size: 15px;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .join-input:focus {
+            outline: none;
+            border-color: #60a5fa;
+            background: rgba(51, 65, 85, 0.8);
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+        }
+
+        .join-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .join-button {
+            width: 100%;
+            height: 48px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .join-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .join-button:active {
+            transform: translateY(0);
+        }
+
+        .sidebar-status {
+            color: #94a3b8;
+            font-size: 12px;
+            margin-top: 10px;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-area">
+            <div class="title">Clicker</div>
+            <div class="poires-counter" id="poiresCounter">👨 0</div>
+            <div class="to-send" id="toSend">-- 0 --</div>
+            <button class="click-button" id="clickButton"></button>
+            <div class="timer-bar">
+                <div class="timer-bar-fill" id="timerBarFill"></div>
+            </div>
+            <div class="timer-counter" id="timerCounter">Rafraîchissement : lancement</div>
+            <div class="status-label" id="statusLabel"></div>
+        </div>
+
+        <button class="toggle-sidebar-btn" id="toggleSidebar">☰</button>
+
+        <div class="sidebar" id="sidebar">
+            <button class="close-btn" id="closeBtn">×</button>
+            <div class="sidebar-title">Session</div>
+
+            <div class="section-title">Code de session</div>
+            <div class="session-code" id="sessionCode">Chargement...</div>
+
+            <div class="section-title">Utilisateur</div>
+            <div class="username-label" id="usernameLabel">Utilisateur</div>
+
+            <div class="section-title">Joueurs présents</div>
+            <div class="player-count" id="playerCount">1/5</div>
+
+            <div id="playersList">
+                <div class="player-item" id="player1">👤 Vous</div>
+                <div class="player-item waiting" id="player2">⚪ En attente...</div>
+                <div class="player-item waiting" id="player3">⚪ En attente...</div>
+                <div class="player-item waiting" id="player4">⚪ En attente...</div>
+                <div class="player-item waiting" id="player5">⚪ En attente...</div>
+            </div>
+
+            <div class="section-title">Rejoindre une session</div>
+            <input type="text" class="join-input" id="joinInput" placeholder="Entrer un code">
+            <button class="join-button" id="joinButton">Rejoindre</button>
+
+            <div class="sidebar-status" id="sidebarStatus"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://project-3-api-2bgb.onrender.com";
+        let clickCount = 0;
+        let poire = 0;
+        let username = "admin";
+        let lastClickTime = 0;
+        let clickIntervals = [];
+        let nextSendTime = 0;
+        let sidebarVisible = true;
+
+        // Éléments DOM
+        const clickButton = document.getElementById('clickButton');
+        const poiresCounter = document.getElementById('poiresCounter');
+        const toSend = document.getElementById('toSend');
+        const timerCounter = document.getElementById('timerCounter');
+        const statusLabel = document.getElementById('statusLabel');
+        const sessionCode = document.getElementById('sessionCode');
+        const usernameLabel = document.getElementById('usernameLabel');
+        const playerCount = document.getElementById('playerCount');
+        const joinInput = document.getElementById('joinInput');
+        const joinButton = document.getElementById('joinButton');
+        const closeBtn = document.getElementById('closeBtn');
+        const sidebarStatus = document.getElementById('sidebarStatus');
+        const sidebar = document.getElementById('sidebar');
+        const toggleSidebar = document.getElementById('toggleSidebar');
+
+        const timerBarFill = document.getElementById('timerBarFill');
+
+        // Toggle sidebar
+        toggleSidebar.addEventListener('click', () => {
+            sidebarVisible = !sidebarVisible;
+            sidebar.classList.toggle('hidden');
+        });
+
+        // Initialisation
+        usernameLabel.textContent = username;
+        loadMySession();
+
+        // Gestion du clic
+        clickButton.addEventListener('click', onClickerClick);
+
+        function onClickerClick() {
+            statusLabel.textContent = "Synchronisation...";
+            statusLabel.style.color = "#7cfad0";
+
+            const now = Date.now() / 1000;
+            let freq = 0;
+
+            if (lastClickTime !== 0) {
+                const interval = now - lastClickTime;
+                clickIntervals.push(interval);
+                if (clickIntervals.length > 5) {
+                    clickIntervals.shift();
+                }
+
+                const avg = clickIntervals.reduce((a, b) => a + b, 0) / clickIntervals.length;
+                freq = avg > 0 ? 1 / avg : 0;
+            }
+
+            lastClickTime = now;
+
+            if (freq > 20) {
+                statusLabel.textContent = "⚠️ Autoclicker détecté ⚠️";
+                statusLabel.style.color = "#f87171";
+                setTimeout(() => {
+                    statusLabel.textContent = "";
+                }, 1000);
+                return;
+            }
+
+            clickCount++;
+            toSend.textContent = `-- ${clickCount} --`;
+
+            const currentTime = Date.now() / 1000;
+            const seconds = Math.floor(currentTime) % 60;
+            const remainder = seconds % 5;
+            const nextSend = currentTime - remainder + 5;
+
+            if (nextSendTime === 0) {
+                nextSendTime = nextSend;
+            }
+
+            if (currentTime >= nextSendTime) {
+                nextSendTime = nextSend;
+                sendClicks();
+            }
+        }
+
+        async function sendClicks() {
+            const code = sessionCode.textContent;
+            if (code === "Chargement..." || code === "Aucune session") {
+                statusLabel.textContent = "⚠️ Session non disponible";
+                statusLabel.style.color = "#f59e0b";
+                return;
+            }
+
+            const toSendValue = clickCount;
+            clickCount = 0;
+
+            try {
+                const response = await fetch(`${API_URL}/poire`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session: code,
+                        click: toSendValue,
+                        id: username
+                    })
+                });
+
+                const data = await response.json();
+                console.log('[DEBUG poire]', data);
+
+                if (data.status === "success") {
+                    statusLabel.textContent = "";
+                } else {
+                    statusLabel.textContent = `Erreur : ${data.message}`;
+                    statusLabel.style.color = "#ef4444";
+                }
+            } catch (e) {
+                console.error('[DEBUG poire exception]', e);
+                statusLabel.textContent = "❌ Erreur réseau";
+                statusLabel.style.color = "#ef4444";
+            }
+        }
+
+        async function loadMySession() {
+            try {
+                const response = await fetch(`${API_URL}/session?user=${username}`);
+                const data = await response.json();
+
+                if (data.status === "success" && data.code) {
+                    sessionCode.textContent = data.code;
+                    sidebarStatus.textContent = "✅ Session chargée";
+                    sidebarStatus.style.color = "#10b981";
+                } else {
+                    sessionCode.textContent = "Aucune session";
+                    sidebarStatus.textContent = "ℹ️ Aucune session trouvée";
+                    sidebarStatus.style.color = "#94a3b8";
+                }
+            } catch (e) {
+                console.error('[Erreur réseau /session]', e);
+                sessionCode.textContent = "Erreur";
+                sidebarStatus.textContent = "❌ Erreur réseau";
+                sidebarStatus.style.color = "#ef4444";
+            }
+        }
+
+        closeBtn.addEventListener('click', async () => {
+            const code = sessionCode.textContent;
+            if (code === "Chargement..." || code === "Aucune session") {
+                sidebarStatus.textContent = "⚠️ Pas de session active";
+                sidebarStatus.style.color = "#f59e0b";
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/leave`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code, id: username })
+                });
+
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    sidebarStatus.textContent = "✅ Session quittée";
+                    sidebarStatus.style.color = "#10b981";
+                    sessionCode.textContent = "Aucune session";
+                    resetPlayersList();
+                    loadMySession();
+                } else {
+                    sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`;
+                    sidebarStatus.style.color = "#ef4444";
+                }
+            } catch (e) {
+                console.error('[DEBUG leave exception]', e);
+                sidebarStatus.textContent = "❌ Erreur réseau";
+                sidebarStatus.style.color = "#ef4444";
+            }
+        });
+
+        joinButton.addEventListener('click', async () => {
+            const code = joinInput.value.trim();
+
+            if (!code) {
+                sidebarStatus.textContent = "⚠️ Veuillez entrer un code";
+                sidebarStatus.style.color = "#f59e0b";
+                return;
+            }
+
+            if (code.startsWith("/cha")) {
+                const newName = code.substring(4).trim();
+                if (!newName) {
+                    sidebarStatus.textContent = "⚠️ Veuillez entrer un nouveau nom";
+                    sidebarStatus.style.color = "#f59e0b";
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_URL}/change_session`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: username, new_session_name: newName })
+                    });
+
+                    const data = await response.json();
+                    if (data.status === "success") {
+                        sidebarStatus.textContent = `Session changée en ${newName}`;
+                        sidebarStatus.style.color = "#10b981";
+                        sessionCode.textContent = newName;
+                    } else {
+                        sidebarStatus.textContent = `Erreur : ${data.message}`;
+                        sidebarStatus.style.color = "#ef4444";
+                    }
+                } catch (e) {
+                    console.error('[DEBUG change_session]', e);
+                    sidebarStatus.textContent = "❌ Erreur réseau";
+                    sidebarStatus.style.color = "#ef4444";
+                }
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/join`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code, id: username })
+                });
+
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    sidebarStatus.textContent = "✅ Session rejointe";
+                    sidebarStatus.style.color = "#10b981";
+                    sessionCode.textContent = code;
+                } else {
+                    sidebarStatus.textContent = "❌ Code introuvable";
+                    sidebarStatus.style.color = "#ef4444";
+                }
+            } catch (e) {
+                console.error('[DEBUG join exception]', e);
+                sidebarStatus.textContent = "❌ Erreur réseau";
+                sidebarStatus.style.color = "#ef4444";
+            }
+        });
+
+        function resetPlayersList() {
+            for (let i = 2; i <= 5; i++) {
+                const player = document.getElementById(`player${i}`);
+                player.textContent = "⚪ En attente...";
+                player.className = "player-item waiting";
+            }
+            playerCount.textContent = "1/5";
+        }
+
+        // Boucle de mise à jour
+        setInterval(async () => {
+            const code = sessionCode.textContent;
+            if (code === "Chargement..." || code === "Aucune session") return;
+
+            try {
+                // Récupérer les poires
+                const poiresRes = await fetch(`${API_URL}/get_poires?session=${code}`);
+                const poiresData = await poiresRes.json();
+                const newPoire = poiresData.poires || 0;
+                
+                // Animation fluide du compteur
+                const currentPoire = parseInt(poiresCounter.textContent.replace('👨 ', '')) || 0;
+                if (newPoire !== currentPoire) {
+                    animateCounter(currentPoire, newPoire);
+                }
+
+                // Récupérer les joueurs
+                const playersRes = await fetch(`${API_URL}/get_player?username=${username}&session_code=${code}`);
+                const playersData = await playersRes.json();
+                
+                if (playersData.player) {
+                    const players = Array.isArray(playersData.player) ? playersData.player : [playersData.player];
+                    
+                    for (let i = 0; i < 4; i++) {
+                        const playerEl = document.getElementById(`player${i + 2}`);
+                        if (i < players.length && players[i]) {
+                            playerEl.textContent = `👤 ${players[i]}`;
+                            playerEl.className = "player-item";
+                        } else {
+                            playerEl.textContent = "⚪ En attente...";
+                            playerEl.className = "player-item waiting";
+                        }
+                    }
+                    
+                    playerCount.textContent = `${players.length + 1}/5`;
+                }
+            } catch (e) {
+                console.error('[Erreur mise à jour]', e);
+            }
+
+        }, 1000);
+
+        // Animation du compteur
+        function animateCounter(start, end) {
+            const duration = 500;
+            const steps = 20;
+            const stepValue = (end - start) / steps;
+            const stepDuration = duration / steps;
+            
+            let current = start;
+            let step = 0;
+            
+            const interval = setInterval(() => {
+                step++;
+                current += stepValue;
+                
+                if (step >= steps) {
+                    poiresCounter.textContent = `👨 ${end}`;
+                    clearInterval(interval);
+                } else {
+                    poiresCounter.textContent = `👨 ${Math.round(current)}`;
+                }
+            }, stepDuration);
+        }
+
+        // Timer fluide avec barre de progression
+        let lastTimerUpdate = Date.now();
+        setInterval(() => {
+            const now = Date.now() / 1000;
+            const sec = now % 5;
+            const remaining = 5 - sec;
+            const countdown = Math.ceil(remaining);
+            
+            // Mise à jour du texte
+            timerCounter.textContent = `Rafraîchissement : ${countdown} sec`;
+            
+            // Mise à jour de la barre de progression (fluide)
+            const progress = (remaining / 5) * 100;
+            timerBarFill.style.width = `${progress}%`;
+        }, 50); // Mise à jour toutes les 50ms pour une animation fluide
+
+        // Ping serveur
+        setInterval(async () => {
+            try {
+                await fetch(`${API_URL}/`);
+                console.log('[Ping] Serveur réveillé ✅');
+            } catch (e) {
+                console.error('[Ping] Erreur :', e);
+            }
+        }, 20000);
+    </script>
+</body>
+</html>

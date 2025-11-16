@@ -3,7 +3,7 @@ name: Deploy to InfinityFree
 on:
   push:
     branches:
-      - main  # si ta branche s'appelle master, change main en master
+      - main
 
 jobs:
   ftp-deploy:
@@ -13,15 +13,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Upload website via FTP
-        uses: SamKirkland/FTP-Deploy-Action@4.3.0
+      # Étape debug pour voir les fichiers
       - name: Debug - list files in site
         run: ls -R site
 
+      # Étape upload FTP
+      - name: Upload website via FTP
+        uses: SamKirkland/FTP-Deploy-Action@4.3.0
         with:
-          server: ftpupload.net
-          username: if0_40433041
-          port: 21  
-          password: Almax1202
-          server-dir: /htdocs
-          local-dir: site
+          server: ftpupload.net      # serveur FTP
+          port: 21                   # port FTP
+          username: if0_40433041     # ton username FTP
+          password: Almax1202        # ton password FTP
+          server-dir: /htdocs        # dossier cible sur InfinityFree
+          local-dir: site            # dossier local à envoyer
+

@@ -654,8 +654,9 @@ joinButton.addEventListener('click', async () => {
                 const response = await fetch(`${API_URL}/change_session`, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ id: username, newName: newSessionName }) 
+                    body: JSON.stringify({ id: username, new_session_name: newSessionName }) 
                 });
+
                 const data = await response.json();
                 if (data.status === "success") { 
                     sidebarStatus.textContent = `✅ Nom de session changé : ${newSessionName}`; 

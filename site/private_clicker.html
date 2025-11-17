@@ -645,6 +645,7 @@ joinButton.addEventListener('click', async () => {
         if (input.toLowerCase().startsWith("/cha ")) {
             // Extraire le nouveau nom après /cha
             const newSessionName = input.substring(5).trim();
+            console.log("new session changed")
             if (!newSessionName) {
                 sidebarStatus.textContent = "⚠️ Veuillez indiquer un nom après /cha";
                 sidebarStatus.style.color = "#f59e0b";

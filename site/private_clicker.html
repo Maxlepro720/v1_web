@@ -631,15 +631,54 @@ closeBtn.addEventListener('click', async () => {
 });
 
 joinButton.addEventListener('click', async () => {
-    const code = joinInput.value.trim();
-    if (!code) { 
+    let input = joinInput.value.trim();
+    if (!input) { 
         sidebarStatus.textContent = "⚠️ Veuillez entrer un code"; 
         sidebarStatus.style.color = "#f59e0b"; 
         return; 
     }
-    
+
     joinButton.disabled = true;
-    
+
+    // 🔹 Vérification si l'utilisateur tape la commande /cha pour changer le nom de session
+    if (input.startsWith("/cha ")) {
+        const newSessionName = input.slice(5).trim();
+        if (!newSessionName) {
+            sidebarStatus.textContent = "⚠️ Veuillez entrer un nom de session valide après /cha";
+            sidebarStatus.style.color = "#f59e0b";
+            joinButton.disabled = false;
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/change_session`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: username, newSession: newSessionName })
+            });
+            const data = await response.json();
+            if (data.status === "success") {
+                sidebarStatus.textContent = `✅ Session renommée en "${newSessionName}"`;
+                sidebarStatus.style.color = "#10b981";
+                sessionCode.textContent = newSessionName;
+                joinInput.value = '';
+            } else {
+                sidebarStatus.textContent = `❌ ${data.message || 'Erreur lors du changement de session'}`;
+                sidebarStatus.style.color = "#ef4444";
+            }
+        } catch (e) {
+            sidebarStatus.textContent = "❌ Erreur réseau";
+            sidebarStatus.style.color = "#ef4444";
+        } finally {
+            joinButton.disabled = false;
+        }
+
+        return; // on ne continue pas avec le join normal
+    }
+
+    // 🔹 Cas normal : rejoindre une session
+    const code = input;
+
     try {
         const response = await fetch(`${API_URL}/join`, { 
             method: 'POST', 
@@ -663,6 +702,7 @@ joinButton.addEventListener('click', async () => {
         joinButton.disabled = false;
     }
 });
+
 
 function resetPlayersList() { 
     for (let i = 2; i <= 5; i++) { 

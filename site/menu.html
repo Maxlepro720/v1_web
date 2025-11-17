@@ -157,22 +157,22 @@
 /* -------------------------
    📦 LISTE DES JEUX
    ------------------------- */
-/* -------------------------
-   📦 LISTE DES JEUX
-   ------------------------- */
 const games = [
     { id: 1, title: "Multiplayer Clicker", genre: "Clicker", link: "multiplayer_clicker.html", color: "#8b5cf6" },
     { id: 2, title: "Private Clicker", genre: "Clicker", link: "private_clicker.html", color: "#f97316" },
     { id: 3, title: "Coming Soon...", genre: "Not defined", link: "", color: "#06b6d4" },
     { id: 4, title: "Coming Soon...", genre: "Not defined", link: "", color: "#eab308" },
     { id: 5, title: "Coming Soon...", genre: "Not defined", link: "", color: "#14b8a6" },
-    { id: 6, title: "Coming Soon...t", genre: "Not defined", link: "", color: "#ec4899" }
+    { id: 6, title: "Coming Soon...", genre: "Not defined", link: "", color: "#ec4899" }
 ];
 
 /* -------------------------
    🧑‍💻 RÉCUPÉRATION DU USERNAME
    ------------------------- */
 const username = localStorage.getItem("username") || "Invité";
+
+/* Debug */
+console.log("Username menu :", username);
 
 /* -------------------------
    🎮 AFFICHAGE DES CARTES
@@ -186,15 +186,15 @@ function displayGames(filteredGames) {
         const card = document.createElement("div");
         card.className = "card";
 
-        // Ajoute le username dans l'URL du jeu
-        const gameLinkWithUser = game.link ? `${game.link}?username=${encodeURIComponent(username)}` : "#";
+        // On ne passe plus le username dans l'URL
+        const gameLink = game.link ? game.link : "#";
 
         card.innerHTML = `
             <div class="card-image" style="background: ${game.color}">🎮</div>
             <div class="card-info">
                 <h3 class="card-title">${game.title}</h3>
                 <p class="card-genre">${game.genre}</p>
-                <button onclick="location.href='${gameLinkWithUser}'" ${game.link ? "" : "disabled"}>▶ LANCER</button>
+                <button onclick="location.href='${gameLink}'" ${game.link ? "" : "disabled"}>▶ LANCER</button>
             </div>
         `;
         grid.appendChild(card);
@@ -212,8 +212,8 @@ searchBar.addEventListener("input", () => {
     );
     displayGames(filteredGames);
 });
-
 </script>
+
 
 </body>
 </html>

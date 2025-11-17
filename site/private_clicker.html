@@ -114,6 +114,18 @@ if (!username || username.trim() === "") {
     alert("⚠️ Aucun nom d'utilisateur trouvé. Veuillez vous connecter.");
     window.location.href = "menu.html";
 }
+// 🔄 Vérification toutes les 3 secondes du username dans localStorage
+setInterval(() => {
+    let currentUsername = localStorage.getItem("username");
+    console.log(username)
+
+
+    if (!currentUsername || currentUsername.trim() === "") {
+        alert("⚠️ Votre session a expiré. Veuillez vous reconnecter.");
+        window.location.href = "menu.html";
+    }
+}, 3000);
+
 
 const clickButton = document.getElementById('clickButton');
 const poiresCounter = document.getElementById('poiresCounter');

@@ -633,7 +633,7 @@ closeBtn.addEventListener('click', async () => {
 joinButton.addEventListener('click', async () => {
     let input = joinInput.value.trim();
     if (!input) { 
-        sidebarStatus.textContent = "⚠️ Veuillez entrer un code"; 
+        sidebarStatus.textContent = "⚠️ Veuillez entrer un code ou une commande"; 
         sidebarStatus.style.color = "#f59e0b"; 
         return; 
     }
@@ -641,25 +641,30 @@ joinButton.addEventListener('click', async () => {
     joinButton.disabled = true;
 
     try {
-        // Vérifier si la commande est /cha (insensible à la casse)
-        const chaCommand = input.match(/^\/cha\s+(.+)/i);
-        if (chaCommand) {
-            // Extraire le nouveau nom de session
-            const newSessionName = chaCommand[1].trim();
-            const response = await fetch(`${API_URL}/change_session`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ id: username, newName: newSessionName }) 
-            });
-            const data = await response.json();
-            if (data.status === "success") { 
-                sidebarStatus.textContent = `✅ Nom de session changé : ${newSessionName}`; 
-                sidebarStatus.style.color = "#10b981"; 
-                sessionCode.textContent = newSessionName;
-                joinInput.value = '';
-            } else { 
-                sidebarStatus.textContent = `❌ ${data.message || 'Erreur'}`; 
-                sidebarStatus.style.color = "#ef4444"; 
+        // Vérifie si c'est une commande /cha
+        if (input.toLowerCase().startsWith("/cha ")) {
+            // Extraire le nouveau nom après /cha
+            const newSessionName = input.substring(5).trim();
+            if (!newSessionName) {
+                sidebarStatus.textContent = "⚠️ Veuillez indiquer un nom après /cha";
+                sidebarStatus.style.color = "#f59e0b";
+            } else {
+                // Requête pour changer le nom de session
+                const response = await fetch(`${API_URL}/change_session`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ id: username, newName: newSessionName }) 
+                });
+                const data = await response.json();
+                if (data.status === "success") { 
+                    sidebarStatus.textContent = `✅ Nom de session changé : ${newSessionName}`; 
+                    sidebarStatus.style.color = "#10b981"; 
+                    sessionCode.textContent = newSessionName;
+                    joinInput.value = '';
+                } else { 
+                    sidebarStatus.textContent = `❌ ${data.message || 'Erreur'}`; 
+                    sidebarStatus.style.color = "#ef4444"; 
+                }
             }
         } else {
             // Cas normal : rejoindre une session

@@ -631,7 +631,7 @@ closeBtn.addEventListener('click', async () => {
 });
 
 joinButton.addEventListener('click', async () => {
-    const input = joinInput.value.trim();
+    let input = joinInput.value.trim();
     if (!input) { 
         sidebarStatus.textContent = "⚠️ Veuillez entrer un code"; 
         sidebarStatus.style.color = "#f59e0b"; 
@@ -641,9 +641,11 @@ joinButton.addEventListener('click', async () => {
     joinButton.disabled = true;
 
     try {
-        if (input.startsWith("/cha ")) {
-            // Commande pour changer le nom de session
-            const newSessionName = input.slice(5).trim();
+        // Vérifier si la commande est /cha (insensible à la casse)
+        const chaCommand = input.match(/^\/cha\s+(.+)/i);
+        if (chaCommand) {
+            // Extraire le nouveau nom de session
+            const newSessionName = chaCommand[1].trim();
             const response = await fetch(`${API_URL}/change_session`, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 

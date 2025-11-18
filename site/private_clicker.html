@@ -5,117 +5,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Private Clicker Game</title>
     <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #232323; overflow: hidden; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #232323; overflow: hidden; }
 
-    .container { display: flex; width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+    .container { display: flex; width: 100vw; height: 100vh; position: relative; overflow: hidden; }
 
-    .main-area { flex: 1; background: #1b1b1b; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; min-width: 0; }
+    .main-area { flex: 1; background: #1b1b1b; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; min-width: 0; }
 
-    .title { color: #ffffff; font-size: clamp(32px, 6vw, 60px); font-weight: bold; margin-bottom: 15px; text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); }
+    .title { color: #ffffff; font-size: clamp(32px, 6vw, 60px); font-weight: bold; margin-bottom: 15px; text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); }
 
-    .score-counter { color: #ffffff; font-size: clamp(20px, 3vw, 32px); font-weight: bold; margin-bottom: 10px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); background: rgba(255, 255, 255, 0.1); padding: 8px 25px; border-radius: 20px; backdrop-filter: blur(10px); }
+    .score-counter { color: #ffffff; font-size: clamp(20px, 3vw, 32px); font-weight: bold; margin-bottom: 10px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); background: rgba(255, 255, 255, 0.1); padding: 8px 25px; border-radius: 20px; backdrop-filter: blur(10px); }
 
-    .to-send { color: #ffffff; font-size: clamp(14px, 2vw, 20px); margin-bottom: 30px; opacity: 0.9; }
+    .to-send { color: #ffffff; font-size: clamp(14px, 2vw, 20px); margin-bottom: 30px; opacity: 0.9; }
 
-    .click-button { width: min(30vh, 30vw, 220px); height: min(30vh, 30vw, 220px); max-width: 220px; max-height: 220px; aspect-ratio: 1/1; border-radius: 50%; background: linear-gradient(145deg, #ffd966, #ffb84d); border: 6px solid #ff6b35; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 10px 30px rgba(255, 107, 53, 0.4); position: relative; overflow: hidden; flex-shrink: 0; }
+    .click-button { width: min(30vh, 30vw, 220px); height: min(30vh, 30vw, 220px); max-width: 220px; max-height: 220px; aspect-ratio: 1/1; border-radius: 50%; background: linear-gradient(145deg, #ffd966, #ffb84d); border: 6px solid #ff6b35; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 10px 30px rgba(255, 107, 53, 0.4); position: relative; overflow: hidden; flex-shrink: 0; }
 
-    .click-button::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 85%; border-radius: 50%; background-size: cover; background-position: center; }
+    .click-button::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 85%; border-radius: 50%; background-size: cover; background-position: center; }
 
-    .click-button:hover { transform: scale(1.1); box-shadow: 0 15px 40px rgba(255, 107, 53, 0.6); }
+    .click-button:hover { transform: scale(1.1); box-shadow: 0 15px 40px rgba(255, 107, 53, 0.6); }
 
-    .click-button:active { transform: scale(0.95); box-shadow: 0 5px 20px rgba(255, 107, 53, 0.3); }
+    .click-button:active { transform: scale(0.95); box-shadow: 0 5px 20px rgba(255, 107, 53, 0.3); }
 
-    .timer-counter { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: #FFFFFF; font-size: clamp(12px, 1.5vw, 16px); font-weight: bold; background: rgba(0, 0, 0, 0.3); padding: 10px 25px; border-radius: 30px; backdrop-filter: blur(10px); min-width: 200px; max-width: 90%; text-align: center; }
+    .timer-counter { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: #FFFFFF; font-size: clamp(12px, 1.5vw, 16px); font-weight: bold; background: rgba(0, 0, 0, 0.3); padding: 10px 25px; border-radius: 30px; backdrop-filter: blur(10px); min-width: 200px; max-width: 90%; text-align: center; }
 
-    .timer-bar { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); width: min(250px, 80%); height: 4px; background: rgba(255, 255, 255, 0.2); border-radius: 2px; overflow: hidden; }
+    .timer-bar { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); width: min(250px, 80%); height: 4px; background: rgba(255, 255, 255, 0.2); border-radius: 2px; overflow: hidden; }
 
-    .timer-bar-fill { height: 100%; background: linear-gradient(90deg, #10b981, #3b82f6); border-radius: 2px; transition: width 0.1s linear; }
+    .timer-bar-fill { height: 100%; background: linear-gradient(90deg, #10b981, #3b82f6); border-radius: 2px; transition: width 0.1s linear; }
 
-    .status-label { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); color: #FFFFFF; font-size: clamp(11px, 1.5vw, 14px); padding: 6px 14px; border-radius: 8px; background: rgba(0, 0, 0, 0.5); max-width: 90%; text-align: center; }
+    .status-label { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); color: #FFFFFF; font-size: clamp(11px, 1.5vw, 14px); padding: 6px 14px; border-radius: 8px; background: rgba(0, 0, 0, 0.5); max-width: 90%; text-align: center; }
 
-    .sidebar { width: clamp(280px, 30vw, 350px); max-width: 100vw; background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); padding: 20px; position: absolute; right: 0; top: 0; height: 100vh; transform: translateX(0); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; overflow-y: auto; box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3); }
+    .sidebar { width: clamp(280px, 30vw, 350px); max-width: 100vw; background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); padding: 20px; position: absolute; right: 0; top: 0; height: 100vh; transform: translateX(0); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; overflow-y: auto; box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3); }
 
-    .sidebar.hidden { transform: translateX(100%); }
+    .sidebar.hidden { transform: translateX(100%); }
 
-    .toggle-sidebar-btn { position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; width: clamp(40px, 6vw, 50px); height: clamp(40px, 6vw, 50px); border-radius: 50%; cursor: pointer; font-size: clamp(18px, 3vw, 24px); z-index: 101; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); display: flex; align-items: center; justify-content: center; }
+    .toggle-sidebar-btn { position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; width: clamp(40px, 6vw, 50px); height: clamp(40px, 6vw, 50px); border-radius: 50%; cursor: pointer; font-size: clamp(18px, 3vw, 24px); z-index: 101; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); display: flex; align-items: center; justify-content: center; }
 
-    .toggle-sidebar-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); }
+    .toggle-sidebar-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); }
 
-    .close-btn { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; width: clamp(35px, 5vw, 40px); height: clamp(35px, 5vw, 40px); border-radius: 12px; cursor: pointer; font-size: clamp(18px, 3vw, 24px); font-weight: bold; position: absolute; top: 20px; right: 20px; transition: all 0.2s ease; box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; }
+    .close-btn { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; width: clamp(35px, 5vw, 40px); height: clamp(35px, 5vw, 40px); border-radius: 12px; cursor: pointer; font-size: clamp(18px, 3vw, 24px); font-weight: bold; position: absolute; top: 20px; right: 20px; transition: all 0.2s ease; box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; }
 
-    .close-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); }
+    .close-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); }
 
-    .close-btn:disabled { background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); cursor: not-allowed; opacity: 0.6; }
+    .close-btn:disabled { background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); cursor: not-allowed; opacity: 0.6; }
 
-    .sidebar-title { color: #f8fafc; font-size: clamp(20px, 3vw, 28px); font-weight: bold; margin-bottom: 25px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+    .sidebar-title { color: #f8fafc; font-size: clamp(20px, 3vw, 28px); font-weight: bold; margin-bottom: 25px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
 
-    .section-title { color: #cbd5e1; font-size: clamp(11px, 1.5vw, 13px); font-weight: bold; margin-top: 20px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .section-title { color: #cbd5e1; font-size: clamp(11px, 1.5vw, 13px); font-weight: bold; margin-top: 20px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-    .session-code { color: #60a5fa; font-size: clamp(22px, 3.5vw, 32px); font-weight: bold; margin-bottom: 18px; text-shadow: 0 2px 8px rgba(96, 165, 250, 0.3); word-break: break-all; }
+    .session-code { color: #60a5fa; font-size: clamp(22px, 3.5vw, 32px); font-weight: bold; margin-bottom: 18px; text-shadow: 0 2px 8px rgba(96, 165, 250, 0.3); word-break: break-all; }
 
-    .username-label, .player-count { color: #f8fafc; font-size: clamp(14px, 2vw, 16px); margin-bottom: 10px; }
+    .username-label, .player-count { color: #f8fafc; font-size: clamp(14px, 2vw, 16px); margin-bottom: 10px; }
 
-    .player-item { color: #10b981; font-size: clamp(13px, 1.8vw, 15px); margin: 8px 0; padding: 8px 12px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; border-left: 3px solid #10b981; transition: all 0.3s ease; word-break: break-word; }
+    .player-item { color: #10b981; font-size: clamp(13px, 1.8vw, 15px); margin: 8px 0; padding: 8px 12px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; border-left: 3px solid #10b981; transition: all 0.3s ease; word-break: break-word; }
 
-    .player-item:hover { background: rgba(16, 185, 129, 0.2); transform: translateX(5px); }
+    .player-item:hover { background: rgba(16, 185, 129, 0.2); transform: translateX(5px); }
 
-    .player-item.waiting { color: #64748b; background: rgba(100, 116, 139, 0.1); border-left: 3px solid #64748b; }
+    .player-item.waiting { color: #64748b; background: rgba(100, 116, 139, 0.1); border-left: 3px solid #64748b; }
 
-    .join-input { width: 100%; height: clamp(40px, 5vh, 45px); border-radius: 12px; border: 2px solid #475569; background: rgba(51, 65, 85, 0.6); color: #f8fafc; padding: 0 14px; font-size: clamp(13px, 1.8vw, 15px); margin-top: 10px; transition: all 0.3s ease; backdrop-filter: blur(5px); }
+    .join-input { width: 100%; height: clamp(40px, 5vh, 45px); border-radius: 12px; border: 2px solid #475569; background: rgba(51, 65, 85, 0.6); color: #f8fafc; padding: 0 14px; font-size: clamp(13px, 1.8vw, 15px); margin-top: 10px; transition: all 0.3s ease; backdrop-filter: blur(5px); }
 
-    .join-input:focus { outline: none; border-color: #60a5fa; background: rgba(51, 65, 85, 0.8); box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2); }
+    .join-input:focus { outline: none; border-color: #60a5fa; background: rgba(51, 65, 85, 0.8); box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2); }
 
-    .join-input::placeholder { color: #94a3b8; }
+    .join-input::placeholder { color: #94a3b8; }
 
-    .join-button { width: 100%; height: clamp(42px, 5.5vh, 48px); border-radius: 12px; border: none; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; font-size: clamp(13px, 1.8vw, 15px); font-weight: bold; cursor: pointer; margin-top: 12px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
+    .join-button { width: 100%; height: clamp(42px, 5.5vh, 48px); border-radius: 12px; border: none; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; font-size: clamp(13px, 1.8vw, 15px); font-weight: bold; cursor: pointer; margin-top: 12px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
 
-    .join-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
+    .join-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
 
-    .join-button:active { transform: translateY(0); }
-    
-    /* NOUVEAU STYLE POUR LE BOUTON AMÉLIORATIONS (MAINTENANT ROUGE) */
-    .upgrade-button { 
-        width: 100%; 
-        height: clamp(42px, 5.5vh, 48px); 
-        border-radius: 12px; 
-        border: none; 
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); /* Couleurs rouges */
-        color: white; 
-        font-size: clamp(13px, 1.8vw, 15px); 
-        font-weight: bold; 
-        cursor: pointer; 
-        margin-top: 12px; 
-        transition: all 0.3s ease; 
-        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); 
-    }
+    .join-button:active { transform: translateY(0); }
 
-    .upgrade-button:hover { 
-        transform: translateY(-2px); 
-        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5); 
-    }
+    .sidebar-status { color: #94a3b8; font-size: clamp(11px, 1.5vw, 12px); margin-top: 10px; min-height: 20px; word-break: break-word; }
 
-    .upgrade-button:active { 
-        transform: translateY(0); 
-    }
-    /* FIN NOUVEAU STYLE */
+    .back-btn { position: absolute; top: 20px; left: 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; width: clamp(40px, 6vw, 50px); height: clamp(40px, 6vw, 50px); border-radius: 50%; cursor: pointer; font-size: clamp(18px, 3vw, 24px); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); transition: all 0.3s ease; z-index: 102; }
 
-    .sidebar-status { color: #94a3b8; font-size: clamp(11px, 1.5vw, 12px); margin-top: 10px; min-height: 20px; word-break: break-word; }
+    .back-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6); }
 
-    .back-btn { position: absolute; top: 20px; left: 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; width: clamp(40px, 6vw, 50px); height: clamp(40px, 6vw, 50px); border-radius: 50%; cursor: pointer; font-size: clamp(18px, 3vw, 24px); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); transition: all 0.3s ease; z-index: 102; }
+    @media (max-width: 768px) {
+        .sidebar { width: 85vw; }
+        .main-area { padding: 15px; }
+        .click-button { width: min(40vw, 40vh, 200px); height: min(40vw, 40vh, 200px); }
+    }
 
-    .back-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6); }
-
-    @media (max-width: 768px) {
-        .sidebar { width: 85vw; }
-        .main-area { padding: 15px; }
-        .click-button { width: min(40vw, 40vh, 200px); height: min(40vw, 40vh, 200px); }
-    }
-
-    @media (max-width: 480px) {
-        .sidebar { width: 90vw; }
-        .click-button { width: min(50vw, 45vh, 180px); height: min(50vw, 45vh, 180px); }
-    }
+    @media (max-width: 480px) {
+        .sidebar { width: 90vw; }
+        .click-button { width: min(50vw, 45vh, 180px); height: min(50vw, 45vh, 180px); }
+    }
 </style>
 
 </head>
@@ -159,475 +133,452 @@
             </div>
 
             <div class="section-title">Rejoindre une session</div>
-            <input type="text" class="join-input" id="joinInput" placeholder="Entrer un code ou /cha [Nom]">
-                        <button class="join-button" id="joinButton">Rejoindre / Changer Nom</button>
-            
-            <button class="upgrade-button" id="upgradeButton">Améliorations</button>
-            
+            <input type="text" class="join-input" id="joinInput" placeholder="Entrer un code">
+            <button class="join-button" id="joinButton">Rejoindre</button>
+
             <div class="sidebar-status" id="sidebarStatus"></div>
         </div>
     </div>
 
     <script>
-    const API_URL = "https://project-3-api-2bgb.onrender.com";
-    let clickCount = 0;
-    let lastClickTime = 0;
-    let clickIntervals = [];
-    let sidebarVisible = true;
+    const API_URL = "https://project-3-api-2bgb.onrender.com";
+    let clickCount = 0;
+    let lastClickTime = 0;
+    let clickIntervals = [];
+    let sidebarVisible = true;
 
-    let username = localStorage.getItem("username");
+    let username = localStorage.getItem("username");
 
-    console.log("Username récupéré du localStorage:", username);
+    console.log("Username récupéré du localStorage:", username);
 
-    // Vérification de l'existence du nom d'utilisateur (redirection non incluse ici)
-    if (!username || username.trim() === "") {
-        // Demande un nom d'utilisateur s'il n'est pas défini (sécurité)
-        const inputName = prompt("Veuillez entrer votre nom d'utilisateur pour jouer :");
-        if (inputName && inputName.trim() !== "") {
-            username = inputName.trim();
-            localStorage.setItem("username", username);
-        } else {
-            username = "JoueurAnonyme_" + Math.random().toString(36).substring(2, 8);
-            console.warn("⚠️ Nom d'utilisateur non défini. Utilisation d'un nom anonyme par défaut.");
-        }
-    }
+    // Vérification de l'existence du nom d'utilisateur (redirection non incluse ici)
+    if (!username || username.trim() === "") {
+        console.error("⚠️ Aucun nom d'utilisateur trouvé. Le jeu ne fonctionnera pas correctement.");
+    }
 
-    const clickButton = document.getElementById('clickButton');
-    const scoreCounter = document.getElementById('scoreCounter'); 
-    const toSend = document.getElementById('toSend');
-    const timerCounter = document.getElementById('timerCounter');
-    const statusLabel = document.getElementById('statusLabel');
-    const sessionCode = document.getElementById('sessionCode');
-    const usernameLabel = document.getElementById('usernameLabel');
-    const playerCount = document.getElementById('playerCount');
-    const joinInput = document.getElementById('joinInput');
-    const joinButton = document.getElementById('joinButton');
-    const closeBtn = document.getElementById('closeBtn');
-    const sidebarStatus = document.getElementById('sidebarStatus');
-    const sidebar = document.getElementById('sidebar');
-    const toggleSidebar = document.getElementById('toggleSidebar');
-    const timerBarFill = document.getElementById('timerBarFill');
-    const upgradeButton = document.getElementById('upgradeButton'); 
+    const clickButton = document.getElementById('clickButton');
+    const scoreCounter = document.getElementById('scoreCounter'); 
+    const toSend = document.getElementById('toSend');
+    const timerCounter = document.getElementById('timerCounter');
+    const statusLabel = document.getElementById('statusLabel');
+    const sessionCode = document.getElementById('sessionCode');
+    const usernameLabel = document.getElementById('usernameLabel');
+    const playerCount = document.getElementById('playerCount');
+    const joinInput = document.getElementById('joinInput');
+    const joinButton = document.getElementById('joinButton');
+    const closeBtn = document.getElementById('closeBtn');
+    const sidebarStatus = document.getElementById('sidebarStatus');
+    const sidebar = document.getElementById('sidebar');
+    const toggleSidebar = document.getElementById('toggleSidebar');
+    const timerBarFill = document.getElementById('timerBarFill');
 
-    usernameLabel.textContent = username;
+    usernameLabel.textContent = username;
 
-    toggleSidebar.addEventListener('click', () => { 
-        sidebarVisible = !sidebarVisible; 
-        sidebar.classList.toggle('hidden'); 
-    });
+    toggleSidebar.addEventListener('click', () => { 
+        sidebarVisible = !sidebarVisible; 
+        sidebar.classList.toggle('hidden'); 
+    });
 
-    clickButton.addEventListener('click', onClickerClick);
-    
-    // GESTIONNAIRE D'ÉVÉNEMENT POUR LE NOUVEAU BOUTON (fonctionnalité OK)
-    upgradeButton.addEventListener('click', openUpgradeWindow);
-    // FIN GESTIONNAIRE D'ÉVÉNEMENT
+    clickButton.addEventListener('click', onClickerClick);
 
-    window.addEventListener('beforeunload', async (e) => {
-        await leaveSessionSilently();
-    });
+    window.addEventListener('beforeunload', async (e) => {
+        await leaveSessionSilently();
+    });
 
-    async function handleBackButton() {
-        await leaveSessionSilently();
-        // window.location.href = "menu.html"; // Décommenter si vous avez une page de menu
-    }
+    async function handleBackButton() {
+        await leaveSessionSilently();
+        // window.location.href = "menu.html"; 
+    }
 
-    // NOUVELLE FONCTION POUR OUVRIR LA FENÊTRE D'AMÉLIORATION (fonctionnalité OK)
-    function openUpgradeWindow() {
-        // Ouvre la page 'upgrade.html' dans une nouvelle fenêtre/onglet
-        window.open("upgrade.html", "_blank", "width=500,height=700,scrollbars=yes");
-    }
-    // FIN NOUVELLE FONCTION
+    async function leaveSessionSilently() {
+        const code = sessionCode.textContent;
+        if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
+            return;
+        }
+        
+        try {
+            const data = JSON.stringify({ code: code, id: username });
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(`${API_URL}/leave`, data);
+            } else {
+                await fetch(`${API_URL}/leave`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: data,
+                    keepalive: true
+                });
+            }
+        } catch (e) {
+            console.error("Erreur lors de la déconnexion:", e);
+        }
+    }
 
-    async function leaveSessionSilently() {
-        const code = sessionCode.textContent;
-        if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
-            return;
-        }
-        
-        try {
-            const data = JSON.stringify({ code: code, id: username });
-            if (navigator.sendBeacon) {
-                // Utilisation de sendBeacon pour garantir l'envoi lors de la fermeture de l'onglet
-                navigator.sendBeacon(`${API_URL}/leave`, data);
-            } else {
-                await fetch(`${API_URL}/leave`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: data,
-                    keepalive: true // Maintient la requête même si l'onglet se ferme
-                });
-            }
-        } catch (e) {
-            console.error("Erreur lors de la déconnexion:", e);
-        }
-    }
+    function onClickerClick() {
+        const now = Date.now() / 1000;
+        let freq = 0;
+        if (lastClickTime !== 0) {
+            const interval = now - lastClickTime;
+            clickIntervals.push(interval);
+            if (clickIntervals.length > 5) clickIntervals.shift();
+            const avg = clickIntervals.reduce((a, b) => a + b, 0) / clickIntervals.length;
+            freq = avg > 0 ? 1 / avg : 0;
+        }
+        lastClickTime = now;
 
-    function onClickerClick() {
-        const now = Date.now() / 1000;
-        let freq = 0;
-        if (lastClickTime !== 0) {
-            const interval = now - lastClickTime;
-            clickIntervals.push(interval);
-            if (clickIntervals.length > 5) clickIntervals.shift();
-            const avg = clickIntervals.reduce((a, b) => a + b, 0) / clickIntervals.length;
-            freq = avg > 0 ? 1 / avg : 0;
-        }
-        lastClickTime = now;
+        if (freq > 20) {
+            statusLabel.textContent = "⚠️ Autoclicker détecté ⚠️";
+            statusLabel.style.color = "#f87171";
+            setTimeout(() => { statusLabel.textContent = ""; }, 1000);
+            return;
+        }
 
-        if (freq > 20) {
-            statusLabel.textContent = "⚠️ Autoclicker détecté ⚠️";
-            statusLabel.style.color = "#f87171";
-            setTimeout(() => { statusLabel.textContent = ""; }, 1000);
-            return;
-        }
+        clickCount++;
+        toSend.textContent = `-- ${clickCount} --`;
+    }
 
-        clickCount++;
-        toSend.textContent = `-- ${clickCount} --`;
-    }
+    async function sendClicks() {
+        const code = sessionCode.textContent;
+        if (code === "Chargement..." || code === "Aucune session") {
+            return;
+        }
+        
+        const toSendValue = clickCount;
+        clickCount = 0;
+        toSend.textContent = "-- 0 --";
+        
+        if (toSendValue === 0) return;
 
-    async function sendClicks() {
-        const code = sessionCode.textContent;
-        if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
-            return;
-        }
-        
-        const toSendValue = clickCount;
-        clickCount = 0;
-        toSend.textContent = "-- 0 --";
-        
-        if (toSendValue === 0) return;
+        try {
+            statusLabel.textContent = `Envoi de ${toSendValue} points...`; 
+            statusLabel.style.color = "#3b82f6";
 
-        try {
-            statusLabel.textContent = `Envoi de ${toSendValue} points...`; 
-            statusLabel.style.color = "#3b82f6";
+            const response = await fetch(`${API_URL}/poire`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ session: code, click: toSendValue, id: username }) 
+            });
+            const data = await response.json();
+            if (data.status !== "success") {
+                statusLabel.textContent = `Erreur envoi: ${data.message}`;
+                statusLabel.style.color = "#ef4444";
+            } else {
+                statusLabel.textContent = "Score envoyé !"; 
+                statusLabel.style.color = "#10b981";
+            }
+        } catch (e) {
+            statusLabel.textContent = "❌ Erreur réseau envoi";
+            statusLabel.style.color = "#ef4444";
+        }
+    }
+    
+    // FONCTION EXPLICITE DE CRÉATION DE SESSION
+    async function createSession() {
+        sessionCode.textContent = "Création...";
+        sidebarStatus.textContent = "⏳ Création d'une nouvelle session...";
+        sidebarStatus.style.color = "#f59e0b";
 
-            const response = await fetch(`${API_URL}/poire`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ session: code, click: toSendValue, id: username }) 
-            });
-            const data = await response.json();
-            if (data.status !== "success") {
-                statusLabel.textContent = `Erreur envoi: ${data.message}`;
-                statusLabel.style.color = "#ef4444";
-            } else {
-                statusLabel.textContent = "Score envoyé !"; 
-                statusLabel.style.color = "#10b981";
-            }
-        } catch (e) {
-            statusLabel.textContent = "❌ Erreur réseau envoi";
-            statusLabel.style.color = "#ef4444";
-        }
-    }
-    
-    // FONCTION EXPLICITE DE CRÉATION DE SESSION (utilisée uniquement par loadMySession)
-    async function createSession() {
-        sessionCode.textContent = "Création...";
-        sidebarStatus.textContent = "⏳ Création d'une nouvelle session...";
-        sidebarStatus.style.color = "#f59e0b";
+        try {
+            const response = await fetch(`${API_URL}/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: username })
+            });
+            const data = await response.json();
 
-        try {
-            const response = await fetch(`${API_URL}/create`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: username })
-            });
-            const data = await response.json();
+            if (data.status === "success" && data.session_name) {
+                sessionCode.textContent = data.session_name;
+                sidebarStatus.textContent = "🎉 Session créée ! Code : " + data.session_name;
+                sidebarStatus.style.color = "#10b981";
+            } else {
+                sessionCode.textContent = "Erreur";
+                sidebarStatus.textContent = "❌ Erreur lors de la création de session : " + (data.message || "Inconnue");
+                sidebarStatus.style.color = "#ef4444";
+            }
+        } catch (e) {
+            sessionCode.textContent = "Erreur";
+            sidebarStatus.textContent = "❌ Erreur réseau lors de la création";
+            sidebarStatus.style.color = "#ef4444";
+        }
+    }
 
-            if (data.status === "success" && data.session_name) {
-                sessionCode.textContent = data.session_name;
-                sidebarStatus.textContent = "🎉 Session créée ! Code : " + data.session_name;
-                sidebarStatus.style.color = "#10b981";
-            } else {
-                sessionCode.textContent = "Erreur";
-                sidebarStatus.textContent = "❌ Erreur lors de la création de session : " + (data.message || "Inconnue");
-                sidebarStatus.style.color = "#ef4444";
-            }
-        } catch (e) {
-            sessionCode.textContent = "Erreur";
-            sidebarStatus.textContent = "❌ Erreur réseau lors de la création";
-            sidebarStatus.style.color = "#ef4444";
-        }
-    }
+    // GÈRE LE CHARGEMENT OU LA CRÉATION AUTOMATIQUE
+    async function loadMySession() {
+        try {
+            const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
+            const data = await response.json();
+            
+            if (data.status === "success" && data.code) {
+                sessionCode.textContent = data.code;
+                sidebarStatus.textContent = "✅ Session chargée";
+                sidebarStatus.style.color = "#10b981";
+            } else if (data.status === "error" && (data.message.includes("not in any session") || data.message.includes("not found"))) {
+                // Création automatique si l'utilisateur n'est dans aucune session.
+                console.log("Utilisateur non trouvé dans une session. Création automatique...");
+                await createSession(); 
+            } else {
+                sessionCode.textContent = "Aucune session";
+                sidebarStatus.textContent = "ℹ️ Aucune session trouvée";
+                sidebarStatus.style.color = "#94a3b8";
+            }
+        } catch (e) {
+            sessionCode.textContent = "Erreur";
+            sidebarStatus.textContent = "❌ Erreur réseau";
+            sidebarStatus.style.color = "#ef4444";
+        }
+    }
 
-    // GÈRE LE CHARGEMENT OU LA CRÉATION AUTOMATIQUE (Logique principale de création)
-    async function loadMySession() {
-        try {
-            const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
-            const data = await response.json();
-            
-            if (data.status === "success" && data.code) {
-                sessionCode.textContent = data.code;
-                sidebarStatus.textContent = "✅ Session chargée";
-                sidebarStatus.style.color = "#10b981";
-            } else if (data.status === "error" && (data.message.includes("not in any session") || data.message.includes("not found"))) {
-                // Création automatique si l'utilisateur n'est dans aucune session.
-                console.log("Utilisateur non trouvé dans une session. Création automatique...");
-                await createSession(); 
-            } else {
-                sessionCode.textContent = "Aucune session";
-                sidebarStatus.textContent = "ℹ️ Aucune session trouvée";
-                sidebarStatus.style.color = "#94a3b8";
-            }
-        } catch (e) {
-            sessionCode.textContent = "Erreur";
-            sidebarStatus.textContent = "❌ Erreur réseau";
-            sidebarStatus.style.color = "#ef4444";
-        }
-    }
+    async function fetchGameData() {
+        const code = sessionCode.textContent;
+        if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
+            return;
+        }
 
-    async function fetchGameData() {
-        const code = sessionCode.textContent;
-        if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
-            return;
-        }
+        try {
+            // Récupération du score
+            const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(code)}`);
+            const scoreData = await scoreResponse.json();
 
-        try {
-            // Récupération du score
-            const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(code)}`);
-            const scoreData = await scoreResponse.json();
+            if (scoreData.status === "success") {
+                scoreCounter.textContent = scoreData.poires || 0; 
+            }
 
-            if (scoreData.status === "success") {
-                scoreCounter.textContent = scoreData.poires || 0; 
-            }
+            // Récupération des joueurs
+            const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
+            const playersData = await playersResponse.json();
+            
+            if (playersData.status === "success") {
+                updatePlayersList(playersData.players, playersData.creator);
+            }
 
-            // Récupération des joueurs
-            const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
-            const playersData = await playersResponse.json();
-            
-            if (playersData.status === "success") {
-                updatePlayersList(playersData.players, playersData.creator);
-            }
+        } catch (e) {
+            console.error("Erreur lors du rafraîchissement des données:", e);
+        }
+    }
 
-        } catch (e) {
-            console.error("Erreur lors du rafraîchissement des données:", e);
-        }
-    }
+    function updatePlayersList(players, creator) {
+        const playerSlots = [document.getElementById('player1'), document.getElementById('player2'), document.getElementById('player3'), document.getElementById('player4'), document.getElementById('player5')];
 
-    function updatePlayersList(players, creator) {
-        const playerSlots = [document.getElementById('player1'), document.getElementById('player2'), document.getElementById('player3'), document.getElementById('player4'), document.getElementById('player5')];
+        let activePlayers = [];
+        if (creator) {
+            activePlayers.push(creator);
+        }
+        players.forEach(p => {
+            if (p !== creator) {
+                activePlayers.push(p);
+            }
+        });
 
-        let activePlayers = [];
-        if (creator) {
-            activePlayers.push(creator);
-        }
-        players.forEach(p => {
-            if (p !== creator) {
-                activePlayers.push(p);
-            }
-        });
+        const uniqueActivePlayers = [...new Set(activePlayers)];
 
-        const uniqueActivePlayers = [...new Set(activePlayers)];
+        playerCount.textContent = `${uniqueActivePlayers.length}/5`;
 
-        playerCount.textContent = `${uniqueActivePlayers.length}/5`;
-
-        playerSlots.forEach((slot, index) => {
-            const player = uniqueActivePlayers[index];
-            if (player) {
-                let displayString = "";
-                
-                if (player === username) {
-                    if (player === creator) {
-                        displayString = `👑 👤 Vous`;
-                    } else {
-                        displayString = `👤 Vous`;
-                    }
-                } else {
-                    if (player === creator) {
-                        displayString = `👑 ${player}`;
-                    } else {
-                        displayString = `• ${player}`;
-                    }
-                }
-                
-                slot.textContent = displayString;
-                slot.classList.remove('waiting');
-                slot.style.color = player === username ? '#ffd966' : '#10b981';
-                slot.style.borderLeft = player === username ? '3px solid #ffb84d' : '3px solid #10b981';
+        playerSlots.forEach((slot, index) => {
+            const player = uniqueActivePlayers[index];
+            if (player) {
+                let displayString = "";
+                
+                if (player === username) {
+                    if (player === creator) {
+                        displayString = `👑 👤 Vous`;
+                    } else {
+                        displayString = `👤 Vous`;
+                    }
+                } else {
+                    if (player === creator) {
+                        displayString = `👑 ${player}`;
+                    } else {
+                        displayString = `• ${player}`;
+                    }
+                }
+                
+                slot.textContent = displayString;
+                slot.classList.remove('waiting');
+                slot.style.color = player === username ? '#ffd966' : '#10b981';
+                slot.style.borderLeft = player === username ? '3px solid #ffb84d' : '3px solid #10b981';
 
 
-            } else {
-                slot.textContent = "⚪ En attente...";
-                slot.classList.add('waiting');
-                slot.style.color = '#64748b';
-                slot.style.borderLeft = '3px solid #64748b';
-            }
-        });
-    }
+            } else {
+                slot.textContent = "⚪ En attente...";
+                slot.classList.add('waiting');
+                slot.style.color = '#64748b';
+                slot.style.borderLeft = '3px solid #64748b';
+            }
+        });
+    }
 
 
-    function resetPlayersList() {
-        const playerSlots = [document.getElementById('player1'), document.getElementById('player2'), document.getElementById('player3'), document.getElementById('player4'), document.getElementById('player5')];
-        playerCount.textContent = `0/5`;
-        playerSlots.forEach((slot, index) => {
-            if (index === 0) {
-                slot.textContent = "👤 Vous (Déconnecté)";
-                slot.classList.remove('waiting');
-                slot.style.color = '#ffd966'; 
-                slot.style.borderLeft = '3px solid #ffb84d';
-            } else {
-                slot.textContent = "⚪ En attente...";
-                slot.classList.add('waiting');
-                slot.style.color = '#64748b';
-                slot.style.borderLeft = '3px solid #64748b';
-            }
-        });
-    }
+    function resetPlayersList() {
+        const playerSlots = [document.getElementById('player1'), document.getElementById('player2'), document.getElementById('player3'), document.getElementById('player4'), document.getElementById('player5')];
+        playerCount.textContent = `0/5`;
+        playerSlots.forEach((slot, index) => {
+            if (index === 0) {
+                slot.textContent = "👤 Vous (Déconnecté)";
+                slot.classList.remove('waiting');
+                slot.style.color = '#ffd966'; 
+                slot.style.borderLeft = '3px solid #ffb84d';
+            } else {
+                slot.textContent = "⚪ En attente...";
+                slot.classList.add('waiting');
+                slot.style.color = '#64748b';
+                slot.style.borderLeft = '3px solid #64748b';
+            }
+        });
+    }
 
-    closeBtn.addEventListener('click', async () => {
-        const code = sessionCode.textContent;
-        if (code === "Chargement..." || code === "Aucune session") { 
-            sidebarStatus.textContent = "⚠️ Pas de session active"; 
-            sidebarStatus.style.color = "#f59e0b"; 
-            return; 
-        }
-        
-        closeBtn.disabled = true;
-        
-        try {
-            const response = await fetch(`${API_URL}/leave`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ code: code, id: username }) 
-            });
-            const data = await response.json();
-            if (data.status === "success") { 
-                sidebarStatus.textContent = "✅ Session quittée"; 
-                sidebarStatus.style.color = "#10b981"; 
-                sessionCode.textContent = "Aucune session"; 
-                resetPlayersList(); 
-            } else { 
-                sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`; 
-                sidebarStatus.style.color = "#ef4444"; 
-            }
-        } catch (e) { 
-            sidebarStatus.textContent = "❌ Erreur réseau"; 
-            sidebarStatus.style.color = "#ef4444"; 
-        } finally {
-            closeBtn.disabled = false;
-        }
-    });
+    closeBtn.addEventListener('click', async () => {
+        const code = sessionCode.textContent;
+        if (code === "Chargement..." || code === "Aucune session") { 
+            sidebarStatus.textContent = "⚠️ Pas de session active"; 
+            sidebarStatus.style.color = "#f59e0b"; 
+            return; 
+        }
+        
+        closeBtn.disabled = true;
+        
+        try {
+            const response = await fetch(`${API_URL}/leave`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ code: code, id: username }) 
+            });
+            const data = await response.json();
+            if (data.status === "success") { 
+                sidebarStatus.textContent = "✅ Session quittée"; 
+                sidebarStatus.style.color = "#10b981"; 
+                sessionCode.textContent = "Aucune session"; 
+                resetPlayersList(); 
+            } else { 
+                sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`; 
+                sidebarStatus.style.color = "#ef4444"; 
+            }
+        } catch (e) { 
+            sidebarStatus.textContent = "❌ Erreur réseau"; 
+            sidebarStatus.style.color = "#ef4444"; 
+        } finally {
+            closeBtn.disabled = false;
+        }
+    });
 
-    // LOGIQUE MODIFIÉE DU BOUTON REJOINDRE/CHANGER NOM
-    joinButton.addEventListener('click', async () => {
-        let input = joinInput.value.trim();
-        
-        joinButton.disabled = true;
+    // LOGIQUE MODIFIÉE DU BOUTON REJOINDRE/CRÉER
+    joinButton.addEventListener('click', async () => {
+        let input = joinInput.value.trim();
+        
+        joinButton.disabled = true;
 
-        try {
-            if (input.toLowerCase().startsWith("/cha ")) {
-                // Logique pour changer le nom de session
-                const newSessionName = input.substring(5).trim();
-                if (!newSessionName) {
-                    sidebarStatus.textContent = "⚠️ Nom de session manquant";
-                    sidebarStatus.style.color = "#f59e0b";
-                    return; // Sortie précoce
-                }
-                
-                sidebarStatus.textContent = `Changement du nom en '${newSessionName}'...`;
-                const response = await fetch(`${API_URL}/change_session`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: username, new_session_name: newSessionName })
-                });
-                const data = await response.json();
-                if (data.status === "success") {
-                    sidebarStatus.textContent = `✅ ${data.message}`;
-                    sidebarStatus.style.color = "#10b981";
-                    sessionCode.textContent = newSessionName;
-                } else {
-                    sidebarStatus.textContent = `❌ Erreur changement : ${data.message}`;
-                    sidebarStatus.style.color = "#ef4444";
-                }
-                joinInput.value = "";
-            } else if (!input) {
-                // Si l'entrée est vide (il n'y a plus de création ici)
-                sidebarStatus.textContent = "⚠️ Veuillez entrer un code de session pour rejoindre.";
-                sidebarStatus.style.color = "#f59e0b";
-            } else {
-                // Si l'entrée n'est pas vide (l'utilisateur veut rejoindre)
-                sidebarStatus.textContent = `Tentative de rejoindre la session '${input}'...`;
-                const response = await fetch(`${API_URL}/join`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: input, id: username })
-                });
-                const data = await response.json();
-                
-                if (data.status === "success") {
-                    sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
-                    sidebarStatus.style.color = "#10b981";
-                    sessionCode.textContent = input;
-                } else {
-                    sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
-                    sidebarStatus.style.color = "#ef4444";
-                }
-                joinInput.value = "";
-            }
-        } catch (e) {
-            sidebarStatus.textContent = "❌ Erreur réseau / Commande non valide";
-            sidebarStatus.style.color = "#ef4444";
-        } finally {
-            joinButton.disabled = false;
-        }
-    });
+        try {
+            if (input.toLowerCase().startsWith("/cha ")) {
+                // Logique pour changer le nom de session
+                const newSessionName = input.substring(5).trim();
+                if (!newSessionName) {
+                    sidebarStatus.textContent = "⚠️ Nom de session manquant";
+                    sidebarStatus.style.color = "#f59e0b";
+                    joinButton.disabled = false;
+                    return;
+                }
+                
+                sidebarStatus.textContent = `Changement du nom en '${newSessionName}'...`;
+                const response = await fetch(`${API_URL}/change_session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: username, new_session_name: newSessionName })
+                });
+                const data = await response.json();
+                if (data.status === "success") {
+                    sidebarStatus.textContent = `✅ ${data.message}`;
+                    sidebarStatus.style.color = "#10b981";
+                    sessionCode.textContent = newSessionName;
+                } else {
+                    sidebarStatus.textContent = `❌ Erreur changement : ${data.message}`;
+                    sidebarStatus.style.color = "#ef4444";
+                }
+                joinInput.value = "";
+            } else if (!input) {
+                // Si l'entrée est vide (l'utilisateur veut créer une session)
+                await createSession(); 
+            } else {
+                // Si l'entrée n'est pas vide (l'utilisateur veut rejoindre)
+                sidebarStatus.textContent = `Tentative de rejoindre la session '${input}'...`;
+                const response = await fetch(`${API_URL}/join`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: input, id: username })
+                });
+                const data = await response.json();
+                
+                if (data.status === "success") {
+                    sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
+                    sidebarStatus.style.color = "#10b981";
+                    sessionCode.textContent = input;
+                } else {
+                    sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
+                    sidebarStatus.style.color = "#ef4444";
+                }
+                joinInput.value = "";
+            }
+        } catch (e) {
+            sidebarStatus.textContent = "❌ Erreur réseau / Commande non valide";
+            sidebarStatus.style.color = "#ef4444";
+        } finally {
+            joinButton.disabled = false;
+        }
+    });
 
-    // --- LOGIQUE DE SYNCHRONISATION UTC ---
+    // --- LOGIQUE DE SYNCHRONISATION UTC ---
 
-    const REFRESH_PERIOD_SECONDS = 5;
-    let timerInterval;
+    const REFRESH_PERIOD_SECONDS = 5;
+    let timerInterval;
 
-    function getWaitTime() {
-        const now = new Date();
-        const utcSeconds = now.getUTCSeconds(); 
-        
-        const elapsed = utcSeconds % REFRESH_PERIOD_SECONDS;
-        const waitTimeSeconds = REFRESH_PERIOD_SECONDS - elapsed;
-        
-        return waitTimeSeconds * 1000;
-    }
+    function getWaitTime() {
+        const now = new Date();
+        const utcSeconds = now.getUTCSeconds(); 
+        
+        const elapsed = utcSeconds % REFRESH_PERIOD_SECONDS;
+        const waitTimeSeconds = REFRESH_PERIOD_SECONDS - elapsed;
+        
+        return waitTimeSeconds * 1000;
+    }
 
-    function updateDisplay(timeLeft) {
-        timerBarFill.style.width = `${((REFRESH_PERIOD_SECONDS - timeLeft) / REFRESH_PERIOD_SECONDS) * 100}%`;
-        timerCounter.textContent = `Rafraîchissement dans ${timeLeft}s`;
-    }
+    function updateDisplay(timeLeft) {
+        timerBarFill.style.width = `${((REFRESH_PERIOD_SECONDS - timeLeft) / REFRESH_PERIOD_SECONDS) * 100}%`;
+        timerCounter.textContent = `Rafraîchissement dans ${timeLeft}s`;
+    }
 
-    async function gameCycle() {
-        await sendClicks();
-        await fetchGameData();
-        startInterval();
-    }
+    async function gameCycle() {
+        await sendClicks();
+        await fetchGameData();
+        startInterval();
+    }
 
-    function startInterval() {
-        clearInterval(timerInterval);
+    function startInterval() {
+        clearInterval(timerInterval);
 
-        let timeLeft = REFRESH_PERIOD_SECONDS; 
+        let timeLeft = REFRESH_PERIOD_SECONDS; 
 
-        timerInterval = setInterval(() => {
-            timeLeft--;
-            updateDisplay(timeLeft);
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateDisplay(timeLeft);
 
-            if (timeLeft === 1) {
-                clearInterval(timerInterval);
-                gameCycle(); 
-            }
+            if (timeLeft === 1) {
+                clearInterval(timerInterval);
+                gameCycle(); 
+            }
 
-        }, 1000); 
-    }
+        }, 1000); 
+    }
 
-    // Lancement et synchronisation
-    loadMySession().then(() => {
-        fetchGameData(); 
+    // Lancement et synchronisation
+    loadMySession().then(() => {
+        fetchGameData(); 
 
-        const waitTime = getWaitTime();
-        
-        updateDisplay(Math.ceil(waitTime / 1000));
-        timerCounter.textContent = `Synchronisation dans ${Math.ceil(waitTime / 1000)}s`;
+        const waitTime = getWaitTime();
+        
+        updateDisplay(Math.ceil(waitTime / 1000));
+        timerCounter.textContent = `Synchronisation dans ${Math.ceil(waitTime / 1000)}s`;
 
-        setTimeout(() => {
-            gameCycle(); 
-        }, waitTime);
-    });
+        setTimeout(() => {
+            gameCycle(); 
+        }, waitTime);
+    });
 </script>
 </body>
 </html>

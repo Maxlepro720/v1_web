@@ -1,884 +1,488 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Private Clicker Game</title>
-    <style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Clicker Game</title>
+    <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #232323; overflow: hidden; }
 
-    .container {
-        display: flex;
-        width: 100vw;
-        height: 100vh;
-        position: relative;
-        overflow: hidden;
-    }
+    .container { display: flex; width: 100vw; height: 100vh; position: relative; overflow: hidden; }
 
-    .main-area {
-        flex: 1;
-        background: #1b1b1b;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        position: relative;
-        min-width: 0;
-    }
+    .main-area { flex: 1; background: #1b1b1b; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; min-width: 0; }
 
-    .title {
-        color: #ffffff;
-        font-size: clamp(32px, 6vw, 60px);
-        font-weight: bold;
-        margin-bottom: 15px;
-        text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    }
+    .title { color: #ffffff; font-size: clamp(32px, 6vw, 60px); font-weight: bold; margin-bottom: 15px; text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); }
 
-    .poires-counter {
-        color: #ffffff;
-        font-size: clamp(20px, 3vw, 32px);
-        font-weight: bold;
-        margin-bottom: 10px;
-        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        background: rgba(255, 255, 255, 0.1);
-        padding: 8px 25px;
-        border-radius: 20px;
-        backdrop-filter: blur(10px);
-    }
+    .score-counter { color: #ffffff; font-size: clamp(20px, 3vw, 32px); font-weight: bold; margin-bottom: 10px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); background: rgba(255, 255, 255, 0.1); padding: 8px 25px; border-radius: 20px; backdrop-filter: blur(10px); }
 
-    .to-send {
-        color: #ffffff;
-        font-size: clamp(14px, 2vw, 20px);
-        margin-bottom: 30px;
-        opacity: 0.9;
-    }
+    .to-send { color: #ffffff; font-size: clamp(14px, 2vw, 20px); margin-bottom: 30px; opacity: 0.9; }
 
-    .click-button {
-        width: min(30vh, 30vw, 220px);
-        height: min(30vh, 30vw, 220px);
-        max-width: 220px;
-        max-height: 220px;
-        aspect-ratio: 1/1;
-        border-radius: 50%;
-        background: linear-gradient(145deg, #ffd966, #ffb84d);
-        border: 6px solid #ff6b35;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 10px 30px rgba(255, 107, 53, 0.4);
-        position: relative;
-        overflow: hidden;
-        flex-shrink: 0;
-    }
+    .click-button { width: min(30vh, 30vw, 220px); height: min(30vh, 30vw, 220px); max-width: 220px; max-height: 220px; aspect-ratio: 1/1; border-radius: 50%; background: linear-gradient(145deg, #ffd966, #ffb84d); border: 6px solid #ff6b35; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 10px 30px rgba(255, 107, 53, 0.4); position: relative; overflow: hidden; flex-shrink: 0; }
 
-    /* avant il y avait une image ici → supprimée */
-    .click-button::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 85%;
-        height: 85%;
-        border-radius: 50%;
-        background-size: cover;
-        background-position: center;
-    }
+    .click-button::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 85%; border-radius: 50%; background-size: cover; background-position: center; }
 
-    .click-button:hover {
-        transform: scale(1.1);
-        box-shadow: 0 15px 40px rgba(255, 107, 53, 0.6);
-    }
+    .click-button:hover { transform: scale(1.1); box-shadow: 0 15px 40px rgba(255, 107, 53, 0.6); }
 
-    .click-button:active {
-        transform: scale(0.95);
-        box-shadow: 0 5px 20px rgba(255, 107, 53, 0.3);
-    }
+    .click-button:active { transform: scale(0.95); box-shadow: 0 5px 20px rgba(255, 107, 53, 0.3); }
 
-    .timer-counter {
-        position: absolute;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        color: #FFFFFF;
-        font-size: clamp(12px, 1.5vw, 16px);
-        font-weight: bold;
-        background: rgba(0, 0, 0, 0.3);
-        padding: 10px 25px;
-        border-radius: 30px;
-        backdrop-filter: blur(10px);
-        min-width: 200px;
-        max-width: 90%;
-        text-align: center;
-    }
+    .timer-counter { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: #FFFFFF; font-size: clamp(12px, 1.5vw, 16px); font-weight: bold; background: rgba(0, 0, 0, 0.3); padding: 10px 25px; border-radius: 30px; backdrop-filter: blur(10px); min-width: 200px; max-width: 90%; text-align: center; }
 
-    .timer-bar {
-        position: absolute;
-        bottom: 60px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: min(250px, 80%);
-        height: 4px;
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 2px;
-        overflow: hidden;
-    }
+    .timer-bar { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); width: min(250px, 80%); height: 4px; background: rgba(255, 255, 255, 0.2); border-radius: 2px; overflow: hidden; }
 
-    .timer-bar-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #10b981, #3b82f6);
-        border-radius: 2px;
-        transition: width 0.1s linear;
-    }
+    .timer-bar-fill { height: 100%; background: linear-gradient(90deg, #10b981, #3b82f6); border-radius: 2px; transition: width 0.1s linear; }
 
-    .status-label {
-        position: absolute;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        color: #FFFFFF;
-        font-size: clamp(11px, 1.5vw, 14px);
-        padding: 6px 14px;
-        border-radius: 8px;
-        background: rgba(0, 0, 0, 0.5);
-        max-width: 90%;
-        text-align: center;
-    }
+    .status-label { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); color: #FFFFFF; font-size: clamp(11px, 1.5vw, 14px); padding: 6px 14px; border-radius: 8px; background: rgba(0, 0, 0, 0.5); max-width: 90%; text-align: center; }
 
-    /* Sidebar */
-    .sidebar {
-        width: clamp(280px, 30vw, 350px);
-        max-width: 100vw;
-        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-        padding: 20px;
-        position: absolute;
-        right: 0;
-        top: 0;
-        height: 100vh;
-        transform: translateX(0);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 100;
-        overflow-y: auto;
-        box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3);
-    }
+    .sidebar { width: clamp(280px, 30vw, 350px); max-width: 100vw; background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); padding: 20px; position: absolute; right: 0; top: 0; height: 100vh; transform: translateX(0); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; overflow-y: auto; box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3); }
 
     .sidebar.hidden { transform: translateX(100%); }
 
-    .toggle-sidebar-btn {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        width: clamp(40px, 6vw, 50px);
-        height: clamp(40px, 6vw, 50px);
-        border-radius: 50%;
-        cursor: pointer;
-        font-size: clamp(18px, 3vw, 24px);
-        z-index: 101;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+    .toggle-sidebar-btn { position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; width: clamp(40px, 6vw, 50px); height: clamp(40px, 6vw, 50px); border-radius: 50%; cursor: pointer; font-size: clamp(18px, 3vw, 24px); z-index: 101; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); display: flex; align-items: center; justify-content: center; }
 
-    .toggle-sidebar-btn:hover {
-        transform: scale(1.1);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-    }
+    .toggle-sidebar-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); }
 
-    .close-btn {
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        color: white;
-        border: none;
-        width: clamp(35px, 5vw, 40px);
-        height: clamp(35px, 5vw, 40px);
-        border-radius: 12px;
-        cursor: pointer;
-        font-size: clamp(18px, 3vw, 24px);
-        font-weight: bold;
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+    .close-btn { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; width: clamp(35px, 5vw, 40px); height: clamp(35px, 5vw, 40px); border-radius: 12px; cursor: pointer; font-size: clamp(18px, 3vw, 24px); font-weight: bold; position: absolute; top: 20px; right: 20px; transition: all 0.2s ease; box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; }
 
-    .close-btn:hover:not(:disabled) {
-        transform: scale(1.05);
-        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5);
-    }
+    .close-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); }
 
-    .close-btn:disabled {
-        background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-        cursor: not-allowed;
-        opacity: 0.6;
-    }
+    .close-btn:disabled { background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); cursor: not-allowed; opacity: 0.6; }
 
-    .sidebar-title {
-        color: #f8fafc;
-        font-size: clamp(20px, 3vw, 28px);
-        font-weight: bold;
-        margin-bottom: 25px;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    }
+    .sidebar-title { color: #f8fafc; font-size: clamp(20px, 3vw, 28px); font-weight: bold; margin-bottom: 25px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
 
-    .section-title {
-        color: #cbd5e1;
-        font-size: clamp(11px, 1.5vw, 13px);
-        font-weight: bold;
-        margin-top: 20px;
-        margin-bottom: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
+    .section-title { color: #cbd5e1; font-size: clamp(11px, 1.5vw, 13px); font-weight: bold; margin-top: 20px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-    .session-code {
-        color: #60a5fa;
-        font-size: clamp(22px, 3.5vw, 32px);
-        font-weight: bold;
-        margin-bottom: 18px;
-        text-shadow: 0 2px 8px rgba(96, 165, 250, 0.3);
-        word-break: break-all;
-    }
+    .session-code { color: #60a5fa; font-size: clamp(22px, 3.5vw, 32px); font-weight: bold; margin-bottom: 18px; text-shadow: 0 2px 8px rgba(96, 165, 250, 0.3); word-break: break-all; }
 
-    .username-label,
-    .player-count {
-        color: #f8fafc;
-        font-size: clamp(14px, 2vw, 16px);
-        margin-bottom: 10px;
-    }
+    .username-label, .player-count { color: #f8fafc; font-size: clamp(14px, 2vw, 16px); margin-bottom: 10px; }
 
-    .player-item {
-        color: #10b981;
-        font-size: clamp(13px, 1.8vw, 15px);
-        margin: 8px 0;
-        padding: 8px 12px;
-        background: rgba(16, 185, 129, 0.1);
-        border-radius: 10px;
-        border-left: 3px solid #10b981;
-        transition: all 0.3s ease;
-        word-break: break-word;
-    }
+    .player-item { color: #10b981; font-size: clamp(13px, 1.8vw, 15px); margin: 8px 0; padding: 8px 12px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; border-left: 3px solid #10b981; transition: all 0.3s ease; word-break: break-word; }
 
-    .player-item:hover {
-        background: rgba(16, 185, 129, 0.2);
-        transform: translateX(5px);
-    }
+    .player-item:hover { background: rgba(16, 185, 129, 0.2); transform: translateX(5px); }
 
-    .player-item.waiting {
-        color: #64748b;
-        background: rgba(100, 116, 139, 0.1);
-        border-left: 3px solid #64748b;
-    }
+    .player-item.waiting { color: #64748b; background: rgba(100, 116, 139, 0.1); border-left: 3px solid #64748b; }
 
-    .join-input {
-        width: 100%;
-        height: clamp(40px, 5vh, 45px);
-        border-radius: 12px;
-        border: 2px solid #475569;
-        background: rgba(51, 65, 85, 0.6);
-        color: #f8fafc;
-        padding: 0 14px;
-        font-size: clamp(13px, 1.8vw, 15px);
-        margin-top: 10px;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(5px);
-    }
+    .join-input { width: 100%; height: clamp(40px, 5vh, 45px); border-radius: 12px; border: 2px solid #475569; background: rgba(51, 65, 85, 0.6); color: #f8fafc; padding: 0 14px; font-size: clamp(13px, 1.8vw, 15px); margin-top: 10px; transition: all 0.3s ease; backdrop-filter: blur(5px); }
 
-    .join-input:focus {
-        outline: none;
-        border-color: #60a5fa;
-        background: rgba(51, 65, 85, 0.8);
-        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
-    }
+    .join-input:focus { outline: none; border-color: #60a5fa; background: rgba(51, 65, 85, 0.8); box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2); }
 
     .join-input::placeholder { color: #94a3b8; }
 
-    .join-button {
-        width: 100%;
-        height: clamp(42px, 5.5vh, 48px);
-        border-radius: 12px;
-        border: none;
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        color: white;
-        font-size: clamp(13px, 1.8vw, 15px);
-        font-weight: bold;
-        cursor: pointer;
-        margin-top: 12px;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-    }
+    .join-button { width: 100%; height: clamp(42px, 5.5vh, 48px); border-radius: 12px; border: none; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; font-size: clamp(13px, 1.8vw, 15px); font-weight: bold; cursor: pointer; margin-top: 12px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
 
-    .join-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-    }
+    .join-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
 
     .join-button:active { transform: translateY(0); }
 
-    .sidebar-status {
-        color: #94a3b8;
-        font-size: clamp(11px, 1.5vw, 12px);
-        margin-top: 10px;
-        min-height: 20px;
-        word-break: break-word;
-    }
+    .sidebar-status { color: #94a3b8; font-size: clamp(11px, 1.5vw, 12px); margin-top: 10px; min-height: 20px; word-break: break-word; }
 
-    .back-btn {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        color: white;
-        border: none;
-        width: clamp(40px, 6vw, 50px);
-        height: clamp(40px, 6vw, 50px);
-        border-radius: 50%;
-        cursor: pointer;
-        font-size: clamp(18px, 3vw, 24px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
-        transition: all 0.3s ease;
-        z-index: 102;
-    }
+    .back-btn { position: absolute; top: 20px; left: 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; width: clamp(40px, 6vw, 50px); height: clamp(40px, 6vw, 50px); border-radius: 50%; cursor: pointer; font-size: clamp(18px, 3vw, 24px); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); transition: all 0.3s ease; z-index: 102; }
 
-    .back-btn:hover {
-        transform: scale(1.1);
-        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
-    }
+    .back-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6); }
 
     @media (max-width: 768px) {
         .sidebar { width: 85vw; }
         .main-area { padding: 15px; }
-        .click-button {
-            width: min(40vw, 40vh, 200px);
-            height: min(40vw, 40vh, 200px);
-        }
+        .click-button { width: min(40vw, 40vh, 200px); height: min(40vw, 40vh, 200px); }
     }
 
     @media (max-width: 480px) {
         .sidebar { width: 90vw; }
-        .click-button {
-            width: min(50vw, 45vh, 180px);
-            height: min(50vw, 45vh, 180px);
-        }
+        .click-button { width: min(50vw, 45vh, 180px); height: min(50vw, 45vh, 180px); }
     }
 </style>
 
 </head>
 <body>
-    <div class="container">
-        <div class="main-area">
-            <button class="back-btn" onclick="handleBackButton()">←</button>
+    <div class="container">
+        <div class="main-area">
+            <button class="back-btn" onclick="handleBackButton()">←</button>
 
-            <div class="title">Clicker</div>
-            <div class="poires-counter" id="poiresCounter">0</div>
-            <div class="to-send" id="toSend">-- 0 --</div>
-            <button class="click-button" id="clickButton"></button>
-            <div class="timer-bar">
-                <div class="timer-bar-fill" id="timerBarFill"></div>
-            </div>
-            <div class="timer-counter" id="timerCounter">Rafraîchissement : lancement</div>
-            <div class="status-label" id="statusLabel"></div>
-        </div>
+            <div class="title">Clicker</div>
+            <div class="score-counter" id="scoreCounter">0</div> 
+            <div class="to-send" id="toSend">-- 0 --</div>
+            <button class="click-button" id="clickButton"></button>
+            <div class="timer-bar">
+                <div class="timer-bar-fill" id="timerBarFill"></div>
+            </div>
+            <div class="timer-counter" id="timerCounter">Rafraîchissement : lancement</div>
+            <div class="status-label" id="statusLabel"></div>
+        </div>
 
-        <button class="toggle-sidebar-btn" id="toggleSidebar">☰</button>
+        <button class="toggle-sidebar-btn" id="toggleSidebar">☰</button>
 
-        <div class="sidebar" id="sidebar">
-            <button class="close-btn" id="closeBtn">×</button>
-            <div class="sidebar-title">Session</div>
+        <div class="sidebar" id="sidebar">
+            <button class="close-btn" id="closeBtn">×</button>
+            <div class="sidebar-title">Session</div>
 
-            <div class="section-title">Code de session</div>
-            <div class="session-code" id="sessionCode">Chargement...</div>
+            <div class="section-title">Code de session</div>
+            <div class="session-code" id="sessionCode">Chargement...</div>
 
-            <div class="section-title">Utilisateur</div>
-            <div class="username-label" id="usernameLabel">Utilisateur</div>
+            <div class="section-title">Utilisateur</div>
+            <div class="username-label" id="usernameLabel">Utilisateur</div>
 
-            <div class="section-title">Joueurs présents</div>
-            <div class="player-count" id="playerCount">1/5</div>
+            <div class="section-title">Joueurs présents</div>
+            <div class="player-count" id="playerCount">1/5</div>
 
-            <div id="playersList">
-                <div class="player-item" id="player1">👤 Vous</div>
-                <div class="player-item waiting" id="player2">⚪ En attente...</div>
-                <div class="player-item waiting" id="player3">⚪ En attente...</div>
-                <div class="player-item waiting" id="player4">⚪ En attente...</div>
-                <div class="player-item waiting" id="player5">⚪ En attente...</div>
-            </div>
+            <div id="playersList">
+                <div class="player-item" id="player1">👤 Vous</div>
+                <div class="player-item waiting" id="player2">⚪ En attente...</div>
+                <div class="player-item waiting" id="player3">⚪ En attente...</div>
+                <div class="player-item waiting" id="player4">⚪ En attente...</div>
+                <div class="player-item waiting" id="player5">⚪ En attente...</div>
+            </div>
 
-            <div class="section-title">Rejoindre une session</div>
-            <input type="text" class="join-input" id="joinInput" placeholder="Entrer un code">
-            <button class="join-button" id="joinButton">Rejoindre</button>
+            <div class="section-title">Rejoindre une session</div>
+            <input type="text" class="join-input" id="joinInput" placeholder="Entrer un code">
+            <button class="join-button" id="joinButton">Rejoindre</button>
 
-            <div class="sidebar-status" id="sidebarStatus"></div>
-        </div>
-    </div>
+            <div class="sidebar-status" id="sidebarStatus"></div>
+        </div>
+    </div>
 
-    <script>
-const API_URL = "https://project-3-api-2bgb.onrender.com";
-let clickCount = 0;
-let lastClickTime = 0;
-let clickIntervals = [];
-let sidebarVisible = true;
+    <script>
+        const API_URL = "https://project-3-api-2bgb.onrender.com";
+        let clickCount = 0;
+        let lastClickTime = 0;
+        let clickIntervals = [];
+        let sidebarVisible = true;
 
-// 🔹 Récupération du username depuis localStorage
-let username = localStorage.getItem("username");
+        let username = localStorage.getItem("username");
 
-// Debug : afficher le username récupéré
-console.log("Username récupéré du localStorage:", username);
+        console.log("Username récupéré du localStorage:", username);
 
-// Si pas de username, redirection vers le menu
-if (!username || username.trim() === "") {
-    alert("⚠️ Aucun nom d'utilisateur trouvé. Veuillez vous connecter.");
-    window.location.href = "menu.html";
-}
+        if (!username || username.trim() === "") {
+            alert("⚠️ Aucun nom d'utilisateur trouvé. Veuillez vous connecter.");
+            window.location.href = "menu.html";
+        }
 
-// 🔄 Vérification toutes les 3 secondes du username dans localStorage
-setInterval(() => {
-    let currentUsername = localStorage.getItem("username");
-    if (!currentUsername || currentUsername.trim() === "") {
-        alert("⚠️ Votre session a expiré. Veuillez vous reconnecter.");
-        window.location.href = "menu.html";
-    }
-}, 3000);
+        const clickButton = document.getElementById('clickButton');
+        const scoreCounter = document.getElementById('scoreCounter'); 
+        const toSend = document.getElementById('toSend');
+        const timerCounter = document.getElementById('timerCounter');
+        const statusLabel = document.getElementById('statusLabel');
+        const sessionCode = document.getElementById('sessionCode');
+        const usernameLabel = document.getElementById('usernameLabel');
+        const playerCount = document.getElementById('playerCount');
+        const joinInput = document.getElementById('joinInput');
+        const joinButton = document.getElementById('joinButton');
+        const closeBtn = document.getElementById('closeBtn');
+        const sidebarStatus = document.getElementById('sidebarStatus');
+        const sidebar = document.getElementById('sidebar');
+        const toggleSidebar = document.getElementById('toggleSidebar');
+        const timerBarFill = document.getElementById('timerBarFill');
 
+        usernameLabel.textContent = username;
 
-const clickButton = document.getElementById('clickButton');
-const poiresCounter = document.getElementById('poiresCounter');
-const toSend = document.getElementById('toSend');
-const timerCounter = document.getElementById('timerCounter');
-const statusLabel = document.getElementById('statusLabel');
-const sessionCode = document.getElementById('sessionCode');
-const usernameLabel = document.getElementById('usernameLabel');
-const playerCount = document.getElementById('playerCount');
-const joinInput = document.getElementById('joinInput');
-const joinButton = document.getElementById('joinButton');
-const closeBtn = document.getElementById('closeBtn');
-const sidebarStatus = document.getElementById('sidebarStatus');
-const sidebar = document.getElementById('sidebar');
-const toggleSidebar = document.getElementById('toggleSidebar');
-const timerBarFill = document.getElementById('timerBarFill');
+        toggleSidebar.addEventListener('click', () => { 
+            sidebarVisible = !sidebarVisible; 
+            sidebar.classList.toggle('hidden'); 
+        });
 
-usernameLabel.textContent = username;
+        clickButton.addEventListener('click', onClickerClick);
 
-// Toggle sidebar
-toggleSidebar.addEventListener('click', () => { 
-    sidebarVisible = !sidebarVisible; 
-    sidebar.classList.toggle('hidden'); 
-});
+        window.addEventListener('beforeunload', async (e) => {
+            await leaveSessionSilently();
+        });
 
-// Load session (MODIFIÉ : Ne se lance plus seul, startApp() s'en charge)
-// loadMySession(); 
-clickButton.addEventListener('click', onClickerClick);
+        async function handleBackButton() {
+            await leaveSessionSilently();
+            window.location.href = "menu.html";
+        }
 
-// 🔹 Quitter la session automatiquement lors de la fermeture de la page
-window.addEventListener('beforeunload', async (e) => {
-    await leaveSessionSilently();
-});
+        async function leaveSessionSilently() {
+            const code = sessionCode.textContent;
+            if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
+                return;
+            }
+            
+            try {
+                const data = JSON.stringify({ code: code, id: username });
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon(`${API_URL}/leave`, data);
+                } else {
+                    await fetch(`${API_URL}/leave`, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: data,
+                        keepalive: true
+                    });
+                }
+            } catch (e) {
+                console.error("Erreur lors de la déconnexion:", e);
+            }
+        }
 
-// 🔹 Quitter la session lors du retour au menu
-async function handleBackButton() {
-    await leaveSessionSilently();
-    window.location.href = "menu.html";
-}
+        function onClickerClick() {
+            const now = Date.now() / 1000;
+            let freq = 0;
+            if (lastClickTime !== 0) {
+                const interval = now - lastClickTime;
+                clickIntervals.push(interval);
+                if (clickIntervals.length > 5) clickIntervals.shift();
+                const avg = clickIntervals.reduce((a, b) => a + b, 0) / clickIntervals.length;
+                freq = avg > 0 ? 1 / avg : 0;
+            }
+            lastClickTime = now;
 
-// 🔹 Fonction pour quitter la session silencieusement
-async function leaveSessionSilently() {
-    const code = sessionCode.textContent;
-    if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
-        return;
-    }
-    
-    try {
-        const data = JSON.stringify({ code: code, id: username });
-        if (navigator.sendBeacon) {
-            navigator.sendBeacon(`${API_URL}/leave`, data);
-        } else {
-            await fetch(`${API_URL}/leave`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: data,
-                keepalive: true
-            });
-        }
-    } catch (e) {
-        console.error("Erreur lors de la déconnexion:", e);
-    }
-}
+            if (freq > 20) {
+                statusLabel.textContent = "⚠️ Autoclicker détecté ⚠️";
+                statusLabel.style.color = "#f87171";
+                setTimeout(() => { statusLabel.textContent = ""; }, 1000);
+                return;
+            }
 
-// ---------------- CLICKER ----------------
-function onClickerClick() {
-    const now = Date.now() / 1000;
-    let freq = 0;
-    if (lastClickTime !== 0) {
-        const interval = now - lastClickTime;
-        clickIntervals.push(interval);
-        if (clickIntervals.length > 5) clickIntervals.shift();
-        const avg = clickIntervals.reduce((a, b) => a + b, 0) / clickIntervals.length;
-        freq = avg > 0 ? 1 / avg : 0;
-    }
-    lastClickTime = now;
+            clickCount++;
+            toSend.textContent = `-- ${clickCount} --`;
+        }
 
-    if (freq > 20) {
-        statusLabel.textContent = "⚠️ Autoclicker détecté ⚠️";
-        statusLabel.style.color = "#f87171";
-        setTimeout(() => { statusLabel.textContent = ""; }, 1000);
-        return;
-    }
+        async function sendClicks() {
+            const code = sessionCode.textContent;
+            if (code === "Chargement..." || code === "Aucune session") {
+                statusLabel.textContent = "⚠️ Session non disponible";
+                statusLabel.style.color = "#f59e0b";
+                return;
+            }
+            
+            const toSendValue = clickCount;
+            clickCount = 0;
+            toSend.textContent = "-- 0 --";
+            
+            if (toSendValue === 0) return;
 
-    clickCount++;
-    toSend.textContent = `-- ${clickCount} --`;
-}
+            try {
+                statusLabel.textContent = `Envoi de ${toSendValue} points...`; 
+                statusLabel.style.color = "#3b82f6";
 
-// ---------------- ENVOI DES POIRES ----------------
-async function sendClicks() {
-    const code = sessionCode.textContent;
-    if (code === "Chargement..." || code === "Aucune session") {
-        statusLabel.textContent = "⚠️ Session non disponible";
-        statusLabel.style.color = "#f59e0b";
-        return;
-    }
-    
-    // MODIFIÉ : On envoie les clics et on réinitialise
-    const toSendValue = clickCount;
-    clickCount = 0; // Réinitialise le compteur
-    toSend.textContent = "-- 0 --"; // Réinitialise l'UI
-    
-    if (toSendValue === 0) return; // Ne pas envoyer si 0
+                const response = await fetch(`${API_URL}/poire`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ session: code, click: toSendValue, id: username }) 
+                });
+                const data = await response.json();
+                if (data.status !== "success") {
+                    statusLabel.textContent = `Erreur envoi: ${data.message}`;
+                    statusLabel.style.color = "#ef4444";
+                } else {
+                    statusLabel.textContent = "Score envoyé !"; 
+                    statusLabel.style.color = "#10b981";
+                }
+            } catch (e) {
+                statusLabel.textContent = "❌ Erreur réseau envoi";
+                statusLabel.style.color = "#ef4444";
+            }
+        }
 
-    try {
-        statusLabel.textContent = `Envoi de ${toSendValue} poires...`;
-        statusLabel.style.color = "#3b82f6";
+        async function loadMySession() {
+            try {
+                const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
+                const data = await response.json();
+                if (data.status === "success" && data.code) {
+                    sessionCode.textContent = data.code;
+                    sidebarStatus.textContent = "✅ Session chargée";
+                    sidebarStatus.style.color = "#10b981";
+                } else {
+                    sessionCode.textContent = "Aucune session";
+                    sidebarStatus.textContent = "ℹ️ Aucune session trouvée";
+                    sidebarStatus.style.color = "#94a3b8";
+                }
+            } catch (e) {
+                sessionCode.textContent = "Erreur";
+                sidebarStatus.textContent = "❌ Erreur réseau";
+                sidebarStatus.style.color = "#ef4444";
+            }
+        }
 
-        const response = await fetch(`${API_URL}/poire`, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ session: code, click: toSendValue, id: username }) 
-        });
-        const data = await response.json();
-        if (data.status !== "success") {
-            statusLabel.textContent = `Erreur envoi: ${data.message}`;
-            statusLabel.style.color = "#ef4444";
-            // Remettre les clics si l'envoi a échoué ?
-            // clickCount += toSendValue; 
-        } else {
-            statusLabel.textContent = "Poires envoyées !";
-            statusLabel.style.color = "#10b981";
-        }
-    } catch (e) {
-        statusLabel.textContent = "❌ Erreur réseau envoi";
-        statusLabel.style.color = "#ef4444";
-    }
-}
+        async function fetchGameData() {
+            const code = sessionCode.textContent;
+            if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
+                return;
+            }
 
-// ---------------- SESSION ----------------
-async function loadMySession() {
-    try {
-        const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
-        const data = await response.json();
-        if (data.status === "success" && data.code) {
-            sessionCode.textContent = data.code;
-            sidebarStatus.textContent = "✅ Session chargée";
-            sidebarStatus.style.color = "#10b981";
-        } else {
-            sessionCode.textContent = "Aucune session";
-            sidebarStatus.textContent = "ℹ️ Aucune session trouvée";
-            sidebarStatus.style.color = "#94a3b8";
-        }
-    } catch (e) {
-        sessionCode.textContent = "Erreur";
-        sidebarStatus.textContent = "❌ Erreur réseau";
-        sidebarStatus.style.color = "#ef4444";
-    }
-}
+            try {
+                const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(code)}`);
+                const scoreData = await scoreResponse.json();
 
-// ---------------- QUITTER / REJOINDRE ----------------
-closeBtn.addEventListener('click', async () => {
-    const code = sessionCode.textContent;
-    if (code === "Chargement..." || code === "Aucune session") { 
-        sidebarStatus.textContent = "⚠️ Pas de session active"; 
-        sidebarStatus.style.color = "#f59e0b"; 
-        return; 
-    }
-    
-    closeBtn.disabled = true;
-    
-    try {
-        const response = await fetch(`${API_URL}/leave`, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ code: code, id: username }) 
-        });
-        const data = await response.json();
-        if (data.status === "success") { 
-            sidebarStatus.textContent = "✅ Session quittée"; 
-            sidebarStatus.style.color = "#10b981"; 
-            sessionCode.textContent = "Aucune session"; 
-            resetPlayersList(); 
-        } else { 
-            sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`; 
-            sidebarStatus.style.color = "#ef4444"; 
-        }
-    } catch (e) { 
-        sidebarStatus.textContent = "❌ Erreur réseau"; 
-        sidebarStatus.style.color = "#ef4444"; 
-    } finally {
-        closeBtn.disabled = false;
-    }
-});
+                if (scoreData.status === "success") {
+                    scoreCounter.textContent = scoreData.poires || 0; 
+                }
 
-joinButton.addEventListener('click', async () => {
-    let input = joinInput.value.trim();
-    if (!input) { 
-        sidebarStatus.textContent = "⚠️ Veuillez entrer un code ou une commande"; 
-        sidebarStatus.style.color = "#f59e0b"; 
-        return; 
-    }
+                const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
+                const playersData = await playersResponse.json();
+                
+                if (playersData.status === "success") {
+                    updatePlayersList(playersData.players, playersData.creator);
+                }
 
-    joinButton.disabled = true;
+            } catch (e) {
+                console.error("Erreur lors du rafraîchissement des données:", e);
+            }
+        }
 
-    try {
-        if (input.toLowerCase().startsWith("/cha ")) {
-            const newSessionName = input.substring(5).trim();
-            if (!newSessionName) {
-                sidebarStatus.textContent = "⚠️ Veuillez indiquer un nom après /cha";
-                sidebarStatus.style.color = "#f59e0b";
-            } else {
-                const response = await fetch(`${API_URL}/change_session`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ id: username, new_session_name: newSessionName }) 
-                });
+        function updatePlayersList(players, creator) {
+            const playersList = document.getElementById('playersList');
+            const playerSlots = [document.getElementById('player1'), document.getElementById('player2'), document.getElementById('player3'), document.getElementById('player4'), document.getElementById('player5')];
 
-                const data = await response.json();
-                if (data.status === "success") { 
-                    sidebarStatus.textContent = `✅ Nom de session changé : ${newSessionName}`; 
-                    sidebarStatus.style.color = "#10b981"; 
-                    sessionCode.textContent = newSessionName;
-                    joinInput.value = '';
-                } else { 
-                    sidebarStatus.textContent = `❌ ${data.message || 'Erreur'}`; 
-                    sidebarStatus.style.color = "#ef4444"; 
-                }
-            }
-        } else {
-            const response = await fetch(`${API_URL}/join`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ code: input, id: username }) 
-            });
-            const data = await response.json();
-            if (data.status === "success") { 
-                sidebarStatus.textContent = "✅ Session rejointe"; 
-                sidebarStatus.style.color = "#10b981"; 
-                sessionCode.textContent = input;
-                joinInput.value = '';
-                // Forcer la mise à jour des données après avoir rejoint
-                fetchGameData();
-            } else { 
-                sidebarStatus.textContent = `❌ ${data.message || 'Code introuvable'}`; 
-                sidebarStatus.style.color = "#ef4444"; 
-            }
-        }
-    } catch (e) { 
-        sidebarStatus.textContent = "❌ Erreur réseau"; 
-        sidebarStatus.style.color = "#ef4444"; 
-    } finally {
-        joinButton.disabled = false;
-    }
-});
+            let activePlayers = [];
+            if (creator) {
+                activePlayers.push(creator);
+            }
+            players.forEach(p => {
+                if (p !== creator) {
+                    activePlayers.push(p);
+                }
+            });
 
-// MODIFIÉ : Gère 'player1' comme étant toujours 'vous'
-function resetPlayersList() { 
-    const player1 = document.getElementById('player1');
-    player1.textContent = `👤 ${username} (Vous)`;
-    player1.className = "player-item";
-    player1.style.color = "#10b981";
-    player1.style.borderColor = "#10b981";
+            const uniqueActivePlayers = [...new Set(activePlayers)];
 
-    for (let i = 2; i <= 5; i++) { 
-        const player = document.getElementById(`player${i}`); 
-        player.textContent = "⚪ En attente..."; 
-        player.className = "player-item waiting"; 
-    } 
-    playerCount.textContent = "1/5"; 
-}
+            playerCount.textContent = `${uniqueActivePlayers.length}/5`;
 
+            playerSlots.forEach((slot, index) => {
+                const player = uniqueActivePlayers[index];
+                if (player) {
+                    slot.textContent = player === username ? "👤 Vous" : (player === creator ? `👑 ${player}` : `• ${player}`);
+                    slot.classList.remove('waiting');
+                } else {
+                    slot.textContent = "⚪ En attente...";
+                    slot.classList.add('waiting');
+                }
+            });
+        }
 
-// --- 🌟 NOUVELLES FONCTIONS DE SYNCHRONISATION 🌟 ---
+        function resetPlayersList() {
+            const playerSlots = [document.getElementById('player1'), document.getElementById('player2'), document.getElementById('player3'), document.getElementById('player4'), document.getElementById('player5')];
+            playerCount.textContent = `0/5`;
+            playerSlots.forEach((slot, index) => {
+                if (index === 0) {
+                    slot.textContent = "👤 Vous (Déconnecté)";
+                    slot.classList.remove('waiting');
+                } else {
+                    slot.textContent = "⚪ En attente...";
+                    slot.classList.add('waiting');
+                }
+            });
+        }
 
-const SYNC_INTERVAL_MS = 5000; // 5 secondes
-let hasSentClicksThisCycle = false;
-let isFetchingData = false;
-let serverWakeUpAttempted = false;
+        closeBtn.addEventListener('click', async () => {
+            const code = sessionCode.textContent;
+            if (code === "Chargement..." || code === "Aucune session") { 
+                sidebarStatus.textContent = "⚠️ Pas de session active"; 
+                sidebarStatus.style.color = "#f59e0b"; 
+                return; 
+            }
+            
+            closeBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`${API_URL}/leave`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ code: code, id: username }) 
+                });
+                const data = await response.json();
+                if (data.status === "success") { 
+                    sidebarStatus.textContent = "✅ Session quittée"; 
+                    sidebarStatus.style.color = "#10b981"; 
+                    sessionCode.textContent = "Aucune session"; 
+                    resetPlayersList(); 
+                } else { 
+                    sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`; 
+                    sidebarStatus.style.color = "#ef4444"; 
+                }
+            } catch (e) { 
+                sidebarStatus.textContent = "❌ Erreur réseau"; 
+                sidebarStatus.style.color = "#ef4444"; 
+            } finally {
+                closeBtn.disabled = false;
+            }
+        });
 
-/**
- * 🔹 [NOUVEAU] Récupère l'état du jeu (score, joueurs) depuis l'API
- */
-async function fetchGameData() {
-    if (isFetchingData) return; // Empêche les appels en double
-    
-    const code = sessionCode.textContent;
-    if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
-        return; // Pas de session, on ne fait rien
-    }
+        joinButton.addEventListener('click', async () => {
+            let input = joinInput.value.trim();
+            if (!input) { 
+                sidebarStatus.textContent = "⚠️ Veuillez entrer un code ou une commande"; 
+                sidebarStatus.style.color = "#f59e0b"; 
+                return; 
+            }
 
-    isFetchingData = true;
+            joinButton.disabled = true;
 
-    // Gère le réveil du serveur (pour la première tentative)
-    if (!serverWakeUpAttempted) {
-        serverWakeUpAttempted = true;
-        statusLabel.textContent = "Réveil du serveur...";
-        statusLabel.style.color = "#60a5fa";
-    }
+            try {
+                if (input.toLowerCase().startsWith("/cha ")) {
+                    const newSessionName = input.substring(5).trim();
+                    if (!newSessionName) {
+                        sidebarStatus.textContent = "⚠️ Nom de session manquant";
+                        sidebarStatus.style.color = "#f59e0b";
+                        joinButton.disabled = false;
+                        return;
+                    }
+                    
+                    sidebarStatus.textContent = `Changement du nom en '${newSessionName}'...`;
+                    const response = await fetch(`${API_URL}/change_session`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: username, new_session_name: newSessionName })
+                    });
+                    const data = await response.json();
+                    if (data.status === "success") {
+                        sidebarStatus.textContent = `✅ ${data.message}`;
+                        sidebarStatus.style.color = "#10b981";
+                        sessionCode.textContent = newSessionName;
+                    } else {
+                        sidebarStatus.textContent = `❌ Erreur changement : ${data.message}`;
+                        sidebarStatus.style.color = "#ef4444";
+                    }
+                    joinInput.value = "";
+                    
+                } else {
+                    sidebarStatus.textContent = `Tentative de rejoindre la session '${input}'...`;
+                    const response = await fetch(`${API_URL}/join`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: input, id: username })
+                    });
+                    const data = await response.json();
+                    
+                    if (data.status === "success") {
+                        sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
+                        sidebarStatus.style.color = "#10b981";
+                        sessionCode.textContent = input;
+                    } else {
+                        sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
+                        sidebarStatus.style.color = "#ef4444";
+                    }
+                    joinInput.value = "";
+                }
+            } catch (e) {
+                sidebarStatus.textContent = "❌ Erreur réseau / Commande non valide";
+                sidebarStatus.style.color = "#ef4444";
+            } finally {
+                joinButton.disabled = false;
+            }
+        });
 
-    try {
-        // ❗ HYPOTHÈSE: Tu dois créer cet endpoint côté API
-        // Il doit renvoyer { status: "success", poires_total: 123, players: ["user1", "user2"] }
-        const response = await fetch(`${API_URL}/session_data?code=${encodeURIComponent(code)}`); 
-        
-        if (!response.ok) {
-            throw new Error(`Erreur HTTP: ${response.status}`);
-        }
-        const data = await response.json();
+        const REFRESH_INTERVAL = 10000;
+        let timeLeft = REFRESH_INTERVAL / 1000;
+        let timerInterval;
 
-        if (data.status === "success") {
-            // Mettre à jour le compteur total
-            poiresCounter.textContent = data.poires_total || 0; 
-            
-            // Mettre à jour la liste des joueurs
-            updatePlayersList(data.players || []);
-            
-            // Effacer le statut (sauf si un envoi est en cours)
-            if (statusLabel.textContent === "Réveil du serveur...") {
-                statusLabel.textContent = ""; 
-            }
-        } else {
-            statusLabel.textContent = data.message || "Erreur données session";
-            statusLabel.style.color = "#ef4444";
-            if (data.message === "Session not found") {
-                sessionCode.textContent = "Aucune session";
-                resetPlayersList();
-            }
-        }
-    } catch (e) {
-        console.error("Erreur fetchGameData:", e);
-        statusLabel.textContent = "❌ Erreur de synchro réseau";
-        statusLabel.style.color = "#ef4444";
-    } finally {
-        isFetchingData = false; // Autorise le prochain fetch
-    }
-}
+        function updateTimer() {
+            timerBarFill.style.width = `${(timeLeft / (REFRESH_INTERVAL / 1000)) * 100}%`;
+            timerCounter.textContent = `Rafraîchissement dans ${timeLeft}s`;
 
-/**
- * 🔹 [NOUVEAU] Met à jour l'UI de la liste des joueurs
- */
-function updatePlayersList(players) {
-    playerCount.textContent = `${players.length}/5`;
-    let playerFound = false;
-    const playerElements = [
-        document.getElementById('player1'),
-        document.getElementById('player2'),
-        document.getElementById('player3'),
-        document.getElementById('player4'),
-        document.getElementById('player5')
-    ];
+            if (timeLeft <= 0) {
+                sendClicks(); 
+                fetchGameData();
+                
+                timeLeft = REFRESH_INTERVAL / 1000;
+            } else {
+                timeLeft--;
+            }
+        }
 
-    // D'abord, trouver 'vous'
-    let selfElement = playerElements[0];
-    selfElement.textContent = `👤 ${username} (Vous)`;
-    selfElement.className = "player-item";
-    selfElement.style.color = "#10b981";
-    selfElement.style.borderColor = "#10b981";
-    playerFound = players.includes(username);
-
-    // Ensuite, les autres joueurs
-    let otherPlayers = players.filter(p => p !== username);
-    for (let i = 0; i < 4; i++) { // i=0 correspond à playerElements[1]
-        const playerElement = playerElements[i + 1];
-        const playerName = otherPlayers[i];
-
-        if (playerName) {
-            playerElement.textContent = `👤 ${playerName}`;
-            playerElement.className = "player-item";
-            playerElement.style.color = "#60a5fa"; // Couleur autre joueur
-            playerElement.style.borderColor = "#60a5fa";
-        } else {
-            playerElement.textContent = "⚪ En attente...";
-            playerElement.className = "player-item waiting";
-        }
-    }
-
-    if (!playerFound && players.length > 0) {
-        console.warn("Vous n'êtes pas dans la liste des joueurs !");
-        // Peut-être recharger la session si vous êtes éjecté
-        // loadMySession(); 
-    }
-}
-
-
-/**
- * 🔹 [NOUVEAU] Boucle de jeu principale, s'exécute 10x/sec
- */
-function globalTimerTick() {
-    const now = Date.now();
-    const timeSinceLastSync = now % SYNC_INTERVAL_MS;
-    const timeUntilNextSync = SYNC_INTERVAL_MS - timeSinceLastSync;
-    const secondsUntilNextSync = (timeUntilNextSync / 1000).toFixed(1);
-
-    // 1. Mettre à jour l'UI du timer
-    const progressPercentage = (timeSinceLastSync / SYNC_INTERVAL_MS) * 100;
-    timerBarFill.style.width = `${progressPercentage}%`;
-    timerCounter.textContent = `Synchro dans : ${secondsUntilNextSync}s`;
-
-    // 2. Gérer l'ENVOI (Objectif: 1 sec avant synchro)
-    // Si on est dans la dernière seconde (ex: timeUntilNextSync < 1000ms)
-    // et qu'on n'a pas encore envoyé les clics pour ce cycle
-    if (timeUntilNextSync <= 1000 && !hasSentClicksThisCycle) {
-        hasSentClicksThisCycle = true;
-        sendClicks(); // La fonction 'sendClicks' gère elle-même le reset de clickCount
-    }
-
-    // 3. Gérer la SYNCHRONISATION (Objectif: toutes les 5 sec)
-    // Si on vient de passer le "tick" de 5 secondes (ex: < 150ms après)
-    // (150ms de fenêtre pour être sûr de l'attraper)
-    if (timeSinceLastSync < 150) { 
-        // Si on est au début d'un cycle, on réinitialise le flag d'envoi
-        if (hasSentClicksThisCycle) {
-            hasSentClicksThisCycle = false;
-        }
-        
-        // On lance le fetch des données (la fonction a un verrou 'isFetchingData')
-        fetchGameData();
-    }
-}
-
-/**
- * 🔹 [NOUVEAU] Fonction de démarrage de l'application
- */
-async function startApp() {
-    // 1. Charger la session de l'utilisateur pour connaître le code
-    await loadMySession();
-    
-    // 2. Lancer le timer global (10x par seconde)
-    setInterval(globalTimerTick, 100); 
-
-    // 3. Premier fetch immédiat (pour réveiller le serveur et charger les données)
-    fetchGameData();
-}
-
-// 🚀 DÉMARRAGE DE L'APPLICATION
-startApp();
-
-</script>
-
+        loadMySession().then(() => {
+            fetchGameData();
+            timerInterval = setInterval(updateTimer, 1000);
+        });
+    </script>
 </body>
 </html>

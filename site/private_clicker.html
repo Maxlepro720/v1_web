@@ -172,6 +172,9 @@
     const toggleSidebar = document.getElementById('toggleSidebar');
     const timerBarFill = document.getElementById('timerBarFill');
 
+    // Mise à jour du texte du bouton pour le rendre plus clair
+    joinButton.textContent = "Rejoindre ou Créer"; 
+
     usernameLabel.textContent = username;
 
     toggleSidebar.addEventListener('click', () => { 
@@ -270,15 +273,50 @@
             statusLabel.style.color = "#ef4444";
         }
     }
+    
+    // FONCTION EXPLICITE DE CRÉATION DE SESSION
+    async function createSession() {
+        sessionCode.textContent = "Création...";
+        sidebarStatus.textContent = "⏳ Création d'une nouvelle session...";
+        sidebarStatus.style.color = "#f59e0b";
 
+        try {
+            const response = await fetch(`${API_URL}/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: username })
+            });
+            const data = await response.json();
+
+            if (data.status === "success" && data.session_name) {
+                sessionCode.textContent = data.session_name;
+                sidebarStatus.textContent = "🎉 Session créée ! Code : " + data.session_name;
+                sidebarStatus.style.color = "#10b981";
+            } else {
+                sessionCode.textContent = "Erreur";
+                sidebarStatus.textContent = "❌ Erreur lors de la création de session : " + (data.message || "Inconnue");
+                sidebarStatus.style.color = "#ef4444";
+            }
+        } catch (e) {
+            sessionCode.textContent = "Erreur";
+            sidebarStatus.textContent = "❌ Erreur réseau lors de la création";
+            sidebarStatus.style.color = "#ef4444";
+        }
+    }
+
+    // GÈRE LE CHARGEMENT OU LA CRÉATION AUTOMATIQUE
     async function loadMySession() {
         try {
             const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
             const data = await response.json();
+            
             if (data.status === "success" && data.code) {
                 sessionCode.textContent = data.code;
                 sidebarStatus.textContent = "✅ Session chargée";
                 sidebarStatus.style.color = "#10b981";
+            } else if (data.status === "error" && data.message.includes("not in any session")) {
+                // Création automatique si l'utilisateur n'est dans aucune session.
+                await createSession(); 
             } else {
                 sessionCode.textContent = "Aucune session";
                 sidebarStatus.textContent = "ℹ️ Aucune session trouvée";
@@ -318,7 +356,6 @@
     }
 
     function updatePlayersList(players, creator) {
-        const playersList = document.getElementById('playersList');
         const playerSlots = [document.getElementById('player1'), document.getElementById('player2'), document.getElementById('player3'), document.getElementById('player4'), document.getElementById('player5')];
 
         let activePlayers = [];
@@ -338,14 +375,37 @@
         playerSlots.forEach((slot, index) => {
             const player = uniqueActivePlayers[index];
             if (player) {
-                slot.textContent = player === username ? "👤 Vous" : (player === creator ? `👑 ${player}` : `• ${player}`);
+                let displayString = "";
+                
+                if (player === username) {
+                    if (player === creator) {
+                        displayString = `👑 👤 Vous`;
+                    } else {
+                        displayString = `👤 Vous`;
+                    }
+                } else {
+                    if (player === creator) {
+                        displayString = `👑 ${player}`;
+                    } else {
+                        displayString = `• ${player}`;
+                    }
+                }
+                
+                slot.textContent = displayString;
                 slot.classList.remove('waiting');
+                slot.style.color = player === username ? '#ffd966' : '#10b981';
+                slot.style.borderLeft = player === username ? '3px solid #ffb84d' : '3px solid #10b981';
+
+
             } else {
                 slot.textContent = "⚪ En attente...";
                 slot.classList.add('waiting');
+                slot.style.color = '#64748b';
+                slot.style.borderLeft = '3px solid #64748b';
             }
         });
     }
+
 
     function resetPlayersList() {
         const playerSlots = [document.getElementById('player1'), document.getElementById('player2'), document.getElementById('player3'), document.getElementById('player4'), document.getElementById('player5')];
@@ -395,18 +455,15 @@
         }
     });
 
+    // LOGIQUE MODIFIÉE DU BOUTON REJOINDRE/CRÉER
     joinButton.addEventListener('click', async () => {
         let input = joinInput.value.trim();
-        if (!input) { 
-            sidebarStatus.textContent = "⚠️ Veuillez entrer un code ou une commande"; 
-            sidebarStatus.style.color = "#f59e0b"; 
-            return; 
-        }
-
+        
         joinButton.disabled = true;
 
         try {
             if (input.toLowerCase().startsWith("/cha ")) {
+                // Logique pour changer le nom de session
                 const newSessionName = input.substring(5).trim();
                 if (!newSessionName) {
                     sidebarStatus.textContent = "⚠️ Nom de session manquant";
@@ -431,8 +488,11 @@
                     sidebarStatus.style.color = "#ef4444";
                 }
                 joinInput.value = "";
-                
+            } else if (!input) {
+                // Si l'entrée est vide (l'utilisateur veut créer une session)
+                await createSession(); 
             } else {
+                // Si l'entrée n'est pas vide (l'utilisateur veut rejoindre)
                 sidebarStatus.textContent = `Tentative de rejoindre la session '${input}'...`;
                 const response = await fetch(`${API_URL}/join`, {
                     method: 'POST',
@@ -459,58 +519,35 @@
         }
     });
 
+    // --- LOGIQUE DE SYNCHRONISATION UTC ---
+
     const REFRESH_PERIOD_SECONDS = 5;
     let timerInterval;
 
-    /**
-     * Calcule le nombre de millisecondes à attendre jusqu'à la prochaine
-     * seconde multiple de REFRESH_PERIOD_SECONDS (ex: 0, 5, 10, 15... secondes UTC).
-     * @returns {number} Délai en ms.
-     */
     function getWaitTime() {
         const now = new Date();
-        const utcSeconds = now.getUTCSeconds(); // Seconde actuelle en UTC
+        const utcSeconds = now.getUTCSeconds(); 
         
-        // Calcule le nombre de secondes écoulées depuis le dernier top 5s
         const elapsed = utcSeconds % REFRESH_PERIOD_SECONDS;
-        
-        // Calcule le temps restant jusqu'au prochain top 5s (ex: si utcSeconds = 3, elapsed = 3, waitTime = 5 - 3 = 2s)
         const waitTimeSeconds = REFRESH_PERIOD_SECONDS - elapsed;
         
         return waitTimeSeconds * 1000;
     }
 
-    /**
-     * Met à jour le compteur visuel et la barre de progression.
-     * @param {number} timeLeft Temps restant avant le prochain top 5s, en secondes.
-     */
     function updateDisplay(timeLeft) {
         timerBarFill.style.width = `${((REFRESH_PERIOD_SECONDS - timeLeft) / REFRESH_PERIOD_SECONDS) * 100}%`;
         timerCounter.textContent = `Rafraîchissement dans ${timeLeft}s`;
     }
 
-    /**
-     * Exécute le cycle du jeu (Envoi, puis Réception).
-     * Doit être appelée juste avant la seconde 0, 5, 10...
-     */
     async function gameCycle() {
-        // Envoi des clics 1 seconde AVANT la récupération
         await sendClicks();
-        
-        // Récupération des données APRES l'envoi
         await fetchGameData();
-        
-        // Redémarre l'intervalle
         startInterval();
     }
 
-    /**
-     * Démarre l'intervalle de 1 seconde pour le compte à rebours visuel.
-     */
     function startInterval() {
-        clearInterval(timerInterval); // Assure qu'aucun autre intervalle ne tourne
+        clearInterval(timerInterval);
 
-        // Le temps restant à afficher commence à 5 secondes (ou REFRESH_PERIOD_SECONDS)
         let timeLeft = REFRESH_PERIOD_SECONDS; 
 
         timerInterval = setInterval(() => {
@@ -518,31 +555,23 @@
             updateDisplay(timeLeft);
 
             if (timeLeft === 1) {
-                // Pour que l'envoi et la réception se fassent précisément au top 5s
-                // nous arrêtons l'intervalle et lançons le cycle complet de jeu
                 clearInterval(timerInterval);
-                
-                // Exécute sendClicks (t-1) et fetchGameData (t)
                 gameCycle(); 
             }
 
-        }, 1000); // Mettre à jour toutes les secondes
+        }, 1000); 
     }
 
-    /**
-     * Fonction principale de lancement pour se synchroniser sur l'heure UTC.
-     */
+    // Lancement et synchronisation
     loadMySession().then(() => {
-        fetchGameData(); // Premier rafraîchissement immédiat
+        fetchGameData(); 
 
         const waitTime = getWaitTime();
         
         updateDisplay(Math.ceil(waitTime / 1000));
         timerCounter.textContent = `Synchronisation dans ${Math.ceil(waitTime / 1000)}s`;
 
-        // Attend jusqu'à la prochaine seconde UTC multiple de 5
         setTimeout(() => {
-            // Lancer le premier cycle de jeu (Envoi puis Réception)
             gameCycle(); 
         }, waitTime);
     });

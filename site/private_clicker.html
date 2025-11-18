@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Private Clicker Game</title>
-    <style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Clicker Game</title>
+    <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #232323; overflow: hidden; }
 
@@ -73,6 +73,32 @@
     .join-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
 
     .join-button:active { transform: translateY(0); }
+    
+    /* NOUVEAU STYLE POUR LE BOUTON AMÉLIORATIONS */
+    .upgrade-button { 
+        width: 100%; 
+        height: clamp(42px, 5.5vh, 48px); 
+        border-radius: 12px; 
+        border: none; 
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); /* Couleurs violettes */
+        color: white; 
+        font-size: clamp(13px, 1.8vw, 15px); 
+        font-weight: bold; 
+        cursor: pointer; 
+        margin-top: 12px; 
+        transition: all 0.3s ease; 
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); 
+    }
+
+    .upgrade-button:hover { 
+        transform: translateY(-2px); 
+        box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4); 
+    }
+
+    .upgrade-button:active { 
+        transform: translateY(0); 
+    }
+    /* FIN NOUVEAU STYLE */
 
     .sidebar-status { color: #94a3b8; font-size: clamp(11px, 1.5vw, 12px); margin-top: 10px; min-height: 20px; word-break: break-word; }
 
@@ -94,53 +120,55 @@
 
 </head>
 <body>
-    <div class="container">
-        <div class="main-area">
-            <button class="back-btn" onclick="handleBackButton()">←</button>
+    <div class="container">
+        <div class="main-area">
+            <button class="back-btn" onclick="handleBackButton()">←</button>
 
-            <div class="title">Clicker</div>
-            <div class="score-counter" id="scoreCounter">0</div> 
-            <div class="to-send" id="toSend">-- 0 --</div>
-            <button class="click-button" id="clickButton"></button>
-            <div class="timer-bar">
-                <div class="timer-bar-fill" id="timerBarFill"></div>
-            </div>
-            <div class="timer-counter" id="timerCounter">Rafraîchissement : lancement</div>
-            <div class="status-label" id="statusLabel"></div>
-        </div>
+            <div class="title">Clicker</div>
+            <div class="score-counter" id="scoreCounter">0</div> 
+            <div class="to-send" id="toSend">-- 0 --</div>
+            <button class="click-button" id="clickButton"></button>
+            <div class="timer-bar">
+                <div class="timer-bar-fill" id="timerBarFill"></div>
+            </div>
+            <div class="timer-counter" id="timerCounter">Rafraîchissement : lancement</div>
+            <div class="status-label" id="statusLabel"></div>
+        </div>
 
-        <button class="toggle-sidebar-btn" id="toggleSidebar">☰</button>
+        <button class="toggle-sidebar-btn" id="toggleSidebar">☰</button>
 
-        <div class="sidebar" id="sidebar">
-            <button class="close-btn" id="closeBtn">×</button>
-            <div class="sidebar-title">Session</div>
+        <div class="sidebar" id="sidebar">
+            <button class="close-btn" id="closeBtn">×</button>
+            <div class="sidebar-title">Session</div>
 
-            <div class="section-title">Code de session</div>
-            <div class="session-code" id="sessionCode">Chargement...</div>
+            <div class="section-title">Code de session</div>
+            <div class="session-code" id="sessionCode">Chargement...</div>
 
-            <div class="section-title">Utilisateur</div>
-            <div class="username-label" id="usernameLabel">Utilisateur</div>
+            <div class="section-title">Utilisateur</div>
+            <div class="username-label" id="usernameLabel">Utilisateur</div>
 
-            <div class="section-title">Joueurs présents</div>
-            <div class="player-count" id="playerCount">1/5</div>
+            <div class="section-title">Joueurs présents</div>
+            <div class="player-count" id="playerCount">1/5</div>
 
-            <div id="playersList">
-                <div class="player-item" id="player1">👤 Vous</div>
-                <div class="player-item waiting" id="player2">⚪ En attente...</div>
-                <div class="player-item waiting" id="player3">⚪ En attente...</div>
-                <div class="player-item waiting" id="player4">⚪ En attente...</div>
-                <div class="player-item waiting" id="player5">⚪ En attente...</div>
-            </div>
+            <div id="playersList">
+                <div class="player-item" id="player1">👤 Vous</div>
+                <div class="player-item waiting" id="player2">⚪ En attente...</div>
+                <div class="player-item waiting" id="player3">⚪ En attente...</div>
+                <div class="player-item waiting" id="player4">⚪ En attente...</div>
+                <div class="player-item waiting" id="player5">⚪ En attente...</div>
+            </div>
 
-            <div class="section-title">Rejoindre une session</div>
-            <input type="text" class="join-input" id="joinInput" placeholder="Entrer un code">
-            <button class="join-button" id="joinButton">Rejoindre</button>
+            <div class="section-title">Rejoindre une session</div>
+            <input type="text" class="join-input" id="joinInput" placeholder="Entrer un code ou /cha [Nom]">
+            <button class="join-button" id="joinButton">Rejoindre / Créer</button>
+            
+            <button class="upgrade-button" id="upgradeButton">Améliorations</button>
+            
+            <div class="sidebar-status" id="sidebarStatus"></div>
+        </div>
+    </div>
 
-            <div class="sidebar-status" id="sidebarStatus"></div>
-        </div>
-    </div>
-
-    <script>
+    <script>
     const API_URL = "https://project-3-api-2bgb.onrender.com";
     let clickCount = 0;
     let lastClickTime = 0;
@@ -153,7 +181,15 @@
 
     // Vérification de l'existence du nom d'utilisateur (redirection non incluse ici)
     if (!username || username.trim() === "") {
-        console.error("⚠️ Aucun nom d'utilisateur trouvé. Le jeu ne fonctionnera pas correctement.");
+        // Demande un nom d'utilisateur s'il n'est pas défini (sécurité)
+        const inputName = prompt("Veuillez entrer votre nom d'utilisateur pour jouer :");
+        if (inputName && inputName.trim() !== "") {
+            username = inputName.trim();
+            localStorage.setItem("username", username);
+        } else {
+            username = "JoueurAnonyme_" + Math.random().toString(36).substring(2, 8);
+            console.warn("⚠️ Nom d'utilisateur non défini. Utilisation d'un nom anonyme par défaut.");
+        }
     }
 
     const clickButton = document.getElementById('clickButton');
@@ -171,6 +207,7 @@
     const sidebar = document.getElementById('sidebar');
     const toggleSidebar = document.getElementById('toggleSidebar');
     const timerBarFill = document.getElementById('timerBarFill');
+    const upgradeButton = document.getElementById('upgradeButton'); // NOUVEL ÉLÉMENT JS
 
     usernameLabel.textContent = username;
 
@@ -180,6 +217,10 @@
     });
 
     clickButton.addEventListener('click', onClickerClick);
+    
+    // GESTIONNAIRE D'ÉVÉNEMENT POUR LE NOUVEAU BOUTON
+    upgradeButton.addEventListener('click', openUpgradeWindow);
+    // FIN GESTIONNAIRE D'ÉVÉNEMENT
 
     window.addEventListener('beforeunload', async (e) => {
         await leaveSessionSilently();
@@ -187,8 +228,15 @@
 
     async function handleBackButton() {
         await leaveSessionSilently();
-        // window.location.href = "menu.html"; 
+        // window.location.href = "menu.html"; // Décommenter si vous avez une page de menu
     }
+
+    // NOUVELLE FONCTION POUR OUVRIR LA FENÊTRE D'AMÉLIORATION
+    function openUpgradeWindow() {
+        // Ouvre la page 'upgrade.html' dans une nouvelle fenêtre/onglet
+        window.open("upgrade.html", "_blank", "width=500,height=700,scrollbars=yes");
+    }
+    // FIN NOUVELLE FONCTION
 
     async function leaveSessionSilently() {
         const code = sessionCode.textContent;
@@ -199,13 +247,14 @@
         try {
             const data = JSON.stringify({ code: code, id: username });
             if (navigator.sendBeacon) {
+                // Utilisation de sendBeacon pour garantir l'envoi lors de la fermeture de l'onglet
                 navigator.sendBeacon(`${API_URL}/leave`, data);
             } else {
                 await fetch(`${API_URL}/leave`, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
                     body: data,
-                    keepalive: true
+                    keepalive: true // Maintient la requête même si l'onglet se ferme
                 });
             }
         } catch (e) {
@@ -238,7 +287,7 @@
 
     async function sendClicks() {
         const code = sessionCode.textContent;
-        if (code === "Chargement..." || code === "Aucune session") {
+        if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
             return;
         }
         

@@ -151,9 +151,9 @@
 
     console.log("Username récupéré du localStorage:", username);
 
+    // Vérification de l'existence du nom d'utilisateur (redirection non incluse ici)
     if (!username || username.trim() === "") {
-        alert("⚠️ Aucun nom d'utilisateur trouvé. Veuillez vous connecter.");
-        window.location.href = "menu.html";
+        console.error("⚠️ Aucun nom d'utilisateur trouvé. Le jeu ne fonctionnera pas correctement.");
     }
 
     const clickButton = document.getElementById('clickButton');
@@ -172,9 +172,6 @@
     const toggleSidebar = document.getElementById('toggleSidebar');
     const timerBarFill = document.getElementById('timerBarFill');
 
-    // Mise à jour du texte du bouton pour le rendre plus clair
-    joinButton.textContent = "Rejoindre ou Créer"; 
-
     usernameLabel.textContent = username;
 
     toggleSidebar.addEventListener('click', () => { 
@@ -190,7 +187,7 @@
 
     async function handleBackButton() {
         await leaveSessionSilently();
-        window.location.href = "menu.html";
+        // window.location.href = "menu.html"; 
     }
 
     async function leaveSessionSilently() {
@@ -314,8 +311,9 @@
                 sessionCode.textContent = data.code;
                 sidebarStatus.textContent = "✅ Session chargée";
                 sidebarStatus.style.color = "#10b981";
-            } else if (data.status === "error" && data.message.includes("not in any session")) {
+            } else if (data.status === "error" && (data.message.includes("not in any session") || data.message.includes("not found"))) {
                 // Création automatique si l'utilisateur n'est dans aucune session.
+                console.log("Utilisateur non trouvé dans une session. Création automatique...");
                 await createSession(); 
             } else {
                 sessionCode.textContent = "Aucune session";
@@ -336,6 +334,7 @@
         }
 
         try {
+            // Récupération du score
             const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(code)}`);
             const scoreData = await scoreResponse.json();
 
@@ -343,6 +342,7 @@
                 scoreCounter.textContent = scoreData.poires || 0; 
             }
 
+            // Récupération des joueurs
             const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
             const playersData = await playersResponse.json();
             
@@ -414,9 +414,13 @@
             if (index === 0) {
                 slot.textContent = "👤 Vous (Déconnecté)";
                 slot.classList.remove('waiting');
+                slot.style.color = '#ffd966'; 
+                slot.style.borderLeft = '3px solid #ffb84d';
             } else {
                 slot.textContent = "⚪ En attente...";
                 slot.classList.add('waiting');
+                slot.style.color = '#64748b';
+                slot.style.borderLeft = '3px solid #64748b';
             }
         });
     }

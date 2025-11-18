@@ -141,348 +141,411 @@
     </div>
 
     <script>
-        const API_URL = "https://project-3-api-2bgb.onrender.com";
-        let clickCount = 0;
-        let lastClickTime = 0;
-        let clickIntervals = [];
-        let sidebarVisible = true;
+    const API_URL = "https://project-3-api-2bgb.onrender.com";
+    let clickCount = 0;
+    let lastClickTime = 0;
+    let clickIntervals = [];
+    let sidebarVisible = true;
 
-        let username = localStorage.getItem("username");
+    let username = localStorage.getItem("username");
 
-        console.log("Username récupéré du localStorage:", username);
+    console.log("Username récupéré du localStorage:", username);
 
-        if (!username || username.trim() === "") {
-            alert("⚠️ Aucun nom d'utilisateur trouvé. Veuillez vous connecter.");
-            window.location.href = "menu.html";
+    if (!username || username.trim() === "") {
+        alert("⚠️ Aucun nom d'utilisateur trouvé. Veuillez vous connecter.");
+        window.location.href = "menu.html";
+    }
+
+    const clickButton = document.getElementById('clickButton');
+    const scoreCounter = document.getElementById('scoreCounter'); 
+    const toSend = document.getElementById('toSend');
+    const timerCounter = document.getElementById('timerCounter');
+    const statusLabel = document.getElementById('statusLabel');
+    const sessionCode = document.getElementById('sessionCode');
+    const usernameLabel = document.getElementById('usernameLabel');
+    const playerCount = document.getElementById('playerCount');
+    const joinInput = document.getElementById('joinInput');
+    const joinButton = document.getElementById('joinButton');
+    const closeBtn = document.getElementById('closeBtn');
+    const sidebarStatus = document.getElementById('sidebarStatus');
+    const sidebar = document.getElementById('sidebar');
+    const toggleSidebar = document.getElementById('toggleSidebar');
+    const timerBarFill = document.getElementById('timerBarFill');
+
+    usernameLabel.textContent = username;
+
+    toggleSidebar.addEventListener('click', () => { 
+        sidebarVisible = !sidebarVisible; 
+        sidebar.classList.toggle('hidden'); 
+    });
+
+    clickButton.addEventListener('click', onClickerClick);
+
+    window.addEventListener('beforeunload', async (e) => {
+        await leaveSessionSilently();
+    });
+
+    async function handleBackButton() {
+        await leaveSessionSilently();
+        window.location.href = "menu.html";
+    }
+
+    async function leaveSessionSilently() {
+        const code = sessionCode.textContent;
+        if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
+            return;
         }
-
-        const clickButton = document.getElementById('clickButton');
-        const scoreCounter = document.getElementById('scoreCounter'); 
-        const toSend = document.getElementById('toSend');
-        const timerCounter = document.getElementById('timerCounter');
-        const statusLabel = document.getElementById('statusLabel');
-        const sessionCode = document.getElementById('sessionCode');
-        const usernameLabel = document.getElementById('usernameLabel');
-        const playerCount = document.getElementById('playerCount');
-        const joinInput = document.getElementById('joinInput');
-        const joinButton = document.getElementById('joinButton');
-        const closeBtn = document.getElementById('closeBtn');
-        const sidebarStatus = document.getElementById('sidebarStatus');
-        const sidebar = document.getElementById('sidebar');
-        const toggleSidebar = document.getElementById('toggleSidebar');
-        const timerBarFill = document.getElementById('timerBarFill');
-
-        usernameLabel.textContent = username;
-
-        toggleSidebar.addEventListener('click', () => { 
-            sidebarVisible = !sidebarVisible; 
-            sidebar.classList.toggle('hidden'); 
-        });
-
-        clickButton.addEventListener('click', onClickerClick);
-
-        window.addEventListener('beforeunload', async (e) => {
-            await leaveSessionSilently();
-        });
-
-        async function handleBackButton() {
-            await leaveSessionSilently();
-            window.location.href = "menu.html";
-        }
-
-        async function leaveSessionSilently() {
-            const code = sessionCode.textContent;
-            if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
-                return;
-            }
-            
-            try {
-                const data = JSON.stringify({ code: code, id: username });
-                if (navigator.sendBeacon) {
-                    navigator.sendBeacon(`${API_URL}/leave`, data);
-                } else {
-                    await fetch(`${API_URL}/leave`, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' }, 
-                        body: data,
-                        keepalive: true
-                    });
-                }
-            } catch (e) {
-                console.error("Erreur lors de la déconnexion:", e);
-            }
-        }
-
-        function onClickerClick() {
-            const now = Date.now() / 1000;
-            let freq = 0;
-            if (lastClickTime !== 0) {
-                const interval = now - lastClickTime;
-                clickIntervals.push(interval);
-                if (clickIntervals.length > 5) clickIntervals.shift();
-                const avg = clickIntervals.reduce((a, b) => a + b, 0) / clickIntervals.length;
-                freq = avg > 0 ? 1 / avg : 0;
-            }
-            lastClickTime = now;
-
-            if (freq > 20) {
-                statusLabel.textContent = "⚠️ Autoclicker détecté ⚠️";
-                statusLabel.style.color = "#f87171";
-                setTimeout(() => { statusLabel.textContent = ""; }, 1000);
-                return;
-            }
-
-            clickCount++;
-            toSend.textContent = `-- ${clickCount} --`;
-        }
-
-        async function sendClicks() {
-            const code = sessionCode.textContent;
-            if (code === "Chargement..." || code === "Aucune session") {
-                statusLabel.textContent = "⚠️ Session non disponible";
-                statusLabel.style.color = "#f59e0b";
-                return;
-            }
-            
-            const toSendValue = clickCount;
-            clickCount = 0;
-            toSend.textContent = "-- 0 --";
-            
-            if (toSendValue === 0) return;
-
-            try {
-                statusLabel.textContent = `Envoi de ${toSendValue} points...`; 
-                statusLabel.style.color = "#3b82f6";
-
-                const response = await fetch(`${API_URL}/poire`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ session: code, click: toSendValue, id: username }) 
-                });
-                const data = await response.json();
-                if (data.status !== "success") {
-                    statusLabel.textContent = `Erreur envoi: ${data.message}`;
-                    statusLabel.style.color = "#ef4444";
-                } else {
-                    statusLabel.textContent = "Score envoyé !"; 
-                    statusLabel.style.color = "#10b981";
-                }
-            } catch (e) {
-                statusLabel.textContent = "❌ Erreur réseau envoi";
-                statusLabel.style.color = "#ef4444";
-            }
-        }
-
-        async function loadMySession() {
-            try {
-                const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
-                const data = await response.json();
-                if (data.status === "success" && data.code) {
-                    sessionCode.textContent = data.code;
-                    sidebarStatus.textContent = "✅ Session chargée";
-                    sidebarStatus.style.color = "#10b981";
-                } else {
-                    sessionCode.textContent = "Aucune session";
-                    sidebarStatus.textContent = "ℹ️ Aucune session trouvée";
-                    sidebarStatus.style.color = "#94a3b8";
-                }
-            } catch (e) {
-                sessionCode.textContent = "Erreur";
-                sidebarStatus.textContent = "❌ Erreur réseau";
-                sidebarStatus.style.color = "#ef4444";
-            }
-        }
-
-        async function fetchGameData() {
-            const code = sessionCode.textContent;
-            if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
-                return;
-            }
-
-            try {
-                const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(code)}`);
-                const scoreData = await scoreResponse.json();
-
-                if (scoreData.status === "success") {
-                    scoreCounter.textContent = scoreData.poires || 0; 
-                }
-
-                const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
-                const playersData = await playersResponse.json();
-                
-                if (playersData.status === "success") {
-                    updatePlayersList(playersData.players, playersData.creator);
-                }
-
-            } catch (e) {
-                console.error("Erreur lors du rafraîchissement des données:", e);
-            }
-        }
-
-        function updatePlayersList(players, creator) {
-            const playersList = document.getElementById('playersList');
-            const playerSlots = [document.getElementById('player1'), document.getElementById('player2'), document.getElementById('player3'), document.getElementById('player4'), document.getElementById('player5')];
-
-            let activePlayers = [];
-            if (creator) {
-                activePlayers.push(creator);
-            }
-            players.forEach(p => {
-                if (p !== creator) {
-                    activePlayers.push(p);
-                }
-            });
-
-            const uniqueActivePlayers = [...new Set(activePlayers)];
-
-            playerCount.textContent = `${uniqueActivePlayers.length}/5`;
-
-            playerSlots.forEach((slot, index) => {
-                const player = uniqueActivePlayers[index];
-                if (player) {
-                    slot.textContent = player === username ? "👤 Vous" : (player === creator ? `👑 ${player}` : `• ${player}`);
-                    slot.classList.remove('waiting');
-                } else {
-                    slot.textContent = "⚪ En attente...";
-                    slot.classList.add('waiting');
-                }
-            });
-        }
-
-        function resetPlayersList() {
-            const playerSlots = [document.getElementById('player1'), document.getElementById('player2'), document.getElementById('player3'), document.getElementById('player4'), document.getElementById('player5')];
-            playerCount.textContent = `0/5`;
-            playerSlots.forEach((slot, index) => {
-                if (index === 0) {
-                    slot.textContent = "👤 Vous (Déconnecté)";
-                    slot.classList.remove('waiting');
-                } else {
-                    slot.textContent = "⚪ En attente...";
-                    slot.classList.add('waiting');
-                }
-            });
-        }
-
-        closeBtn.addEventListener('click', async () => {
-            const code = sessionCode.textContent;
-            if (code === "Chargement..." || code === "Aucune session") { 
-                sidebarStatus.textContent = "⚠️ Pas de session active"; 
-                sidebarStatus.style.color = "#f59e0b"; 
-                return; 
-            }
-            
-            closeBtn.disabled = true;
-            
-            try {
-                const response = await fetch(`${API_URL}/leave`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ code: code, id: username }) 
-                });
-                const data = await response.json();
-                if (data.status === "success") { 
-                    sidebarStatus.textContent = "✅ Session quittée"; 
-                    sidebarStatus.style.color = "#10b981"; 
-                    sessionCode.textContent = "Aucune session"; 
-                    resetPlayersList(); 
-                } else { 
-                    sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`; 
-                    sidebarStatus.style.color = "#ef4444"; 
-                }
-            } catch (e) { 
-                sidebarStatus.textContent = "❌ Erreur réseau"; 
-                sidebarStatus.style.color = "#ef4444"; 
-            } finally {
-                closeBtn.disabled = false;
-            }
-        });
-
-        joinButton.addEventListener('click', async () => {
-            let input = joinInput.value.trim();
-            if (!input) { 
-                sidebarStatus.textContent = "⚠️ Veuillez entrer un code ou une commande"; 
-                sidebarStatus.style.color = "#f59e0b"; 
-                return; 
-            }
-
-            joinButton.disabled = true;
-
-            try {
-                if (input.toLowerCase().startsWith("/cha ")) {
-                    const newSessionName = input.substring(5).trim();
-                    if (!newSessionName) {
-                        sidebarStatus.textContent = "⚠️ Nom de session manquant";
-                        sidebarStatus.style.color = "#f59e0b";
-                        joinButton.disabled = false;
-                        return;
-                    }
-                    
-                    sidebarStatus.textContent = `Changement du nom en '${newSessionName}'...`;
-                    const response = await fetch(`${API_URL}/change_session`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id: username, new_session_name: newSessionName })
-                    });
-                    const data = await response.json();
-                    if (data.status === "success") {
-                        sidebarStatus.textContent = `✅ ${data.message}`;
-                        sidebarStatus.style.color = "#10b981";
-                        sessionCode.textContent = newSessionName;
-                    } else {
-                        sidebarStatus.textContent = `❌ Erreur changement : ${data.message}`;
-                        sidebarStatus.style.color = "#ef4444";
-                    }
-                    joinInput.value = "";
-                    
-                } else {
-                    sidebarStatus.textContent = `Tentative de rejoindre la session '${input}'...`;
-                    const response = await fetch(`${API_URL}/join`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code: input, id: username })
-                    });
-                    const data = await response.json();
-                    
-                    if (data.status === "success") {
-                        sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
-                        sidebarStatus.style.color = "#10b981";
-                        sessionCode.textContent = input;
-                    } else {
-                        sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
-                        sidebarStatus.style.color = "#ef4444";
-                    }
-                    joinInput.value = "";
-                }
-            } catch (e) {
-                sidebarStatus.textContent = "❌ Erreur réseau / Commande non valide";
-                sidebarStatus.style.color = "#ef4444";
-            } finally {
-                joinButton.disabled = false;
-            }
-        });
-
-        const REFRESH_INTERVAL = 10000;
-        let timeLeft = REFRESH_INTERVAL / 1000;
-        let timerInterval;
-
-        function updateTimer() {
-            timerBarFill.style.width = `${(timeLeft / (REFRESH_INTERVAL / 1000)) * 100}%`;
-            timerCounter.textContent = `Rafraîchissement dans ${timeLeft}s`;
-
-            if (timeLeft <= 0) {
-                sendClicks(); 
-                fetchGameData();
-                
-                timeLeft = REFRESH_INTERVAL / 1000;
+        
+        try {
+            const data = JSON.stringify({ code: code, id: username });
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(`${API_URL}/leave`, data);
             } else {
-                timeLeft--;
+                await fetch(`${API_URL}/leave`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: data,
+                    keepalive: true
+                });
             }
+        } catch (e) {
+            console.error("Erreur lors de la déconnexion:", e);
+        }
+    }
+
+    function onClickerClick() {
+        const now = Date.now() / 1000;
+        let freq = 0;
+        if (lastClickTime !== 0) {
+            const interval = now - lastClickTime;
+            clickIntervals.push(interval);
+            if (clickIntervals.length > 5) clickIntervals.shift();
+            const avg = clickIntervals.reduce((a, b) => a + b, 0) / clickIntervals.length;
+            freq = avg > 0 ? 1 / avg : 0;
+        }
+        lastClickTime = now;
+
+        if (freq > 20) {
+            statusLabel.textContent = "⚠️ Autoclicker détecté ⚠️";
+            statusLabel.style.color = "#f87171";
+            setTimeout(() => { statusLabel.textContent = ""; }, 1000);
+            return;
         }
 
-        loadMySession().then(() => {
-            fetchGameData();
-            timerInterval = setInterval(updateTimer, 1000);
+        clickCount++;
+        toSend.textContent = `-- ${clickCount} --`;
+    }
+
+    async function sendClicks() {
+        const code = sessionCode.textContent;
+        if (code === "Chargement..." || code === "Aucune session") {
+            return;
+        }
+        
+        const toSendValue = clickCount;
+        clickCount = 0;
+        toSend.textContent = "-- 0 --";
+        
+        if (toSendValue === 0) return;
+
+        try {
+            statusLabel.textContent = `Envoi de ${toSendValue} points...`; 
+            statusLabel.style.color = "#3b82f6";
+
+            const response = await fetch(`${API_URL}/poire`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ session: code, click: toSendValue, id: username }) 
+            });
+            const data = await response.json();
+            if (data.status !== "success") {
+                statusLabel.textContent = `Erreur envoi: ${data.message}`;
+                statusLabel.style.color = "#ef4444";
+            } else {
+                statusLabel.textContent = "Score envoyé !"; 
+                statusLabel.style.color = "#10b981";
+            }
+        } catch (e) {
+            statusLabel.textContent = "❌ Erreur réseau envoi";
+            statusLabel.style.color = "#ef4444";
+        }
+    }
+
+    async function loadMySession() {
+        try {
+            const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
+            const data = await response.json();
+            if (data.status === "success" && data.code) {
+                sessionCode.textContent = data.code;
+                sidebarStatus.textContent = "✅ Session chargée";
+                sidebarStatus.style.color = "#10b981";
+            } else {
+                sessionCode.textContent = "Aucune session";
+                sidebarStatus.textContent = "ℹ️ Aucune session trouvée";
+                sidebarStatus.style.color = "#94a3b8";
+            }
+        } catch (e) {
+            sessionCode.textContent = "Erreur";
+            sidebarStatus.textContent = "❌ Erreur réseau";
+            sidebarStatus.style.color = "#ef4444";
+        }
+    }
+
+    async function fetchGameData() {
+        const code = sessionCode.textContent;
+        if (code === "Chargement..." || code === "Aucune session" || code === "Erreur") {
+            return;
+        }
+
+        try {
+            const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(code)}`);
+            const scoreData = await scoreResponse.json();
+
+            if (scoreData.status === "success") {
+                scoreCounter.textContent = scoreData.poires || 0; 
+            }
+
+            const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
+            const playersData = await playersResponse.json();
+            
+            if (playersData.status === "success") {
+                updatePlayersList(playersData.players, playersData.creator);
+            }
+
+        } catch (e) {
+            console.error("Erreur lors du rafraîchissement des données:", e);
+        }
+    }
+
+    function updatePlayersList(players, creator) {
+        const playersList = document.getElementById('playersList');
+        const playerSlots = [document.getElementById('player1'), document.getElementById('player2'), document.getElementById('player3'), document.getElementById('player4'), document.getElementById('player5')];
+
+        let activePlayers = [];
+        if (creator) {
+            activePlayers.push(creator);
+        }
+        players.forEach(p => {
+            if (p !== creator) {
+                activePlayers.push(p);
+            }
         });
-    </script>
+
+        const uniqueActivePlayers = [...new Set(activePlayers)];
+
+        playerCount.textContent = `${uniqueActivePlayers.length}/5`;
+
+        playerSlots.forEach((slot, index) => {
+            const player = uniqueActivePlayers[index];
+            if (player) {
+                slot.textContent = player === username ? "👤 Vous" : (player === creator ? `👑 ${player}` : `• ${player}`);
+                slot.classList.remove('waiting');
+            } else {
+                slot.textContent = "⚪ En attente...";
+                slot.classList.add('waiting');
+            }
+        });
+    }
+
+    function resetPlayersList() {
+        const playerSlots = [document.getElementById('player1'), document.getElementById('player2'), document.getElementById('player3'), document.getElementById('player4'), document.getElementById('player5')];
+        playerCount.textContent = `0/5`;
+        playerSlots.forEach((slot, index) => {
+            if (index === 0) {
+                slot.textContent = "👤 Vous (Déconnecté)";
+                slot.classList.remove('waiting');
+            } else {
+                slot.textContent = "⚪ En attente...";
+                slot.classList.add('waiting');
+            }
+        });
+    }
+
+    closeBtn.addEventListener('click', async () => {
+        const code = sessionCode.textContent;
+        if (code === "Chargement..." || code === "Aucune session") { 
+            sidebarStatus.textContent = "⚠️ Pas de session active"; 
+            sidebarStatus.style.color = "#f59e0b"; 
+            return; 
+        }
+        
+        closeBtn.disabled = true;
+        
+        try {
+            const response = await fetch(`${API_URL}/leave`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ code: code, id: username }) 
+            });
+            const data = await response.json();
+            if (data.status === "success") { 
+                sidebarStatus.textContent = "✅ Session quittée"; 
+                sidebarStatus.style.color = "#10b981"; 
+                sessionCode.textContent = "Aucune session"; 
+                resetPlayersList(); 
+            } else { 
+                sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`; 
+                sidebarStatus.style.color = "#ef4444"; 
+            }
+        } catch (e) { 
+            sidebarStatus.textContent = "❌ Erreur réseau"; 
+            sidebarStatus.style.color = "#ef4444"; 
+        } finally {
+            closeBtn.disabled = false;
+        }
+    });
+
+    joinButton.addEventListener('click', async () => {
+        let input = joinInput.value.trim();
+        if (!input) { 
+            sidebarStatus.textContent = "⚠️ Veuillez entrer un code ou une commande"; 
+            sidebarStatus.style.color = "#f59e0b"; 
+            return; 
+        }
+
+        joinButton.disabled = true;
+
+        try {
+            if (input.toLowerCase().startsWith("/cha ")) {
+                const newSessionName = input.substring(5).trim();
+                if (!newSessionName) {
+                    sidebarStatus.textContent = "⚠️ Nom de session manquant";
+                    sidebarStatus.style.color = "#f59e0b";
+                    joinButton.disabled = false;
+                    return;
+                }
+                
+                sidebarStatus.textContent = `Changement du nom en '${newSessionName}'...`;
+                const response = await fetch(`${API_URL}/change_session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: username, new_session_name: newSessionName })
+                });
+                const data = await response.json();
+                if (data.status === "success") {
+                    sidebarStatus.textContent = `✅ ${data.message}`;
+                    sidebarStatus.style.color = "#10b981";
+                    sessionCode.textContent = newSessionName;
+                } else {
+                    sidebarStatus.textContent = `❌ Erreur changement : ${data.message}`;
+                    sidebarStatus.style.color = "#ef4444";
+                }
+                joinInput.value = "";
+                
+            } else {
+                sidebarStatus.textContent = `Tentative de rejoindre la session '${input}'...`;
+                const response = await fetch(`${API_URL}/join`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: input, id: username })
+                });
+                const data = await response.json();
+                
+                if (data.status === "success") {
+                    sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
+                    sidebarStatus.style.color = "#10b981";
+                    sessionCode.textContent = input;
+                } else {
+                    sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
+                    sidebarStatus.style.color = "#ef4444";
+                }
+                joinInput.value = "";
+            }
+        } catch (e) {
+            sidebarStatus.textContent = "❌ Erreur réseau / Commande non valide";
+            sidebarStatus.style.color = "#ef4444";
+        } finally {
+            joinButton.disabled = false;
+        }
+    });
+
+    const REFRESH_PERIOD_SECONDS = 5;
+    let timerInterval;
+
+    /**
+     * Calcule le nombre de millisecondes à attendre jusqu'à la prochaine
+     * seconde multiple de REFRESH_PERIOD_SECONDS (ex: 0, 5, 10, 15... secondes UTC).
+     * @returns {number} Délai en ms.
+     */
+    function getWaitTime() {
+        const now = new Date();
+        const utcSeconds = now.getUTCSeconds(); // Seconde actuelle en UTC
+        
+        // Calcule le nombre de secondes écoulées depuis le dernier top 5s
+        const elapsed = utcSeconds % REFRESH_PERIOD_SECONDS;
+        
+        // Calcule le temps restant jusqu'au prochain top 5s (ex: si utcSeconds = 3, elapsed = 3, waitTime = 5 - 3 = 2s)
+        const waitTimeSeconds = REFRESH_PERIOD_SECONDS - elapsed;
+        
+        return waitTimeSeconds * 1000;
+    }
+
+    /**
+     * Met à jour le compteur visuel et la barre de progression.
+     * @param {number} timeLeft Temps restant avant le prochain top 5s, en secondes.
+     */
+    function updateDisplay(timeLeft) {
+        timerBarFill.style.width = `${((REFRESH_PERIOD_SECONDS - timeLeft) / REFRESH_PERIOD_SECONDS) * 100}%`;
+        timerCounter.textContent = `Rafraîchissement dans ${timeLeft}s`;
+    }
+
+    /**
+     * Exécute le cycle du jeu (Envoi, puis Réception).
+     * Doit être appelée juste avant la seconde 0, 5, 10...
+     */
+    async function gameCycle() {
+        // Envoi des clics 1 seconde AVANT la récupération
+        await sendClicks();
+        
+        // Récupération des données APRES l'envoi
+        await fetchGameData();
+        
+        // Redémarre l'intervalle
+        startInterval();
+    }
+
+    /**
+     * Démarre l'intervalle de 1 seconde pour le compte à rebours visuel.
+     */
+    function startInterval() {
+        clearInterval(timerInterval); // Assure qu'aucun autre intervalle ne tourne
+
+        // Le temps restant à afficher commence à 5 secondes (ou REFRESH_PERIOD_SECONDS)
+        let timeLeft = REFRESH_PERIOD_SECONDS; 
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateDisplay(timeLeft);
+
+            if (timeLeft === 1) {
+                // Pour que l'envoi et la réception se fassent précisément au top 5s
+                // nous arrêtons l'intervalle et lançons le cycle complet de jeu
+                clearInterval(timerInterval);
+                
+                // Exécute sendClicks (t-1) et fetchGameData (t)
+                gameCycle(); 
+            }
+
+        }, 1000); // Mettre à jour toutes les secondes
+    }
+
+    /**
+     * Fonction principale de lancement pour se synchroniser sur l'heure UTC.
+     */
+    loadMySession().then(() => {
+        fetchGameData(); // Premier rafraîchissement immédiat
+
+        const waitTime = getWaitTime();
+        
+        updateDisplay(Math.ceil(waitTime / 1000));
+        timerCounter.textContent = `Synchronisation dans ${Math.ceil(waitTime / 1000)}s`;
+
+        // Attend jusqu'à la prochaine seconde UTC multiple de 5
+        setTimeout(() => {
+            // Lancer le premier cycle de jeu (Envoi puis Réception)
+            gameCycle(); 
+        }, waitTime);
+    });
+</script>
 </body>
 </html>

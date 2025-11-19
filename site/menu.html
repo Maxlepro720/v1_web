@@ -9,56 +9,56 @@
 /* -------------------------
     🎨 STYLES CSS
     ------------------------- */
-    body { margin: 0; font-family: Arial, sans-serif; background: #0f1419; color: white; }
+body { margin: 0; font-family: Arial, sans-serif; background: #0f1419; color: white; }
 
-    /* HEADER */
-    header { background: black; display: flex; align-items: center; padding: 20px 30px; gap: 20px; justify-content: space-between; }
-    header h1 { font-size: 26px; color: #60a5fa; margin: 0; }
-    
-    /* NAV PRINCIPALE (sans le bouton de déconnexion) */
-    #main-nav { display: flex; align-items: center; gap: 10px; }
-    
-    /* STYLES GÉNÉRAUX APPLIQUÉS SEULEMENT AUX BOUTONS DANS #main-nav */
-    #main-nav button { background: #1f2937; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 6px; font-size: 15px; }
-    #main-nav button:hover { background: #374151; }
+/* HEADER */
+header { background: black; display: flex; align-items: center; padding: 20px 30px; gap: 20px; justify-content: space-between; }
+header h1 { font-size: 26px; color: #60a5fa; margin: 0; }
 
-    /* Style spécifique pour le bouton de déconnexion (compacté) */
-    #logout-button { background: #ef4444; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 6px; font-size: 15px; font-weight: bold; transition: background 0.2s; }
-    #logout-button:hover { background: #dc2626; }
+/* NAV PRINCIPALE (sans le bouton de déconnexion) */
+#main-nav { display: flex; align-items: center; gap: 10px; }
+
+/* STYLES GÉNÉRAUX APPLIQUÉS SEULEMENT AUX BOUTONS DANS #main-nav */
+#main-nav button { background: #1f2937; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 6px; font-size: 15px; }
+#main-nav button:hover { background: #374151; }
+
+/* Style spécifique pour le bouton de déconnexion (compacté) */
+#logout-button { background: #ef4444; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 6px; font-size: 15px; font-weight: bold; transition: background 0.2s; }
+#logout-button:hover { background: #dc2626; }
 
 
-    /* Barre de recherche stylisée comme un bouton */
-    #search_bar { padding: 12px 20px; border-radius: 6px; border: none; outline: none; font-size: 15px; background: #1f2937; color: white; transition: background 0.2s; }
-    #search_bar::placeholder { color: #d1d5db; }
-    #search_bar:focus { background: #374151; }
+/* Barre de recherche stylisée comme un bouton */
+#search_bar { padding: 12px 20px; border-radius: 6px; border: none; outline: none; font-size: 15px; background: #1f2937; color: white; transition: background 0.2s; }
+#search_bar::placeholder { color: #d1d5db; }
+#search_bar:focus { background: #374151; }
 
-    /* SECTION */
-    .section-title { font-size: 30px; margin-left: 30px; margin-top: 20px; }
+/* SECTION */
+.section-title { font-size: 30px; margin-left: 30px; margin-top: 20px; }
 
-    /* GRID */
-    .game-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; padding: 20px 30px; }
+/* GRID */
+.game-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; padding: 20px 30px; }
 
-    /* GAME CARD */
-    .card { background: #1e293b; border-radius: 8px; overflow: hidden; transition: 0.2s; }
-    .card:hover { background: #2d3748; transform: scale(1.02); }
-    .card-image { height: 180px; display: flex; align-items: center; justify-content: center; font-size: 70px; color: white; }
-    .card-info { padding: 15px; }
-    .card-title { font-size: 20px; margin: 0; }
-    .card-genre { font-size: 14px; opacity: 0.7; margin-top: 6px; margin-bottom: 12px; }
-    .card button { width: 100%; background: #3b82f6; border: none; padding: 12px; color: white; cursor: pointer; font-size: 15px; border-radius: 6px; }
-    .card button:hover { background: #2563eb; }
+/* GAME CARD */
+.card { background: #1e293b; border-radius: 8px; overflow: hidden; transition: 0.2s; }
+.card:hover { background: #2d3748; transform: scale(1.02); }
+.card-image { height: 180px; display: flex; align-items: center; justify-content: center; font-size: 70px; color: white; }
+.card-info { padding: 15px; }
+.card-title { font-size: 20px; margin: 0; }
+.card-genre { font-size: 14px; opacity: 0.7; margin-top: 6px; margin-bottom: 12px; }
+.card button { width: 100%; background: #3b82f6; border: none; padding: 12px; color: white; cursor: pointer; font-size: 15px; border-radius: 6px; }
+.card button:hover { background: #2563eb; }
 </style>
 </head>
 <body>
 
 <header>
     <h1>🎮  Accueil</h1>
-    <nav id="main-nav">
+    <nav id="main-nav">
         <button>📚 Bibliothèque</button>
         <input id="search_bar" placeholder="Rechercher">
         <button>👥 Amis</button>
     </nav>
-    <button id="logout-button" onclick="handleLogoutAndRedirect()">🚪 Déconnexion</button>
+    <button id="logout-button" onclick="handleLogoutAndRedirect()">🚪 Déconnexion</button>
 </header>
 
 <h2 class="section-title">Ma Bibliothèque</h2>
@@ -95,26 +95,26 @@ if (!username) {
    ------------------------------------- */
 
 /**
- * Gère le logout initié par l'utilisateur (bouton).
- * Effectue le /logout API et redirige vers index.html.
- */
+ * Gère le logout initié par l'utilisateur (bouton).
+ * Effectue le /logout API et redirige vers index.html.
+ */
 async function handleLogoutAndRedirect() {
-    if (isLoggingOut) return;
-    isLoggingOut = true;
+    if (isLoggingOut) return;
+    isLoggingOut = true;
 
-    try {
-        await fetch(`${API_URL}/logout`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: username })
-        });
-    } catch (e) {
-        console.error("[LOGOUT] Erreur lors du /logout manuel (API):", e);
-    }
-    
-    // Supprimer le username et rediriger
-    localStorage.removeItem("username");
-    window.location.href = 'index.html';
+    try {
+        await fetch(`${API_URL}/logout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: username })
+        });
+    } catch (e) {
+        console.error("[LOGOUT] Erreur lors du /logout manuel (API):", e);
+    }
+    
+    // Supprimer le username et rediriger
+    localStorage.removeItem("username");
+    window.location.href = 'index.html';
 }
 
 
@@ -145,7 +145,7 @@ function logoutSilently() {
  * Fonction appelée lors de la tentative de fermeture ou de navigation.
  */
 function handleLogoutOnClose(event) {
-    if (isLoggingOut) return;
+    if (isLoggingOut) return;
     logoutSilently();
 }
 

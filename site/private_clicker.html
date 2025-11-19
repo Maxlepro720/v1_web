@@ -158,8 +158,10 @@
 
     // --- FONCTIONS (DÉCLARATIONS) ---
 
+    // CHANGEMENT 1 : Corrigé pour ne plus quitter la session
     async function handleBackButton() {
-        await leaveSessionSilently();
+        // await leaveSessionSilently(); // Désactivé
+        window.location.href = "menu.html"; // Activé
     }
 
     async function leaveSessionSilently() {
@@ -227,7 +229,9 @@
         clickCount = 0;
         toSend.textContent = "-- 0 --";
         
-        if (toSendValue === 0) return;
+        // CHANGEMENT 2 : Suppression de la condition pour forcer l'envoi
+        // if (toSendValue === 0) return; 
+        // En supprimant la ligne ci-dessus, on envoie toujours la requête, même pour 0 clic.
 
         try {
             statusLabel.textContent = `Envoi de ${toSendValue} points...`; 
@@ -323,9 +327,8 @@
         try {
             const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(sessionCode)}`);
             const scoreData = await scoreResponse.json();
-
-            // CHANGEMENT 1 : Ligne de débogage pour voir la réponse de l'API
-            console.log("Réponse de /get_poires :", scoreData);
+            
+            // console.log("Réponse de /get_poires :", scoreData);
 
             if (scoreData.status === "success") {
                 if (scoreCounter) {
@@ -420,8 +423,6 @@
     }
 
     // --- LOGIQUE DE SYNCHRONISATION UTC ---
-
-    // CHANGEMENT 2 : Temps de rafraîchissement passé de 5 à 10 secondes
     const REFRESH_PERIOD_SECONDS = 10;
     let timerInterval;
 
@@ -453,9 +454,6 @@
         timerInterval = setInterval(() => {
             timeLeft--;
             updateDisplay(timeLeft);
-
-            // CHANGEMENT 3 : Cette logique est correcte. 
-            // Elle déclenche le cycle quand il reste 1 seconde.
             if (timeLeft === 1) {
                 clearInterval(timerInterval);
                 gameCycle(); 
@@ -466,13 +464,11 @@
     // --- EXÉCUTION AU CHARGEMENT DE LA PAGE ---
     document.addEventListener('DOMContentLoaded', () => {
         
-        // Gère l'indépendance du bouton Upgrade
         const upgradeContainer = document.getElementById('upgrade-button-container');
         if (upgradeContainer) {
             upgradeContainer.innerHTML = '<a href="upgrade.html" class="upgrade-button">Upgrade</a>';
         }
 
-        // --- Initialisation des variables du DOM ---
         console.log("Username récupéré du localStorage:", username);
         if (!username || username.trim() === "") {
             console.error("⚠️ Aucun nom d'utilisateur trouvé. Le jeu ne fonctionnera pas correctement.");
@@ -489,8 +485,6 @@
 
         usernameLabel.textContent = username;
 
-        // --- Ajout des Écouteurs d'Événements ---
-
         toggleSidebar.addEventListener('click', () => { 
             sidebarVisible = !sidebarVisible; 
             sidebar.classList.toggle('hidden'); 
@@ -498,8 +492,9 @@
 
         clickButton.addEventListener('click', onClickerClick);
 
+        // CHANGEMENT 1 (BIS) : L'écouteur qui posait problème
         window.addEventListener('beforeunload', (e) => {
-            leaveSessionSilently();
+            // leaveSessionSilently(); // Désactivé pour que le retour navigateur ne quitte pas la session
         });
 
         closeBtn.addEventListener('click', async () => {
@@ -516,25 +511,18 @@
             closeBtn.disabled = true;
             
             try {
-                const response = await fetch(`${API_URL}/leave`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ code: code, id: username }) 
-                });
-                const data = await response.json();
-                if (data.status === "success") { 
-                    sidebarStatus.textContent = "✅ Session quittée"; 
-                    sidebarStatus.style.color = "#10b981"; 
-                    sessionCode.textContent = "Aucune session";
-                    resetPlayersList();
-                    
-                    setTimeout(async () => {
-                        await createSession();
-                    }, 500);
-                } else { 
-                    sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`; 
-                    sidebarStatus.style.color = "#ef4444"; 
-                }
+                // Ici, c'est correct de leave, car on clique sur le bouton "Quitter"
+                await leaveSessionSilently(); 
+                
+                sidebarStatus.textContent = "✅ Session quittée"; 
+                sidebarStatus.style.color = "#10b981"; 
+                sessionCode.textContent = "Aucune session";
+                resetPlayersList();
+                
+                setTimeout(async () => {
+                    await createSession();
+                }, 500);
+
             } catch (e) { 
                 sidebarStatus.textContent = "❌ Erreur réseau"; 
                 sidebarStatus.style.color = "#ef4444"; 

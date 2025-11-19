@@ -160,11 +160,9 @@
 
     async function handleBackButton() {
         await leaveSessionSilently();
-        // window.location.href = "menu.html"; 
     }
 
     async function leaveSessionSilently() {
-        // Utilise getElementById car 'sessionCode' n'est pas encore défini
         const codeElement = document.getElementById('sessionCode');
         if (!codeElement) return; 
         
@@ -191,8 +189,8 @@
     }
 
     function onClickerClick() {
-        const statusLabel = document.getElementById('statusLabel'); // Doit le récupérer ici
-        const toSend = document.getElementById('toSend'); // Doit le récupérer ici
+        const statusLabel = document.getElementById('statusLabel'); 
+        const toSend = document.getElementById('toSend'); 
         
         const now = Date.now() / 1000;
         let freq = 0;
@@ -290,7 +288,6 @@
         }
     }
 
-    // CORRECTION 1 : Cette fonction gère le chargement OU la création si échec
     async function loadMySession() {
         const sessionCode = document.getElementById('sessionCode');
         const sidebarStatus = document.getElementById('sidebarStatus');
@@ -305,13 +302,11 @@
                 sidebarStatus.style.color = "#10b981";
                 return true;
             } else {
-                // Pas de session trouvée - Création automatique
                 console.log("Aucune session trouvée. Création automatique...");
                 return await createSession();
             }
         } catch (e) {
             console.error("Erreur lors du chargement de la session:", e);
-            // En cas d'erreur réseau, tenter de créer une session
             console.log("Erreur réseau. Tentative de création d'une session...");
             return await createSession();
         }
@@ -326,15 +321,20 @@
         }
 
         try {
-            // Récupération du score
             const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(sessionCode)}`);
             const scoreData = await scoreResponse.json();
 
+            // CHANGEMENT 1 : Ligne de débogage pour voir la réponse de l'API
+            console.log("Réponse de /get_poires :", scoreData);
+
             if (scoreData.status === "success") {
-                scoreCounter.textContent = scoreData.poires || 0; 
+                if (scoreCounter) {
+                    scoreCounter.textContent = scoreData.poires || 0; 
+                } else {
+                    console.error("Élément 'scoreCounter' introuvable dans le HTML !");
+                }
             }
 
-            // Récupération des joueurs
             const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
             const playersData = await playersResponse.json();
             
@@ -420,7 +420,9 @@
     }
 
     // --- LOGIQUE DE SYNCHRONISATION UTC ---
-    const REFRESH_PERIOD_SECONDS = 5;
+
+    // CHANGEMENT 2 : Temps de rafraîchissement passé de 5 à 10 secondes
+    const REFRESH_PERIOD_SECONDS = 10;
     let timerInterval;
 
     function getWaitTime() {
@@ -451,6 +453,9 @@
         timerInterval = setInterval(() => {
             timeLeft--;
             updateDisplay(timeLeft);
+
+            // CHANGEMENT 3 : Cette logique est correcte. 
+            // Elle déclenche le cycle quand il reste 1 seconde.
             if (timeLeft === 1) {
                 clearInterval(timerInterval);
                 gameCycle(); 
@@ -461,12 +466,9 @@
     // --- EXÉCUTION AU CHARGEMENT DE LA PAGE ---
     document.addEventListener('DOMContentLoaded', () => {
         
-        // CORRECTION 2 : Indépendance du bouton Upgrade.
-        // Il est créé ici, indépendamment de la session.
-        // Assurez-vous d'avoir un <div id="upgrade-button-container"></div> dans votre HTML.
+        // Gère l'indépendance du bouton Upgrade
         const upgradeContainer = document.getElementById('upgrade-button-container');
         if (upgradeContainer) {
-            // Crée le bouton 'Upgrade' et le rend fonctionnel
             upgradeContainer.innerHTML = '<a href="upgrade.html" class="upgrade-button">Upgrade</a>';
         }
 
@@ -483,7 +485,7 @@
         const closeBtn = document.getElementById('closeBtn');
         const sidebar = document.getElementById('sidebar');
         const toggleSidebar = document.getElementById('toggleSidebar');
-        const timerCounter = document.getElementById('timerCounter'); // Pour l'affichage initial
+        const timerCounter = document.getElementById('timerCounter');
 
         usernameLabel.textContent = username;
 
@@ -495,8 +497,6 @@
         });
 
         clickButton.addEventListener('click', onClickerClick);
-
-        // 'upgradeButton' n'a plus besoin d'écouteur, c'est un lien <a>
 
         window.addEventListener('beforeunload', (e) => {
             leaveSessionSilently();
@@ -528,7 +528,6 @@
                     sessionCode.textContent = "Aucune session";
                     resetPlayersList();
                     
-                    // Créer automatiquement une nouvelle session après avoir quitté
                     setTimeout(async () => {
                         await createSession();
                     }, 500);
@@ -607,9 +606,6 @@
         });
 
         // --- Lancement Initial ---
-        
-        // CORRECTION 1 : Lancement de loadMySession, qui créera une session
-        // si aucune n'est trouvée.
         loadMySession().then((sessionLoaded) => {
             if (sessionLoaded) {
                 fetchGameData(); 

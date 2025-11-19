@@ -435,18 +435,19 @@
     }
 
 
-    // 🛑 FONCTION fetchPlayers() AVEC PROTECTION ANTI-SAUT 🛑
+    // 🛑 FONCTION fetchPlayers() (Version actuelle - accepte la vérité API) 🛑
     async function fetchPlayers() {
         const sessionCodeElement = document.getElementById('sessionCode');
-        const currentDisplayedCode = sessionCodeElement.textContent; // CODE AFFICHÉ ACTUEL
+        const sessionCode = sessionCodeElement.textContent; // Utilise le code affiché actuellement
         
-        if (currentDisplayedCode === "Chargement..." || currentDisplayedCode === "Aucune session" || currentDisplayedCode === "Erreur" || currentDisplayedCode === "Création...") {
+        if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
             return;
         }
 
         console.log("[FETCH_PLAYERS] Requête /verify_session envoyée pour obtenir les joueurs et le statut.");
         
         try {
+            // Requête API pour vérifier l'état actuel de l'utilisateur
             const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
             const playersData = await playersResponse.json();
             
@@ -454,17 +455,15 @@
 
             if (playersData.status !== "success" || !playersData.session_code) {
                  console.error("[FETCH_PLAYERS] API Status n'est pas 'success' ou session_code manquant. Réponse complète :", playersData);
-                return;
+                 return;
             }
             
-            // LOGIQUE DE PROTECTION ANTI-SAUT : Si l'API renvoie un code obsolète, on ignore la mise à jour
-            if (playersData.session_code !== currentDisplayedCode) {
-                console.warn(`[FETCH_PLAYERS] Code de session API ('${playersData.session_code}') ne correspond pas au code affiché ('${currentDisplayedCode}'). IGNORE la mise à jour des joueurs pour éviter le saut.`);
-                checkCloseButtonState(); 
-                return; 
+            // Si l'API renvoie un code différent, on log un avertissement, puis on le met à jour.
+            if (playersData.session_code !== sessionCode) {
+                 console.warn(`[FETCH_PLAYERS] Désynchronisation détectée. Code API ('${playersData.session_code}') vs Code affiché ('${sessionCode}'). Mise à jour forcée.`);
             }
             
-            // Si les codes correspondent, ou si c'est la session initiale, on met à jour
+            // Met à jour le code affiché avec celui de l'API (cela devrait se corriger après le setTimeout de 3s ou un cycle)
             sessionCodeElement.textContent = playersData.session_code; 
             updatePlayersList(playersData.players || [], playersData.creator);
             checkCloseButtonState(); 

@@ -150,8 +150,13 @@
    <script>
     // --- VARIABLES GLOBALES ET CONSTANTES ---
     const API_URL = "https://project-3-api-2bgb.onrender.com";
-    const REFRESH_PERIOD_SECONDS = 10; 
+    
+    // NOUVELLES CONSTANTES POUR LE TIMER ALÉATOIRE
+    const REFRESH_MIN_SECONDS = 3; 
+    const REFRESH_MAX_SECONDS = 8; 
     const FAST_REFRESH_SECONDS = 3;    // Intervalle pour le rafraîchissement rapide des joueurs
+
+    let currentRefreshPeriod = REFRESH_MAX_SECONDS; // Durée du cycle actuel
     let clickCount = 0;
     let lastClickTime = 0;
     let clickIntervals = [];
@@ -176,21 +181,17 @@
         
         const data = JSON.stringify({ code: code, id: username });
 
-        // Tente d'utiliser sendBeacon pour garantir l'envoi même si la page est en cours de fermeture
         if (navigator.sendBeacon) {
-            // Note: sendBeacon ne peut pas être "await" ou "catch" pour les erreurs, mais il est garanti d'être envoyé.
             navigator.sendBeacon(`${API_URL}/leave`, data);
-            console.log("Déconnexion silencieuse tentée via sendBeacon.");
-            return; // Sort de la fonction si sendBeacon est utilisé
+            return; 
         }
         
-        // Fallback si sendBeacon n'est pas supporté (très rare aujourd'hui)
         try {
             const options = { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: data,
-                keepalive: true // keepalive augmente les chances de succès pour fetch
+                keepalive: true
             };
             fetch(`${API_URL}/leave`, options).catch(e => console.error("Erreur déconnexion (fetch):", e));
         } catch (e) {
@@ -272,7 +273,7 @@
                 console.warn("Session invalide ou expirée. Tentative de reconnexion...");
                 stopFastPlayerRefresh();
                 loadMySession().then(sessionLoaded => {
-                    if (sessionLoaded) gameCycle();
+                    if (sessionLoaded) launchGameCycle(); // Relance le cycle après la reconnexion
                 });
                 return;
             }
@@ -303,7 +304,7 @@
                 scoreCounter.textContent = scoreData.poires || 0; 
             }
             
-            // 2. Mise à jour des joueurs
+            // 2. Mise à jour des joueurs (toujours inclus dans le cycle principal)
             await fetchPlayers();
 
         } catch (e) {
@@ -322,22 +323,19 @@
         ];
         if (!playerCount || !playerSlots[0]) return;
 
+        // Préparation d'une liste unique et ordonnée
         let uniqueActivePlayers = [];
-        if (creator && !uniqueActivePlayers.includes(creator)) {
-            uniqueActivePlayers.push(creator);
-        }
+        if (creator) uniqueActivePlayers.push(creator);
         players.forEach(p => {
              if (!uniqueActivePlayers.includes(p)) {
                 uniqueActivePlayers.push(p);
             }
         });
-
         if (username && !uniqueActivePlayers.includes(username)) {
             uniqueActivePlayers.push(username); 
         }
 
         uniqueActivePlayers = [...new Set(uniqueActivePlayers)].slice(0, 5);
-
         playerCount.textContent = `${uniqueActivePlayers.length}/5`;
 
         playerSlots.forEach((slot, index) => {
@@ -345,7 +343,6 @@
             if (slot) {
                 if (player) {
                     let displayString = "";
-                    
                     const isCreator = player === creator;
                     const isMe = player === username;
 
@@ -452,31 +449,25 @@
     
     // --- LOGIQUE DE SYNCHRONISATION (TIMER) ---
 
-    function getWaitTime() {
-        const now = new Date();
-        const utcSeconds = now.getUTCSeconds(); 
-        const elapsed = utcSeconds % REFRESH_PERIOD_SECONDS;
-        const waitTimeSeconds = REFRESH_PERIOD_SECONDS - elapsed;
-        
-        return (waitTimeSeconds * 1000) - 100; 
-    }
-
+    // Met à jour le compteur et la barre de progression
     function updateDisplay(timeLeft) {
         const counterElement = document.getElementById('timerCounter');
         const barElement = document.getElementById('timerBarFill');
         
-        const timeElapsed = REFRESH_PERIOD_SECONDS - timeLeft;
-        const percentage = (timeElapsed / REFRESH_PERIOD_SECONDS) * 100;
+        // La référence de temps est la durée aléatoire choisie
+        const timeElapsed = currentRefreshPeriod - timeLeft;
+        const percentage = (timeElapsed / currentRefreshPeriod) * 100;
 
         if (counterElement) {
-            counterElement.textContent = `Prochaine synchronisation dans : ${timeLeft}s`;
+            counterElement.textContent = `Prochaine sync. dans : ${timeLeft}s (sur ${currentRefreshPeriod}s)`;
         }
         
         if (barElement) {
             barElement.style.width = `${percentage}%`;
         }
     }
-
+    
+    // Fonction principale du cycle de jeu (Envoi des clics + Rafraîchissement)
     async function gameCycle() {
         const sessionCode = document.getElementById('sessionCode').textContent;
          if (sessionCode === "Aucune session" || sessionCode === "Erreur") {
@@ -495,38 +486,41 @@
         await sendClicks();
         await fetchGameData();
         stopFastPlayerRefresh(); 
-
-        startInterval();
+        
+        // Le cycle est relancé de manière aléatoire
+        launchGameCycle(); 
     }
 
-    function startInterval() {
+    // Démarre l'intervalle avec la durée aléatoire
+    function startInterval(duration) {
         clearInterval(timerInterval);
-        let timeLeft = REFRESH_PERIOD_SECONDS; 
+        let timeLeft = duration; 
+        currentRefreshPeriod = duration; // Met à jour la durée de référence pour l'affichage
         updateDisplay(timeLeft); 
 
         timerInterval = setInterval(() => {
             timeLeft--;
             updateDisplay(timeLeft); 
-            if (timeLeft === 0) {
+            if (timeLeft <= 0) {
                 clearInterval(timerInterval);
                 gameCycle(); 
             }
         }, 1000); 
     }
 
+    // Fonction utilitaire pour lancer le cycle avec une durée aléatoire
     function launchGameCycle() {
-        const waitTime = getWaitTime();
+        // Détermine la durée aléatoire entre MIN et MAX
+        const duration = Math.floor(Math.random() * (REFRESH_MAX_SECONDS - REFRESH_MIN_SECONDS + 1)) + REFRESH_MIN_SECONDS;
         
-        setTimeout(() => {
-            gameCycle(); 
-        }, waitTime);
+        // Démarre l'intervalle avec la durée aléatoire
+        startInterval(duration); 
     }
     
     // --- EXÉCUTION AU CHARGEMENT DE LA PAGE ---
     
     document.addEventListener('DOMContentLoaded', () => {
         
-        console.log("Username récupéré du localStorage:", username);
         if (!username || username.trim() === "") {
             console.error("⚠️ Aucun nom d'utilisateur trouvé.");
         }
@@ -581,7 +575,6 @@
                     const newSessionName = input.substring(5).trim();
                     if (!newSessionName) {
                         sidebarStatus.textContent = "⚠️ Nom de session manquant";
-                        sidebarStatus.style.color = "#f59e0b";
                         return;
                     }
                     
@@ -599,7 +592,6 @@
                         startFastPlayerRefresh(); 
                     } else {
                         sidebarStatus.textContent = `❌ Erreur changement : ${data.message}`;
-                        sidebarStatus.style.color = "#ef4444";
                     }
                     joinInput.value = "";
                 } else if (!input) {
@@ -609,8 +601,6 @@
                     // Rejoint une session spécifique
                     sidebarStatus.textContent = `Tentative de rejoindre '${input}'...`;
                     
-                    // Déconnexion avant de tenter de rejoindre une autre session
-                    // Attention: leaveSessionSilently est synchrone (sendBeacon) ou async (fetch) et doit être géré avec soin.
                     leaveSessionSilently(); 
 
                     const response = await fetch(`${API_URL}/join`, {

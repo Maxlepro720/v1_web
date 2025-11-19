@@ -158,7 +158,7 @@
 
     // --- FONCTIONS (DÉCLARATIONS) ---
 
-    // CORRECTION (Réglage du problème de flèche de retour)
+    // CORRECTION 1 : Flèche retour (redirige sans quitter la session)
     async function handleBackButton() {
         window.location.href = "menu.html";
     }
@@ -175,6 +175,7 @@
         try {
             const data = JSON.stringify({ code: code, id: username });
             if (navigator.sendBeacon) {
+                // Utilise sendBeacon pour les requêtes asynchrones au moment de la fermeture/navigation
                 navigator.sendBeacon(`${API_URL}/leave`, data);
             } else {
                 await fetch(`${API_URL}/leave`, { 
@@ -228,8 +229,7 @@
         clickCount = 0;
         toSend.textContent = "-- 0 --";
         
-        // CORRECTION (Autorise l'envoi même pour 0 clic)
-        // if (toSendValue === 0) return; 
+        // CORRECTION 2 : Supprime la vérification `if (toSendValue === 0) return;` pour garantir l'envoi régulier.
 
         try {
             statusLabel.textContent = `Envoi de ${toSendValue} points...`; 
@@ -278,7 +278,6 @@
             } else {
                 sessionCode.textContent = "Erreur";
                 sidebarStatus.textContent = "❌ Erreur lors de la création : " + (data.message || "Inconnue");
-                sidebarStatus.style.color = "#ef4444";
                 return false;
             }
         } catch (e) {
@@ -460,12 +459,8 @@
     // --- EXÉCUTION AU CHARGEMENT DE LA PAGE ---
     document.addEventListener('DOMContentLoaded', () => {
         
-        // CORRECTION (Le bouton Upgrade ne marche plus car ce bloc réécrivait son HTML, 
-        // ce qui pouvait enlever le lien. On le supprime.)
-        // const upgradeContainer = document.getElementById('upgrade-button-container');
-        // if (upgradeContainer) {
-        //     upgradeContainer.innerHTML = '<a href="upgrade.html" class="upgrade-button">Upgrade</a>';
-        // }
+        // CORRECTION 3 : Suppression du bloc qui écrasait le HTML du bouton 'Upgrade'
+        // pour s'assurer qu'il fonctionne comme un simple lien.
 
         console.log("Username récupéré du localStorage:", username);
         if (!username || username.trim() === "") {
@@ -490,7 +485,7 @@
 
         clickButton.addEventListener('click', onClickerClick);
 
-        // L'écouteur beforeunload est désactivé pour ne pas quitter la session au retour navigateur
+        // CORRECTION 1 (bis) : L'écouteur beforeunload est désactivé pour ne pas quitter la session au retour navigateur
         window.addEventListener('beforeunload', (e) => {
             // leaveSessionSilently(); 
         });

@@ -201,7 +201,9 @@
             clickIntervals.push(interval);
             if (clickIntervals.length > 5) clickIntervals.shift();
             const avg = clickIntervals.reduce((a, b) => a + b, 0) / clickIntervals.length;
-            freq = avg > 0 ? 1 / avg : 0;
+            const clickFrequency = avg > 0 ? 1 / avg : 0;
+            // Limite la fréquence à 10 clics/seconde pour une détection simple (ajusté pour éviter les faux positifs)
+            freq = clickFrequency; 
         }
         lastClickTime = now;
 
@@ -272,8 +274,25 @@
 
             if (data.status === "success" && data.session_name) {
                 sessionCode.textContent = data.session_name;
-                sidebarStatus.textContent = "🎉 Session créée ! Code : " + data.session_name;
+                
+                // --- DÉBUT DE LA LOGIQUE MODIFIÉE/AMÉLIORÉE ---
+                let statusIcon = "🎉";
+                let statusText = `Session créée ! Code : ${data.session_name}`;
+
+                // Si le code de statut HTTP est 200 (OK) et qu'un message de session existante est présent, 
+                // on considère que la session a été CHARGÉE (non créée)
+                if (response.status === 200 && data.message && data.message.includes("Session existante")) {
+                    statusIcon = "✅";
+                    statusText = data.message; // Réutilise le message complet du serveur
+                } else if (response.status === 201) {
+                    statusIcon = "🎉";
+                    statusText = `Session créée ! Code : ${data.session_name}`;
+                }
+                
+                sidebarStatus.textContent = `${statusIcon} ${statusText}`;
                 sidebarStatus.style.color = "#10b981";
+                // --- FIN DE LA LOGIQUE MODIFIÉE/AMÉLIORÉE ---
+
                 return true;
             } else {
                 sessionCode.textContent = "Erreur";

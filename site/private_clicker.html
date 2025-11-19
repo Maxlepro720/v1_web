@@ -158,7 +158,7 @@
     let sidebarVisible = true;
     let username = localStorage.getItem("username");
 
-    let timerInterval;      // Intervalle pour le cycle de rafraîchissement (le "timer" invisible)
+    let timerInterval;      
     let playerInterval;     
     let fastRefreshTimeout; 
 
@@ -183,7 +183,7 @@
             };
 
             if (navigator.sendBeacon) {
-                navigator.sendBeacon(`${API_URL}/leave`, data);
+                navigator.beacon(`${API_URL}/leave`, data);
             } else {
                 await fetch(`${API_URL}/leave`, options);
             }
@@ -221,7 +221,6 @@
         if (toSend) toSend.textContent = `-- ${clickCount} --`;
     }
 
-    // Envoie les clics sans mettre à jour le statusLabel
     async function sendClicks() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const toSend = document.getElementById('toSend');
@@ -266,7 +265,6 @@
             if (playersData.status === "error" && playersData.message && playersData.message.includes("Session invalide")) {
                 console.warn("Session invalide ou expirée. Tentative de reconnexion à la session personnelle...");
                 stopFastPlayerRefresh();
-                // Redémarre le cycle complet via loadMySession
                 loadMySession().then(sessionLoaded => {
                     if (sessionLoaded) gameCycle();
                 });
@@ -478,38 +476,48 @@
         }
     }
     
-    // --- LOGIQUE DE SYNCHRONISATION RÉACTIVÉE (LE TIMER INVISIBLE) ---
+    // --- LOGIQUE DE SYNCHRONISATION (TIMER INVISIBLE) ---
 
-    // Calcule le temps restant pour la synchronisation (garde le cycle synchrone)
+    // Calcule le temps d'attente pour que le cycle démarre pile à une seconde multiple de REFRESH_PERIOD_SECONDS (synchronisation UTC)
     function getWaitTime() {
         const now = new Date();
         const utcSeconds = now.getUTCSeconds(); 
+        // Calcule le temps écoulé depuis le dernier intervalle de 10s (e.g. 13s -> 3s écoulés)
         const elapsed = utcSeconds % REFRESH_PERIOD_SECONDS;
+        // Calcule le temps restant avant le prochain point synchrone (e.g. 10s - 3s = 7s)
         const waitTimeSeconds = REFRESH_PERIOD_SECONDS - elapsed;
-        return waitTimeSeconds * 1000;
+        
+        // Retourne le temps en millisecondes.
+        // On enlève 100ms pour s'assurer que l'exécution commence juste AVANT le début de la seconde synchrone.
+        return (waitTimeSeconds * 1000) - 100; 
     }
 
-    // Fonction de cycle principale (lancée toutes les 10 secondes)
     async function gameCycle() {
         const sessionCode = document.getElementById('sessionCode').textContent;
          if (sessionCode === "Aucune session" || sessionCode === "Erreur") {
-            await loadMySession();
+            // Tente de charger/créer la session si elle est perdue
+            const sessionLoaded = await loadMySession();
+            if (!sessionLoaded) {
+                 // Si on ne peut pas charger/créer, on s'arrête.
+                 console.error("Impossible de récupérer la session, cycle arrêté.");
+                 return;
+            }
          }
         
         await sendClicks();
         await fetchGameData();
-        stopFastPlayerRefresh(); // S'assure que le rafraîchissement rapide s'arrête si nécessaire
+        stopFastPlayerRefresh(); 
         startInterval();
     }
 
-    // Démarre l'intervalle de 10 secondes (invisible)
     function startInterval() {
         clearInterval(timerInterval);
         let timeLeft = REFRESH_PERIOD_SECONDS; 
 
+        // Le cycle démarre à la prochaine seconde synchrone
         timerInterval = setInterval(() => {
             timeLeft--;
-            // updateDisplay(timeLeft); // Désactivé (pour supprimer le debug visuel)
+            // updateDisplay(timeLeft); // Désactivé
             if (timeLeft === 0) {
                 clearInterval(timerInterval);
                 gameCycle(); // Relance le cycle après 10s
@@ -518,6 +526,19 @@
     }
 
     // --- EXÉCUTION AU CHARGEMENT DE LA PAGE ---
+    
+    // Fonction utilitaire pour lancer le cycle après le délai UTC
+    function launchGameCycle() {
+        const waitTime = getWaitTime();
+        
+        console.log(`Démarrage du cycle synchronisé dans ${waitTime}ms.`);
+        
+        // Timeout pour démarrer le premier gameCycle exactement au point de synchronisation
+        setTimeout(() => {
+            gameCycle(); 
+        }, waitTime);
+    }
+    
     document.addEventListener('DOMContentLoaded', () => {
         
         console.log("Username récupéré du localStorage:", username);
@@ -545,8 +566,8 @@
             if (event.persisted) {
                 loadMySession().then(sessionLoaded => {
                     if (sessionLoaded) {
-                         const waitTime = getWaitTime();
-                         setTimeout(() => { gameCycle(); }, waitTime);
+                         // Rélance le cycle au retour de la page
+                         launchGameCycle();
                     }
                 });
             }
@@ -621,33 +642,24 @@
                 
                 // Relance le cycle de rafraîchissement normal (gameCycle)
                 await fetchGameData();
-                const waitTime = getWaitTime();
-                setTimeout(() => { gameCycle(); }, waitTime);
+                launchGameCycle(); // Lancement synchronisé
 
             } catch (e) {
                 sidebarStatus.textContent = "❌ Erreur réseau / Commande non valide";
                 sidebarStatus.style.color = "#ef4444";
-                // En cas d'erreur critique, on tente de redémarrer
-                const waitTime = getWaitTime();
-                setTimeout(() => { gameCycle(); }, waitTime);
+                launchGameCycle(); // Tente de relancer le cycle même en cas d'erreur
             } finally {
                 joinButton.disabled = false;
             }
         });
 
-        // --- Lancement Initial ---
+        // --- Lancement Initial SÉCURISÉ ---
         loadMySession().then((sessionLoaded) => {
             if (sessionLoaded) {
                 fetchGameData(); 
-
-                const waitTime = getWaitTime();
-                
-                // Démarre le cycle de rafraîchissement après le temps d'attente initial (pour synchronisation)
-                setTimeout(() => {
-                    gameCycle(); 
-                }, waitTime);
+                launchGameCycle(); 
             } else {
-                console.error("Impossible de charger ou créer une session");
+                console.error("Impossible de charger ou créer une session. Le cycle ne démarrera pas.");
             }
         });
     });

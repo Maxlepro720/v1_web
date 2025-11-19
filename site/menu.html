@@ -52,40 +52,44 @@ header h1 { font-size: 26px; color: #60a5fa; margin: 0; }
     📲 MEDIA QUERY POUR MOBILE (Max 600px)
     ------------------------------------- */
 @media (max-width: 600px) {
-    /* HEADER: Vertical Stack */
+    /* HEADER: Vertical Stack et padding réduit */
     header { 
-        flex-direction: column; /* Les éléments s'empilent verticalement */
-        align-items: flex-start; /* Alignés à gauche */
-        gap: 15px;
+        flex-direction: column; 
+        align-items: flex-start; 
+        gap: 10px; /* Réduction du gap */
+        padding: 10px 15px; /* Réduction du padding général du header */
     }
 
     /* NAV PRINCIPALE: Full Width */
     #main-nav { 
         flex-direction: column; 
-        width: 100%; /* Prend toute la largeur disponible */
-        gap: 10px;
-        order: 2; /* Place la nav en 2ème position (sous le titre) */
+        width: 100%; 
+        gap: 8px; /* Réduction du gap dans la nav */
+        order: 2; 
     }
 
-    /* Boutons de la Nav: Full Width */
+    /* Boutons de la Nav: Full Width et padding réduit */
     #main-nav button {
         width: 100%;
-        text-align: left; /* Texte aligné à gauche pour un look "liste" */
+        text-align: left; 
+        padding: 10px 15px; /* Réduction du padding des boutons */
     }
 
-    /* Barre de recherche: Full Width */
+    /* Barre de recherche: Full Width et padding réduit */
     #search_bar {
         width: 100%;
         max-width: 100%;
-        order: -1; /* Place la barre de recherche en premier dans la nav */
+        order: -1; 
+        padding: 10px 15px; /* Réduction du padding de la barre de recherche */
     }
     
-    /* Bouton de déconnexion: Full Width et déplacé à la fin */
+    /* Bouton de déconnexion: Full Width et padding réduit */
     #logout-button {
         width: 100%;
-        order: 3; /* Placé en 3ème position (sous le reste du menu) */
+        order: 3; 
         text-align: center;
-        margin-left: 0; /* Annule le margin desktop */
+        margin-left: 0; 
+        padding: 10px 15px; /* Réduction du padding du bouton de déconnexion */
     }
     
     /* Titre H1: Reste en haut, prend la position 1 */
@@ -95,7 +99,7 @@ header h1 { font-size: 26px; color: #60a5fa; margin: 0; }
 
     /* GRID de jeux: 1 colonne */
     .game-grid {
-        grid-template-columns: 1fr; /* Une seule colonne de cartes */
+        grid-template-columns: 1fr; 
         padding: 10px 15px;
     }
     

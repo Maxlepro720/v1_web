@@ -147,24 +147,23 @@
         </div>
     </div>
 
-   <script>
+    <script>
     // --- VARIABLES GLOBALES ET CONSTANTES ---
     const API_URL = "https://project-3-api-2bgb.onrender.com";
     const REFRESH_PERIOD_SECONDS = 10;
-    const FAST_REFRESH_SECONDS = 2; // Nouvelle fréquence rapide
+    const FAST_REFRESH_SECONDS = 2; 
     let clickCount = 0;
     let lastClickTime = 0;
     let clickIntervals = [];
     let sidebarVisible = true;
     let username = localStorage.getItem("username");
 
-    let timerInterval;       // Intervalle pour le cycle de jeu (10s)
-    let playerInterval;      // Intervalle pour le rafraîchissement rapide des joueurs (2s)
-    let fastRefreshTimeout;  // Timeout pour arrêter le rafraîchissement rapide
+    let timerInterval;      
+    let playerInterval;     
+    let fastRefreshTimeout; 
 
     // --- FONCTIONS (DÉCLARATIONS) ---
 
-    // Fonction pour quitter silencieusement la session (conservée)
     async function leaveSessionSilently() {
         const codeElement = document.getElementById('sessionCode');
         if (!codeElement) return;
@@ -189,11 +188,10 @@
                 await fetch(`${API_URL}/leave`, options);
             }
         } catch (e) {
-            console.error("Erreur lors de la déconnexion:", e);
+            console.error("Erreur lors de la déconnexion silencieuse:", e);
         }
     }
 
-    // Fonction de clic (conservée)
     function onClickerClick() {
         const statusLabel = document.getElementById('statusLabel'); 
         const toSend = document.getElementById('toSend'); 
@@ -211,20 +209,21 @@
         lastClickTime = now;
 
         if (freq > 20) {
-            statusLabel.textContent = "⚠️ Autoclicker détecté ⚠️";
-            statusLabel.style.color = "#f87171";
-            setTimeout(() => { statusLabel.textContent = ""; }, 1000);
+            if (statusLabel) { // Ne s'affiche que si l'autoclicker est détecté
+                statusLabel.textContent = "⚠️ Autoclicker détecté ⚠️";
+                statusLabel.style.color = "#f87171";
+                setTimeout(() => { statusLabel.textContent = ""; }, 1000);
+            }
             return;
         }
 
         clickCount++;
-        toSend.textContent = `-- ${clickCount} --`;
+        if (toSend) toSend.textContent = `-- ${clickCount} --`;
     }
 
-    // Fonction pour envoyer les clics (conservée)
+    // CORRECTION : Supprime l'affichage du statusLabel pour le score envoyé.
     async function sendClicks() {
         const sessionCode = document.getElementById('sessionCode').textContent;
-        const statusLabel = document.getElementById('statusLabel');
         const toSend = document.getElementById('toSend');
         
         if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
@@ -233,60 +232,50 @@
         
         const toSendValue = clickCount;
         clickCount = 0;
-        toSend.textContent = "-- 0 --";
+        if (toSend) toSend.textContent = "-- 0 --";
         
         if (toSendValue === 0) {
-            statusLabel.textContent = "Aucun point à envoyer.";
-            statusLabel.style.color = "#64748b";
-            return;
+            return; // Pas de clics à envoyer
         }
         
         try {
-            statusLabel.textContent = `Envoi de ${toSendValue} points...`; 
-            statusLabel.style.color = "#3b82f6";
+            // NOTE : Le statusLabel n'est plus mis à jour ici.
+            // Il continue de s'afficher uniquement pour les messages d'erreur et la détection d'autoclicker.
 
-            const response = await fetch(`${API_URL}/poire`, { 
+            await fetch(`${API_URL}/poire`, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify({ session: sessionCode, click: toSendValue, id: username }) 
             });
-            const data = await response.json();
-            if (data.status !== "success") {
-                statusLabel.textContent = `Erreur envoi: ${data.message}`;
-                statusLabel.style.color = "#ef4444";
-            } else {
-                statusLabel.textContent = "Score envoyé !"; 
-                statusLabel.style.color = "#10b981";
-            }
+            // Les données de score et de statut de la session seront mises à jour lors du prochain fetchGameData
         } catch (e) {
-            statusLabel.textContent = "❌ Erreur réseau envoi";
-            statusLabel.style.color = "#ef4444";
+            const statusLabel = document.getElementById('statusLabel');
+            if (statusLabel) {
+                statusLabel.textContent = "❌ Erreur réseau envoi";
+                statusLabel.style.color = "#ef4444";
+            }
         }
     }
 
-    // Fonction pour récupérer uniquement la liste des joueurs
     async function fetchPlayers() {
-        const sessionCode = document.getElementById('sessionCode').textContent;
-
-        if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
+        const sessionCodeElement = document.getElementById('sessionCode');
+        if (!sessionCodeElement || sessionCodeElement.textContent === "Chargement..." || sessionCodeElement.textContent === "Aucune session" || sessionCodeElement.textContent === "Erreur" || sessionCodeElement.textContent === "Création...") {
             return;
         }
 
         try {
-            // Utilise /verify_session pour obtenir les joueurs et le créateur
             const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
             const playersData = await playersResponse.json();
             
             if (playersData.status === "error" && playersData.message && playersData.message.includes("Session invalide")) {
-                console.warn("Session invalide ou expirée. Rechargement de la session personnelle...");
-                // Arrête le rafraîchissement rapide
-                stopFastPlayerRefresh(); 
-                // Relance le cycle de jeu pour forcer la reconnexion
-                gameCycle(); 
+                console.warn("Session invalide ou expirée. Tentative de reconnexion à la session personnelle...");
+                stopFastPlayerRefresh();
+                gameCycle();
                 return;
             }
 
-            if (playersData.status === "success") {
+            if (playersData.status === "success" && playersData.session_name) {
+                sessionCodeElement.textContent = playersData.session_name; 
                 updatePlayersList(playersData.players, playersData.creator);
             }
         } catch (e) {
@@ -294,7 +283,6 @@
         }
     }
 
-    // Fonction pour récupérer le score ET les joueurs (cycle normal de 10s)
     async function fetchGameData() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const scoreCounter = document.getElementById('scoreCounter');
@@ -304,7 +292,7 @@
         }
 
         try {
-            // Requête pour le score (comme avant)
+            // 1. Mise à jour du score
             const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(sessionCode)}`);
             const scoreData = await scoreResponse.json();
             
@@ -312,7 +300,7 @@
                 scoreCounter.textContent = scoreData.poires || 0; 
             }
             
-            // Requête pour les joueurs (utilise la nouvelle fonction pour éviter la duplication de la logique)
+            // 2. Mise à jour des joueurs et vérification de session
             await fetchPlayers();
 
         } catch (e) {
@@ -320,7 +308,6 @@
         }
     }
 
-    // Fonction de mise à jour des joueurs (conservée)
     function updatePlayersList(players, creator) {
         const playerCount = document.getElementById('playerCount');
         const playerSlots = [
@@ -330,74 +317,102 @@
             document.getElementById('player4'), 
             document.getElementById('player5')
         ];
+        if (!playerCount || !playerSlots[0]) return;
 
-        let activePlayers = [];
-        if (creator) {
-            activePlayers.push(creator);
+        let uniqueActivePlayers = [];
+        if (creator && !uniqueActivePlayers.includes(creator)) {
+            uniqueActivePlayers.push(creator);
         }
         players.forEach(p => {
-            if (p !== creator) {
-                activePlayers.push(p);
+             if (!uniqueActivePlayers.includes(p)) {
+                uniqueActivePlayers.push(p);
             }
         });
 
-        const uniqueActivePlayers = [...new Set(activePlayers)];
+        if (username && !uniqueActivePlayers.includes(username)) {
+            uniqueActivePlayers.push(username); 
+        }
+
+        uniqueActivePlayers = uniqueActivePlayers.slice(0, 5);
+
         playerCount.textContent = `${uniqueActivePlayers.length}/5`;
 
         playerSlots.forEach((slot, index) => {
             const player = uniqueActivePlayers[index];
-            if (player) {
-                let displayString = "";
-                
-                // Logique pour afficher la couronne (👑) pour le créateur et l'icône utilisateur (👤)
-                if (player === username) {
-                    displayString = (player === creator) ? `👑 👤 Vous` : `👤 Vous`;
+            if (slot) {
+                if (player) {
+                    let displayString = "";
+                    
+                    const isCreator = player === creator;
+                    const isMe = player === username;
+
+                    if (isMe) {
+                        displayString = isCreator ? `👑 👤 Vous` : `👤 Vous`;
+                    } else {
+                        displayString = isCreator ? `👑 ${player}` : `• ${player}`;
+                    }
+                    
+                    slot.textContent = displayString;
+                    slot.classList.remove('waiting');
+                    slot.style.color = isMe ? '#ffd966' : '#10b981';
+                    slot.style.borderLeft = isMe ? '3px solid #ffb84d' : '3px solid #10b981';
                 } else {
-                    displayString = (player === creator) ? `👑 ${player}` : `• ${player}`;
+                    slot.textContent = "⚪ En attente...";
+                    slot.classList.add('waiting');
+                    slot.style.color = '#64748b';
+                    slot.style.borderLeft = '3px solid #64748b';
                 }
-                
-                slot.textContent = displayString;
-                slot.classList.remove('waiting');
-                slot.style.color = player === username ? '#ffd966' : '#10b981';
-                slot.style.borderLeft = player === username ? '3px solid #ffb84d' : '3px solid #10b981';
-            } else {
-                slot.textContent = "⚪ En attente...";
-                slot.classList.add('waiting');
-                slot.style.color = '#64748b';
-                slot.style.borderLeft = '3px solid #64748b';
             }
         });
     }
 
-    // --- LOGIQUE DE RAFRAÎCHISSEMENT RAPIDE DES JOUEURS (NOUVEAU) ---
-
-    function startFastPlayerRefresh() {
-        // 1. Arrête tout rafraîchissement rapide précédent
-        stopFastPlayerRefresh(); 
-
-        // 2. Lance la première mise à jour immédiatement
-        fetchPlayers();
-
-        // 3. Configure un intervalle pour rafraîchir toutes les FAST_REFRESH_SECONDS (2s)
-        playerInterval = setInterval(fetchPlayers, FAST_REFRESH_SECONDS * 1000);
-
-        // 4. Configure un timeout pour arrêter le rafraîchissement rapide après 30 secondes (pour ne pas surcharger)
-        fastRefreshTimeout = setTimeout(() => {
-            stopFastPlayerRefresh();
-            console.log("Rafraîchissement rapide des joueurs terminé.");
-        }, 30000); // 30 secondes
+    function resetPlayersList() {
+        const playerCount = document.getElementById('playerCount');
+        const playerSlots = [
+            document.getElementById('player1'), 
+            document.getElementById('player2'), 
+            document.getElementById('player3'), 
+            document.getElementById('player4'), 
+            document.getElementById('player5')
+        ];
+        if (playerCount) playerCount.textContent = `0/5`;
+        playerSlots.forEach((slot, index) => {
+            if (slot) {
+                if (index === 0) {
+                    slot.textContent = `👤 Vous (Déconnecté)`; 
+                    slot.classList.remove('waiting');
+                    slot.style.color = '#ffd966'; 
+                    slot.style.borderLeft = '3px solid #ffb84d';
+                } else {
+                    slot.textContent = "⚪ En attente...";
+                    slot.classList.add('waiting');
+                    slot.style.color = '#64748b';
+                    slot.style.borderLeft = '3px solid #64748b';
+                }
+            }
+        });
     }
-
+    
     function stopFastPlayerRefresh() {
         clearInterval(playerInterval);
         clearTimeout(fastRefreshTimeout);
     }
     
-    // --- LOGIQUE DE SESSION ET DE CYCLE DE JEU (MODIFIÉE) ---
+    function startFastPlayerRefresh() {
+        stopFastPlayerRefresh(); 
+        fetchPlayers();
+        playerInterval = setInterval(fetchPlayers, FAST_REFRESH_SECONDS * 1000);
+        
+        fastRefreshTimeout = setTimeout(() => {
+            stopFastPlayerRefresh();
+            console.log("Rafraîchissement rapide des joueurs terminé. Reprise du cycle normal (10s).");
+        }, 30000); 
+    }
 
     async function createSession() {
         const sessionCode = document.getElementById('sessionCode');
         const sidebarStatus = document.getElementById('sidebarStatus');
+        if (!sessionCode || !sidebarStatus) return false;
         
         sessionCode.textContent = "Création...";
         sidebarStatus.textContent = "⏳ Création d'une nouvelle session...";
@@ -414,16 +429,13 @@
             if (data.status === "success" && data.session_name) {
                 sessionCode.textContent = data.session_name;
                 
-                let statusIcon = "🎉";
-                if (response.status === 200 && data.message && data.message.includes("Session existante")) {
-                    statusIcon = "✅";
-                }
+                let statusIcon = (response.status === 200 && data.message && data.message.includes("Session existante")) ? "✅" : "🎉";
                 let statusText = `${statusIcon} Session active : ${data.session_name}`;
                 
                 sidebarStatus.textContent = statusText;
                 sidebarStatus.style.color = "#10b981";
 
-                startFastPlayerRefresh(); // Lancement du rafraîchissement rapide
+                startFastPlayerRefresh();
                 return true;
             } else {
                 sessionCode.textContent = "Erreur";
@@ -443,17 +455,20 @@
     async function loadMySession() {
         const sessionCode = document.getElementById('sessionCode');
         const sidebarStatus = document.getElementById('sidebarStatus');
+        if (!sessionCode || !sidebarStatus) return false;
 
+        sessionCode.textContent = "Chargement...";
+        
         try {
             const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
             const data = await response.json();
             
             if (data.status === "success" && data.code) {
                 sessionCode.textContent = data.code;
-                sidebarStatus.textContent = "✅ Session chargée";
+                sidebarStatus.textContent = "✅ Session personnelle chargée";
                 sidebarStatus.style.color = "#10b981";
 
-                startFastPlayerRefresh(); // Lancement du rafraîchissement rapide
+                startFastPlayerRefresh(); 
                 return true;
             } else {
                 return await createSession(); 
@@ -463,7 +478,7 @@
         }
     }
     
-    // Fonctions de synchronisation et de cycle de jeu (adaptées pour le nouveau rafraîchissement)
+    // --- LOGIQUE DE SYNCHRONISATION (SANS AFFICHAGE DE DEBUG) ---
 
     function getWaitTime() {
         const now = new Date();
@@ -474,18 +489,18 @@
     }
 
     function updateDisplay(timeLeft) {
-        const timerBarFill = document.getElementById('timerBarFill');
-        const timerCounter = document.getElementById('timerCounter');
-        if (timerBarFill && timerCounter) {
-            timerBarFill.style.width = `${((REFRESH_PERIOD_SECONDS - timeLeft) / REFRESH_PERIOD_SECONDS) * 100}%`;
-            timerCounter.textContent = `Rafraîchissement dans ${timeLeft}s`;
-        }
+        // Logique d'affichage du timer délibérément vide pour supprimer le "debug"
     }
 
     async function gameCycle() {
+        const sessionCode = document.getElementById('sessionCode').textContent;
+         if (sessionCode === "Aucune session" || sessionCode === "Erreur") {
+            // Tente de recharger une session personnelle si le statut est invalide
+            await loadMySession();
+         }
+        
         await sendClicks();
         await fetchGameData();
-        // Arrête le rafraîchissement rapide si le cycle normal le rattrape
         stopFastPlayerRefresh(); 
         startInterval();
     }
@@ -496,7 +511,7 @@
 
         timerInterval = setInterval(() => {
             timeLeft--;
-            updateDisplay(timeLeft);
+            updateDisplay(timeLeft); 
             if (timeLeft === 0) {
                 clearInterval(timerInterval);
                 gameCycle(); 
@@ -504,12 +519,12 @@
         }, 1000); 
     }
 
-    // --- EXÉCUTION AU CHARGEMENT DE LA PAGE (MODIFIÉE) ---
+    // --- EXÉCUTION AU CHARGEMENT DE LA PAGE ---
     document.addEventListener('DOMContentLoaded', () => {
         
         console.log("Username récupéré du localStorage:", username);
         if (!username || username.trim() === "") {
-            console.error("⚠️ Aucun nom d'utilisateur trouvé. Le jeu ne fonctionnera pas correctement.");
+            console.error("⚠️ Aucun nom d'utilisateur trouvé.");
         }
 
         const clickButton = document.getElementById('clickButton');
@@ -519,7 +534,6 @@
         const closeBtn = document.getElementById('closeBtn');
         const sidebar = document.getElementById('sidebar');
         const toggleSidebar = document.getElementById('toggleSidebar');
-        const timerCounter = document.getElementById('timerCounter');
 
         if (usernameLabel) usernameLabel.textContent = username;
 
@@ -533,9 +547,7 @@
         window.addEventListener('pageshow', (event) => {
             if (event.persisted) {
                 loadMySession().then(sessionLoaded => {
-                    if (sessionLoaded) {
-                        gameCycle();
-                    }
+                    if (sessionLoaded) gameCycle();
                 });
             }
         });
@@ -543,39 +555,41 @@
         if (closeBtn) closeBtn.addEventListener('click', async () => {
             const sessionCode = document.getElementById('sessionCode');
             const sidebarStatus = document.getElementById('sidebarStatus');
+            if (!sessionCode || !sidebarStatus) return;
+
             const code = sessionCode.textContent;
 
             clearInterval(timerInterval); 
             stopFastPlayerRefresh();
 
-            if (code === "Chargement..." || code === "Aucune session" || code === "Création..." || code === "Erreur") { 
-                sidebarStatus.textContent = "⚠️ Pas de session active. Rechargement..."; 
-                sidebarStatus.style.color = "#f59e0b"; 
-                await loadMySession().then(sessionLoaded => {
-                    if (sessionLoaded) gameCycle();
-                });
-                return; 
-            }
-            
             closeBtn.disabled = true;
             
             try {
-                await leaveSessionSilently(); 
+                // 1. Quitter la session actuelle si elle est active
+                let statusMessage = "⚠️ Pas de session active à quitter. Reconnexion en cours...";
+                let statusColor = "#f59e0b";
                 
-                sidebarStatus.textContent = "✅ Session quittée. Chargement personnel..."; 
-                sidebarStatus.style.color = "#10b981"; 
-                sessionCode.textContent = "Chargement...";
-                resetPlayersList();
+                if (!(code === "Chargement..." || code === "Aucune session" || code === "Création..." || code === "Erreur")) { 
+                    await leaveSessionSilently(); 
+                    statusMessage = "✅ Session quittée. Reconnexion en cours...";
+                    statusColor = "#10b981";
+                    sessionCode.textContent = "Chargement...";
+                    resetPlayersList();
+                }
                 
+                sidebarStatus.textContent = statusMessage;
+                sidebarStatus.style.color = statusColor;
+                
+                // 2. Charger ou créer la session personnelle (garantie de retour)
                 const newSessionLoaded = await loadMySession(); 
                 
                 if (newSessionLoaded) {
-                    fetchGameData();
+                    // 3. Redémarrer le cycle
+                    await fetchGameData();
                     const waitTime = getWaitTime();
-                    updateDisplay(Math.ceil(waitTime / 1000));
                     setTimeout(() => { gameCycle(); }, waitTime);
                 } else {
-                    sidebarStatus.textContent = "❌ Erreur critique, aucune session disponible.";
+                    sidebarStatus.textContent = "❌ Erreur critique, impossible de trouver/créer une session.";
                     sidebarStatus.style.color = "#ef4444"; 
                 }
 
@@ -592,15 +606,16 @@
             let input = joinInput.value.trim();
             const sidebarStatus = document.getElementById('sidebarStatus');
             const sessionCode = document.getElementById('sessionCode');
+            if (!joinInput || !sidebarStatus || !sessionCode) return;
             
             joinButton.disabled = true;
             
             clearInterval(timerInterval); 
-            stopFastPlayerRefresh(); // Arrête l'ancien rafraîchissement rapide
+            stopFastPlayerRefresh();
 
             try {
                 if (input.toLowerCase().startsWith("/cha ")) {
-                    // Logique /cha (conservée)
+                    // Logique /cha
                     const newSessionName = input.substring(5).trim();
                     if (!newSessionName) {
                         sidebarStatus.textContent = "⚠️ Nom de session manquant";
@@ -619,7 +634,7 @@
                         sidebarStatus.textContent = `✅ ${data.message}`;
                         sidebarStatus.style.color = "#10b981";
                         sessionCode.textContent = newSessionName;
-                        startFastPlayerRefresh(); // Démarrage rapide après changement
+                        startFastPlayerRefresh(); 
                     } else {
                         sidebarStatus.textContent = `❌ Erreur changement : ${data.message}`;
                         sidebarStatus.style.color = "#ef4444";
@@ -642,7 +657,7 @@
                         sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
                         sidebarStatus.style.color = "#10b981";
                         sessionCode.textContent = input;
-                        startFastPlayerRefresh(); // Démarrage rapide après avoir rejoint
+                        startFastPlayerRefresh(); 
                     } else {
                         sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
                         sidebarStatus.style.color = "#ef4444";
@@ -650,10 +665,9 @@
                     joinInput.value = "";
                 }
                 
-                // Relance le cycle de rafraîchissement normal (qui arrêtera le rapide)
-                fetchGameData();
+                // Relance le cycle de rafraîchissement normal
+                await fetchGameData();
                 const waitTime = getWaitTime();
-                updateDisplay(Math.ceil(waitTime / 1000));
                 setTimeout(() => { gameCycle(); }, waitTime);
 
             } catch (e) {
@@ -672,9 +686,6 @@
 
                 const waitTime = getWaitTime();
                 
-                updateDisplay(Math.ceil(waitTime / 1000));
-                if (timerCounter) timerCounter.textContent = `Synchronisation dans ${Math.ceil(waitTime / 1000)}s`;
-
                 setTimeout(() => {
                     gameCycle(); 
                 }, waitTime);
@@ -684,3 +695,5 @@
         });
     });
 </script>
+</body>
+</html>

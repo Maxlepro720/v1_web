@@ -151,21 +151,19 @@
     // --- VARIABLES GLOBALES ET CONSTANTES ---
     const API_URL = "https://project-3-api-2bgb.onrender.com";
     
-    // Fréquence de rafraîchissement des joueurs passée à 2 secondes
-    const REFRESH_MIN_SECONDS = 3; 
-    const REFRESH_MAX_SECONDS = 8; 
-    const FAST_REFRESH_SECONDS = 2;    // Intervalle pour le rafraîchissement rapide des joueurs (2s)
-
-    let currentRefreshPeriod = REFRESH_MAX_SECONDS; // Durée du cycle actuel
+    // Fréquences pour les cycles
+    const SCORE_REFRESH_PERIOD_SECONDS = 10; // Cycle fixe pour récupérer le score total et la liste des joueurs
+    const CLICKS_MIN_SECONDS = 4;            // Minimum pour l'envoi des clics au serveur
+    const CLICKS_MAX_SECONDS = 8;            // Maximum pour l'envoi des clics au serveur
+    
     let clickCount = 0;
     let lastClickTime = 0;
     let clickIntervals = [];
     let sidebarVisible = true;
     let username = localStorage.getItem("username");
 
-    let timerInterval;      
-    let playerInterval;     
-    let fastRefreshTimeout; 
+    let timerInterval;      // Intervalle pour l'affichage du timer du score (10s)
+    let clicksInterval;     // Intervalle pour l'envoi aléatoire des clics (4-8s)
 
     // --- FONCTIONS (DÉCLARATIONS) ---
 
@@ -227,8 +225,9 @@
         clickCount++;
         if (toSend) toSend.textContent = `-- ${clickCount} --`;
     }
-
-    async function sendClicks() {
+    
+    // NOUVELLE FONCTION: Envoie les clics et relance un timer aléatoire
+    async function sendClicksRandomly() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const toSend = document.getElementById('toSend');
         
@@ -241,6 +240,8 @@
         if (toSend) toSend.textContent = "-- 0 --";
         
         if (toSendValue === 0) {
+            // Relance immédiatement sans attendre
+            startClicksInterval();
             return;
         }
         
@@ -250,12 +251,15 @@
                 headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify({ session: sessionCode, click: toSendValue, id: username }) 
             });
+            console.log(`Clicks envoyés : ${toSendValue}`);
         } catch (e) {
             const statusLabel = document.getElementById('statusLabel');
             if (statusLabel) {
                 statusLabel.textContent = "❌ Erreur réseau envoi";
                 statusLabel.style.color = "#ef4444";
             }
+        } finally {
+            startClicksInterval(); // Relance le timer après l'envoi
         }
     }
 
@@ -271,7 +275,8 @@
             
             if (playersData.status === "error" && playersData.message && playersData.message.includes("Session invalide")) {
                 console.warn("Session invalide ou expirée. Tentative de reconnexion...");
-                stopFastPlayerRefresh();
+                // On arrête seulement l'intervalle de clics
+                stopClicksInterval(); 
                 loadMySession().then(sessionLoaded => {
                     if (sessionLoaded) launchGameCycle(); // Relance le cycle après la reconnexion
                 });
@@ -304,7 +309,7 @@
                 scoreCounter.textContent = scoreData.poires || 0; 
             }
             
-            // 2. Mise à jour des joueurs (toujours inclus dans le cycle principal)
+            // 2. Mise à jour des joueurs (Synchro avec le score toutes les 10s)
             await fetchPlayers();
 
         } catch (e) {
@@ -337,8 +342,8 @@
 
         uniqueActivePlayers = [...new Set(uniqueActivePlayers)].slice(0, 5);
         
-        // LOG CONSOLE POUR DÉBOGAGE (rafraîchissement toutes les 2s)
-        console.log(`[${new Date().toLocaleTimeString()}] Données Joueurs reçues :`, uniqueActivePlayers);
+        // LOG CONSOLE POUR DÉBOGAGE (s'exécute ici toutes les 10s)
+        console.log(`[${new Date().toLocaleTimeString()}] Joueurs actifs :`, uniqueActivePlayers);
 
         playerCount.textContent = `${uniqueActivePlayers.length}/5`;
 
@@ -370,98 +375,15 @@
         });
     }
 
-    function stopFastPlayerRefresh() {
-        clearInterval(playerInterval);
-        clearTimeout(fastRefreshTimeout);
-    }
-    
-    function startFastPlayerRefresh() {
-        stopFastPlayerRefresh(); 
-        fetchPlayers();
-        
-        // Intervalle de rafraîchissement des joueurs de 2 secondes
-        playerInterval = setInterval(fetchPlayers, FAST_REFRESH_SECONDS * 1000);
-    }
-
-    async function createSession() {
-        const sessionCode = document.getElementById('sessionCode');
-        const sidebarStatus = document.getElementById('sidebarStatus');
-        if (!sessionCode || !sidebarStatus) return false;
-        
-        sessionCode.textContent = "Création...";
-        sidebarStatus.textContent = "⏳ Création d'une nouvelle session...";
-        sidebarStatus.style.color = "#f59e0b";
-
-        try {
-            const response = await fetch(`${API_URL}/create`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: username })
-            });
-            const data = await response.json();
-
-            if (data.status === "success" && data.session_name) {
-                sessionCode.textContent = data.session_name;
-                
-                let statusIcon = (response.status === 200 && data.message && data.message.includes("Session existante")) ? "✅" : "🎉";
-                let statusText = `${statusIcon} Session active : ${data.session_name}`;
-                
-                sidebarStatus.textContent = statusText;
-                sidebarStatus.style.color = "#10b981";
-
-                startFastPlayerRefresh(); 
-                return true;
-            } else {
-                sessionCode.textContent = "Erreur";
-                sidebarStatus.textContent = "❌ Erreur lors de la création : " + (data.message || "Inconnue");
-                sidebarStatus.style.color = "#ef4444"; 
-                return false;
-            }
-        } catch (e) {
-            sessionCode.textContent = "Erreur";
-            sidebarStatus.textContent = "❌ Erreur réseau lors de la création";
-            sidebarStatus.style.color = "#ef4444";
-            console.error("Erreur création session:", e);
-            return false;
-        }
-    }
-
-    async function loadMySession() {
-        const sessionCode = document.getElementById('sessionCode');
-        const sidebarStatus = document.getElementById('sidebarStatus');
-        if (!sessionCode || !sidebarStatus) return false;
-
-        sessionCode.textContent = "Chargement...";
-        
-        try {
-            const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
-            const data = await response.json();
-            
-            if (data.status === "success" && data.code) {
-                sessionCode.textContent = data.code;
-                sidebarStatus.textContent = "✅ Session personnelle chargée";
-                sidebarStatus.style.color = "#10b981";
-
-                startFastPlayerRefresh(); 
-                return true;
-            } else {
-                return await createSession(); 
-            }
-        } catch (e) {
-            return await createSession(); 
-        }
-    }
-    
     // --- LOGIQUE DE SYNCHRONISATION (TIMER) ---
 
-    // Met à jour le compteur et la barre de progression
+    // Met à jour le compteur et la barre de progression (Cycle du score fixe)
     function updateDisplay(timeLeft) {
         const counterElement = document.getElementById('timerCounter');
         const barElement = document.getElementById('timerBarFill');
         
-        // La référence de temps est la durée aléatoire choisie
-        const timeElapsed = currentRefreshPeriod - timeLeft;
-        const percentage = (timeElapsed / currentRefreshPeriod) * 100;
+        const timeElapsed = SCORE_REFRESH_PERIOD_SECONDS - timeLeft;
+        const percentage = (timeElapsed / SCORE_REFRESH_PERIOD_SECONDS) * 100;
 
         // AFFICHAGE SIMPLIFIÉ
         if (counterElement) {
@@ -472,8 +394,8 @@
             barElement.style.width = `${percentage}%`;
         }
     }
-    
-    // Fonction principale du cycle de jeu (Envoi des clics + Rafraîchissement)
+
+    // Fonction principale du cycle de jeu (Récupération du score et des joueurs)
     async function gameCycle() {
         const sessionCode = document.getElementById('sessionCode').textContent;
          if (sessionCode === "Aucune session" || sessionCode === "Erreur") {
@@ -486,23 +408,19 @@
         
         const counterElement = document.getElementById('timerCounter');
         if (counterElement) {
-            // Affichage lors de la synchronisation
             counterElement.textContent = "⏳";
         }
 
-        await sendClicks();
+        // On ne fait plus sendClicks ici, il est géré par un timer séparé.
         await fetchGameData();
-        stopFastPlayerRefresh(); 
         
-        // Le cycle est relancé de manière aléatoire
-        launchGameCycle(); 
+        startScoreInterval(); 
     }
 
-    // Démarre l'intervalle avec la durée aléatoire
-    function startInterval(duration) {
+    // Démarre l'intervalle fixe de 10 secondes pour le score
+    function startScoreInterval() {
         clearInterval(timerInterval);
-        let timeLeft = duration; 
-        currentRefreshPeriod = duration; // Met à jour la durée de référence pour l'affichage
+        let timeLeft = SCORE_REFRESH_PERIOD_SECONDS; 
         updateDisplay(timeLeft); 
 
         timerInterval = setInterval(() => {
@@ -515,13 +433,37 @@
         }, 1000); 
     }
 
-    // Fonction utilitaire pour lancer le cycle avec une durée aléatoire
-    function launchGameCycle() {
-        // Détermine la durée aléatoire entre MIN et MAX
-        const duration = Math.floor(Math.random() * (REFRESH_MAX_SECONDS - REFRESH_MIN_SECONDS + 1)) + REFRESH_MIN_SECONDS;
+    // Fonctions pour le cycle d'ENVOI des clics (Aléatoire 4-8s)
+
+    function stopClicksInterval() {
+        clearTimeout(clicksInterval);
+    }
+    
+    function startClicksInterval() {
+        stopClicksInterval(); 
         
-        // Démarre l'intervalle avec la durée aléatoire
-        startInterval(duration); 
+        // Détermine la durée aléatoire entre MIN et MAX
+        const duration = Math.floor(Math.random() * (CLICKS_MAX_SECONDS - CLICKS_MIN_SECONDS + 1)) + CLICKS_MIN_SECONDS;
+        
+        // Exécute sendClicksRandomly après la durée aléatoire
+        clicksInterval = setTimeout(sendClicksRandomly, duration * 1000);
+        console.log(`Prochain envoi de clics dans : ${duration}s`);
+    }
+
+    // Fonction utilitaire pour lancer le cycle après le délai UTC (pour la synchro du score)
+    function launchGameCycle() {
+        const now = new Date();
+        const utcSeconds = now.getUTCSeconds(); 
+        const elapsed = utcSeconds % SCORE_REFRESH_PERIOD_SECONDS;
+        const waitTimeSeconds = SCORE_REFRESH_PERIOD_SECONDS - elapsed;
+        
+        // Lance le cycle du score (10s fixe)
+        setTimeout(() => {
+            gameCycle(); 
+        }, (waitTimeSeconds * 1000) - 100); // -100ms pour s'assurer que l'exécution se fait à la seconde pile.
+
+        // Lance immédiatement le premier envoi de clics
+        startClicksInterval();
     }
     
     // --- EXÉCUTION AU CHARGEMENT DE LA PAGE ---
@@ -570,7 +512,7 @@
             joinButton.disabled = true;
             
             clearInterval(timerInterval); 
-            stopFastPlayerRefresh(); 
+            stopClicksInterval(); 
             
             const counterElement = document.getElementById('timerCounter');
             if (counterElement) counterElement.textContent = "⏳";
@@ -596,7 +538,6 @@
                         sidebarStatus.textContent = `✅ ${data.message}`;
                         sidebarStatus.style.color = "#10b981";
                         sessionCode.textContent = newSessionName;
-                        startFastPlayerRefresh(); 
                     } else {
                         sidebarStatus.textContent = `❌ Erreur changement : ${data.message}`;
                     }
@@ -621,16 +562,15 @@
                         sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
                         sidebarStatus.style.color = "#10b981";
                         sessionCode.textContent = input;
-                        startFastPlayerRefresh(); 
                     } else {
                         sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
                         sidebarStatus.style.color = "#ef4444";
-                        await loadMySession(); 
+                        await loadMySession(); // Rejoint la session personnelle si l'autre échoue
                     }
                     joinInput.value = "";
                 }
                 
-                await fetchGameData();
+                await fetchGameData(); // Récupère les données immédiatement après le join/change
                 launchGameCycle(); 
 
             } catch (e) {
@@ -645,9 +585,8 @@
         // --- Lancement Initial SÉCURISÉ ---
         loadMySession().then((sessionLoaded) => {
             if (sessionLoaded) {
-                startFastPlayerRefresh(); 
                 fetchGameData(); 
-                launchGameCycle(); 
+                launchGameCycle(); // Lance le cycle du score et le cycle des clics
             } else {
                 console.error("Impossible de charger ou créer une session. Le cycle ne démarrera pas.");
             }

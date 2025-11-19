@@ -163,9 +163,75 @@
     let username = localStorage.getItem("username");
 
     let timerInterval;      // Intervalle pour l'affichage du timer du score (10s)
-    let clicksInterval;     // Intervalle pour l'envoi aléatoire des clics (4-8s)
+    let clicksTimeout;      // Timeout pour l'envoi aléatoire des clics (4-8s)
 
-    // --- FONCTIONS (DÉCLARATIONS) ---
+    // --- FONCTIONS DE GESTION DES CYCLES ---
+    
+    function stopAllCycles() {
+        clearInterval(timerInterval);
+        clearTimeout(clicksTimeout);
+    }
+    
+    function stopClicksInterval() {
+        clearTimeout(clicksTimeout);
+    }
+    
+    function startClicksInterval() {
+        stopClicksInterval(); 
+        
+        // Détermine la durée aléatoire entre MIN et MAX
+        const duration = Math.floor(Math.random() * (CLICKS_MAX_SECONDS - CLICKS_MIN_SECONDS + 1)) + CLICKS_MIN_SECONDS;
+        
+        // Exécute sendClicksRandomly après la durée aléatoire
+        clicksTimeout = setTimeout(sendClicksRandomly, duration * 1000);
+        console.log(`[CLICS] Prochain envoi de clics dans : ${duration}s`);
+    }
+
+    // Démarre l'intervalle fixe de 10 secondes pour le score
+    function startScoreInterval() {
+        clearInterval(timerInterval);
+        let timeLeft = SCORE_REFRESH_PERIOD_SECONDS; 
+        updateDisplay(timeLeft); 
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateDisplay(timeLeft); 
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                gameCycle(); 
+            }
+        }, 1000); 
+    }
+
+    // Fonction principale du cycle de jeu (Récupération du score et des joueurs)
+    async function gameCycle() {
+        const sessionCode = document.getElementById('sessionCode').textContent;
+         if (sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Chargement...") {
+            // Si la session n'est pas valide, on tente de la recharger
+            console.warn("[SCORE] Session invalide ou perdue. Tentative de reconnexion...");
+            stopAllCycles();
+            const sessionLoaded = await loadMySession();
+            if (sessionLoaded) {
+                // Si la reconnexion réussit, on relance les cycles.
+                startScoreInterval();
+                startClicksInterval();
+            }
+            return;
+         }
+        
+        const counterElement = document.getElementById('timerCounter');
+        if (counterElement) {
+            counterElement.textContent = "⏳";
+        }
+
+        // Récupère les données (Score + Joueurs)
+        await fetchGameData();
+        
+        // Relance le timer du score
+        startScoreInterval(); 
+    }
+
+    // --- FONCTIONS DE COMMUNICATION ET DE JEU ---
 
     // Fonction la plus fiable pour informer le serveur que l'utilisateur quitte la session
     function leaveSessionSilently() {
@@ -226,12 +292,13 @@
         if (toSend) toSend.textContent = `-- ${clickCount} --`;
     }
     
-    // NOUVELLE FONCTION: Envoie les clics et relance un timer aléatoire
+    // Envoie les clics et relance le timer aléatoire (4-8s)
     async function sendClicksRandomly() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const toSend = document.getElementById('toSend');
         
         if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
+            startClicksInterval();
             return;
         }
         
@@ -239,19 +306,15 @@
         clickCount = 0;
         if (toSend) toSend.textContent = "-- 0 --";
         
-        if (toSendValue === 0) {
-            // Relance immédiatement sans attendre
-            startClicksInterval();
-            return;
-        }
-        
         try {
-            await fetch(`${API_URL}/poire`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ session: sessionCode, click: toSendValue, id: username }) 
-            });
-            console.log(`Clicks envoyés : ${toSendValue}`);
+            if (toSendValue > 0) {
+                await fetch(`${API_URL}/poire`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ session: sessionCode, click: toSendValue, id: username }) 
+                });
+                console.log(`[CLICS] Clicks envoyés : ${toSendValue}`);
+            }
         } catch (e) {
             const statusLabel = document.getElementById('statusLabel');
             if (statusLabel) {
@@ -263,6 +326,7 @@
         }
     }
 
+    // Récupère la liste des joueurs et vérifie la session
     async function fetchPlayers() {
         const sessionCodeElement = document.getElementById('sessionCode');
         if (!sessionCodeElement || sessionCodeElement.textContent === "Chargement..." || sessionCodeElement.textContent === "Aucune session" || sessionCodeElement.textContent === "Erreur" || sessionCodeElement.textContent === "Création...") {
@@ -274,12 +338,8 @@
             const playersData = await playersResponse.json();
             
             if (playersData.status === "error" && playersData.message && playersData.message.includes("Session invalide")) {
-                console.warn("Session invalide ou expirée. Tentative de reconnexion...");
-                // On arrête seulement l'intervalle de clics
-                stopClicksInterval(); 
-                loadMySession().then(sessionLoaded => {
-                    if (sessionLoaded) launchGameCycle(); // Relance le cycle après la reconnexion
-                });
+                console.error("[PLAYERS] Session invalide détectée. Arrêt des cycles...");
+                // Géré par gameCycle qui va appeler loadMySession
                 return;
             }
 
@@ -292,6 +352,7 @@
         }
     }
 
+    // Récupère le score total et appelle fetchPlayers (Cycle de 10s)
     async function fetchGameData() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const scoreCounter = document.getElementById('scoreCounter');
@@ -309,7 +370,7 @@
                 scoreCounter.textContent = scoreData.poires || 0; 
             }
             
-            // 2. Mise à jour des joueurs (Synchro avec le score toutes les 10s)
+            // 2. Mise à jour des joueurs
             await fetchPlayers();
 
         } catch (e) {
@@ -342,8 +403,8 @@
 
         uniqueActivePlayers = [...new Set(uniqueActivePlayers)].slice(0, 5);
         
-        // LOG CONSOLE POUR DÉBOGAGE (s'exécute ici toutes les 10s)
-        console.log(`[${new Date().toLocaleTimeString()}] Joueurs actifs :`, uniqueActivePlayers);
+        // LOG CONSOLE POUR DÉBOGAGE
+        console.log(`[PLAYERS] Joueurs actifs reçus (Toutes les 10s) :`, uniqueActivePlayers);
 
         playerCount.textContent = `${uniqueActivePlayers.length}/5`;
 
@@ -375,8 +436,6 @@
         });
     }
 
-    // --- LOGIQUE DE SYNCHRONISATION (TIMER) ---
-
     // Met à jour le compteur et la barre de progression (Cycle du score fixe)
     function updateDisplay(timeLeft) {
         const counterElement = document.getElementById('timerCounter');
@@ -395,75 +454,93 @@
         }
     }
 
-    // Fonction principale du cycle de jeu (Récupération du score et des joueurs)
-    async function gameCycle() {
-        const sessionCode = document.getElementById('sessionCode').textContent;
-         if (sessionCode === "Aucune session" || sessionCode === "Erreur") {
-            const sessionLoaded = await loadMySession();
-            if (!sessionLoaded) {
-                 console.error("Impossible de récupérer la session, cycle arrêté.");
-                 return;
-            }
-         }
+    async function createSession() {
+        const sessionCode = document.getElementById('sessionCode');
+        const sidebarStatus = document.getElementById('sidebarStatus');
+        if (!sessionCode || !sidebarStatus) return false;
         
-        const counterElement = document.getElementById('timerCounter');
-        if (counterElement) {
-            counterElement.textContent = "⏳";
+        sessionCode.textContent = "Création...";
+        sidebarStatus.textContent = "⏳ Création d'une nouvelle session...";
+        sidebarStatus.style.color = "#f59e0b";
+
+        try {
+            const response = await fetch(`${API_URL}/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: username })
+            });
+            const data = await response.json();
+
+            if (data.status === "success" && data.session_name) {
+                sessionCode.textContent = data.session_name;
+                
+                let statusIcon = (response.status === 200 && data.message && data.message.includes("Session existante")) ? "✅" : "🎉";
+                let statusText = `${statusIcon} Session active : ${data.session_name}`;
+                
+                sidebarStatus.textContent = statusText;
+                sidebarStatus.style.color = "#10b981";
+
+                return true;
+            } else {
+                sessionCode.textContent = "Erreur";
+                sidebarStatus.textContent = "❌ Erreur lors de la création : " + (data.message || "Inconnue");
+                sidebarStatus.style.color = "#ef4444"; 
+                return false;
+            }
+        } catch (e) {
+            sessionCode.textContent = "Erreur";
+            sidebarStatus.textContent = "❌ Erreur réseau lors de la création";
+            sidebarStatus.style.color = "#ef4444";
+            console.error("Erreur création session:", e);
+            return false;
         }
-
-        // On ne fait plus sendClicks ici, il est géré par un timer séparé.
-        await fetchGameData();
-        
-        startScoreInterval(); 
     }
 
-    // Démarre l'intervalle fixe de 10 secondes pour le score
-    function startScoreInterval() {
-        clearInterval(timerInterval);
-        let timeLeft = SCORE_REFRESH_PERIOD_SECONDS; 
-        updateDisplay(timeLeft); 
+    async function loadMySession() {
+        const sessionCode = document.getElementById('sessionCode');
+        const sidebarStatus = document.getElementById('sidebarStatus');
+        if (!sessionCode || !sidebarStatus) return false;
 
-        timerInterval = setInterval(() => {
-            timeLeft--;
-            updateDisplay(timeLeft); 
-            if (timeLeft <= 0) {
-                clearInterval(timerInterval);
-                gameCycle(); 
+        sessionCode.textContent = "Chargement...";
+        
+        try {
+            // 1. Tente de récupérer la session existante
+            const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
+            const data = await response.json();
+            
+            if (data.status === "success" && data.code) {
+                sessionCode.textContent = data.code;
+                sidebarStatus.textContent = "✅ Session personnelle chargée";
+                sidebarStatus.style.color = "#10b981";
+                return true;
+            } else {
+                // 2. Si non trouvée, tente d'en créer une
+                return await createSession(); 
             }
-        }, 1000); 
+        } catch (e) {
+            // 3. En cas d'erreur réseau, tente de créer une session (au cas où l'API est accessible mais /session a échoué)
+            return await createSession(); 
+        }
     }
 
-    // Fonctions pour le cycle d'ENVOI des clics (Aléatoire 4-8s)
-
-    function stopClicksInterval() {
-        clearTimeout(clicksInterval);
-    }
+    // --- LOGIQUE D'INITIALISATION ---
     
-    function startClicksInterval() {
-        stopClicksInterval(); 
-        
-        // Détermine la durée aléatoire entre MIN et MAX
-        const duration = Math.floor(Math.random() * (CLICKS_MAX_SECONDS - CLICKS_MIN_SECONDS + 1)) + CLICKS_MIN_SECONDS;
-        
-        // Exécute sendClicksRandomly après la durée aléatoire
-        clicksInterval = setTimeout(sendClicksRandomly, duration * 1000);
-        console.log(`Prochain envoi de clics dans : ${duration}s`);
-    }
-
-    // Fonction utilitaire pour lancer le cycle après le délai UTC (pour la synchro du score)
+    // Fonction utilitaire pour lancer le cycle après le délai UTC
     function launchGameCycle() {
+        // Démarre le cycle d'envoi des clics immédiatement (indépendant du cycle du score)
+        startClicksInterval();
+
         const now = new Date();
         const utcSeconds = now.getUTCSeconds(); 
         const elapsed = utcSeconds % SCORE_REFRESH_PERIOD_SECONDS;
         const waitTimeSeconds = SCORE_REFRESH_PERIOD_SECONDS - elapsed;
         
-        // Lance le cycle du score (10s fixe)
+        console.log(`[INIT] Attente avant le premier cycle du score : ${waitTimeSeconds}s`);
+
+        // Lance le cycle du score (10s fixe) au prochain multiple de 10
         setTimeout(() => {
             gameCycle(); 
-        }, (waitTimeSeconds * 1000) - 100); // -100ms pour s'assurer que l'exécution se fait à la seconde pile.
-
-        // Lance immédiatement le premier envoi de clics
-        startClicksInterval();
+        }, (waitTimeSeconds * 1000) - 100); 
     }
     
     // --- EXÉCUTION AU CHARGEMENT DE LA PAGE ---
@@ -493,8 +570,11 @@
         // Gère la déconnexion silencieuse à la fermeture de l'onglet/page ou à la navigation
         window.addEventListener('unload', leaveSessionSilently); 
 
+        // L'événement pageshow est complexe à gérer avec des cycles. On s'assure juste que si l'utilisateur revient, on recharge tout.
         window.addEventListener('pageshow', (event) => {
             if (event.persisted) {
+                console.log("[PAGESHOW] Retour de l'historique détecté. Redémarrage des cycles.");
+                stopAllCycles();
                 loadMySession().then(sessionLoaded => {
                     if (sessionLoaded) {
                          launchGameCycle();
@@ -511,8 +591,8 @@
             
             joinButton.disabled = true;
             
-            clearInterval(timerInterval); 
-            stopClicksInterval(); 
+            // Arrête tout le trafic avant de tenter une nouvelle connexion
+            stopAllCycles(); 
             
             const counterElement = document.getElementById('timerCounter');
             if (counterElement) counterElement.textContent = "⏳";
@@ -534,6 +614,7 @@
                         body: JSON.stringify({ id: username, new_session_name: newSessionName })
                     });
                     const data = await response.json();
+                    
                     if (data.status === "success") {
                         sidebarStatus.textContent = `✅ ${data.message}`;
                         sidebarStatus.style.color = "#10b981";
@@ -543,13 +624,13 @@
                     }
                     joinInput.value = "";
                 } else if (!input) {
-                    // Si vide, recharge la session personnelle
+                    // Si vide, recharge la session personnelle (la plus fiable)
                     await loadMySession(); 
                 } else {
                     // Rejoint une session spécifique
                     sidebarStatus.textContent = `Tentative de rejoindre '${input}'...`;
                     
-                    leaveSessionSilently(); 
+                    leaveSessionSilently(); // Informe l'ancienne session qu'on part
 
                     const response = await fetch(`${API_URL}/join`, {
                         method: 'POST',
@@ -571,11 +652,13 @@
                 }
                 
                 await fetchGameData(); // Récupère les données immédiatement après le join/change
-                launchGameCycle(); 
+                launchGameCycle(); // Redémarre les deux cycles
 
             } catch (e) {
                 sidebarStatus.textContent = "❌ Erreur réseau / Commande non valide";
                 sidebarStatus.style.color = "#ef4444";
+                // On tente de revenir à la session personnelle en cas d'échec critique
+                await loadMySession();
                 launchGameCycle(); 
             } finally {
                 joinButton.disabled = false;
@@ -585,8 +668,8 @@
         // --- Lancement Initial SÉCURISÉ ---
         loadMySession().then((sessionLoaded) => {
             if (sessionLoaded) {
-                fetchGameData(); 
-                launchGameCycle(); // Lance le cycle du score et le cycle des clics
+                fetchGameData(); // Premier affichage immédiat
+                launchGameCycle(); // Lance les deux cycles
             } else {
                 console.error("Impossible de charger ou créer une session. Le cycle ne démarrera pas.");
             }

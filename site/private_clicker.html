@@ -489,7 +489,7 @@
         const percentage = (timeElapsed / REFRESH_PERIOD_SECONDS) * 100;
 
         if (counterElement) {
-            counterElement.textContent = `Prochaine synchronisation dans : ${timeLeft}s`;
+            counterElement.textContent = `${timeLeft}s`;
         }
         
         if (barElement) {

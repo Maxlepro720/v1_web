@@ -34,38 +34,35 @@ p.subtitle { color: #888899; margin-bottom: 20px; font-size: 14px; }
 </head>
 <body>
 
-<!-- LOADING SCREEN -->
 <div class="loading-overlay" id="loadingScreen" style="display:none;">
-    <div class="spinner"></div>
-    <div>Connexion au serveur...</div>
+    <div class="spinner"></div>
+    <div>Connexion au serveur...</div>
 </div>
 
-<!-- MAIN CONTAINER -->
 <div class="container" id="authContainer">
-    <div class="logo">🎮</div>
+    <div class="logo">🎮</div>
 
-    <h1 id="title">Se connecter</h1>
-    <p class="subtitle" id="subtitle">Accédez à votre espace de jeu</p>
+    <h1 id="title">Se connecter</h1>
+    <p class="subtitle" id="subtitle">Accédez à votre espace de jeu</p>
 
-    <div class="field">
-        <i>👤</i>
-        <input type="text" id="username" placeholder="Nom d'utilisateur">
-    </div>
+    <div class="field">
+        <i>👤</i>
+        <input type="text" id="username" placeholder="Nom d'utilisateur">
+    </div>
 
-    <div class="field">
-        <i>🔒</i>
-        <input type="password" id="password" placeholder="Mot de passe">
-        <span class="toggle-password" id="togglePassword">👁</span>
-    </div>
+    <div class="field">
+        <i>🔒</i>
+        <input type="password" id="password" placeholder="Mot de passe">
+        <span class="toggle-password" id="togglePassword">👁</span>
+    </div>
 
-    <button class="btn btn-login" id="submitBtn">Se connecter</button>
+    <button class="btn btn-login" id="submitBtn">Se connecter</button>
 
-    <!-- STATUS LABEL -->
-    <div id="statusLabel"></div>
+        <div id="statusLabel"></div>
 
-    <div class="separator"><span>ou</span></div>
+    <div class="separator"><span>ou</span></div>
 
-    <button class="switch-mode" id="switchBtn">Créer un compte</button>
+    <button class="switch-mode" id="switchBtn">Créer un compte</button>
 </div>
 
 <script>
@@ -73,64 +70,79 @@ const switchBtn = document.getElementById('switchBtn');
 const title = document.getElementById('title');
 const subtitle = document.getElementById('subtitle');
 const submitBtn = document.getElementById('submitBtn');
+const passwordInput = document.getElementById('password'); // Nouveau
+const togglePassword = document.getElementById('togglePassword'); // Nouveau
 
 let isLoginMode = true;
 
 // 🔹 Toggle entre login et signup
 switchBtn.addEventListener('click', () => {
-    isLoginMode = !isLoginMode;
-    if (isLoginMode) {
-        title.textContent = "Se connecter";
-        subtitle.textContent = "Accédez à votre espace de jeu";
-        submitBtn.textContent = "Se connecter";
-        switchBtn.textContent = "Créer un compte";
-    } else {
-        title.textContent = "Créer un compte";
-        subtitle.textContent = "Inscrivez-vous pour commencer à jouer";
-        submitBtn.textContent = "S'inscrire";
-        switchBtn.textContent = "Se connecter";
-    }
+    isLoginMode = !isLoginMode;
+    if (isLoginMode) {
+        title.textContent = "Se connecter";
+        subtitle.textContent = "Accédez à votre espace de jeu";
+        submitBtn.textContent = "Se connecter";
+        switchBtn.textContent = "Créer un compte";
+    } else {
+        title.textContent = "Créer un compte";
+        subtitle.textContent = "Inscrivez-vous pour commencer à jouer";
+        submitBtn.textContent = "S'inscrire";
+        switchBtn.textContent = "Se connecter";
+    }
 });
+
+// 🔹 Toggle Afficher/Masquer le Mot de Passe (NOUVEAU CODE)
+togglePassword.addEventListener('click', () => {
+    // 1. Détermine le nouveau type (text si c'est password, et vice-versa)
+    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    
+    // 2. Applique le nouveau type à l'input
+    passwordInput.setAttribute('type', type);
+    
+    // 3. Change l'icône de l'œil
+    togglePassword.textContent = type === 'text' ? '🙈' : '👁'; 
+});
+
 
 // 🔹 Fonction login/signup
 submitBtn.addEventListener('click', async () => {
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value.trim();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
 
-    if (!username || !password) {
-        alert("Veuillez remplir tous les champs !");
-        return;
-    }
+    if (!username || !password) {
+        alert("Veuillez remplir tous les champs !");
+        return;
+    }
 
-    const data = { id: username, password };
-    const url = isLoginMode 
-        ? "https://project-3-api-2bgb.onrender.com/login" 
-        : "https://project-3-api-2bgb.onrender.com/signup"; // <-- ici le signup
+    const data = { id: username, password };
+    const url = isLoginMode 
+        ? "https://project-3-api-2bgb.onrender.com/login" 
+        : "https://project-3-api-2bgb.onrender.com/signup"; 
 
-    try {
-        document.getElementById('loadingScreen').style.display = 'flex';
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        const result = await response.json();
-        document.getElementById('loadingScreen').style.display = 'none';
+    try {
+        document.getElementById('loadingScreen').style.display = 'flex';
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        document.getElementById('loadingScreen').style.display = 'none';
 
-        if (result.status === "success") {
-            // Stockage du username dans localStorage
-            localStorage.setItem("username", username);
-            alert(isLoginMode ? "Connexion réussie !" : "Compte créé avec succès !");
+        if (result.status === "success") {
+            // Stockage du username dans localStorage
+            localStorage.setItem("username", username);
+            alert(isLoginMode ? "Connexion réussie !" : "Compte créé avec succès !");
 
-            // Redirection vers menu.html
-            window.location.href = "menu.html";
-        } else {
-            alert(result.message || (isLoginMode ? "ID ou mot de passe incorrect" : "Impossible de créer le compte"));
-        }
-    } catch(err) {
-        document.getElementById('loadingScreen').style.display = 'none';
-        alert("Erreur réseau : " + err);
-    }
+            // Redirection vers menu.html
+            window.location.href = "menu.html";
+        } else {
+            alert(result.message || (isLoginMode ? "ID ou mot de passe incorrect" : "Impossible de créer le compte"));
+        }
+    } catch(err) {
+        document.getElementById('loadingScreen').style.display = 'none';
+        alert("Erreur réseau : " + err);
+    }
 });
 </script>
 

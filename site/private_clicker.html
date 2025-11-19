@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Private Clicker Game</title>
     <style>
-    /* --- Ton CSS existant --- */
+    /* --- Styles CSS (Inchangé sauf pour le placement des boutons) --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #232323; overflow: hidden; }
 
@@ -39,10 +39,29 @@
 
     .sidebar.hidden { transform: translateX(100%); }
 
-    .toggle-sidebar-btn { position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; width: clamp(40px, 6vw, 50px); height: clamp(40px, 6vw, 50px); border-radius: 50%; cursor: pointer; font-size: clamp(18px, 3vw, 24px); z-index: 101; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); display: flex; align-items: center; justify-content: center; }
+    /* NOUVEAU PLACEMENT POUR LE TOGGLE (en haut à gauche, à côté du back-btn) */
+    .toggle-sidebar-btn { 
+        position: absolute; 
+        top: 20px; 
+        left: 80px; /* Déplacé à gauche, après le back-btn */
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+        color: white; 
+        border: none; 
+        width: clamp(40px, 6vw, 50px); 
+        height: clamp(40px, 6vw, 50px); 
+        border-radius: 50%; 
+        cursor: pointer; 
+        font-size: clamp(18px, 3vw, 24px); 
+        z-index: 101; 
+        transition: all 0.3s ease; 
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+    }
 
     .toggle-sidebar-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); }
-
+    
     .close-btn { 
         background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
         color: white; 
@@ -61,7 +80,6 @@
         display: flex; 
         align-items: center; 
         justify-content: center; 
-        /* Remplacement du texte par la croix */
         line-height: 1;
     }
 
@@ -107,43 +125,34 @@
 
     .back-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6); }
 
-
     /* Joueur en attente */
-    /* Style par défaut pour un joueur */
     .player-item {
         padding: 8px;
         margin-bottom: 5px;
         border-radius: 4px;
-        background-color: #374151; /* Gris foncé */
-        border-left: 3px solid #10b981; /* Vert par défaut */
+        background-color: #374151;
+        border-left: 3px solid #10b981;
         transition: all 0.2s ease-in-out;
     }
 
     /* Joueur en attente */
     .player-item.waiting {
         color: #64748b;
-        background: #1f2937; /* Gris très foncé */
-        border-left: 3px solid #64748b; /* Gris */
+        background: #1f2937;
+        border-left: 3px solid #64748b;
     }
 
     /* L'utilisateur courant */
     .player-item-me {
         font-weight: bold;
-        color: #fcd34d; /* Jaune/Or */
+        color: #fcd34d;
         border-left: 3px solid #fcd34d; 
         background: #3f3f46; 
     }
 
     /* Le créateur de la session (la couronne 👑) */
     .player-item-creator {
-        color: #ff6b35; /* Rouge/Orange */
-        border-left: 3px solid #ff6b35; 
-        /* Ce style peut être combiné avec player-item-me si l'utilisateur est le créateur */
-    }
-
-    /* Le créateur de la session */
-    .player-item-creator {
-        color: #ff6b35; /* Rouge/Orange */
+        color: #ff6b35;
         border-left: 3px solid #ff6b35; 
         background: rgba(255, 107, 53, 0.15); 
     }
@@ -165,8 +174,7 @@
     <div class="container">
         <div class="main-area">
             <button class="back-btn" onclick="handleBackButton()">←</button>
-
-            <div class="title">Clicker</div>
+            <button class="toggle-sidebar-btn" id="toggleSidebar">☰</button> <div class="title">Clicker</div>
             <div class="score-counter" id="scoreCounter">0</div> 
             <div class="to-send" id="toSend">-- 0 --</div>
             <button class="click-button" id="clickButton"></button>
@@ -176,8 +184,6 @@
             <div class="timer-counter" id="timerCounter">Rafraîchissement : lancement</div>
             <div class="status-label" id="statusLabel"></div>
         </div>
-
-        <button class="toggle-sidebar-btn" id="toggleSidebar">☰</button>
 
         <div class="sidebar" id="sidebar">
             <button class="close-btn" id="closeBtn">×</button>
@@ -215,8 +221,8 @@
     
     // Fréquences pour les cycles
     const SCORE_REFRESH_PERIOD_SECONDS = 10; 
-    const CLICKS_MIN_SECONDS = 4;
-    const CLICKS_MAX_SECONDS = 8;
+    const CLICKS_MIN_SECONDS = 4; // Min 4 secondes
+    const CLICKS_MAX_SECONDS = 8; // Max 8 secondes
     
     let clickCount = 0;
     let lastClickTime = 0;
@@ -226,8 +232,8 @@
     // Ajout d'un flag pour éviter de relancer logout si déjà fait lors de la redirection
     let isRedirecting = false; 
 
-    let timerInterval;
-    let clicksTimeout;
+    let timerInterval; // Pour le rafraîchissement du score (toutes les 10s)
+    let clicksTimeout; // Pour l'envoi aléatoire des clics (4-8s)
 
     // --- FONCTIONS DE GESTION DES CYCLES ET DE L'ÉTAT ---
     
@@ -240,11 +246,15 @@
         clearTimeout(clicksTimeout);
     }
     
+    /**
+     * Démarre le minuteur aléatoire pour le prochain envoi de clics (entre 4 et 8 secondes).
+     */
     function startClicksInterval() {
         stopClicksInterval(); 
         
         const duration = Math.floor(Math.random() * (CLICKS_MAX_SECONDS - CLICKS_MIN_SECONDS + 1)) + CLICKS_MIN_SECONDS;
         
+        // La fonction sendClicksRandomly sera appelée après 'duration' secondes
         clicksTimeout = setTimeout(sendClicksRandomly, duration * 1000);
         console.log(`[CLICS] Prochain envoi aléatoire de clics dans : ${duration}s`);
     }
@@ -280,16 +290,16 @@
             counterElement.textContent = "⏳";
         }
         
-        // 1. Envoi et réinitialisation des clics
+        // 1. Envoi des clics accumulés (gère sa propre réinitialisation de l'affichage)
         await sendClicksRandomly();
         
-        // 2. Relance du minuteur aléatoire pour le prochain envoi
-        startClicksInterval();
-
-        // 3. Récupération des données (score et joueurs)
+        // 2. Récupération des données (score et joueurs)
         await fetchGameData(); 
         
-        startScoreInterval(); // Relance l'intervalle de 10 secondes
+        // 3. Relance du minuteur des clics aléatoires
+        startClicksInterval();
+        
+        startScoreInterval(); // Relance l'intervalle de 10 secondes pour le score
     }
 
     // --- FONCTIONS DE COMMUNICATION ET DE JEU ---
@@ -308,7 +318,7 @@
     /**
      * Gère la déconnexion silencieuse.
      * @param {boolean} shouldLogout - Indique s'il faut appeler /logout (déconnexion complète).
-     * @param {boolean} shouldRedirect - Indique s'il faut rediriger après l'opération.
+     * @param {boolean} shouldRedirect - Indique s'il faut rediriger après l'opération (vers index.html).
      */
     async function logoutSilently(shouldLogout, shouldRedirect) {
         if (isRedirecting && shouldRedirect) {
@@ -326,13 +336,13 @@
         let isInGroup = false;
 
         const sessionInfo = await getPlayerSessionInfo();
-        if (sessionInfo) {
+        if (sessionInfo && sessionInfo.status === "success") {
             isCreator = sessionInfo.creator === username;
             isInGroup = sessionInfo.session_code === sessionCode && !isCreator;
         }
 
-        // 1. Gère le /leave si l'utilisateur est dans un groupe.
-        if (isInGroup || !shouldLogout) { // Si shouldLogout est false, on force le leave si dans un groupe
+        // 1. Gère le /leave
+        if (isInGroup || (!shouldLogout && sessionInfo && sessionInfo.session_code)) { 
             console.log(`[LOGOUT] Envoi de /leave pour la session de groupe ${sessionCode}.`);
             try {
                  await fetch(`${API_URL}/leave`, {
@@ -364,31 +374,25 @@
              }
         }
 
+        // 3. Redirection
         if (shouldRedirect) {
-            window.location.href = 'menu.html'; // Changement de 'index.html' à 'menu.html'
+            window.location.href = 'index.html'; // Redirection vers la page de login
         }
     }
     
-    // Bouton flèche (←) à gauche : /leave puis menu.html (ou /logout si créateur)
+    // Bouton flèche (←) à gauche : /logout (pour détruire la session personnelle et revenir à login)
     async function handleBackButton() {
-        const sessionInfo = await getPlayerSessionInfo();
-        const sessionCode = document.getElementById('sessionCode').textContent;
-        const isCreator = sessionInfo && sessionInfo.creator === username && sessionInfo.session_code === sessionCode;
-
-        if (isCreator) {
-            // Le créateur doit faire un logout pour détruire la session
-            logoutSilently(true, true);
-        } else {
-            // Le joueur simple fait juste un leave puis va au menu.
-            logoutSilently(false, true); 
-        }
+        // Le créateur ou le joueur simple qui clique sur la flèche veut quitter complètement le système
+        // --> Logout complet et redirection vers index.html
+        logoutSilently(true, true); 
     }
     
-    // Événement de fermeture de page : /logout (complet)
+    // Événement de fermeture de page : /logout silencieux (sans redirection)
     function handleLogoutOnClose(event) {
         if (isRedirecting) {
             return; 
         }
+        // Logout complet (true) sans redirection (false)
         logoutSilently(true, false); 
     }
 
@@ -408,17 +412,18 @@
         const isCreator = sessionInfo && sessionInfo.creator === username && sessionInfo.session_code === sessionCode;
         const isInGroup = sessionInfo && sessionInfo.session_code === sessionCode && !isCreator;
 
-        // Si l'utilisateur est créateur, il ne peut pas juste "quitter" le groupe, il doit "détruire" la session.
         if (isCreator) {
-            sidebarStatus.textContent = "❌ Créateur : utilisez la flèche (←) pour vous déconnecter et détruire la session.";
+            sidebarStatus.textContent = "❌ Créateur : utilisez la flèche (←) pour vous déconnecter et détruire la session (Logout).";
             sidebarStatus.style.color = "#ef4444";
             return;
         }
         
-        // Si l'utilisateur n'est pas dans un groupe, on ne fait rien.
         if (!isInGroup) {
              sidebarStatus.textContent = "⚠️ Vous êtes dans votre session personnelle (solo).";
              sidebarStatus.style.color = "#f59e0b";
+             // On cache la sidebar même si c'est une session solo
+             document.getElementById('sidebar').classList.add('hidden');
+             document.getElementById('toggleSidebar').style.display = 'flex';
              return;
         }
 
@@ -439,7 +444,7 @@
                 sidebarStatus.textContent = "✅ Session de groupe quittée. Retour à la session solo.";
                 sidebarStatus.style.color = "#10b981";
                 
-                // Après un leave, l'utilisateur revient à sa session personnelle solo (si l'API le gère ainsi)
+                // Après un leave, l'utilisateur revient à sa session personnelle solo
                 stopAllCycles();
                 await loadMySession(); 
                 await fetchGameData();
@@ -456,7 +461,7 @@
             checkCloseButtonState();
             // Ferme la sidebar après avoir quitté le groupe
             document.getElementById('sidebar').classList.add('hidden');
-            document.getElementById('toggleSidebar').style.display = 'flex'; // Affiche le bouton "☰"
+            document.getElementById('toggleSidebar').style.display = 'flex';
         }
     }
 
@@ -490,6 +495,10 @@
         if (toSend) toSend.textContent = `-- ${clickCount} --`;
     }
     
+    /**
+     * Envoie les clics accumulés à l'API et réinitialise l'affichage.
+     * Est appelée aléatoirement (4-8s) ou lors du cycle de score (10s).
+     */
     async function sendClicksRandomly() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         
@@ -498,7 +507,6 @@
         }
         
         const toSendValue = clickCount;
-        clickCount = 0; // Réinitialisation immédiate du compteur AVANT l'envoi
         
         try {
             if (toSendValue > 0) {
@@ -510,8 +518,13 @@
                 });
                 
                 if (response.ok) {
+                    // RÉINITIALISATION DU COMPTEUR DE CLICS À L'AFFICHAGE UNIQUEMENT SI L'ENVOI RÉUSSI
+                    clickCount = 0; 
                     const toSend = document.getElementById('toSend');
                     if (toSend) toSend.textContent = "-- 0 --";
+                } else {
+                    // Si l'envoi échoue (status non-ok), on garde les clics en mémoire.
+                    console.error(`[CLICS] Échec de l'envoi des clics: ${response.status}`);
                 }
             }
         } catch (e) {
@@ -520,47 +533,18 @@
                 statusLabel.textContent = "❌ Erreur réseau envoi";
                 statusLabel.style.color = "#ef4444";
             }
-            // Si l'envoi échoue, on remet les clics dans le compteur pour la prochaine tentative.
-            clickCount = toSendValue; 
+             // Si l'envoi échoue (erreur réseau), on garde les clics en mémoire.
         } finally {
-            // Pas de relance ici
+            // La relance de l'intervalle des clics se fait dans gameCycle() ou ici s'il n'y a pas de cycle en cours.
+            // On s'assure qu'un nouvel intervalle est toujours planifié après l'envoi.
+            if (!timerInterval) { 
+                 startClicksInterval();
+            }
         }
     }
     
-    // Fonction vérifiant l'état du bouton de fermeture/quitter
-    async function checkCloseButtonState() {
-        const sessionCode = document.getElementById('sessionCode').textContent;
-        const closeBtn = document.getElementById('closeBtn');
-
-        if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
-            closeBtn.disabled = true;
-            closeBtn.style.backgroundColor = "grey";
-            closeBtn.style.cursor = "not-allowed";
-            closeBtn.textContent = "×"; // S'assurer que c'est toujours une croix
-            return;
-        }
-
-        const sessionInfo = await getPlayerSessionInfo();
-        
-        if (sessionInfo && sessionInfo.status === "success" && sessionInfo.session_code === sessionCode && sessionInfo.creator === username) {
-            // Créateur : désactivé car la sortie passe par le bouton Retour (←)
-            closeBtn.disabled = true;
-            closeBtn.style.backgroundColor = "#6b7280"; 
-            closeBtn.style.cursor = "not-allowed";
-        } else if (sessionInfo && sessionInfo.status === "success" && sessionInfo.session_code === sessionCode) {
-            // Simple joueur dans un groupe : peut quitter
-            closeBtn.disabled = false;
-            closeBtn.style.backgroundColor = "#ef4444";
-            closeBtn.style.cursor = "pointer";
-        } else {
-            // Dans sa session solo ou autre état non groupé
-            closeBtn.disabled = true;
-            closeBtn.style.backgroundColor = "#6b7280"; 
-            closeBtn.style.cursor = "not-allowed";
-        }
-        closeBtn.textContent = "×"; // S'assurer que c'est toujours une croix
-    }
-
+    // ... (Reste des fonctions fetchGameData, updatePlayersList, etc. inchangées)
+    
     async function fetchPlayers() {
         const sessionCodeElement = document.getElementById('sessionCode');
         const currentDisplayedCode = sessionCodeElement.textContent;
@@ -634,7 +618,39 @@
             console.error("Erreur lors du rafraîchissement des données:", e);
         }
     }
-    
+
+    function checkCloseButtonState() {
+        const sessionCode = document.getElementById('sessionCode').textContent;
+        const closeBtn = document.getElementById('closeBtn');
+
+        if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
+            closeBtn.disabled = true;
+            closeBtn.style.backgroundColor = "grey";
+            closeBtn.style.cursor = "not-allowed";
+            closeBtn.textContent = "×";
+            return;
+        }
+
+        getPlayerSessionInfo().then(sessionInfo => {
+            if (sessionInfo && sessionInfo.status === "success" && sessionInfo.session_code === sessionCode && sessionInfo.creator === username) {
+                closeBtn.disabled = true;
+                closeBtn.style.backgroundColor = "#6b7280"; 
+                closeBtn.style.cursor = "not-allowed";
+            } else if (sessionInfo && sessionInfo.status === "success" && sessionInfo.session_code === sessionCode) {
+                closeBtn.disabled = false;
+                closeBtn.style.backgroundColor = "#ef4444";
+                closeBtn.style.cursor = "pointer";
+            } else {
+                closeBtn.disabled = true;
+                closeBtn.style.backgroundColor = "#6b7280"; 
+                closeBtn.style.cursor = "not-allowed";
+            }
+            closeBtn.textContent = "×";
+        });
+    }
+
+    // ... (Fonctions updatePlayersList, updateDisplay, createSession, loadMySession, launchGameCycle inchangées)
+
     function updatePlayersList(players, creator) {
         const playerCount = document.getElementById('playerCount');
         const playerSlots = [
@@ -783,12 +799,10 @@
         
         console.log(`[INIT] Attente avant le premier cycle: ${waitTimeSeconds}s`);
         
-        // Attente avant le premier cycle pour synchroniser avec l'API (si elle utilise une horloge 0, 10, 20, ...)
         setTimeout(() => {
-            gameCycle(); // Lance le premier cycle immédiatement après l'attente
+            gameCycle(); 
         }, waitTimeSeconds * 1000);
         
-        // Affichage initial du compte à rebours avant le premier cycle
         startScoreInterval(waitTimeSeconds); 
     }
     
@@ -805,6 +819,7 @@
         await loadMySession(); 
         await fetchGameData();
         launchGameCycle(); 
+        startClicksInterval(); // Démarrage initial de l'envoi aléatoire des clics
 
         // Événements
         document.getElementById('clickButton').addEventListener('click', onCLickerClick);
@@ -816,19 +831,12 @@
 
         toggleSidebarBtn.addEventListener('click', () => {
             sidebar.classList.toggle('hidden');
-            if (sidebar.classList.contains('hidden')) {
-                toggleSidebarBtn.textContent = '☰';
-            } else {
-                toggleSidebarBtn.textContent = '×';
-            }
-        });
-        document.getElementById('closeBtn').addEventListener('click', () => {
-             // Seulement masquer la sidebar si l'action de leave est réussie ou si le bouton était désactivé
-             // La logique de fermeture de la sidebar est maintenant dans handleLeaveSession.
+            // Gère la visibilité du bouton "☰"
+            toggleSidebarBtn.style.display = sidebar.classList.contains('hidden') ? 'flex' : 'none';
         });
     });
 
-    // Événement de fermeture de page : /logout
+    // Événement de fermeture de page : /logout silencieux (sans redirection)
     window.addEventListener('beforeunload', handleLogoutOnClose);
 
 </script>

@@ -147,25 +147,27 @@
         </div>
     </div>
 
-    <script>
+   <script>
     // --- VARIABLES GLOBALES ET CONSTANTES ---
     const API_URL = "https://project-3-api-2bgb.onrender.com";
+    const REFRESH_PERIOD_SECONDS = 10;
+    const FAST_REFRESH_SECONDS = 2; // Nouvelle fréquence rapide
     let clickCount = 0;
     let lastClickTime = 0;
     let clickIntervals = [];
     let sidebarVisible = true;
     let username = localStorage.getItem("username");
 
+    let timerInterval;       // Intervalle pour le cycle de jeu (10s)
+    let playerInterval;      // Intervalle pour le rafraîchissement rapide des joueurs (2s)
+    let fastRefreshTimeout;  // Timeout pour arrêter le rafraîchissement rapide
+
     // --- FONCTIONS (DÉCLARATIONS) ---
 
-    // CORRECTION 1 : Flèche retour (redirige sans quitter la session)
-    async function handleBackButton() {
-        window.location.href = "menu.html";
-    }
-
+    // Fonction pour quitter silencieusement la session (conservée)
     async function leaveSessionSilently() {
         const codeElement = document.getElementById('sessionCode');
-        if (!codeElement) return; 
+        if (!codeElement) return;
         
         const code = codeElement.textContent;
         if (code === "Chargement..." || code === "Aucune session" || code === "Erreur" || code === "Création...") {
@@ -174,22 +176,24 @@
         
         try {
             const data = JSON.stringify({ code: code, id: username });
+            const options = { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: data,
+                keepalive: true
+            };
+
             if (navigator.sendBeacon) {
-                // Utilise sendBeacon pour les requêtes asynchrones au moment de la fermeture/navigation
                 navigator.sendBeacon(`${API_URL}/leave`, data);
             } else {
-                await fetch(`${API_URL}/leave`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: data,
-                    keepalive: true
-                });
+                await fetch(`${API_URL}/leave`, options);
             }
         } catch (e) {
             console.error("Erreur lors de la déconnexion:", e);
         }
     }
 
+    // Fonction de clic (conservée)
     function onClickerClick() {
         const statusLabel = document.getElementById('statusLabel'); 
         const toSend = document.getElementById('toSend'); 
@@ -202,7 +206,6 @@
             if (clickIntervals.length > 5) clickIntervals.shift();
             const avg = clickIntervals.reduce((a, b) => a + b, 0) / clickIntervals.length;
             const clickFrequency = avg > 0 ? 1 / avg : 0;
-            // Limite la fréquence à 10 clics/seconde pour une détection simple (ajusté pour éviter les faux positifs)
             freq = clickFrequency; 
         }
         lastClickTime = now;
@@ -218,6 +221,7 @@
         toSend.textContent = `-- ${clickCount} --`;
     }
 
+    // Fonction pour envoyer les clics (conservée)
     async function sendClicks() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const statusLabel = document.getElementById('statusLabel');
@@ -231,8 +235,12 @@
         clickCount = 0;
         toSend.textContent = "-- 0 --";
         
-        // CORRECTION 2 : Supprime la vérification `if (toSendValue === 0) return;` pour garantir l'envoi régulier.
-
+        if (toSendValue === 0) {
+            statusLabel.textContent = "Aucun point à envoyer.";
+            statusLabel.style.color = "#64748b";
+            return;
+        }
+        
         try {
             statusLabel.textContent = `Envoi de ${toSendValue} points...`; 
             statusLabel.style.color = "#3b82f6";
@@ -256,82 +264,37 @@
         }
     }
 
-    async function createSession() {
-        const sessionCode = document.getElementById('sessionCode');
-        const sidebarStatus = document.getElementById('sidebarStatus');
-        
-        sessionCode.textContent = "Création...";
-        sidebarStatus.textContent = "⏳ Création d'une nouvelle session...";
-        sidebarStatus.style.color = "#f59e0b";
+    // Fonction pour récupérer uniquement la liste des joueurs
+    async function fetchPlayers() {
+        const sessionCode = document.getElementById('sessionCode').textContent;
 
-        try {
-            const response = await fetch(`${API_URL}/create`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: username })
-            });
-            const data = await response.json();
-
-            if (data.status === "success" && data.session_name) {
-                sessionCode.textContent = data.session_name;
-                
-                // --- DÉBUT DE LA LOGIQUE MODIFIÉE/AMÉLIORÉE ---
-                let statusIcon = "🎉";
-                let statusText = `Session créée ! Code : ${data.session_name}`;
-
-                // Si le code de statut HTTP est 200 (OK) et qu'un message de session existante est présent, 
-                // on considère que la session a été CHARGÉE (non créée)
-                if (response.status === 200 && data.message && data.message.includes("Session existante")) {
-                    statusIcon = "✅";
-                    statusText = data.message; // Réutilise le message complet du serveur
-                } else if (response.status === 201) {
-                    statusIcon = "🎉";
-                    statusText = `Session créée ! Code : ${data.session_name}`;
-                }
-                
-                sidebarStatus.textContent = `${statusIcon} ${statusText}`;
-                sidebarStatus.style.color = "#10b981";
-                // --- FIN DE LA LOGIQUE MODIFIÉE/AMÉLIORÉE ---
-
-                return true;
-            } else {
-                sessionCode.textContent = "Erreur";
-                sidebarStatus.textContent = "❌ Erreur lors de la création : " + (data.message || "Inconnue");
-                return false;
-            }
-        } catch (e) {
-            sessionCode.textContent = "Erreur";
-            sidebarStatus.textContent = "❌ Erreur réseau lors de la création";
-            sidebarStatus.style.color = "#ef4444";
-            console.error("Erreur création session:", e);
-            return false;
+        if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
+            return;
         }
-    }
-
-    async function loadMySession() {
-        const sessionCode = document.getElementById('sessionCode');
-        const sidebarStatus = document.getElementById('sidebarStatus');
 
         try {
-            const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
-            const data = await response.json();
+            // Utilise /verify_session pour obtenir les joueurs et le créateur
+            const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
+            const playersData = await playersResponse.json();
             
-            if (data.status === "success" && data.code) {
-                sessionCode.textContent = data.code;
-                sidebarStatus.textContent = "✅ Session chargée";
-                sidebarStatus.style.color = "#10b981";
-                return true;
-            } else {
-                console.log("Aucune session trouvée. Création automatique...");
-                return await createSession();
+            if (playersData.status === "error" && playersData.message && playersData.message.includes("Session invalide")) {
+                console.warn("Session invalide ou expirée. Rechargement de la session personnelle...");
+                // Arrête le rafraîchissement rapide
+                stopFastPlayerRefresh(); 
+                // Relance le cycle de jeu pour forcer la reconnexion
+                gameCycle(); 
+                return;
+            }
+
+            if (playersData.status === "success") {
+                updatePlayersList(playersData.players, playersData.creator);
             }
         } catch (e) {
-            console.error("Erreur lors du chargement de la session:", e);
-            console.log("Erreur réseau. Tentative de création d'une session...");
-            return await createSession();
+            console.error("Erreur lors du rafraîchissement des joueurs:", e);
         }
     }
 
+    // Fonction pour récupérer le score ET les joueurs (cycle normal de 10s)
     async function fetchGameData() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const scoreCounter = document.getElementById('scoreCounter');
@@ -341,29 +304,23 @@
         }
 
         try {
+            // Requête pour le score (comme avant)
             const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(sessionCode)}`);
             const scoreData = await scoreResponse.json();
             
-            if (scoreData.status === "success") {
-                if (scoreCounter) {
-                    scoreCounter.textContent = scoreData.poires || 0; 
-                } else {
-                    console.error("Élément 'scoreCounter' introuvable dans le HTML !");
-                }
+            if (scoreData.status === "success" && scoreCounter) {
+                scoreCounter.textContent = scoreData.poires || 0; 
             }
-
-            const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
-            const playersData = await playersResponse.json();
             
-            if (playersData.status === "success") {
-                updatePlayersList(playersData.players, playersData.creator);
-            }
+            // Requête pour les joueurs (utilise la nouvelle fonction pour éviter la duplication de la logique)
+            await fetchPlayers();
 
         } catch (e) {
             console.error("Erreur lors du rafraîchissement des données:", e);
         }
     }
 
+    // Fonction de mise à jour des joueurs (conservée)
     function updatePlayersList(players, creator) {
         const playerCount = document.getElementById('playerCount');
         const playerSlots = [
@@ -392,6 +349,7 @@
             if (player) {
                 let displayString = "";
                 
+                // Logique pour afficher la couronne (👑) pour le créateur et l'icône utilisateur (👤)
                 if (player === username) {
                     displayString = (player === creator) ? `👑 👤 Vous` : `👤 Vous`;
                 } else {
@@ -411,34 +369,101 @@
         });
     }
 
-    function resetPlayersList() {
-        const playerCount = document.getElementById('playerCount');
-        const playerSlots = [
-            document.getElementById('player1'), 
-            document.getElementById('player2'), 
-            document.getElementById('player3'), 
-            document.getElementById('player4'), 
-            document.getElementById('player5')
-        ];
-        playerCount.textContent = `0/5`;
-        playerSlots.forEach((slot, index) => {
-            if (index === 0) {
-                slot.textContent = "👤 Vous (Déconnecté)";
-                slot.classList.remove('waiting');
-                slot.style.color = '#ffd966'; 
-                slot.style.borderLeft = '3px solid #ffb84d';
-            } else {
-                slot.textContent = "⚪ En attente...";
-                slot.classList.add('waiting');
-                slot.style.color = '#64748b';
-                slot.style.borderLeft = '3px solid #64748b';
-            }
-        });
+    // --- LOGIQUE DE RAFRAÎCHISSEMENT RAPIDE DES JOUEURS (NOUVEAU) ---
+
+    function startFastPlayerRefresh() {
+        // 1. Arrête tout rafraîchissement rapide précédent
+        stopFastPlayerRefresh(); 
+
+        // 2. Lance la première mise à jour immédiatement
+        fetchPlayers();
+
+        // 3. Configure un intervalle pour rafraîchir toutes les FAST_REFRESH_SECONDS (2s)
+        playerInterval = setInterval(fetchPlayers, FAST_REFRESH_SECONDS * 1000);
+
+        // 4. Configure un timeout pour arrêter le rafraîchissement rapide après 30 secondes (pour ne pas surcharger)
+        fastRefreshTimeout = setTimeout(() => {
+            stopFastPlayerRefresh();
+            console.log("Rafraîchissement rapide des joueurs terminé.");
+        }, 30000); // 30 secondes
     }
 
-    // --- LOGIQUE DE SYNCHRONISATION UTC ---
-    const REFRESH_PERIOD_SECONDS = 10;
-    let timerInterval;
+    function stopFastPlayerRefresh() {
+        clearInterval(playerInterval);
+        clearTimeout(fastRefreshTimeout);
+    }
+    
+    // --- LOGIQUE DE SESSION ET DE CYCLE DE JEU (MODIFIÉE) ---
+
+    async function createSession() {
+        const sessionCode = document.getElementById('sessionCode');
+        const sidebarStatus = document.getElementById('sidebarStatus');
+        
+        sessionCode.textContent = "Création...";
+        sidebarStatus.textContent = "⏳ Création d'une nouvelle session...";
+        sidebarStatus.style.color = "#f59e0b";
+
+        try {
+            const response = await fetch(`${API_URL}/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: username })
+            });
+            const data = await response.json();
+
+            if (data.status === "success" && data.session_name) {
+                sessionCode.textContent = data.session_name;
+                
+                let statusIcon = "🎉";
+                if (response.status === 200 && data.message && data.message.includes("Session existante")) {
+                    statusIcon = "✅";
+                }
+                let statusText = `${statusIcon} Session active : ${data.session_name}`;
+                
+                sidebarStatus.textContent = statusText;
+                sidebarStatus.style.color = "#10b981";
+
+                startFastPlayerRefresh(); // Lancement du rafraîchissement rapide
+                return true;
+            } else {
+                sessionCode.textContent = "Erreur";
+                sidebarStatus.textContent = "❌ Erreur lors de la création : " + (data.message || "Inconnue");
+                sidebarStatus.style.color = "#ef4444"; 
+                return false;
+            }
+        } catch (e) {
+            sessionCode.textContent = "Erreur";
+            sidebarStatus.textContent = "❌ Erreur réseau lors de la création";
+            sidebarStatus.style.color = "#ef4444";
+            console.error("Erreur création session:", e);
+            return false;
+        }
+    }
+
+    async function loadMySession() {
+        const sessionCode = document.getElementById('sessionCode');
+        const sidebarStatus = document.getElementById('sidebarStatus');
+
+        try {
+            const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
+            const data = await response.json();
+            
+            if (data.status === "success" && data.code) {
+                sessionCode.textContent = data.code;
+                sidebarStatus.textContent = "✅ Session chargée";
+                sidebarStatus.style.color = "#10b981";
+
+                startFastPlayerRefresh(); // Lancement du rafraîchissement rapide
+                return true;
+            } else {
+                return await createSession(); 
+            }
+        } catch (e) {
+            return await createSession(); 
+        }
+    }
+    
+    // Fonctions de synchronisation et de cycle de jeu (adaptées pour le nouveau rafraîchissement)
 
     function getWaitTime() {
         const now = new Date();
@@ -451,13 +476,17 @@
     function updateDisplay(timeLeft) {
         const timerBarFill = document.getElementById('timerBarFill');
         const timerCounter = document.getElementById('timerCounter');
-        timerBarFill.style.width = `${((REFRESH_PERIOD_SECONDS - timeLeft) / REFRESH_PERIOD_SECONDS) * 100}%`;
-        timerCounter.textContent = `Rafraîchissement dans ${timeLeft}s`;
+        if (timerBarFill && timerCounter) {
+            timerBarFill.style.width = `${((REFRESH_PERIOD_SECONDS - timeLeft) / REFRESH_PERIOD_SECONDS) * 100}%`;
+            timerCounter.textContent = `Rafraîchissement dans ${timeLeft}s`;
+        }
     }
 
     async function gameCycle() {
         await sendClicks();
         await fetchGameData();
+        // Arrête le rafraîchissement rapide si le cycle normal le rattrape
+        stopFastPlayerRefresh(); 
         startInterval();
     }
 
@@ -468,19 +497,16 @@
         timerInterval = setInterval(() => {
             timeLeft--;
             updateDisplay(timeLeft);
-            if (timeLeft === 1) {
+            if (timeLeft === 0) {
                 clearInterval(timerInterval);
                 gameCycle(); 
             }
         }, 1000); 
     }
 
-    // --- EXÉCUTION AU CHARGEMENT DE LA PAGE ---
+    // --- EXÉCUTION AU CHARGEMENT DE LA PAGE (MODIFIÉE) ---
     document.addEventListener('DOMContentLoaded', () => {
         
-        // CORRECTION 3 : Suppression du bloc qui écrasait le HTML du bouton 'Upgrade'
-        // pour s'assurer qu'il fonctionne comme un simple lien.
-
         console.log("Username récupéré du localStorage:", username);
         if (!username || username.trim() === "") {
             console.error("⚠️ Aucun nom d'utilisateur trouvé. Le jeu ne fonctionnera pas correctement.");
@@ -495,28 +521,39 @@
         const toggleSidebar = document.getElementById('toggleSidebar');
         const timerCounter = document.getElementById('timerCounter');
 
-        usernameLabel.textContent = username;
+        if (usernameLabel) usernameLabel.textContent = username;
 
-        toggleSidebar.addEventListener('click', () => { 
+        if (toggleSidebar && sidebar) toggleSidebar.addEventListener('click', () => { 
             sidebarVisible = !sidebarVisible; 
             sidebar.classList.toggle('hidden'); 
         });
 
-        clickButton.addEventListener('click', onClickerClick);
+        if (clickButton) clickButton.addEventListener('click', onClickerClick);
 
-        // CORRECTION 1 (bis) : L'écouteur beforeunload est désactivé pour ne pas quitter la session au retour navigateur
-        window.addEventListener('beforeunload', (e) => {
-            // leaveSessionSilently(); 
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                loadMySession().then(sessionLoaded => {
+                    if (sessionLoaded) {
+                        gameCycle();
+                    }
+                });
+            }
         });
 
-        closeBtn.addEventListener('click', async () => {
+        if (closeBtn) closeBtn.addEventListener('click', async () => {
             const sessionCode = document.getElementById('sessionCode');
             const sidebarStatus = document.getElementById('sidebarStatus');
             const code = sessionCode.textContent;
 
-            if (code === "Chargement..." || code === "Aucune session" || code === "Création...") { 
-                sidebarStatus.textContent = "⚠️ Pas de session active"; 
+            clearInterval(timerInterval); 
+            stopFastPlayerRefresh();
+
+            if (code === "Chargement..." || code === "Aucune session" || code === "Création..." || code === "Erreur") { 
+                sidebarStatus.textContent = "⚠️ Pas de session active. Rechargement..."; 
                 sidebarStatus.style.color = "#f59e0b"; 
+                await loadMySession().then(sessionLoaded => {
+                    if (sessionLoaded) gameCycle();
+                });
                 return; 
             }
             
@@ -525,37 +562,49 @@
             try {
                 await leaveSessionSilently(); 
                 
-                sidebarStatus.textContent = "✅ Session quittée"; 
+                sidebarStatus.textContent = "✅ Session quittée. Chargement personnel..."; 
                 sidebarStatus.style.color = "#10b981"; 
-                sessionCode.textContent = "Aucune session";
+                sessionCode.textContent = "Chargement...";
                 resetPlayersList();
                 
-                setTimeout(async () => {
-                    await createSession();
-                }, 500);
+                const newSessionLoaded = await loadMySession(); 
+                
+                if (newSessionLoaded) {
+                    fetchGameData();
+                    const waitTime = getWaitTime();
+                    updateDisplay(Math.ceil(waitTime / 1000));
+                    setTimeout(() => { gameCycle(); }, waitTime);
+                } else {
+                    sidebarStatus.textContent = "❌ Erreur critique, aucune session disponible.";
+                    sidebarStatus.style.color = "#ef4444"; 
+                }
 
             } catch (e) { 
-                sidebarStatus.textContent = "❌ Erreur réseau"; 
+                sidebarStatus.textContent = "❌ Erreur réseau lors de la déconnexion"; 
                 sidebarStatus.style.color = "#ef4444"; 
+                startInterval(); 
             } finally {
                 closeBtn.disabled = false;
             }
         });
 
-        joinButton.addEventListener('click', async () => {
+        if (joinButton) joinButton.addEventListener('click', async () => {
             let input = joinInput.value.trim();
             const sidebarStatus = document.getElementById('sidebarStatus');
             const sessionCode = document.getElementById('sessionCode');
             
             joinButton.disabled = true;
+            
+            clearInterval(timerInterval); 
+            stopFastPlayerRefresh(); // Arrête l'ancien rafraîchissement rapide
 
             try {
                 if (input.toLowerCase().startsWith("/cha ")) {
+                    // Logique /cha (conservée)
                     const newSessionName = input.substring(5).trim();
                     if (!newSessionName) {
                         sidebarStatus.textContent = "⚠️ Nom de session manquant";
                         sidebarStatus.style.color = "#f59e0b";
-                        joinButton.disabled = false;
                         return;
                     }
                     
@@ -570,14 +619,17 @@
                         sidebarStatus.textContent = `✅ ${data.message}`;
                         sidebarStatus.style.color = "#10b981";
                         sessionCode.textContent = newSessionName;
+                        startFastPlayerRefresh(); // Démarrage rapide après changement
                     } else {
                         sidebarStatus.textContent = `❌ Erreur changement : ${data.message}`;
                         sidebarStatus.style.color = "#ef4444";
                     }
                     joinInput.value = "";
                 } else if (!input) {
-                    await createSession(); 
+                    // Si vide, recharge la session personnelle
+                    await loadMySession(); 
                 } else {
+                    // Rejoint une session spécifique
                     sidebarStatus.textContent = `Tentative de rejoindre '${input}'...`;
                     const response = await fetch(`${API_URL}/join`, {
                         method: 'POST',
@@ -590,15 +642,24 @@
                         sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
                         sidebarStatus.style.color = "#10b981";
                         sessionCode.textContent = input;
+                        startFastPlayerRefresh(); // Démarrage rapide après avoir rejoint
                     } else {
                         sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
                         sidebarStatus.style.color = "#ef4444";
                     }
                     joinInput.value = "";
                 }
+                
+                // Relance le cycle de rafraîchissement normal (qui arrêtera le rapide)
+                fetchGameData();
+                const waitTime = getWaitTime();
+                updateDisplay(Math.ceil(waitTime / 1000));
+                setTimeout(() => { gameCycle(); }, waitTime);
+
             } catch (e) {
                 sidebarStatus.textContent = "❌ Erreur réseau / Commande non valide";
                 sidebarStatus.style.color = "#ef4444";
+                startInterval(); 
             } finally {
                 joinButton.disabled = false;
             }
@@ -612,7 +673,7 @@
                 const waitTime = getWaitTime();
                 
                 updateDisplay(Math.ceil(waitTime / 1000));
-                timerCounter.textContent = `Synchronisation dans ${Math.ceil(waitTime / 1000)}s`;
+                if (timerCounter) timerCounter.textContent = `Synchronisation dans ${Math.ceil(waitTime / 1000)}s`;
 
                 setTimeout(() => {
                     gameCycle(); 
@@ -623,5 +684,3 @@
         });
     });
 </script>
-</body>
-</html>

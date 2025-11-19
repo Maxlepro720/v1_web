@@ -6,9 +6,9 @@
 <title>Launcher</title>
 
 <style>
-/* -------------------------
-    🎨 STYLES CSS
-    ------------------------- */
+/* -------------------------------------
+    🎨 STYLES CSS (DESKTOP/STANDARD - DÉFAUT)
+    ------------------------------------- */
 body { margin: 0; font-family: Arial, sans-serif; background: #0f1419; color: white; }
 
 /* HEADER */
@@ -16,19 +16,19 @@ header { background: black; display: flex; align-items: center; padding: 20px 30
 header h1 { font-size: 26px; color: #60a5fa; margin: 0; }
 
 /* NAV PRINCIPALE (sans le bouton de déconnexion) */
-#main-nav { display: flex; align-items: center; gap: 10px; }
+#main-nav { display: flex; align-items: center; gap: 10px; flex-grow: 1; justify-content: flex-start; }
 
 /* STYLES GÉNÉRAUX APPLIQUÉS SEULEMENT AUX BOUTONS DANS #main-nav */
 #main-nav button { background: #1f2937; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 6px; font-size: 15px; }
 #main-nav button:hover { background: #374151; }
 
-/* Style spécifique pour le bouton de déconnexion (compacté) */
+/* Style spécifique pour le bouton de déconnexion */
 #logout-button { background: #ef4444; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 6px; font-size: 15px; font-weight: bold; transition: background 0.2s; }
 #logout-button:hover { background: #dc2626; }
 
 
 /* Barre de recherche stylisée comme un bouton */
-#search_bar { padding: 12px 20px; border-radius: 6px; border: none; outline: none; font-size: 15px; background: #1f2937; color: white; transition: background 0.2s; }
+#search_bar { padding: 12px 20px; border-radius: 6px; border: none; outline: none; font-size: 15px; background: #1f2937; color: white; transition: background 0.2s; flex-grow: 1; max-width: 300px; }
 #search_bar::placeholder { color: #d1d5db; }
 #search_bar:focus { background: #374151; }
 
@@ -47,6 +47,63 @@ header h1 { font-size: 26px; color: #60a5fa; margin: 0; }
 .card-genre { font-size: 14px; opacity: 0.7; margin-top: 6px; margin-bottom: 12px; }
 .card button { width: 100%; background: #3b82f6; border: none; padding: 12px; color: white; cursor: pointer; font-size: 15px; border-radius: 6px; }
 .card button:hover { background: #2563eb; }
+
+/* -------------------------------------
+    📲 MEDIA QUERY POUR MOBILE (Max 600px)
+    ------------------------------------- */
+@media (max-width: 600px) {
+    /* HEADER: Vertical Stack */
+    header { 
+        flex-direction: column; /* Les éléments s'empilent verticalement */
+        align-items: flex-start; /* Alignés à gauche */
+        gap: 15px;
+    }
+
+    /* NAV PRINCIPALE: Full Width */
+    #main-nav { 
+        flex-direction: column; 
+        width: 100%; /* Prend toute la largeur disponible */
+        gap: 10px;
+        order: 2; /* Place la nav en 2ème position (sous le titre) */
+    }
+
+    /* Boutons de la Nav: Full Width */
+    #main-nav button {
+        width: 100%;
+        text-align: left; /* Texte aligné à gauche pour un look "liste" */
+    }
+
+    /* Barre de recherche: Full Width */
+    #search_bar {
+        width: 100%;
+        max-width: 100%;
+        order: -1; /* Place la barre de recherche en premier dans la nav */
+    }
+    
+    /* Bouton de déconnexion: Full Width et déplacé à la fin */
+    #logout-button {
+        width: 100%;
+        order: 3; /* Placé en 3ème position (sous le reste du menu) */
+        text-align: center;
+        margin-left: 0; /* Annule le margin desktop */
+    }
+    
+    /* Titre H1: Reste en haut, prend la position 1 */
+    header h1 {
+        order: 1;
+    }
+
+    /* GRID de jeux: 1 colonne */
+    .game-grid {
+        grid-template-columns: 1fr; /* Une seule colonne de cartes */
+        padding: 10px 15px;
+    }
+    
+    /* Titre de Section */
+    .section-title {
+        margin-left: 15px;
+    }
+}
 </style>
 </head>
 <body>

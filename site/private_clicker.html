@@ -158,10 +158,9 @@
 
     // --- FONCTIONS (DÉCLARATIONS) ---
 
-    // CHANGEMENT 1 : Corrigé pour ne plus quitter la session
+    // CORRECTION (Réglage du problème de flèche de retour)
     async function handleBackButton() {
-        // await leaveSessionSilently(); // Désactivé
-        window.location.href = "menu.html"; // Activé
+        window.location.href = "menu.html";
     }
 
     async function leaveSessionSilently() {
@@ -229,9 +228,8 @@
         clickCount = 0;
         toSend.textContent = "-- 0 --";
         
-        // CHANGEMENT 2 : Suppression de la condition pour forcer l'envoi
+        // CORRECTION (Autorise l'envoi même pour 0 clic)
         // if (toSendValue === 0) return; 
-        // En supprimant la ligne ci-dessus, on envoie toujours la requête, même pour 0 clic.
 
         try {
             statusLabel.textContent = `Envoi de ${toSendValue} points...`; 
@@ -328,8 +326,6 @@
             const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(sessionCode)}`);
             const scoreData = await scoreResponse.json();
             
-            // console.log("Réponse de /get_poires :", scoreData);
-
             if (scoreData.status === "success") {
                 if (scoreCounter) {
                     scoreCounter.textContent = scoreData.poires || 0; 
@@ -464,10 +460,12 @@
     // --- EXÉCUTION AU CHARGEMENT DE LA PAGE ---
     document.addEventListener('DOMContentLoaded', () => {
         
-        const upgradeContainer = document.getElementById('upgrade-button-container');
-        if (upgradeContainer) {
-            upgradeContainer.innerHTML = '<a href="upgrade.html" class="upgrade-button">Upgrade</a>';
-        }
+        // CORRECTION (Le bouton Upgrade ne marche plus car ce bloc réécrivait son HTML, 
+        // ce qui pouvait enlever le lien. On le supprime.)
+        // const upgradeContainer = document.getElementById('upgrade-button-container');
+        // if (upgradeContainer) {
+        //     upgradeContainer.innerHTML = '<a href="upgrade.html" class="upgrade-button">Upgrade</a>';
+        // }
 
         console.log("Username récupéré du localStorage:", username);
         if (!username || username.trim() === "") {
@@ -492,9 +490,9 @@
 
         clickButton.addEventListener('click', onClickerClick);
 
-        // CHANGEMENT 1 (BIS) : L'écouteur qui posait problème
+        // L'écouteur beforeunload est désactivé pour ne pas quitter la session au retour navigateur
         window.addEventListener('beforeunload', (e) => {
-            // leaveSessionSilently(); // Désactivé pour que le retour navigateur ne quitte pas la session
+            // leaveSessionSilently(); 
         });
 
         closeBtn.addEventListener('click', async () => {
@@ -511,7 +509,6 @@
             closeBtn.disabled = true;
             
             try {
-                // Ici, c'est correct de leave, car on clique sur le bouton "Quitter"
                 await leaveSessionSilently(); 
                 
                 sidebarStatus.textContent = "✅ Session quittée"; 

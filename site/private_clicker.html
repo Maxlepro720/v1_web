@@ -193,7 +193,6 @@
     const API_URL = "https://project-3-api-2bgb.onrender.com";
     
     // Fréquences pour les cycles
-    // Le cycle d'affichage et le cycle d'appel API sont à 10s
     const SCORE_REFRESH_PERIOD_SECONDS = 10; 
     const CLICKS_MIN_SECONDS = 4;
     const CLICKS_MAX_SECONDS = 8;
@@ -262,9 +261,6 @@
         }
 
         await fetchGameData(); // Appel à l'API pour Score et Joueurs
-        
-        const toSend = document.getElementById('toSend');
-        if (toSend) toSend.textContent = "-- 0 --";
         
         startScoreInterval(); // Relance l'intervalle de 10 secondes
     }
@@ -386,11 +382,18 @@
         
         try {
             if (toSendValue > 0) {
-                await fetch(`${API_URL}/poire`, { 
+                const response = await fetch(`${API_URL}/poire`, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ session: sessionCode, click: toSendValue, id: username }) 
                 });
+                
+                // Réinitialisation de l'affichage des clics après envoi réussi
+                if (response.ok) {
+                    const toSend = document.getElementById('toSend');
+                    if (toSend) toSend.textContent = "-- 0 --";
+                }
+
                 console.log(`[CLICS] Clicks envoyés : ${toSendValue}`);
             }
         } catch (e) {
@@ -399,6 +402,8 @@
                 statusLabel.textContent = "❌ Erreur réseau envoi";
                 statusLabel.style.color = "#ef4444";
             }
+            // Si l'envoi échoue (erreur réseau), on remet la valeur dans clickCount
+            clickCount = toSendValue; 
         } finally {
             startClicksInterval();
         }
@@ -447,6 +452,7 @@
             const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
             const playersData = await playersResponse.json();
             
+            // Mise à jour du code de session uniquement si c'est un succès et qu'un code est renvoyé
             if (playersData.status === "success" && playersData.session_code) {
                 sessionCodeElement.textContent = playersData.session_code; 
                 
@@ -489,7 +495,7 @@
                 }
             }
             
-            // 2. Mise à jour des joueurs
+            // 2. Mise à jour des joueurs (qui mettra à jour le code de session si l'API le confirme)
             await fetchPlayers();
 
         } catch (e) {
@@ -561,7 +567,6 @@
         const barElement = document.getElementById('timerBarFill');
         
         const timeElapsed = SCORE_REFRESH_PERIOD_SECONDS - timeLeft;
-        // La barre de progression utilise le temps écoulé par rapport au total de 10s.
         const percentage = (timeElapsed / SCORE_REFRESH_PERIOD_SECONDS) * 100;
 
         if (counterElement) {
@@ -733,7 +738,7 @@
                     if (data.status === "success") {
                         sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
                         sidebarStatus.style.color = "#10b981";
-                        sessionCode.textContent = input;
+                        sessionCode.textContent = input; // FORCÉ ICI
                         
                         await fetchGameData(); // 1. Rafraîchissement immédiat
                         

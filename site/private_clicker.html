@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Private Clicker Game</title>
     <style>
+    /* --- Ton CSS existant --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #232323; overflow: hidden; }
 
@@ -188,7 +189,7 @@
         </div>
     </div>
 
-   <script>
+    <script>
     // --- VARIABLES GLOBALES ET CONSTANTES ---
     const API_URL = "https://project-3-api-2bgb.onrender.com";
     
@@ -201,6 +202,9 @@
     let lastClickTime = 0;
     let clickIntervals = [];
     let username = localStorage.getItem("username");
+    
+    // Ajout d'un flag pour éviter de relancer logout si déjà fait lors de la redirection
+    let isRedirecting = false; 
 
     let timerInterval;
     let clicksTimeout;
@@ -244,9 +248,9 @@
         const sessionCode = document.getElementById('sessionCode').textContent;
         
          if (sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Chargement..." || sessionCode === "Création...") {
-            console.warn("[SCORE] Session invalide. Tentative de prochain cycle.");
-            startScoreInterval(); 
-            return;
+             console.warn("[SCORE] Session invalide. Tentative de prochain cycle.");
+             startScoreInterval(); 
+             return;
          }
         
         console.log(`[SCORE] Déclenchement du rafraîchissement API (10s cycle) pour la session : ${sessionCode}`);
@@ -282,8 +286,16 @@
     }
 
     async function logoutSilently(shouldRedirect = false) {
+        if (isRedirecting && shouldRedirect) {
+            // Empêche la double exécution si déjà en cours de redirection
+            return; 
+        }
         console.log("[LOGOUT] Déconnexion silencieuse...");
         stopAllCycles();
+        
+        if (shouldRedirect) {
+            isRedirecting = true;
+        }
 
         const sessionCode = document.getElementById('sessionCode').textContent;
         let isCreator = false;
@@ -301,10 +313,10 @@
             console.log(`[LOGOUT] Envoi de /leave pour la session de groupe ${sessionCode}.`);
             try {
                  await fetch(`${API_URL}/leave`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: sessionCode, id: username })
-                });
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ code: sessionCode, id: username })
+                 });
             } catch (e) {
                 console.error("Erreur lors du /leave silencieux:", e);
             }
@@ -314,8 +326,13 @@
         const logoutData = JSON.stringify({ id: username });
 
         if (navigator.sendBeacon) {
-            navigator.sendBeacon(`${API_URL}/logout`, logoutData);
+            // Utilisation de sendBeacon pour garantir que la requête est envoyée même si la page est fermée
+            // NOTE : sendBeacon n'envoie que le Content-Type: text/plain, mais l'API peut le gérer.
+            // On utilise un Blob pour forcer le content-type si possible.
+            const blob = new Blob([logoutData], {type : 'application/json'});
+            navigator.sendBeacon(`${API_URL}/logout`, blob);
         } else {
+            // Alternative XHR synchrone (bloque le thread, mais fonctionne sur 'unload')
             try {
                 const xhr = new XMLHttpRequest();
                 xhr.open("POST", `${API_URL}/logout`, false); 
@@ -334,6 +351,20 @@
     function handleBackButton() {
         logoutSilently(true); 
     }
+    
+    // *** NOUVELLE FONCTION POUR GÉRER LA FERMETURE DE LA PAGE ***
+    function handleLogoutOnClose(event) {
+        if (isRedirecting) {
+            // Si la redirection est déjà en cours (bouton "Retour"), on laisse faire le flux normal.
+            return; 
+        }
+        // Appel de la déconnexion silencieuse. 
+        // L'absence de 'true' pour shouldRedirect indique de ne pas lancer window.location.href.
+        logoutSilently(false); 
+        // Note: L'utilisation de sendBeacon ou XHR synchrone est cruciale ici.
+    }
+    // **********************************************************
+
 
     async function handleLeaveSession() {
         const sessionCode = document.getElementById('sessionCode').textContent;
@@ -572,8 +603,8 @@
         if (players) {
             players.forEach(p => {
                  if (!uniqueActivePlayers.includes(p)) {
-                    uniqueActivePlayers.push(p);
-                }
+                     uniqueActivePlayers.push(p);
+                 }
             });
         }
         
@@ -701,141 +732,53 @@
         const elapsed = utcSeconds % SCORE_REFRESH_PERIOD_SECONDS; 
         const waitTimeSeconds = SCORE_REFRESH_PERIOD_SECONDS - elapsed;
         
-        console.log(`[INIT] Attente avant le premier cycle du score (Synchro 10s) : ${waitTimeSeconds.toFixed(2)}s`);
-
+        console.log(`[INIT] Attente avant le premier cycle: ${waitTimeSeconds}s`);
+        
+        // Attente avant le premier cycle pour synchroniser avec l'API (si elle utilise une horloge 0, 10, 20, ...)
         setTimeout(() => {
-            gameCycle(); 
-        }, (waitTimeSeconds * 1000) - 50); 
+            gameCycle(); // Lance le premier cycle immédiatement après l'attente
+        }, waitTimeSeconds * 1000);
+        
+        // Affichage initial du compte à rebours avant le premier cycle
+        startScoreInterval(waitTimeSeconds); 
     }
     
-    // --- EXÉCUTION AU CHARGEMENT DE LA PAGE ---
-    
-    document.addEventListener('DOMContentLoaded', () => {
-        
-        if (!username || username.trim() === "" || username === "null" || username.toLowerCase() === "chargement..." || username.toLowerCase() === "erreur") {
-            document.body.innerHTML = '<h1>❌ Erreur: Nom d\'utilisateur manquant.</h1><p>Veuillez vous connecter à nouveau.</p><button onclick="window.location.href=\'index.html\'">Accueil</button>';
-            stopAllCycles();
+    // --- INITIALISATION ET ÉVÉNEMENTS ---
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (!username) {
+            alert("Nom d'utilisateur non trouvé. Redirection vers la connexion.");
+            window.location.href = 'index.html';
             return;
         }
+        document.getElementById('usernameLabel').textContent = `👤 ${username}`;
 
-        const clickButton = document.getElementById('clickButton');
-        const usernameLabel = document.getElementById('usernameLabel');
-        const joinInput = document.getElementById('joinInput');
-        const joinButton = document.getElementById('joinButton');
-        const sidebar = document.getElementById('sidebar');
-        const toggleSidebar = document.getElementById('toggleSidebar');
-        const closeBtn = document.getElementById('closeBtn');
+        await loadMySession(); 
+        await fetchGameData();
+        launchGameCycle(); 
 
-        if (usernameLabel) usernameLabel.textContent = username;
-
-        if (document.querySelector('.back-btn')) document.querySelector('.back-btn').addEventListener('click', handleBackButton);
-        if (closeBtn) closeBtn.addEventListener('click', handleLeaveSession);
-        if (toggleSidebar && sidebar) toggleSidebar.addEventListener('click', () => { 
-            sidebar.classList.toggle('hidden'); 
-        });
-        if (clickButton) clickButton.addEventListener('click', onCLickerClick);
+        // Événements
+        document.getElementById('clickButton').addEventListener('click', onCLickerClick);
+        document.getElementById('closeBtn').addEventListener('click', handleLeaveSession);
         
-        window.addEventListener('unload', logoutSilently); 
-
-        if (joinButton) joinButton.addEventListener('click', async () => {
-            let input = joinInput.value.trim();
-            const sidebarStatus = document.getElementById('sidebarStatus');
-            const sessionCode = document.getElementById('sessionCode');
-            if (!joinInput || !sidebarStatus || !sessionCode) return;
-            
-            joinButton.disabled = true;
-            stopAllCycles(); 
-            
-            try {
-                if (input.toLowerCase().startsWith("/cha ")) {
-                    const newSessionName = input.substring(5).trim();
-                    
-                    if (!newSessionName) {
-                        sidebarStatus.textContent = "⚠️ Nom de session manquant";
-                        sidebarStatus.style.color = "#f59e0b";
-                        return;
-                    }
-
-                    sidebarStatus.textContent = `Changement du nom en '${newSessionName}'...`;
-                    const response = await fetch(`${API_URL}/change_session`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id: username, new_session_name: newSessionName })
-                    });
-                    const data = await response.json();
-                    
-                    if (data.status === "success") {
-                        sidebarStatus.textContent = `✅ ${data.message}`;
-                        sidebarStatus.style.color = "#10b981";
-                        sessionCode.textContent = newSessionName;
-                    } else {
-                        sidebarStatus.textContent = `❌ Erreur changement : ${data.message}`;
-                        sidebarStatus.style.color = "#ef4444";
-                    }
-                    
-                } else if (!input) {
-                    sidebarStatus.textContent = "Chargement de la session personnelle...";
-                    await loadMySession(); 
-                } else {
-                    // --- Rejoint une session spécifique ---
-                    console.log(`[JOIN] Tentative de rejoindre : ${input}`);
-                    sidebarStatus.textContent = `Tentative de rejoindre '${input}'...`;
-                    sidebarStatus.style.color = "#f59e0b";
-                    
-                    const response = await fetch(`${API_URL}/join`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code: input, id: username })
-                    });
-                    const data = await response.json();
-                    
-                    if (data.status === "success") {
-                        console.log("[JOIN] Succès. Affichage immédiat du code et rafraîchissement différé.");
-                        sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
-                        sidebarStatus.style.color = "#10b981";
-                        
-                        sessionCode.dataset.forcedCode = input; 
-                        sessionCode.textContent = input; 
-                        
-                        await fetchGameData();
-                        
-                        setTimeout(async () => {
-                            console.log("[JOIN] Rafraîchissement différé (3s) après jointure. Affichage des joueurs...");
-                            sessionCode.dataset.forcedCode = "";
-                            await fetchGameData();
-                        }, 3000); 
-                        
-                    } else {
-                        console.error(`[JOIN] Échec de la jointure. Message : ${data.message}. Tentative de retour à la session personnelle.`);
-                        sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
-                        sidebarStatus.style.color = "#ef4444";
-                        await loadMySession(); 
-                    }
-                }
-
-                joinInput.value = "";
-                launchGameCycle(); 
-
-            } catch (e) {
-                sidebarStatus.textContent = "❌ Erreur réseau lors de l'opération";
-                sidebarStatus.style.color = "#ef4444";
-                await loadMySession();
-                launchGameCycle(); 
-            } finally {
-                joinButton.disabled = false;
-            }
+        // Toggle Sidebar
+        const sidebar = document.getElementById('sidebar');
+        document.getElementById('toggleSidebar').addEventListener('click', () => {
+            sidebar.classList.toggle('hidden');
         });
-
-        // --- Lancement Initial SÉCURISÉ ---
-        loadMySession().then((sessionLoaded) => {
-            if (sessionLoaded) {
-                fetchGameData(); 
-                launchGameCycle(); 
-            } else {
-                console.error("Impossible de charger ou créer une session. Le cycle ne démarrera pas.");
+        document.getElementById('closeBtn').addEventListener('click', () => {
+            if (!sidebar.classList.contains('hidden')) {
+                sidebar.classList.add('hidden');
             }
         });
     });
+
+    // *** AJOUT DE L'ÉVÉNEMENT DE FERMETURE DE PAGE ***
+    window.addEventListener('beforeunload', handleLogoutOnClose);
+    // *************************************************
+
+    // Fermeture de la balise script pour inclure le reste du code
 </script>
+
 </body>
 </html>

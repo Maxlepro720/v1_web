@@ -242,14 +242,13 @@
 
     async function gameCycle() {
         const sessionCode = document.getElementById('sessionCode').textContent;
+        
+        // CORRECTION : Si le code est invalide, on ne force plus le loadMySession(), 
+        // on relance juste l'intervalle pour réessayer 10s plus tard.
          if (sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Chargement..." || sessionCode === "Création...") {
-            console.warn("[SCORE] Session invalide ou perdue. Tentative de reconnexion...");
-            stopAllCycles();
-            const sessionLoaded = await loadMySession();
-            if (sessionLoaded) {
-                startScoreInterval();
-                startClicksInterval();
-            }
+            console.warn("[SCORE] Session invalide. Tentative de prochain cycle.");
+            // On ne fait plus de loadMySession() ici pour éviter le saut
+            startScoreInterval(); 
             return;
          }
         
@@ -265,7 +264,7 @@
         startScoreInterval(); // Relance l'intervalle de 10 secondes
     }
 
-    // --- FONCTIONS DE COMMUNICATION ET DE JEU ---
+    // --- FONCTIONS DE COMMUNICATION ET DE JEU (inchangées) ---
 
     function logoutSilently() {
         console.log("[LOGOUT] Déconnexion silencieuse...");
@@ -388,7 +387,6 @@
                     body: JSON.stringify({ session: sessionCode, click: toSendValue, id: username }) 
                 });
                 
-                // Réinitialisation de l'affichage des clics après envoi réussi
                 if (response.ok) {
                     const toSend = document.getElementById('toSend');
                     if (toSend) toSend.textContent = "-- 0 --";
@@ -402,7 +400,6 @@
                 statusLabel.textContent = "❌ Erreur réseau envoi";
                 statusLabel.style.color = "#ef4444";
             }
-            // Si l'envoi échoue (erreur réseau), on remet la valeur dans clickCount
             clickCount = toSendValue; 
         } finally {
             startClicksInterval();
@@ -452,7 +449,6 @@
             const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
             const playersData = await playersResponse.json();
             
-            // Mise à jour du code de session uniquement si c'est un succès et qu'un code est renvoyé
             if (playersData.status === "success" && playersData.session_code) {
                 sessionCodeElement.textContent = playersData.session_code; 
                 
@@ -637,14 +633,13 @@
     }
 
     function launchGameCycle() {
-        stopAllCycles(); // S'assure que tout est propre avant de relancer
+        stopAllCycles(); 
         
         startClicksInterval();
 
         const now = new Date();
         const utcSeconds = now.getUTCSeconds(); 
         
-        // Calcule le temps jusqu'au prochain palier de 10s 
         const elapsed = utcSeconds % SCORE_REFRESH_PERIOD_SECONDS; 
         const waitTimeSeconds = SCORE_REFRESH_PERIOD_SECONDS - elapsed;
         
@@ -738,14 +733,11 @@
                     if (data.status === "success") {
                         sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
                         sidebarStatus.style.color = "#10b981";
-                        sessionCode.textContent = input; // FORCÉ ICI
-                        
-                        // !!! Ancien : Appel immédiat retiré pour éliminer la race condition !!!
-                        // await fetchGameData(); 
+                        sessionCode.textContent = input; 
                         
                         // 2. Rafraîchissement différé (3s) pour garantir la synchro
                         setTimeout(async () => {
-                            console.log("[JOIN] Rafraîchissement différé (3s) après jointure.");
+                            console.log("[JOIN] Rafraîchissement différé (3s) après jointure. Affichage des joueurs...");
                             await fetchGameData();
                         }, 3000); 
                         

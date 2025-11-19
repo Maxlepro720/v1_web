@@ -14,13 +14,16 @@
     /* HEADER */
     header { background: black; display: flex; align-items: center; padding: 20px 30px; gap: 20px; justify-content: space-between; }
     header h1 { font-size: 26px; color: #60a5fa; margin: 0; }
+    
+    /* NAV PRINCIPALE (sans le bouton de déconnexion) */
     #main-nav { display: flex; align-items: center; gap: 10px; }
     
+    /* STYLES GÉNÉRAUX APPLIQUÉS SEULEMENT AUX BOUTONS DANS #main-nav */
     #main-nav button { background: #1f2937; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 6px; font-size: 15px; }
     #main-nav button:hover { background: #374151; }
 
     /* Style spécifique pour le bouton de déconnexion (compacté) */
-    #logout-button { background: #ef4444; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 6px; font-size: 15px; font-weight: bold; margin-left: 20px; transition: background 0.2s; }
+    #logout-button { background: #ef4444; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 6px; font-size: 15px; font-weight: bold; transition: background 0.2s; }
     #logout-button:hover { background: #dc2626; }
 
 
@@ -54,9 +57,8 @@
         <button>📚 Bibliothèque</button>
         <input id="search_bar" placeholder="Rechercher">
         <button>👥 Amis</button>
-        
-        <button id="logout-button" onclick="handleLogoutAndRedirect()">🚪 Déconnexion</button>
     </nav>
+    <button id="logout-button" onclick="handleLogoutAndRedirect()">🚪 Déconnexion</button>
 </header>
 
 <h2 class="section-title">Ma Bibliothèque</h2>
@@ -82,10 +84,9 @@ const games = [
    🧑‍💻 RÉCUPÉRATION ET VÉRIFICATION DU USERNAME
    ------------------------- */
 const username = localStorage.getItem("username");
-let isLoggingOut = false; // Variable pour éviter les doubles déconnexions
+let isLoggingOut = false; 
 
 if (!username) {
-    // Si l'utilisateur n'est pas identifié, on le renvoie à la page de connexion
     window.location.href = 'index.html';
 }
 
@@ -102,7 +103,6 @@ async function handleLogoutAndRedirect() {
     isLoggingOut = true;
 
     try {
-        console.log("[LOGOUT] Déconnexion utilisateur manuelle...");
         await fetch(`${API_URL}/logout`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -126,17 +126,13 @@ function logoutSilently() {
 
     const logoutData = JSON.stringify({ id: username });
 
-    // Utilisation de sendBeacon (méthode privilégiée lors de la fermeture)
     if (navigator.sendBeacon) {
-        console.log("[LOGOUT] Tentative de déconnexion via sendBeacon (fermeture d'onglet)...");
         const blob = new Blob([logoutData], {type : 'application/json'});
         navigator.sendBeacon(`${API_URL}/logout`, blob);
     } else {
-        // Fallback XHR synchrone (moins fiable et déconseillé)
-        console.warn("[LOGOUT] sendBeacon non disponible, utilisation de XHR synchrone.");
         try {
             const xhr = new XMLHttpRequest();
-            xhr.open("POST", `${API_URL}/logout`, false); // false = synchrone
+            xhr.open("POST", `${API_URL}/logout`, false); 
             xhr.setRequestHeader("Content-Type", "application/json");
             xhr.send(logoutData);
         } catch (e) {
@@ -149,8 +145,7 @@ function logoutSilently() {
  * Fonction appelée lors de la tentative de fermeture ou de navigation.
  */
 function handleLogoutOnClose(event) {
-    if (isLoggingOut) return; // Si la déconnexion est déjà en cours via le bouton, on ne fait rien.
-    // Appel de la déconnexion silencieuse pour marquer l'utilisateur comme déconnecté.
+    if (isLoggingOut) return;
     logoutSilently();
 }
 

@@ -6,7 +6,9 @@
 <title>Launcher</title>
 
 <style>
-/* --- (Le CSS reste inchangé) --- */
+/* -------------------------
+    🎨 STYLES CSS
+    ------------------------- */
     body {
         margin: 0;
         font-family: Arial, sans-serif;
@@ -169,7 +171,7 @@ const games = [
 ];
 
 /* -------------------------
-   🧑‍💻 RÉCUPÉRATION DU USERNAME
+   🧑‍💻 RÉCUPÉRATION ET VÉRIFICATION DU USERNAME
    ------------------------- */
 const username = localStorage.getItem("username");
 
@@ -177,10 +179,6 @@ if (!username) {
     // Si l'utilisateur n'est pas identifié, on le renvoie à la page de connexion
     window.location.href = 'index.html';
 }
-
-/* Debug */
-console.log("Username menu :", username);
-
 
 /* -------------------------------------
    🚨 GESTION DE LA DÉCONNEXION (LOGOUT)
@@ -194,14 +192,13 @@ function logoutSilently() {
 
     const logoutData = JSON.stringify({ id: username });
 
-    // Utilisation de sendBeacon si disponible pour garantir que la requête est envoyée
-    // même après la fermeture de la page.
+    // Utilisation de sendBeacon pour garantir que la requête est envoyée à la fermeture.
     if (navigator.sendBeacon) {
         console.log("[LOGOUT] Tentative de déconnexion via sendBeacon...");
         const blob = new Blob([logoutData], {type : 'application/json'});
         navigator.sendBeacon(`${API_URL}/logout`, blob);
     } else {
-        // Fallback en utilisant XMLHttpRequest synchrone (bloquant) si sendBeacon n'est pas supporté.
+        // Fallback en utilisant XMLHttpRequest synchrone
         console.warn("[LOGOUT] sendBeacon non disponible, utilisation de XHR synchrone.");
         try {
             const xhr = new XMLHttpRequest();
@@ -218,9 +215,9 @@ function logoutSilently() {
  * Fonction appelée lors de la tentative de fermeture ou de navigation.
  */
 function handleLogoutOnClose(event) {
-    // Appel de la déconnexion silencieuse. 
-    // Nous ne renvoyons rien, car la page 'menu.html' est supposée se fermer.
+    // Appel de la déconnexion silencieuse pour marquer l'utilisateur comme déconnecté.
     logoutSilently();
+    // Note : On ne peut pas garantir la redirection ici.
 }
 
 // -------------------------
@@ -241,7 +238,6 @@ function displayGames(filteredGames) {
         const card = document.createElement("div");
         card.className = "card";
 
-        // On ne passe plus le username dans l'URL
         const gameLink = game.link ? game.link : "#";
 
         card.innerHTML = `

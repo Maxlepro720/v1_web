@@ -740,7 +740,8 @@
                         sidebarStatus.style.color = "#10b981";
                         sessionCode.textContent = input; // FORCÉ ICI
                         
-                        await fetchGameData(); // 1. Rafraîchissement immédiat
+                        // !!! Ancien : Appel immédiat retiré pour éliminer la race condition !!!
+                        // await fetchGameData(); 
                         
                         // 2. Rafraîchissement différé (3s) pour garantir la synchro
                         setTimeout(async () => {

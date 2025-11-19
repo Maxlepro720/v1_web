@@ -43,7 +43,27 @@
 
     .toggle-sidebar-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); }
 
-    .close-btn { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; width: clamp(35px, 5vw, 40px); height: clamp(35px, 5vw, 40px); border-radius: 12px; cursor: pointer; font-size: clamp(18px, 3vw, 24px); font-weight: bold; position: absolute; top: 20px; right: 20px; transition: all 0.2s ease; box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; }
+    .close-btn { 
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+        color: white; 
+        border: none; 
+        width: clamp(35px, 5vw, 40px); 
+        height: clamp(35px, 5vw, 40px); 
+        border-radius: 12px; 
+        cursor: pointer; 
+        font-size: clamp(18px, 3vw, 24px); 
+        font-weight: bold; 
+        position: absolute; 
+        top: 20px; 
+        right: 20px; 
+        transition: all 0.2s ease; 
+        box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3); 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        /* Remplacement du texte par la croix */
+        line-height: 1;
+    }
 
     .close-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); }
 
@@ -229,9 +249,9 @@
         console.log(`[CLICS] Prochain envoi aléatoire de clics dans : ${duration}s`);
     }
 
-    function startScoreInterval() {
+    function startScoreInterval(initialWaitTime = SCORE_REFRESH_PERIOD_SECONDS) {
         clearInterval(timerInterval);
-        let timeLeft = SCORE_REFRESH_PERIOD_SECONDS; 
+        let timeLeft = initialWaitTime; 
         updateDisplay(timeLeft); 
 
         timerInterval = setInterval(() => {
@@ -284,13 +304,17 @@
             return null;
         }
     }
-
-    async function logoutSilently(shouldRedirect = false) {
+    
+    /**
+     * Gère la déconnexion silencieuse.
+     * @param {boolean} shouldLogout - Indique s'il faut appeler /logout (déconnexion complète).
+     * @param {boolean} shouldRedirect - Indique s'il faut rediriger après l'opération.
+     */
+    async function logoutSilently(shouldLogout, shouldRedirect) {
         if (isRedirecting && shouldRedirect) {
-            // Empêche la double exécution si déjà en cours de redirection
             return; 
         }
-        console.log("[LOGOUT] Déconnexion silencieuse...");
+        console.log(`[LOGOUT] Déconnexion silencieuse (Logout: ${shouldLogout ? 'Oui' : 'Non'})...`);
         stopAllCycles();
         
         if (shouldRedirect) {
@@ -304,12 +328,11 @@
         const sessionInfo = await getPlayerSessionInfo();
         if (sessionInfo) {
             isCreator = sessionInfo.creator === username;
-            // Est dans un groupe si le code affiché correspond au code API et qu'il n'est pas le créateur
             isInGroup = sessionInfo.session_code === sessionCode && !isCreator;
         }
 
-        // Si l'utilisateur est un simple joueur (jointe), on envoie d'abord le signal de leave.
-        if (isInGroup) {
+        // 1. Gère le /leave si l'utilisateur est dans un groupe.
+        if (isInGroup || !shouldLogout) { // Si shouldLogout est false, on force le leave si dans un groupe
             console.log(`[LOGOUT] Envoi de /leave pour la session de groupe ${sessionCode}.`);
             try {
                  await fetch(`${API_URL}/leave`, {
@@ -322,50 +345,54 @@
             }
         }
         
-        // Finalisation avec /logout (déclenche la destruction de session perso si vide)
-        const logoutData = JSON.stringify({ id: username });
+        // 2. Gère le /logout si demandé (fermeture/redirection complète).
+        if (shouldLogout) {
+             const logoutData = JSON.stringify({ id: username });
 
-        if (navigator.sendBeacon) {
-            // Utilisation de sendBeacon pour garantir que la requête est envoyée même si la page est fermée
-            // NOTE : sendBeacon n'envoie que le Content-Type: text/plain, mais l'API peut le gérer.
-            // On utilise un Blob pour forcer le content-type si possible.
-            const blob = new Blob([logoutData], {type : 'application/json'});
-            navigator.sendBeacon(`${API_URL}/logout`, blob);
-        } else {
-            // Alternative XHR synchrone (bloque le thread, mais fonctionne sur 'unload')
-            try {
-                const xhr = new XMLHttpRequest();
-                xhr.open("POST", `${API_URL}/logout`, false); 
-                xhr.setRequestHeader("Content-Type", "application/json");
-                xhr.send(logoutData);
-            } catch (e) {
-                console.error("Erreur lors du /logout silencieux (XHR):", e);
-            }
+             if (navigator.sendBeacon) {
+                 const blob = new Blob([logoutData], {type : 'application/json'});
+                 navigator.sendBeacon(`${API_URL}/logout`, blob);
+             } else {
+                 try {
+                     const xhr = new XMLHttpRequest();
+                     xhr.open("POST", `${API_URL}/logout`, false); 
+                     xhr.setRequestHeader("Content-Type", "application/json");
+                     xhr.send(logoutData);
+                 } catch (e) {
+                     console.error("Erreur lors du /logout silencieux (XHR):", e);
+                 }
+             }
         }
 
         if (shouldRedirect) {
-            window.location.href = 'index.html';
+            window.location.href = 'menu.html'; // Changement de 'index.html' à 'menu.html'
         }
     }
     
-    function handleBackButton() {
-        logoutSilently(true); 
+    // Bouton flèche (←) à gauche : /leave puis menu.html (ou /logout si créateur)
+    async function handleBackButton() {
+        const sessionInfo = await getPlayerSessionInfo();
+        const sessionCode = document.getElementById('sessionCode').textContent;
+        const isCreator = sessionInfo && sessionInfo.creator === username && sessionInfo.session_code === sessionCode;
+
+        if (isCreator) {
+            // Le créateur doit faire un logout pour détruire la session
+            logoutSilently(true, true);
+        } else {
+            // Le joueur simple fait juste un leave puis va au menu.
+            logoutSilently(false, true); 
+        }
     }
     
-    // *** NOUVELLE FONCTION POUR GÉRER LA FERMETURE DE LA PAGE ***
+    // Événement de fermeture de page : /logout (complet)
     function handleLogoutOnClose(event) {
         if (isRedirecting) {
-            // Si la redirection est déjà en cours (bouton "Retour"), on laisse faire le flux normal.
             return; 
         }
-        // Appel de la déconnexion silencieuse. 
-        // L'absence de 'true' pour shouldRedirect indique de ne pas lancer window.location.href.
-        logoutSilently(false); 
-        // Note: L'utilisation de sendBeacon ou XHR synchrone est cruciale ici.
+        logoutSilently(true, false); 
     }
-    // **********************************************************
 
-
+    // Bouton croix (×) en haut à droite : /leave de la session de groupe uniquement, la sidebar reste ouverte si erreur.
     async function handleLeaveSession() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const sidebarStatus = document.getElementById('sidebarStatus');
@@ -379,12 +406,20 @@
 
         const sessionInfo = await getPlayerSessionInfo();
         const isCreator = sessionInfo && sessionInfo.creator === username && sessionInfo.session_code === sessionCode;
+        const isInGroup = sessionInfo && sessionInfo.session_code === sessionCode && !isCreator;
 
+        // Si l'utilisateur est créateur, il ne peut pas juste "quitter" le groupe, il doit "détruire" la session.
         if (isCreator) {
-            sidebarStatus.textContent = "⚠️ Créateur : déconnexion pour détruire la session.";
-            sidebarStatus.style.color = "#f59e0b";
-            logoutSilently(true);
+            sidebarStatus.textContent = "❌ Créateur : utilisez la flèche (←) pour vous déconnecter et détruire la session.";
+            sidebarStatus.style.color = "#ef4444";
             return;
+        }
+        
+        // Si l'utilisateur n'est pas dans un groupe, on ne fait rien.
+        if (!isInGroup) {
+             sidebarStatus.textContent = "⚠️ Vous êtes dans votre session personnelle (solo).";
+             sidebarStatus.style.color = "#f59e0b";
+             return;
         }
 
         // Logique de 'leave' pour un simple joueur
@@ -401,12 +436,15 @@
             const data = await response.json();
 
             if (data.status === "success") {
-                sidebarStatus.textContent = "✅ Session quittée avec succès.";
+                sidebarStatus.textContent = "✅ Session de groupe quittée. Retour à la session solo.";
                 sidebarStatus.style.color = "#10b981";
+                
+                // Après un leave, l'utilisateur revient à sa session personnelle solo (si l'API le gère ainsi)
                 stopAllCycles();
                 await loadMySession(); 
                 await fetchGameData();
                 launchGameCycle(); 
+                
             } else {
                 sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`;
                 sidebarStatus.style.color = "#ef4444";
@@ -416,6 +454,9 @@
             sidebarStatus.style.color = "#ef4444";
         } finally {
             checkCloseButtonState();
+            // Ferme la sidebar après avoir quitté le groupe
+            document.getElementById('sidebar').classList.add('hidden');
+            document.getElementById('toggleSidebar').style.display = 'flex'; // Affiche le bouton "☰"
         }
     }
 
@@ -485,7 +526,8 @@
             // Pas de relance ici
         }
     }
-
+    
+    // Fonction vérifiant l'état du bouton de fermeture/quitter
     async function checkCloseButtonState() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const closeBtn = document.getElementById('closeBtn');
@@ -494,22 +536,29 @@
             closeBtn.disabled = true;
             closeBtn.style.backgroundColor = "grey";
             closeBtn.style.cursor = "not-allowed";
+            closeBtn.textContent = "×"; // S'assurer que c'est toujours une croix
             return;
         }
 
         const sessionInfo = await getPlayerSessionInfo();
         
         if (sessionInfo && sessionInfo.status === "success" && sessionInfo.session_code === sessionCode && sessionInfo.creator === username) {
-            closeBtn.textContent = "Fermer la Session (Logout)";
-            closeBtn.style.backgroundColor = "#dc2626"; 
-            closeBtn.style.cursor = "pointer";
-            closeBtn.disabled = false;
-        } else {
-            closeBtn.textContent = "Quitter la Session";
+            // Créateur : désactivé car la sortie passe par le bouton Retour (←)
+            closeBtn.disabled = true;
+            closeBtn.style.backgroundColor = "#6b7280"; 
+            closeBtn.style.cursor = "not-allowed";
+        } else if (sessionInfo && sessionInfo.status === "success" && sessionInfo.session_code === sessionCode) {
+            // Simple joueur dans un groupe : peut quitter
             closeBtn.disabled = false;
             closeBtn.style.backgroundColor = "#ef4444";
             closeBtn.style.cursor = "pointer";
+        } else {
+            // Dans sa session solo ou autre état non groupé
+            closeBtn.disabled = true;
+            closeBtn.style.backgroundColor = "#6b7280"; 
+            closeBtn.style.cursor = "not-allowed";
         }
+        closeBtn.textContent = "×"; // S'assurer que c'est toujours une croix
     }
 
     async function fetchPlayers() {
@@ -763,21 +812,25 @@
         
         // Toggle Sidebar
         const sidebar = document.getElementById('sidebar');
-        document.getElementById('toggleSidebar').addEventListener('click', () => {
+        const toggleSidebarBtn = document.getElementById('toggleSidebar');
+
+        toggleSidebarBtn.addEventListener('click', () => {
             sidebar.classList.toggle('hidden');
+            if (sidebar.classList.contains('hidden')) {
+                toggleSidebarBtn.textContent = '☰';
+            } else {
+                toggleSidebarBtn.textContent = '×';
+            }
         });
         document.getElementById('closeBtn').addEventListener('click', () => {
-            if (!sidebar.classList.contains('hidden')) {
-                sidebar.classList.add('hidden');
-            }
+             // Seulement masquer la sidebar si l'action de leave est réussie ou si le bouton était désactivé
+             // La logique de fermeture de la sidebar est maintenant dans handleLeaveSession.
         });
     });
 
-    // *** AJOUT DE L'ÉVÉNEMENT DE FERMETURE DE PAGE ***
+    // Événement de fermeture de page : /logout
     window.addEventListener('beforeunload', handleLogoutOnClose);
-    // *************************************************
 
-    // Fermeture de la balise script pour inclure le reste du code
 </script>
 
 </body>

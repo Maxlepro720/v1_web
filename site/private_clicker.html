@@ -158,13 +158,12 @@
     let sidebarVisible = true;
     let username = localStorage.getItem("username");
 
-    let timerInterval;      
+    let timerInterval;      // Intervalle pour le cycle de rafraîchissement (le "timer" invisible)
     let playerInterval;     
     let fastRefreshTimeout; 
 
     // --- FONCTIONS (DÉCLARATIONS) ---
 
-    // Utilisé seulement pour quitter la session A AVANT de rejoindre la session B
     async function leaveSessionSilently() {
         const codeElement = document.getElementById('sessionCode');
         if (!codeElement) return;
@@ -222,7 +221,7 @@
         if (toSend) toSend.textContent = `-- ${clickCount} --`;
     }
 
-    // Pas d'affichage du statusLabel pour le score envoyé.
+    // Envoie les clics sans mettre à jour le statusLabel
     async function sendClicks() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const toSend = document.getElementById('toSend');
@@ -267,6 +266,7 @@
             if (playersData.status === "error" && playersData.message && playersData.message.includes("Session invalide")) {
                 console.warn("Session invalide ou expirée. Tentative de reconnexion à la session personnelle...");
                 stopFastPlayerRefresh();
+                // Redémarre le cycle complet via loadMySession
                 loadMySession().then(sessionLoaded => {
                     if (sessionLoaded) gameCycle();
                 });
@@ -307,7 +307,6 @@
         }
     }
 
-    // CORRECTION : Logique des logos 👑 et 👤
     function updatePlayersList(players, creator) {
         const playerCount = document.getElementById('playerCount');
         const playerSlots = [
@@ -347,10 +346,8 @@
                     const isMe = player === username;
 
                     if (isMe) {
-                        // Utilisateur actuel: Couronne + Logo + Vous
                         displayString = isCreator ? `👑 👤 Vous` : `👤 Vous`; 
                     } else {
-                        // Autres joueurs: Couronne ou Logo + Pseudo
                         displayString = isCreator ? `👑 ${player}` : `👤 ${player}`;
                     }
                     
@@ -368,7 +365,6 @@
         });
     }
 
-    // CORRECTION : Retire le statut "Déconnecté" et l'affiche juste comme "Vous"
     function resetPlayersList() {
         const playerCount = document.getElementById('playerCount');
         const playerSlots = [
@@ -408,7 +404,8 @@
         
         fastRefreshTimeout = setTimeout(() => {
             stopFastPlayerRefresh();
-            console.log("Rafraîchissement rapide des joueurs terminé. Reprise du cycle normal (10s).");
+            console.log("Rafraîchissement rapide des joueurs terminé.");
+            fetchGameData();
         }, 30000); 
     }
 
@@ -481,8 +478,9 @@
         }
     }
     
-    // --- LOGIQUE DE SYNCHRONISATION ---
+    // --- LOGIQUE DE SYNCHRONISATION RÉACTIVÉE (LE TIMER INVISIBLE) ---
 
+    // Calcule le temps restant pour la synchronisation (garde le cycle synchrone)
     function getWaitTime() {
         const now = new Date();
         const utcSeconds = now.getUTCSeconds(); 
@@ -491,10 +489,7 @@
         return waitTimeSeconds * 1000;
     }
 
-    function updateDisplay(timeLeft) {
-        // Logique d'affichage du timer désactivée
-    }
-
+    // Fonction de cycle principale (lancée toutes les 10 secondes)
     async function gameCycle() {
         const sessionCode = document.getElementById('sessionCode').textContent;
          if (sessionCode === "Aucune session" || sessionCode === "Erreur") {
@@ -503,20 +498,21 @@
         
         await sendClicks();
         await fetchGameData();
-        stopFastPlayerRefresh(); 
+        stopFastPlayerRefresh(); // S'assure que le rafraîchissement rapide s'arrête si nécessaire
         startInterval();
     }
 
+    // Démarre l'intervalle de 10 secondes (invisible)
     function startInterval() {
         clearInterval(timerInterval);
         let timeLeft = REFRESH_PERIOD_SECONDS; 
 
         timerInterval = setInterval(() => {
             timeLeft--;
-            updateDisplay(timeLeft); 
+            // updateDisplay(timeLeft); // Désactivé (pour supprimer le debug visuel)
             if (timeLeft === 0) {
                 clearInterval(timerInterval);
-                gameCycle(); 
+                gameCycle(); // Relance le cycle après 10s
             }
         }, 1000); 
     }
@@ -536,8 +532,6 @@
         const sidebar = document.getElementById('sidebar');
         const toggleSidebar = document.getElementById('toggleSidebar');
 
-        // Note: Le bouton closeBtn (Fermer session) est ignoré ici pour garantir l'impossibilité de quitter sa session personnelle.
-
         if (usernameLabel) usernameLabel.textContent = username;
 
         if (toggleSidebar && sidebar) toggleSidebar.addEventListener('click', () => { 
@@ -550,7 +544,10 @@
         window.addEventListener('pageshow', (event) => {
             if (event.persisted) {
                 loadMySession().then(sessionLoaded => {
-                    if (sessionLoaded) gameCycle();
+                    if (sessionLoaded) {
+                         const waitTime = getWaitTime();
+                         setTimeout(() => { gameCycle(); }, waitTime);
+                    }
                 });
             }
         });
@@ -563,8 +560,8 @@
             
             joinButton.disabled = true;
             
-            clearInterval(timerInterval); 
-            stopFastPlayerRefresh();
+            clearInterval(timerInterval); // Arrête le cycle principal
+            stopFastPlayerRefresh(); // Arrête le rafraîchissement rapide
 
             try {
                 if (input.toLowerCase().startsWith("/cha ")) {
@@ -600,7 +597,6 @@
                     // Rejoint une session spécifique
                     sidebarStatus.textContent = `Tentative de rejoindre '${input}'...`;
                     
-                    // Quitter l'ancienne session avant de rejoindre la nouvelle
                     await leaveSessionSilently(); 
 
                     const response = await fetch(`${API_URL}/join`, {
@@ -618,13 +614,12 @@
                     } else {
                         sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
                         sidebarStatus.style.color = "#ef4444";
-                        // Si le join échoue, on revient à la session personnelle
-                        await loadMySession();
+                        await loadMySession(); // Retour à la session personnelle si échec
                     }
                     joinInput.value = "";
                 }
                 
-                // Relance le cycle de rafraîchissement normal
+                // Relance le cycle de rafraîchissement normal (gameCycle)
                 await fetchGameData();
                 const waitTime = getWaitTime();
                 setTimeout(() => { gameCycle(); }, waitTime);
@@ -632,7 +627,9 @@
             } catch (e) {
                 sidebarStatus.textContent = "❌ Erreur réseau / Commande non valide";
                 sidebarStatus.style.color = "#ef4444";
-                startInterval(); 
+                // En cas d'erreur critique, on tente de redémarrer
+                const waitTime = getWaitTime();
+                setTimeout(() => { gameCycle(); }, waitTime);
             } finally {
                 joinButton.disabled = false;
             }
@@ -645,6 +642,7 @@
 
                 const waitTime = getWaitTime();
                 
+                // Démarre le cycle de rafraîchissement après le temps d'attente initial (pour synchronisation)
                 setTimeout(() => {
                     gameCycle(); 
                 }, waitTime);

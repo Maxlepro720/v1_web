@@ -193,7 +193,8 @@
     const API_URL = "https://project-3-api-2bgb.onrender.com";
     
     // Fréquences pour les cycles
-    const SCORE_REFRESH_PERIOD_SECONDS = 5; // Cycle de rafraîchissement principal
+    // Le cycle d'affichage et le cycle d'appel API sont à 10s
+    const SCORE_REFRESH_PERIOD_SECONDS = 10; 
     const CLICKS_MIN_SECONDS = 4;
     const CLICKS_MAX_SECONDS = 8;
     
@@ -253,17 +254,19 @@
             return;
          }
         
+        console.log("[SCORE] Déclenchement du rafraîchissement API (10s cycle).");
+
         const counterElement = document.getElementById('timerCounter');
         if (counterElement) {
             counterElement.textContent = "⏳";
         }
 
-        await fetchGameData();
+        await fetchGameData(); // Appel à l'API pour Score et Joueurs
         
         const toSend = document.getElementById('toSend');
         if (toSend) toSend.textContent = "-- 0 --";
         
-        startScoreInterval(); 
+        startScoreInterval(); // Relance l'intervalle de 10 secondes
     }
 
     // --- FONCTIONS DE COMMUNICATION ET DE JEU ---
@@ -451,12 +454,8 @@
                 
                 checkCloseButtonState(); 
 
-            } else if (playersData.status === "error" && playersData.message.includes("Session invalide")) {
-                console.error("[PLAYERS] Session invalide détectée. Tentative de rechargement...");
-                stopAllCycles();
-                await loadMySession();
-                launchGameCycle(); 
-            }
+            } 
+            
         } catch (e) {
             console.error("Erreur lors du rafraîchissement des joueurs:", e);
         }
@@ -562,6 +561,7 @@
         const barElement = document.getElementById('timerBarFill');
         
         const timeElapsed = SCORE_REFRESH_PERIOD_SECONDS - timeLeft;
+        // La barre de progression utilise le temps écoulé par rapport au total de 10s.
         const percentage = (timeElapsed / SCORE_REFRESH_PERIOD_SECONDS) * 100;
 
         if (counterElement) {
@@ -632,14 +632,18 @@
     }
 
     function launchGameCycle() {
+        stopAllCycles(); // S'assure que tout est propre avant de relancer
+        
         startClicksInterval();
 
         const now = new Date();
         const utcSeconds = now.getUTCSeconds(); 
-        const elapsed = utcSeconds % SCORE_REFRESH_PERIOD_SECONDS;
+        
+        // Calcule le temps jusqu'au prochain palier de 10s 
+        const elapsed = utcSeconds % SCORE_REFRESH_PERIOD_SECONDS; 
         const waitTimeSeconds = SCORE_REFRESH_PERIOD_SECONDS - elapsed;
         
-        console.log(`[INIT] Attente avant le premier cycle du score (Synchro 5s) : ${waitTimeSeconds.toFixed(2)}s`);
+        console.log(`[INIT] Attente avant le premier cycle du score (Synchro 10s) : ${waitTimeSeconds.toFixed(2)}s`);
 
         setTimeout(() => {
             gameCycle(); 
@@ -733,11 +737,11 @@
                         
                         await fetchGameData(); // 1. Rafraîchissement immédiat
                         
-                        // 2. CORRECTION: Rafraîchissement différé (500ms) en cas de "race condition"
+                        // 2. Rafraîchissement différé (3s) pour garantir la synchro
                         setTimeout(async () => {
-                            console.log("[JOIN] Rafraîchissement différé après jointure.");
+                            console.log("[JOIN] Rafraîchissement différé (3s) après jointure.");
                             await fetchGameData();
-                        }, 500);
+                        }, 3000); 
                         
                     } else {
                         sidebarStatus.textContent = `❌ Erreur : ${data.message}`;

@@ -193,7 +193,7 @@
     const API_URL = "https://project-3-api-2bgb.onrender.com";
     
     // Fréquences pour les cycles
-    const SCORE_REFRESH_PERIOD_SECONDS = 10;
+    const SCORE_REFRESH_PERIOD_SECONDS = 5; // Cycle de rafraîchissement principal
     const CLICKS_MIN_SECONDS = 4;
     const CLICKS_MAX_SECONDS = 8;
     
@@ -639,7 +639,7 @@
         const elapsed = utcSeconds % SCORE_REFRESH_PERIOD_SECONDS;
         const waitTimeSeconds = SCORE_REFRESH_PERIOD_SECONDS - elapsed;
         
-        console.log(`[INIT] Attente avant le premier cycle du score (Synchro 10s) : ${waitTimeSeconds.toFixed(2)}s`);
+        console.log(`[INIT] Attente avant le premier cycle du score (Synchro 5s) : ${waitTimeSeconds.toFixed(2)}s`);
 
         setTimeout(() => {
             gameCycle(); 
@@ -727,16 +727,19 @@
                     const data = await response.json();
                     
                     if (data.status === "success") {
-                        // SUCCÈS : Mise à jour immédiate
                         sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
                         sidebarStatus.style.color = "#10b981";
                         sessionCode.textContent = input;
                         
-                        // FORCEMENT DU RAFRAÎCHISSEMENT IMMÉDIAT ICI
-                        await fetchGameData(); 
+                        await fetchGameData(); // 1. Rafraîchissement immédiat
+                        
+                        // 2. CORRECTION: Rafraîchissement différé (500ms) en cas de "race condition"
+                        setTimeout(async () => {
+                            console.log("[JOIN] Rafraîchissement différé après jointure.");
+                            await fetchGameData();
+                        }, 500);
                         
                     } else {
-                        // ÉCHEC : Retour à la session personnelle
                         sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
                         sidebarStatus.style.color = "#ef4444";
                         await loadMySession(); 
@@ -744,8 +747,6 @@
                 }
 
                 joinInput.value = "";
-                // Redémarre les cycles 
-                // Note: fetchGameData() a déjà été appelé en cas de succès de join
                 launchGameCycle(); 
 
             } catch (e) {

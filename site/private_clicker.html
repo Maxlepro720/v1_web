@@ -255,36 +255,84 @@
         if (counterElement) {
             counterElement.textContent = "⏳";
         }
+        
+        // 1. Envoi et réinitialisation des clics
+        await sendClicksRandomly();
+        
+        // 2. Relance du minuteur aléatoire pour le prochain envoi
+        startClicksInterval();
 
-        await fetchGameData(); // Appel à l'API pour Score et Joueurs
+        // 3. Récupération des données (score et joueurs)
+        await fetchGameData(); 
         
         startScoreInterval(); // Relance l'intervalle de 10 secondes
     }
 
     // --- FONCTIONS DE COMMUNICATION ET DE JEU ---
 
-    function logoutSilently() {
+    async function getPlayerSessionInfo() {
+        try {
+            const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
+            const playersData = await playersResponse.json();
+            return playersData.status === "success" ? playersData : null;
+        } catch (e) {
+            console.error("Erreur lors de la récupération des infos de session:", e);
+            return null;
+        }
+    }
+
+    async function logoutSilently(shouldRedirect = false) {
         console.log("[LOGOUT] Déconnexion silencieuse...");
         stopAllCycles();
 
-        if (navigator.sendBeacon) {
-            navigator.sendBeacon(`${API_URL}/logout`, JSON.stringify({ id: username }));
-            return;
+        const sessionCode = document.getElementById('sessionCode').textContent;
+        let isCreator = false;
+        let isInGroup = false;
+
+        const sessionInfo = await getPlayerSessionInfo();
+        if (sessionInfo) {
+            isCreator = sessionInfo.creator === username;
+            // Est dans un groupe si le code affiché correspond au code API et qu'il n'est pas le créateur
+            isInGroup = sessionInfo.session_code === sessionCode && !isCreator;
         }
 
-        try {
-            const xhr = new XMLHttpRequest();
-            xhr.open("POST", `${API_URL}/logout`, false);
-            xhr.setRequestHeader("Content-Type", "application/json");
-            xhr.send(JSON.stringify({ id: username }));
-        } catch (e) {
-            console.error("Erreur lors du logout silencieux (XHR):", e);
+        // Si l'utilisateur est un simple joueur (jointe), on envoie d'abord le signal de leave.
+        if (isInGroup) {
+            console.log(`[LOGOUT] Envoi de /leave pour la session de groupe ${sessionCode}.`);
+            try {
+                 await fetch(`${API_URL}/leave`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: sessionCode, id: username })
+                });
+            } catch (e) {
+                console.error("Erreur lors du /leave silencieux:", e);
+            }
+        }
+        
+        // Finalisation avec /logout (déclenche la destruction de session perso si vide)
+        const logoutData = JSON.stringify({ id: username });
+
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(`${API_URL}/logout`, logoutData);
+        } else {
+            try {
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", `${API_URL}/logout`, false); 
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.send(logoutData);
+            } catch (e) {
+                console.error("Erreur lors du /logout silencieux (XHR):", e);
+            }
+        }
+
+        if (shouldRedirect) {
+            window.location.href = 'index.html';
         }
     }
     
     function handleBackButton() {
-        logoutSilently();
-        window.location.href = 'index.html'; 
+        logoutSilently(true); 
     }
 
     async function handleLeaveSession() {
@@ -292,18 +340,23 @@
         const sidebarStatus = document.getElementById('sidebarStatus');
         const closeBtn = document.getElementById('closeBtn');
 
-        if (closeBtn.disabled) {
-            sidebarStatus.textContent = "⚠️ Créateur : fermer la session via le serveur ou quitter le jeu.";
-            sidebarStatus.style.color = "#f59e0b";
-            return;
-        }
-        
         if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
             sidebarStatus.textContent = "⚠️ Pas de session active à quitter.";
             sidebarStatus.style.color = "#f59e0b";
             return;
         }
 
+        const sessionInfo = await getPlayerSessionInfo();
+        const isCreator = sessionInfo && sessionInfo.creator === username && sessionInfo.session_code === sessionCode;
+
+        if (isCreator) {
+            sidebarStatus.textContent = "⚠️ Créateur : déconnexion pour détruire la session.";
+            sidebarStatus.style.color = "#f59e0b";
+            logoutSilently(true);
+            return;
+        }
+
+        // Logique de 'leave' pour un simple joueur
         try {
             closeBtn.disabled = true; 
             sidebarStatus.textContent = `Tentative de quitter la session ${sessionCode}...`;
@@ -369,15 +422,15 @@
         const sessionCode = document.getElementById('sessionCode').textContent;
         
         if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
-            startClicksInterval();
             return;
         }
         
         const toSendValue = clickCount;
-        clickCount = 0; 
+        clickCount = 0; // Réinitialisation immédiate du compteur AVANT l'envoi
         
         try {
             if (toSendValue > 0) {
+                console.log(`[CLICS] Envoi de ${toSendValue} clics pour la session ${sessionCode}`);
                 const response = await fetch(`${API_URL}/poire`, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
@@ -388,8 +441,6 @@
                     const toSend = document.getElementById('toSend');
                     if (toSend) toSend.textContent = "-- 0 --";
                 }
-
-                // Logs retirés à la demande de l'utilisateur
             }
         } catch (e) {
             const statusLabel = document.getElementById('statusLabel');
@@ -397,9 +448,10 @@
                 statusLabel.textContent = "❌ Erreur réseau envoi";
                 statusLabel.style.color = "#ef4444";
             }
+            // Si l'envoi échoue, on remet les clics dans le compteur pour la prochaine tentative.
             clickCount = toSendValue; 
         } finally {
-            startClicksInterval();
+            // Pas de relance ici
         }
     }
 
@@ -414,56 +466,49 @@
             return;
         }
 
-        try {
-            const response = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
-            const data = await response.json();
-
-            if (data.status === "success" && data.creator === username) {
-                closeBtn.disabled = true;
-                closeBtn.style.backgroundColor = "#6b7280";
-                closeBtn.style.cursor = "not-allowed";
-            } else {
-                closeBtn.disabled = false;
-                closeBtn.style.backgroundColor = "#ef4444";
-                closeBtn.style.cursor = "pointer";
-            }
-
-        } catch (e) {
-            console.error("[Info] Erreur vérification leave button :", e);
-            closeBtn.disabled = true;
+        const sessionInfo = await getPlayerSessionInfo();
+        
+        if (sessionInfo && sessionInfo.status === "success" && sessionInfo.session_code === sessionCode && sessionInfo.creator === username) {
+            closeBtn.textContent = "Fermer la Session (Logout)";
+            closeBtn.style.backgroundColor = "#dc2626"; 
+            closeBtn.style.cursor = "pointer";
+            closeBtn.disabled = false;
+        } else {
+            closeBtn.textContent = "Quitter la Session";
+            closeBtn.disabled = false;
+            closeBtn.style.backgroundColor = "#ef4444";
+            closeBtn.style.cursor = "pointer";
         }
     }
 
-
-    // 🛑 FONCTION fetchPlayers() (Version actuelle - accepte la vérité API) 🛑
     async function fetchPlayers() {
         const sessionCodeElement = document.getElementById('sessionCode');
-        const sessionCode = sessionCodeElement.textContent; // Utilise le code affiché actuellement
+        const currentDisplayedCode = sessionCodeElement.textContent;
+        const forcedCode = sessionCodeElement.dataset.forcedCode; 
         
-        if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
+        if (currentDisplayedCode === "Chargement..." || currentDisplayedCode === "Aucune session" || currentDisplayedCode === "Erreur" || currentDisplayedCode === "Création...") {
             return;
         }
 
         console.log("[FETCH_PLAYERS] Requête /verify_session envoyée pour obtenir les joueurs et le statut.");
         
         try {
-            // Requête API pour vérifier l'état actuel de l'utilisateur
             const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
             const playersData = await playersResponse.json();
             
-            console.log("[FETCH_PLAYERS] Réponse API reçue (vérifiez les joueurs) :", playersData);
-
             if (playersData.status !== "success" || !playersData.session_code) {
-                 console.error("[FETCH_PLAYERS] API Status n'est pas 'success' ou session_code manquant. Réponse complète :", playersData);
                  return;
             }
             
-            // Si l'API renvoie un code différent, on log un avertissement, puis on le met à jour.
-            if (playersData.session_code !== sessionCode) {
-                 console.warn(`[FETCH_PLAYERS] Désynchronisation détectée. Code API ('${playersData.session_code}') vs Code affiché ('${sessionCode}'). Mise à jour forcée.`);
+            if (forcedCode && playersData.session_code !== forcedCode) {
+                 sessionCodeElement.textContent = forcedCode; 
+                 return;
             }
-            
-            // Met à jour le code affiché avec celui de l'API (cela devrait se corriger après le setTimeout de 3s ou un cycle)
+
+            if (playersData.session_code !== currentDisplayedCode) {
+                 console.warn(`[FETCH_PLAYERS] Désynchronisation détectée. Mise à jour forcée.`);
+            }
+
             sessionCodeElement.textContent = playersData.session_code; 
             updatePlayersList(playersData.players || [], playersData.creator);
             checkCloseButtonState(); 
@@ -568,7 +613,6 @@
         });
     }
 
-
     function updateDisplay(timeLeft) {
         const counterElement = document.getElementById('timerCounter');
         const barElement = document.getElementById('timerBarFill');
@@ -651,8 +695,6 @@
     function launchGameCycle() {
         stopAllCycles(); 
         
-        startClicksInterval();
-
         const now = new Date();
         const utcSeconds = now.getUTCSeconds(); 
         
@@ -751,11 +793,15 @@
                         console.log("[JOIN] Succès. Affichage immédiat du code et rafraîchissement différé.");
                         sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
                         sidebarStatus.style.color = "#10b981";
+                        
+                        sessionCode.dataset.forcedCode = input; 
                         sessionCode.textContent = input; 
                         
-                        // Rafraîchissement différé (3s) pour garantir la synchro
+                        await fetchGameData();
+                        
                         setTimeout(async () => {
                             console.log("[JOIN] Rafraîchissement différé (3s) après jointure. Affichage des joueurs...");
+                            sessionCode.dataset.forcedCode = "";
                             await fetchGameData();
                         }, 3000); 
                         

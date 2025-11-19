@@ -148,54 +148,15 @@
     </div>
 
     <script>
+    // --- VARIABLES GLOBALES ET CONSTANTES ---
     const API_URL = "https://project-3-api-2bgb.onrender.com";
     let clickCount = 0;
     let lastClickTime = 0;
     let clickIntervals = [];
     let sidebarVisible = true;
-
     let username = localStorage.getItem("username");
 
-    console.log("Username récupéré du localStorage:", username);
-
-    if (!username || username.trim() === "") {
-        console.error("⚠️ Aucun nom d'utilisateur trouvé. Le jeu ne fonctionnera pas correctement.");
-    }
-
-    const clickButton = document.getElementById('clickButton');
-    const scoreCounter = document.getElementById('scoreCounter'); 
-    const toSend = document.getElementById('toSend');
-    const timerCounter = document.getElementById('timerCounter');
-    const statusLabel = document.getElementById('statusLabel');
-    const sessionCode = document.getElementById('sessionCode');
-    const usernameLabel = document.getElementById('usernameLabel');
-    const playerCount = document.getElementById('playerCount');
-    const joinInput = document.getElementById('joinInput');
-    const joinButton = document.getElementById('joinButton');
-    const closeBtn = document.getElementById('closeBtn');
-    const sidebarStatus = document.getElementById('sidebarStatus');
-    const sidebar = document.getElementById('sidebar');
-    const toggleSidebar = document.getElementById('toggleSidebar');
-    const timerBarFill = document.getElementById('timerBarFill');
-    const upgradeButton = document.getElementById('upgradeButton');
-
-    usernameLabel.textContent = username;
-
-    toggleSidebar.addEventListener('click', () => { 
-        sidebarVisible = !sidebarVisible; 
-        sidebar.classList.toggle('hidden'); 
-    });
-
-    clickButton.addEventListener('click', onClickerClick);
-
-    // Bouton Amélioration - Ouvre upgrade.html dans un nouvel onglet
-    upgradeButton.addEventListener('click', () => {
-        window.open('upgrade.html', '_blank');
-    });
-
-    window.addEventListener('beforeunload', async (e) => {
-        await leaveSessionSilently();
-    });
+    // --- FONCTIONS (DÉCLARATIONS) ---
 
     async function handleBackButton() {
         await leaveSessionSilently();
@@ -203,7 +164,11 @@
     }
 
     async function leaveSessionSilently() {
-        const code = sessionCode.textContent;
+        // Utilise getElementById car 'sessionCode' n'est pas encore défini
+        const codeElement = document.getElementById('sessionCode');
+        if (!codeElement) return; 
+        
+        const code = codeElement.textContent;
         if (code === "Chargement..." || code === "Aucune session" || code === "Erreur" || code === "Création...") {
             return;
         }
@@ -226,6 +191,9 @@
     }
 
     function onClickerClick() {
+        const statusLabel = document.getElementById('statusLabel'); // Doit le récupérer ici
+        const toSend = document.getElementById('toSend'); // Doit le récupérer ici
+        
         const now = Date.now() / 1000;
         let freq = 0;
         if (lastClickTime !== 0) {
@@ -249,8 +217,11 @@
     }
 
     async function sendClicks() {
-        const code = sessionCode.textContent;
-        if (code === "Chargement..." || code === "Aucune session" || code === "Erreur" || code === "Création...") {
+        const sessionCode = document.getElementById('sessionCode').textContent;
+        const statusLabel = document.getElementById('statusLabel');
+        const toSend = document.getElementById('toSend');
+        
+        if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
             return;
         }
         
@@ -267,7 +238,7 @@
             const response = await fetch(`${API_URL}/poire`, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ session: code, click: toSendValue, id: username }) 
+                body: JSON.stringify({ session: sessionCode, click: toSendValue, id: username }) 
             });
             const data = await response.json();
             if (data.status !== "success") {
@@ -282,9 +253,11 @@
             statusLabel.style.color = "#ef4444";
         }
     }
-    
-    // FONCTION EXPLICITE DE CRÉATION DE SESSION
+
     async function createSession() {
+        const sessionCode = document.getElementById('sessionCode');
+        const sidebarStatus = document.getElementById('sidebarStatus');
+        
         sessionCode.textContent = "Création...";
         sidebarStatus.textContent = "⏳ Création d'une nouvelle session...";
         sidebarStatus.style.color = "#f59e0b";
@@ -317,8 +290,11 @@
         }
     }
 
-    // GÈRE LE CHARGEMENT OU LA CRÉATION AUTOMATIQUE
+    // CORRECTION 1 : Cette fonction gère le chargement OU la création si échec
     async function loadMySession() {
+        const sessionCode = document.getElementById('sessionCode');
+        const sidebarStatus = document.getElementById('sidebarStatus');
+
         try {
             const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
             const data = await response.json();
@@ -342,14 +318,16 @@
     }
 
     async function fetchGameData() {
-        const code = sessionCode.textContent;
-        if (code === "Chargement..." || code === "Aucune session" || code === "Erreur" || code === "Création...") {
+        const sessionCode = document.getElementById('sessionCode').textContent;
+        const scoreCounter = document.getElementById('scoreCounter');
+
+        if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
             return;
         }
 
         try {
             // Récupération du score
-            const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(code)}`);
+            const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(sessionCode)}`);
             const scoreData = await scoreResponse.json();
 
             if (scoreData.status === "success") {
@@ -370,6 +348,7 @@
     }
 
     function updatePlayersList(players, creator) {
+        const playerCount = document.getElementById('playerCount');
         const playerSlots = [
             document.getElementById('player1'), 
             document.getElementById('player2'), 
@@ -389,7 +368,6 @@
         });
 
         const uniqueActivePlayers = [...new Set(activePlayers)];
-
         playerCount.textContent = `${uniqueActivePlayers.length}/5`;
 
         playerSlots.forEach((slot, index) => {
@@ -398,17 +376,9 @@
                 let displayString = "";
                 
                 if (player === username) {
-                    if (player === creator) {
-                        displayString = `👑 👤 Vous`;
-                    } else {
-                        displayString = `👤 Vous`;
-                    }
+                    displayString = (player === creator) ? `👑 👤 Vous` : `👤 Vous`;
                 } else {
-                    if (player === creator) {
-                        displayString = `👑 ${player}`;
-                    } else {
-                        displayString = `• ${player}`;
-                    }
+                    displayString = (player === creator) ? `👑 ${player}` : `• ${player}`;
                 }
                 
                 slot.textContent = displayString;
@@ -425,6 +395,7 @@
     }
 
     function resetPlayersList() {
+        const playerCount = document.getElementById('playerCount');
         const playerSlots = [
             document.getElementById('player1'), 
             document.getElementById('player2'), 
@@ -448,125 +419,21 @@
         });
     }
 
-    closeBtn.addEventListener('click', async () => {
-        const code = sessionCode.textContent;
-        if (code === "Chargement..." || code === "Aucune session" || code === "Création...") { 
-            sidebarStatus.textContent = "⚠️ Pas de session active"; 
-            sidebarStatus.style.color = "#f59e0b"; 
-            return; 
-        }
-        
-        closeBtn.disabled = true;
-        
-        try {
-            const response = await fetch(`${API_URL}/leave`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ code: code, id: username }) 
-            });
-            const data = await response.json();
-            if (data.status === "success") { 
-                sidebarStatus.textContent = "✅ Session quittée"; 
-                sidebarStatus.style.color = "#10b981"; 
-                sessionCode.textContent = "Aucune session";
-                resetPlayersList();
-                
-                // Créer automatiquement une nouvelle session après avoir quitté
-                setTimeout(async () => {
-                    await createSession();
-                }, 500);
-            } else { 
-                sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`; 
-                sidebarStatus.style.color = "#ef4444"; 
-            }
-        } catch (e) { 
-            sidebarStatus.textContent = "❌ Erreur réseau"; 
-            sidebarStatus.style.color = "#ef4444"; 
-        } finally {
-            closeBtn.disabled = false;
-        }
-    });
-
-    // LOGIQUE DU BOUTON REJOINDRE/CRÉER
-    joinButton.addEventListener('click', async () => {
-        let input = joinInput.value.trim();
-        
-        joinButton.disabled = true;
-
-        try {
-            if (input.toLowerCase().startsWith("/cha ")) {
-                // Logique pour changer le nom de session
-                const newSessionName = input.substring(5).trim();
-                if (!newSessionName) {
-                    sidebarStatus.textContent = "⚠️ Nom de session manquant";
-                    sidebarStatus.style.color = "#f59e0b";
-                    joinButton.disabled = false;
-                    return;
-                }
-                
-                sidebarStatus.textContent = `Changement du nom en '${newSessionName}'...`;
-                const response = await fetch(`${API_URL}/change_session`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: username, new_session_name: newSessionName })
-                });
-                const data = await response.json();
-                if (data.status === "success") {
-                    sidebarStatus.textContent = `✅ ${data.message}`;
-                    sidebarStatus.style.color = "#10b981";
-                    sessionCode.textContent = newSessionName;
-                } else {
-                    sidebarStatus.textContent = `❌ Erreur changement : ${data.message}`;
-                    sidebarStatus.style.color = "#ef4444";
-                }
-                joinInput.value = "";
-            } else if (!input) {
-                // Si l'entrée est vide, créer une nouvelle session
-                await createSession(); 
-            } else {
-                // Si l'entrée n'est pas vide, rejoindre la session
-                sidebarStatus.textContent = `Tentative de rejoindre '${input}'...`;
-                const response = await fetch(`${API_URL}/join`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: input, id: username })
-                });
-                const data = await response.json();
-                
-                if (data.status === "success") {
-                    sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
-                    sidebarStatus.style.color = "#10b981";
-                    sessionCode.textContent = input;
-                } else {
-                    sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
-                    sidebarStatus.style.color = "#ef4444";
-                }
-                joinInput.value = "";
-            }
-        } catch (e) {
-            sidebarStatus.textContent = "❌ Erreur réseau / Commande non valide";
-            sidebarStatus.style.color = "#ef4444";
-        } finally {
-            joinButton.disabled = false;
-        }
-    });
-
     // --- LOGIQUE DE SYNCHRONISATION UTC ---
-
     const REFRESH_PERIOD_SECONDS = 5;
     let timerInterval;
 
     function getWaitTime() {
         const now = new Date();
         const utcSeconds = now.getUTCSeconds(); 
-        
         const elapsed = utcSeconds % REFRESH_PERIOD_SECONDS;
         const waitTimeSeconds = REFRESH_PERIOD_SECONDS - elapsed;
-        
         return waitTimeSeconds * 1000;
     }
 
     function updateDisplay(timeLeft) {
+        const timerBarFill = document.getElementById('timerBarFill');
+        const timerCounter = document.getElementById('timerCounter');
         timerBarFill.style.width = `${((REFRESH_PERIOD_SECONDS - timeLeft) / REFRESH_PERIOD_SECONDS) * 100}%`;
         timerCounter.textContent = `Rafraîchissement dans ${timeLeft}s`;
     }
@@ -579,37 +446,186 @@
 
     function startInterval() {
         clearInterval(timerInterval);
-
         let timeLeft = REFRESH_PERIOD_SECONDS; 
 
         timerInterval = setInterval(() => {
             timeLeft--;
             updateDisplay(timeLeft);
-
             if (timeLeft === 1) {
                 clearInterval(timerInterval);
                 gameCycle(); 
             }
-
         }, 1000); 
     }
 
-    // Lancement et synchronisation
-    loadMySession().then((sessionLoaded) => {
-        if (sessionLoaded) {
-            fetchGameData(); 
-
-            const waitTime = getWaitTime();
-            
-            updateDisplay(Math.ceil(waitTime / 1000));
-            timerCounter.textContent = `Synchronisation dans ${Math.ceil(waitTime / 1000)}s`;
-
-            setTimeout(() => {
-                gameCycle(); 
-            }, waitTime);
-        } else {
-            console.error("Impossible de charger ou créer une session");
+    // --- EXÉCUTION AU CHARGEMENT DE LA PAGE ---
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // CORRECTION 2 : Indépendance du bouton Upgrade.
+        // Il est créé ici, indépendamment de la session.
+        // Assurez-vous d'avoir un <div id="upgrade-button-container"></div> dans votre HTML.
+        const upgradeContainer = document.getElementById('upgrade-button-container');
+        if (upgradeContainer) {
+            // Crée le bouton 'Upgrade' et le rend fonctionnel
+            upgradeContainer.innerHTML = '<a href="upgrade.html" class="upgrade-button">Upgrade</a>';
         }
+
+        // --- Initialisation des variables du DOM ---
+        console.log("Username récupéré du localStorage:", username);
+        if (!username || username.trim() === "") {
+            console.error("⚠️ Aucun nom d'utilisateur trouvé. Le jeu ne fonctionnera pas correctement.");
+        }
+
+        const clickButton = document.getElementById('clickButton');
+        const usernameLabel = document.getElementById('usernameLabel');
+        const joinInput = document.getElementById('joinInput');
+        const joinButton = document.getElementById('joinButton');
+        const closeBtn = document.getElementById('closeBtn');
+        const sidebar = document.getElementById('sidebar');
+        const toggleSidebar = document.getElementById('toggleSidebar');
+        const timerCounter = document.getElementById('timerCounter'); // Pour l'affichage initial
+
+        usernameLabel.textContent = username;
+
+        // --- Ajout des Écouteurs d'Événements ---
+
+        toggleSidebar.addEventListener('click', () => { 
+            sidebarVisible = !sidebarVisible; 
+            sidebar.classList.toggle('hidden'); 
+        });
+
+        clickButton.addEventListener('click', onClickerClick);
+
+        // 'upgradeButton' n'a plus besoin d'écouteur, c'est un lien <a>
+
+        window.addEventListener('beforeunload', (e) => {
+            leaveSessionSilently();
+        });
+
+        closeBtn.addEventListener('click', async () => {
+            const sessionCode = document.getElementById('sessionCode');
+            const sidebarStatus = document.getElementById('sidebarStatus');
+            const code = sessionCode.textContent;
+
+            if (code === "Chargement..." || code === "Aucune session" || code === "Création...") { 
+                sidebarStatus.textContent = "⚠️ Pas de session active"; 
+                sidebarStatus.style.color = "#f59e0b"; 
+                return; 
+            }
+            
+            closeBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`${API_URL}/leave`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ code: code, id: username }) 
+                });
+                const data = await response.json();
+                if (data.status === "success") { 
+                    sidebarStatus.textContent = "✅ Session quittée"; 
+                    sidebarStatus.style.color = "#10b981"; 
+                    sessionCode.textContent = "Aucune session";
+                    resetPlayersList();
+                    
+                    // Créer automatiquement une nouvelle session après avoir quitté
+                    setTimeout(async () => {
+                        await createSession();
+                    }, 500);
+                } else { 
+                    sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`; 
+                    sidebarStatus.style.color = "#ef4444"; 
+                }
+            } catch (e) { 
+                sidebarStatus.textContent = "❌ Erreur réseau"; 
+                sidebarStatus.style.color = "#ef4444"; 
+            } finally {
+                closeBtn.disabled = false;
+            }
+        });
+
+        joinButton.addEventListener('click', async () => {
+            let input = joinInput.value.trim();
+            const sidebarStatus = document.getElementById('sidebarStatus');
+            const sessionCode = document.getElementById('sessionCode');
+            
+            joinButton.disabled = true;
+
+            try {
+                if (input.toLowerCase().startsWith("/cha ")) {
+                    const newSessionName = input.substring(5).trim();
+                    if (!newSessionName) {
+                        sidebarStatus.textContent = "⚠️ Nom de session manquant";
+                        sidebarStatus.style.color = "#f59e0b";
+                        joinButton.disabled = false;
+                        return;
+                    }
+                    
+                    sidebarStatus.textContent = `Changement du nom en '${newSessionName}'...`;
+                    const response = await fetch(`${API_URL}/change_session`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: username, new_session_name: newSessionName })
+                    });
+                    const data = await response.json();
+                    if (data.status === "success") {
+                        sidebarStatus.textContent = `✅ ${data.message}`;
+                        sidebarStatus.style.color = "#10b981";
+                        sessionCode.textContent = newSessionName;
+                    } else {
+                        sidebarStatus.textContent = `❌ Erreur changement : ${data.message}`;
+                        sidebarStatus.style.color = "#ef4444";
+                    }
+                    joinInput.value = "";
+                } else if (!input) {
+                    await createSession(); 
+                } else {
+                    sidebarStatus.textContent = `Tentative de rejoindre '${input}'...`;
+                    const response = await fetch(`${API_URL}/join`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: input, id: username })
+                    });
+                    const data = await response.json();
+                    
+                    if (data.status === "success") {
+                        sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
+                        sidebarStatus.style.color = "#10b981";
+                        sessionCode.textContent = input;
+                    } else {
+                        sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
+                        sidebarStatus.style.color = "#ef4444";
+                    }
+                    joinInput.value = "";
+                }
+            } catch (e) {
+                sidebarStatus.textContent = "❌ Erreur réseau / Commande non valide";
+                sidebarStatus.style.color = "#ef4444";
+            } finally {
+                joinButton.disabled = false;
+            }
+        });
+
+        // --- Lancement Initial ---
+        
+        // CORRECTION 1 : Lancement de loadMySession, qui créera une session
+        // si aucune n'est trouvée.
+        loadMySession().then((sessionLoaded) => {
+            if (sessionLoaded) {
+                fetchGameData(); 
+
+                const waitTime = getWaitTime();
+                
+                updateDisplay(Math.ceil(waitTime / 1000));
+                timerCounter.textContent = `Synchronisation dans ${Math.ceil(waitTime / 1000)}s`;
+
+                setTimeout(() => {
+                    gameCycle(); 
+                }, waitTime);
+            } else {
+                console.error("Impossible de charger ou créer une session");
+            }
+        });
     });
 </script>
 </body>

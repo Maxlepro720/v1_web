@@ -389,7 +389,7 @@
                     if (toSend) toSend.textContent = "-- 0 --";
                 }
 
-                // REMOVED: console.log(`[CLICS] Clicks envoyés : ${toSendValue}`);
+                // Logs retirés à la demande de l'utilisateur
             }
         } catch (e) {
             const statusLabel = document.getElementById('statusLabel');
@@ -435,10 +435,12 @@
     }
 
 
+    // 🛑 FONCTION fetchPlayers() AVEC PROTECTION ANTI-SAUT 🛑
     async function fetchPlayers() {
         const sessionCodeElement = document.getElementById('sessionCode');
-        const sessionCode = sessionCodeElement.textContent;
-        if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
+        const currentDisplayedCode = sessionCodeElement.textContent; // CODE AFFICHÉ ACTUEL
+        
+        if (currentDisplayedCode === "Chargement..." || currentDisplayedCode === "Aucune session" || currentDisplayedCode === "Erreur" || currentDisplayedCode === "Création...") {
             return;
         }
 
@@ -455,7 +457,14 @@
                 return;
             }
             
-            // Mise à jour du code de session et de la liste des joueurs
+            // LOGIQUE DE PROTECTION ANTI-SAUT : Si l'API renvoie un code obsolète, on ignore la mise à jour
+            if (playersData.session_code !== currentDisplayedCode) {
+                console.warn(`[FETCH_PLAYERS] Code de session API ('${playersData.session_code}') ne correspond pas au code affiché ('${currentDisplayedCode}'). IGNORE la mise à jour des joueurs pour éviter le saut.`);
+                checkCloseButtonState(); 
+                return; 
+            }
+            
+            // Si les codes correspondent, ou si c'est la session initiale, on met à jour
             sessionCodeElement.textContent = playersData.session_code; 
             updatePlayersList(playersData.players || [], playersData.creator);
             checkCloseButtonState(); 
@@ -464,6 +473,7 @@
             console.error("Erreur réseau ou JSON lors du rafraîchissement des joueurs:", e);
         }
     }
+
 
     async function fetchGameData() {
         const sessionCode = document.getElementById('sessionCode').textContent;

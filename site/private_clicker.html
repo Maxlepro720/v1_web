@@ -453,11 +453,14 @@
             // Récupère les données de session (nom, joueurs, créateur)
             const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
             const playersData = await playersResponse.json();
+            console.log(playersData);
             
             if (playersData.status === "success" && playersData.session_name) {
                 sessionCodeElement.textContent = playersData.session_name; 
                 // data.players = la liste des joueurs (hors créateur)
                 // data.creator = le créateur
+                console.log("player : ",data.players);
+                console.log("creator : ",data.creator);
 
                 updatePlayersList(playersData.players, playersData.creator);
                 

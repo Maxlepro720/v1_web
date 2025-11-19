@@ -151,10 +151,10 @@
     // --- VARIABLES GLOBALES ET CONSTANTES ---
     const API_URL = "https://project-3-api-2bgb.onrender.com";
     
-    // NOUVELLES CONSTANTES POUR LE TIMER ALÉATOIRE
+    // Fréquence de rafraîchissement des joueurs passée à 2 secondes
     const REFRESH_MIN_SECONDS = 3; 
     const REFRESH_MAX_SECONDS = 8; 
-    const FAST_REFRESH_SECONDS = 3;    // Intervalle pour le rafraîchissement rapide des joueurs
+    const FAST_REFRESH_SECONDS = 2;    // Intervalle pour le rafraîchissement rapide des joueurs (2s)
 
     let currentRefreshPeriod = REFRESH_MAX_SECONDS; // Durée du cycle actuel
     let clickCount = 0;
@@ -336,6 +336,10 @@
         }
 
         uniqueActivePlayers = [...new Set(uniqueActivePlayers)].slice(0, 5);
+        
+        // LOG CONSOLE POUR DÉBOGAGE (rafraîchissement toutes les 2s)
+        console.log(`[${new Date().toLocaleTimeString()}] Données Joueurs reçues :`, uniqueActivePlayers);
+
         playerCount.textContent = `${uniqueActivePlayers.length}/5`;
 
         playerSlots.forEach((slot, index) => {
@@ -375,6 +379,7 @@
         stopFastPlayerRefresh(); 
         fetchPlayers();
         
+        // Intervalle de rafraîchissement des joueurs de 2 secondes
         playerInterval = setInterval(fetchPlayers, FAST_REFRESH_SECONDS * 1000);
     }
 
@@ -458,8 +463,9 @@
         const timeElapsed = currentRefreshPeriod - timeLeft;
         const percentage = (timeElapsed / currentRefreshPeriod) * 100;
 
+        // AFFICHAGE SIMPLIFIÉ
         if (counterElement) {
-            counterElement.textContent = `Prochaine sync. dans : ${timeLeft}s (sur ${currentRefreshPeriod}s)`;
+            counterElement.textContent = `${timeLeft}s`; 
         }
         
         if (barElement) {
@@ -480,7 +486,8 @@
         
         const counterElement = document.getElementById('timerCounter');
         if (counterElement) {
-            counterElement.textContent = "Rafraîchissement en cours...";
+            // Affichage lors de la synchronisation
+            counterElement.textContent = "⏳";
         }
 
         await sendClicks();
@@ -566,7 +573,7 @@
             stopFastPlayerRefresh(); 
             
             const counterElement = document.getElementById('timerCounter');
-            if (counterElement) counterElement.textContent = "Commande en cours...";
+            if (counterElement) counterElement.textContent = "⏳";
 
 
             try {

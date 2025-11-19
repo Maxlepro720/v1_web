@@ -6,6 +6,7 @@
 <title>Launcher</title>
 
 <style>
+/* --- (Le CSS reste inchangé) --- */
     body {
         margin: 0;
         font-family: Arial, sans-serif;
@@ -135,13 +136,12 @@
     .card button:hover {
         background: #2563eb;
     }
-
 </style>
 </head>
 <body>
 
 <header>
-    <h1>🎮  Accueil</h1>
+    <h1>🎮  Accueil</h1>
     <nav>
         <button>📚 Bibliothèque</button>
         <input id="search_bar" placeholder="Rechercher">
@@ -154,9 +154,11 @@
 <div class="game-grid" id="gameGrid"></div>
 
 <script>
+const API_URL = "https://project-3-api-2bgb.onrender.com";
+
 /* -------------------------
-   📦 LISTE DES JEUX
-   ------------------------- */
+   📦 LISTE DES JEUX
+   ------------------------- */
 const games = [
     { id: 1, title: "Multiplayer Clicker", genre: "Clicker", link: "multiplayer_clicker.html", color: "#8b5cf6" },
     { id: 2, title: "Private Clicker", genre: "Clicker", link: "private_clicker.html", color: "#f97316" },
@@ -167,16 +169,69 @@ const games = [
 ];
 
 /* -------------------------
-   🧑‍💻 RÉCUPÉRATION DU USERNAME
-   ------------------------- */
-const username = localStorage.getItem("username") || "Invité";
+   🧑‍💻 RÉCUPÉRATION DU USERNAME
+   ------------------------- */
+const username = localStorage.getItem("username");
+
+if (!username) {
+    // Si l'utilisateur n'est pas identifié, on le renvoie à la page de connexion
+    window.location.href = 'index.html';
+}
 
 /* Debug */
 console.log("Username menu :", username);
 
+
+/* -------------------------------------
+   🚨 GESTION DE LA DÉCONNEXION (LOGOUT)
+   ------------------------------------- */
+
+/**
+ * Envoie une requête /logout à l'API de manière silencieuse (sans bloquer la fermeture).
+ */
+function logoutSilently() {
+    if (!username) return;
+
+    const logoutData = JSON.stringify({ id: username });
+
+    // Utilisation de sendBeacon si disponible pour garantir que la requête est envoyée
+    // même après la fermeture de la page.
+    if (navigator.sendBeacon) {
+        console.log("[LOGOUT] Tentative de déconnexion via sendBeacon...");
+        const blob = new Blob([logoutData], {type : 'application/json'});
+        navigator.sendBeacon(`${API_URL}/logout`, blob);
+    } else {
+        // Fallback en utilisant XMLHttpRequest synchrone (bloquant) si sendBeacon n'est pas supporté.
+        console.warn("[LOGOUT] sendBeacon non disponible, utilisation de XHR synchrone.");
+        try {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", `${API_URL}/logout`, false); // false = synchrone
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.send(logoutData);
+        } catch (e) {
+            console.error("[LOGOUT] Erreur lors du /logout silencieux (XHR):", e);
+        }
+    }
+}
+
+/**
+ * Fonction appelée lors de la tentative de fermeture ou de navigation.
+ */
+function handleLogoutOnClose(event) {
+    // Appel de la déconnexion silencieuse. 
+    // Nous ne renvoyons rien, car la page 'menu.html' est supposée se fermer.
+    logoutSilently();
+}
+
+// -------------------------
+// ÉVÉNEMENT DE FERMETURE/QUITTER
+// -------------------------
+window.addEventListener('beforeunload', handleLogoutOnClose);
+
+
 /* -------------------------
-   🎮 AFFICHAGE DES CARTES
-   ------------------------- */
+   🎮 AFFICHAGE DES CARTES
+   ------------------------- */
 const grid = document.getElementById("gameGrid");
 const searchBar = document.getElementById("search_bar");
 

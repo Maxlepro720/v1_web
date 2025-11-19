@@ -343,7 +343,7 @@
                 sidebarStatus.textContent = "✅ Session quittée avec succès.";
                 sidebarStatus.style.color = "#10b981";
                 stopAllCycles();
-                await loadMySession(); // Recharge la session personnelle (crée une nouvelle si nécessaire)
+                await loadMySession(); // Recharge la session personnelle
                 // Redémarre les cycles après le rechargement
                 await fetchGameData();
                 launchGameCycle(); 
@@ -533,7 +533,7 @@
         }
     }
     
-    // Logique d'affichage des joueurs (CORRIGÉE)
+    // Logique d'affichage des joueurs
     function updatePlayersList(players, creator) {
         const playerCount = document.getElementById('playerCount');
         const playerSlots = [
@@ -549,7 +549,7 @@
         // 1. Ajoute le Créateur en premier
         if (creator && !uniqueActivePlayers.includes(creator)) uniqueActivePlayers.push(creator);
         
-        // 2. Ajoute les autres joueurs de la liste 'players' (si l'API sépare le créateur)
+        // 2. Ajoute les autres joueurs de la liste 'players'
         if (players) {
             players.forEach(p => {
                  if (!uniqueActivePlayers.includes(p)) {
@@ -558,7 +558,7 @@
             });
         }
         
-        // 3. Assure que l'utilisateur courant est dans la liste (au cas où il n'est pas créateur et n'est pas listé dans 'players')
+        // 3. Assure que l'utilisateur courant est dans la liste
         if (username && !uniqueActivePlayers.includes(username)) {
             uniqueActivePlayers.push(username); 
         }
@@ -582,7 +582,7 @@
                     if (isMe) {
                         displayString = isCreator ? `👑 👤 Vous` : `👤 Vous`; 
                         slot.classList.add('player-item-me');
-                        if (isCreator) slot.classList.add('player-item-creator'); // Pour les créateurs qui sont "vous"
+                        if (isCreator) slot.classList.add('player-item-creator'); 
                     } else {
                         displayString = isCreator ? `👑 ${player}` : `👤 ${player}`;
                         if (isCreator) slot.classList.add('player-item-creator');
@@ -743,7 +743,7 @@
             
             try {
                 if (input.toLowerCase().startsWith("/cha ")) {
-                    // Commande /cha (Changement de nom de session)
+                    // --- Commande /cha (Changement de nom de session) ---
                     const newSessionName = input.substring(5).trim();
                     
                     if (!newSessionName) {
@@ -770,12 +770,13 @@
                     }
                     
                 } else if (!input) {
-                    // Si vide, recharge la session personnelle
+                    // --- Si vide, recharge la session personnelle ---
                     sidebarStatus.textContent = "Chargement de la session personnelle...";
                     await loadMySession(); 
                 } else {
-                    // Rejoint une session spécifique
+                    // --- Rejoint une session spécifique (CORRIGÉ) ---
                     sidebarStatus.textContent = `Tentative de rejoindre '${input}'...`;
+                    sidebarStatus.style.color = "#f59e0b";
                     
                     const response = await fetch(`${API_URL}/join`, {
                         method: 'POST',
@@ -785,18 +786,21 @@
                     const data = await response.json();
                     
                     if (data.status === "success") {
+                        // SUCCÈS : on met à jour le code et on ne retourne PAS à la session personnelle.
                         sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
                         sidebarStatus.style.color = "#10b981";
                         sessionCode.textContent = input;
+                        
                     } else {
+                        // ÉCHEC : on recharge la session personnelle pour revenir à un état connu et valide.
                         sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
                         sidebarStatus.style.color = "#ef4444";
-                        await loadMySession(); // Retour à la session par défaut si échec
+                        await loadMySession(); 
                     }
                 }
 
                 joinInput.value = "";
-                // Redémarre les cycles après un changement de session
+                // Redémarre les cycles 
                 await fetchGameData(); 
                 launchGameCycle(); 
 

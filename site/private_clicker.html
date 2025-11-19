@@ -193,17 +193,17 @@
     const API_URL = "https://project-3-api-2bgb.onrender.com";
     
     // Fréquences pour les cycles
-    const SCORE_REFRESH_PERIOD_SECONDS = 10; // Cycle FIXE pour Score total, Joueurs ET réinitialisation de l'affichage des clics
-    const CLICKS_MIN_SECONDS = 4;            // Minimum pour l'envoi des clics au serveur
-    const CLICKS_MAX_SECONDS = 8;            // Maximum pour l'envoi des clics au serveur
+    const SCORE_REFRESH_PERIOD_SECONDS = 10;
+    const CLICKS_MIN_SECONDS = 4;
+    const CLICKS_MAX_SECONDS = 8;
     
-    let clickCount = 0; // Clics cumulés depuis la dernière réinitialisation/envoi
+    let clickCount = 0;
     let lastClickTime = 0;
     let clickIntervals = [];
-    let username = localStorage.getItem("username"); // Récupère le nom d'utilisateur du stockage local
+    let username = localStorage.getItem("username");
 
-    let timerInterval;      // Intervalle pour l'affichage du timer du score (10s)
-    let clicksTimeout;      // Timeout pour l'envoi aléatoire des clics (4-8s)
+    let timerInterval;
+    let clicksTimeout;
 
     // --- FONCTIONS DE GESTION DES CYCLES ET DE L'ÉTAT ---
     
@@ -240,7 +240,6 @@
         }, 1000); 
     }
 
-    // Fonction principale du cycle de jeu (Récupération du score et des joueurs / Réinitialisation de l'affichage des clics)
     async function gameCycle() {
         const sessionCode = document.getElementById('sessionCode').textContent;
          if (sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Chargement..." || sessionCode === "Création...") {
@@ -259,37 +258,28 @@
             counterElement.textContent = "⏳";
         }
 
-        // 1. Récupère les données (Score + Joueurs)
         await fetchGameData();
         
-        // 2. Réinitialisation de l'AFFICHAGE des clics cumulés (pour l'utilisateur)
         const toSend = document.getElementById('toSend');
         if (toSend) toSend.textContent = "-- 0 --";
         
-        // 3. Relance le timer du score
         startScoreInterval(); 
     }
 
     // --- FONCTIONS DE COMMUNICATION ET DE JEU ---
 
-    /**
-     * Tente de déconnecter l'utilisateur du serveur de manière fiable et silencieuse.
-     * Utilisé lors de la fermeture de la fenêtre ou du changement de page.
-     */
     function logoutSilently() {
         console.log("[LOGOUT] Déconnexion silencieuse...");
         stopAllCycles();
 
-        // Utilise l'API Beacon (plus fiable pour les événements 'unload'/'beforeunload')
         if (navigator.sendBeacon) {
             navigator.sendBeacon(`${API_URL}/logout`, JSON.stringify({ id: username }));
             return;
         }
 
-        // Fallback pour les navigateurs plus anciens ou si Beacon échoue
         try {
             const xhr = new XMLHttpRequest();
-            xhr.open("POST", `${API_URL}/logout`, false); // Synchrone, bloquant
+            xhr.open("POST", `${API_URL}/logout`, false);
             xhr.setRequestHeader("Content-Type", "application/json");
             xhr.send(JSON.stringify({ id: username }));
         } catch (e) {
@@ -297,24 +287,16 @@
         }
     }
     
-    /**
-     * Gère le clic sur le bouton de retour.
-     */
     function handleBackButton() {
-        logoutSilently(); // Se déconnecte avant de partir
-        // Redirige vers la page de login/accueil (doit exister)
+        logoutSilently();
         window.location.href = 'index.html'; 
     }
 
-    /**
-     * Gère le clic sur le bouton 'X' (Quitter la session).
-     */
     async function handleLeaveSession() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const sidebarStatus = document.getElementById('sidebarStatus');
         const closeBtn = document.getElementById('closeBtn');
 
-        // Vérification de l'état (si l'utilisateur est créateur, il ne peut pas quitter)
         if (closeBtn.disabled) {
             sidebarStatus.textContent = "⚠️ Créateur : fermer la session via le serveur ou quitter le jeu.";
             sidebarStatus.style.color = "#f59e0b";
@@ -343,8 +325,7 @@
                 sidebarStatus.textContent = "✅ Session quittée avec succès.";
                 sidebarStatus.style.color = "#10b981";
                 stopAllCycles();
-                await loadMySession(); // Recharge la session personnelle
-                // Redémarre les cycles après le rechargement
+                await loadMySession(); 
                 await fetchGameData();
                 launchGameCycle(); 
             } else {
@@ -355,7 +336,7 @@
             sidebarStatus.textContent = "❌ Erreur réseau lors de la déconnexion de session.";
             sidebarStatus.style.color = "#ef4444";
         } finally {
-            checkCloseButtonState(); // Rétablit l'état du bouton
+            checkCloseButtonState();
         }
     }
 
@@ -366,7 +347,6 @@
         const now = Date.now() / 1000;
         let freq = 0;
         
-        // Calcul de la fréquence de clic (pour la détection de l'autoclicker)
         if (lastClickTime !== 0) {
             const interval = now - lastClickTime;
             clickIntervals.push(interval);
@@ -387,11 +367,9 @@
         }
 
         clickCount++;
-        // Mise à jour de l'affichage des clics cumulés
         if (toSend) toSend.textContent = `-- ${clickCount} --`;
     }
     
-    // Envoie les clics et relance le timer aléatoire (4-8s)
     async function sendClicksRandomly() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         
@@ -401,8 +379,6 @@
         }
         
         const toSendValue = clickCount;
-        
-        // Réinitialisation de la valeur de la variable clickCount APRÈS lecture
         clickCount = 0; 
         
         try {
@@ -421,11 +397,10 @@
                 statusLabel.style.color = "#ef4444";
             }
         } finally {
-            startClicksInterval(); // Relance le timer aléatoire après l'envoi
+            startClicksInterval();
         }
     }
 
-    // Vérifie et met à jour l'état du bouton "Quitter" (pour empêcher le créateur de quitter)
     async function checkCloseButtonState() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const closeBtn = document.getElementById('closeBtn');
@@ -438,19 +413,16 @@
         }
 
         try {
-            // Utilise /verify_session pour savoir si l'utilisateur est le créateur
             const response = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
             const data = await response.json();
 
             if (data.status === "success" && data.creator === username) {
-                // Créateur : ne peut pas quitter
                 closeBtn.disabled = true;
-                closeBtn.style.backgroundColor = "#6b7280"; // Gris
+                closeBtn.style.backgroundColor = "#6b7280";
                 closeBtn.style.cursor = "not-allowed";
             } else {
-                // Simple joueur : peut quitter
                 closeBtn.disabled = false;
-                closeBtn.style.backgroundColor = "#ef4444"; // Rouge (Couleur Quitter)
+                closeBtn.style.backgroundColor = "#ef4444";
                 closeBtn.style.cursor = "pointer";
             }
 
@@ -461,7 +433,6 @@
     }
 
 
-    // Récupère la liste des joueurs et vérifie la session
     async function fetchPlayers() {
         const sessionCodeElement = document.getElementById('sessionCode');
         const sessionCode = sessionCodeElement.textContent;
@@ -470,21 +441,17 @@
         }
 
         try {
-            // Récupère les données de session (nom, joueurs, créateur)
             const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
             const playersData = await playersResponse.json();
             
             if (playersData.status === "success" && playersData.session_code) {
-                // Important: Mettre à jour le code de session au cas où l'utilisateur a rejoint une nouvelle
                 sessionCodeElement.textContent = playersData.session_code; 
                 
-                // Correction ici: On passe la liste des joueurs et le créateur à la fonction d'affichage
                 updatePlayersList(playersData.players || [], playersData.creator);
                 
                 checkCloseButtonState(); 
 
             } else if (playersData.status === "error" && playersData.message.includes("Session invalide")) {
-                 // Si la session du joueur n'existe plus
                 console.error("[PLAYERS] Session invalide détectée. Tentative de rechargement...");
                 stopAllCycles();
                 await loadMySession();
@@ -495,7 +462,6 @@
         }
     }
 
-    // Récupère le score total et appelle fetchPlayers (Cycle de 10s)
     async function fetchGameData() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const scoreCounter = document.getElementById('scoreCounter');
@@ -513,7 +479,6 @@
                 const currentScore = parseInt(scoreCounter.textContent) || 0;
                 const newScore = scoreData.poires || 0;
                 
-                // Animation du score (facultatif mais plus agréable)
                 const steps = 10;
                 const diff = newScore - currentScore;
                 const stepValue = diff / steps;
@@ -525,7 +490,7 @@
                 }
             }
             
-            // 2. Mise à jour des joueurs (Synchro avec le score toutes les 10s)
+            // 2. Mise à jour des joueurs
             await fetchPlayers();
 
         } catch (e) {
@@ -533,7 +498,6 @@
         }
     }
     
-    // Logique d'affichage des joueurs
     function updatePlayersList(players, creator) {
         const playerCount = document.getElementById('playerCount');
         const playerSlots = [
@@ -546,10 +510,8 @@
         if (!playerCount || !playerSlots[0]) return;
 
         let uniqueActivePlayers = [];
-        // 1. Ajoute le Créateur en premier
         if (creator && !uniqueActivePlayers.includes(creator)) uniqueActivePlayers.push(creator);
         
-        // 2. Ajoute les autres joueurs de la liste 'players'
         if (players) {
             players.forEach(p => {
                  if (!uniqueActivePlayers.includes(p)) {
@@ -558,12 +520,10 @@
             });
         }
         
-        // 3. Assure que l'utilisateur courant est dans la liste
         if (username && !uniqueActivePlayers.includes(username)) {
             uniqueActivePlayers.push(username); 
         }
 
-        // Finalise la liste et la limite à 5
         uniqueActivePlayers = [...new Set(uniqueActivePlayers)].slice(0, 5);
         
         playerCount.textContent = `${uniqueActivePlayers.length}/5`;
@@ -571,7 +531,6 @@
         playerSlots.forEach((slot, index) => {
             const player = uniqueActivePlayers[index];
             if (slot) {
-                // Réinitialise les classes
                 slot.className = 'player-item'; 
 
                 if (player) {
@@ -582,7 +541,7 @@
                     if (isMe) {
                         displayString = isCreator ? `👑 👤 Vous` : `👤 Vous`; 
                         slot.classList.add('player-item-me');
-                        if (isCreator) slot.classList.add('player-item-creator'); 
+                        if (isCreator) slot.classList.add('player-item-creator');
                     } else {
                         displayString = isCreator ? `👑 ${player}` : `👤 ${player}`;
                         if (isCreator) slot.classList.add('player-item-creator');
@@ -591,14 +550,13 @@
                     slot.textContent = displayString;
                 } else {
                     slot.textContent = "⚪ En attente...";
-                    slot.classList.add('waiting'); // Style gris/attente
+                    slot.classList.add('waiting');
                 }
             }
         });
     }
 
 
-    // Met à jour le compteur et la barre de progression (Cycle du score fixe)
     function updateDisplay(timeLeft) {
         const counterElement = document.getElementById('timerCounter');
         const barElement = document.getElementById('timerBarFill');
@@ -615,7 +573,6 @@
         }
     }
 
-    // Tente de créer une session. Utilisé si aucune session n'est trouvée.
     async function createSession() {
         const sessionCode = document.getElementById('sessionCode');
         const sidebarStatus = document.getElementById('sidebarStatus');
@@ -650,10 +607,6 @@
         }
     }
 
-    /**
-     * Tente de charger la session personnelle de l'utilisateur.
-     * Si aucune n'existe, en crée une.
-     */
     async function loadMySession() {
         const sessionCode = document.getElementById('sessionCode');
         const sidebarStatus = document.getElementById('sidebarStatus');
@@ -662,7 +615,6 @@
         sessionCode.textContent = "Chargement...";
         
         try {
-            // 1. Tente de récupérer la session existante
             const response = await fetch(`${API_URL}/session?user=${encodeURIComponent(username)}`);
             const data = await response.json();
             
@@ -672,20 +624,16 @@
                 sidebarStatus.style.color = "#10b981";
                 return true;
             } else {
-                // 2. Si non trouvée ou erreur, tente d'en créer une
                 return await createSession(); 
             }
         } catch (e) {
-            // 3. En cas d'erreur réseau, tente de créer une session (si /session a échoué)
             return await createSession(); 
         }
     }
 
-    // Fonction utilitaire pour lancer le cycle après le délai UTC
     function launchGameCycle() {
         startClicksInterval();
 
-        // Calcule le temps restant jusqu'au prochain multiple de 10 secondes (pour la synchro)
         const now = new Date();
         const utcSeconds = now.getUTCSeconds(); 
         const elapsed = utcSeconds % SCORE_REFRESH_PERIOD_SECONDS;
@@ -693,7 +641,6 @@
         
         console.log(`[INIT] Attente avant le premier cycle du score (Synchro 10s) : ${waitTimeSeconds.toFixed(2)}s`);
 
-        // Lance le cycle du score (10s fixe) au prochain multiple de 10
         setTimeout(() => {
             gameCycle(); 
         }, (waitTimeSeconds * 1000) - 50); 
@@ -703,7 +650,6 @@
     
     document.addEventListener('DOMContentLoaded', () => {
         
-        // --- Vérification critique du nom d'utilisateur ---
         if (!username || username.trim() === "" || username === "null" || username.toLowerCase() === "chargement..." || username.toLowerCase() === "erreur") {
             document.body.innerHTML = '<h1>❌ Erreur: Nom d\'utilisateur manquant.</h1><p>Veuillez vous connecter à nouveau.</p><button onclick="window.location.href=\'index.html\'">Accueil</button>';
             stopAllCycles();
@@ -720,7 +666,6 @@
 
         if (usernameLabel) usernameLabel.textContent = username;
 
-        // Événements
         if (document.querySelector('.back-btn')) document.querySelector('.back-btn').addEventListener('click', handleBackButton);
         if (closeBtn) closeBtn.addEventListener('click', handleLeaveSession);
         if (toggleSidebar && sidebar) toggleSidebar.addEventListener('click', () => { 
@@ -728,10 +673,8 @@
         });
         if (clickButton) clickButton.addEventListener('click', onCLickerClick);
         
-        // Déconnexion lors de la fermeture de la fenêtre
         window.addEventListener('unload', logoutSilently); 
 
-        // Fonctionnalité de Rejoindre/Changer de session
         if (joinButton) joinButton.addEventListener('click', async () => {
             let input = joinInput.value.trim();
             const sidebarStatus = document.getElementById('sidebarStatus');
@@ -743,7 +686,6 @@
             
             try {
                 if (input.toLowerCase().startsWith("/cha ")) {
-                    // --- Commande /cha (Changement de nom de session) ---
                     const newSessionName = input.substring(5).trim();
                     
                     if (!newSessionName) {
@@ -770,11 +712,10 @@
                     }
                     
                 } else if (!input) {
-                    // --- Si vide, recharge la session personnelle ---
                     sidebarStatus.textContent = "Chargement de la session personnelle...";
                     await loadMySession(); 
                 } else {
-                    // --- Rejoint une session spécifique (CORRIGÉ) ---
+                    // --- Rejoint une session spécifique ---
                     sidebarStatus.textContent = `Tentative de rejoindre '${input}'...`;
                     sidebarStatus.style.color = "#f59e0b";
                     
@@ -786,13 +727,16 @@
                     const data = await response.json();
                     
                     if (data.status === "success") {
-                        // SUCCÈS : on met à jour le code et on ne retourne PAS à la session personnelle.
+                        // SUCCÈS : Mise à jour immédiate
                         sidebarStatus.textContent = `✅ Session '${input}' rejointe!`;
                         sidebarStatus.style.color = "#10b981";
                         sessionCode.textContent = input;
                         
+                        // FORCEMENT DU RAFRAÎCHISSEMENT IMMÉDIAT ICI
+                        await fetchGameData(); 
+                        
                     } else {
-                        // ÉCHEC : on recharge la session personnelle pour revenir à un état connu et valide.
+                        // ÉCHEC : Retour à la session personnelle
                         sidebarStatus.textContent = `❌ Erreur : ${data.message}`;
                         sidebarStatus.style.color = "#ef4444";
                         await loadMySession(); 
@@ -801,7 +745,7 @@
 
                 joinInput.value = "";
                 // Redémarre les cycles 
-                await fetchGameData(); 
+                // Note: fetchGameData() a déjà été appelé en cas de succès de join
                 launchGameCycle(); 
 
             } catch (e) {
@@ -817,9 +761,7 @@
         // --- Lancement Initial SÉCURISÉ ---
         loadMySession().then((sessionLoaded) => {
             if (sessionLoaded) {
-                // 1. Lance le premier fetch immédiatement pour remplir les données
                 fetchGameData(); 
-                // 2. Démarre ensuite le cycle de 10s synchronisé
                 launchGameCycle(); 
             } else {
                 console.error("Impossible de charger ou créer une session. Le cycle ne démarrera pas.");

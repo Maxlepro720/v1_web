@@ -174,7 +174,9 @@
     <div class="container">
         <div class="main-area">
             <button class="back-btn" onclick="handleBackButton()">←</button>
-            <button class="toggle-sidebar-btn" id="toggleSidebar">☰</button> <div class="title">Clicker</div>
+            <button class="toggle-sidebar-btn" id="toggleSidebar">☰</button>
+
+            <div class="title">Clicker</div>
             <div class="score-counter" id="scoreCounter">0</div> 
             <div class="to-send" id="toSend">-- 0 --</div>
             <button class="click-button" id="clickButton"></button>
@@ -185,8 +187,7 @@
             <div class="status-label" id="statusLabel"></div>
         </div>
 
-        <div class="sidebar" id="sidebar">
-            <button class="close-btn" id="closeBtn">×</button>
+        <div class="sidebar hidden" id="sidebar"> <button class="close-btn" id="closeBtn">×</button>
             <div class="sidebar-title">Session</div>
 
             <div class="section-title">Code de session</div>
@@ -229,7 +230,7 @@
     let clickIntervals = [];
     let username = localStorage.getItem("username");
     
-    // Ajout d'un flag pour éviter de relancer logout si déjà fait lors de la redirection
+    // Flag pour éviter de relancer logout si déjà fait lors de la redirection
     let isRedirecting = false; 
 
     let timerInterval; // Pour le rafraîchissement du score (toutes les 10s)
@@ -254,7 +255,6 @@
         
         const duration = Math.floor(Math.random() * (CLICKS_MAX_SECONDS - CLICKS_MIN_SECONDS + 1)) + CLICKS_MIN_SECONDS;
         
-        // La fonction sendClicksRandomly sera appelée après 'duration' secondes
         clicksTimeout = setTimeout(sendClicksRandomly, duration * 1000);
         console.log(`[CLICS] Prochain envoi aléatoire de clics dans : ${duration}s`);
     }
@@ -318,16 +318,17 @@
     /**
      * Gère la déconnexion silencieuse.
      * @param {boolean} shouldLogout - Indique s'il faut appeler /logout (déconnexion complète).
-     * @param {boolean} shouldRedirect - Indique s'il faut rediriger après l'opération (vers index.html).
+     * @param {boolean} shouldRedirectToMenu - Indique s'il faut rediriger après l'opération (vers menu.html).
      */
-    async function logoutSilently(shouldLogout, shouldRedirect) {
-        if (isRedirecting && shouldRedirect) {
+    async function logoutSilently(shouldLogout, shouldRedirectToMenu) {
+        if (isRedirecting && shouldRedirectToMenu) {
             return; 
         }
+        
         console.log(`[LOGOUT] Déconnexion silencieuse (Logout: ${shouldLogout ? 'Oui' : 'Non'})...`);
         stopAllCycles();
         
-        if (shouldRedirect) {
+        if (shouldRedirectToMenu) {
             isRedirecting = true;
         }
 
@@ -341,17 +342,20 @@
             isInGroup = sessionInfo.session_code === sessionCode && !isCreator;
         }
 
-        // 1. Gère le /leave
-        if (isInGroup || (!shouldLogout && sessionInfo && sessionInfo.session_code)) { 
-            console.log(`[LOGOUT] Envoi de /leave pour la session de groupe ${sessionCode}.`);
-            try {
-                 await fetch(`${API_URL}/leave`, {
-                     method: 'POST',
-                     headers: { 'Content-Type': 'application/json' },
-                     body: JSON.stringify({ code: sessionCode, id: username })
-                 });
-            } catch (e) {
-                console.error("Erreur lors du /leave silencieux:", e);
+        // 1. Gère le /leave si l'utilisateur est dans un groupe
+        if (sessionCode !== "Aucune session" && sessionCode !== "Erreur" && sessionCode !== "Chargement...") {
+             // Si le joueur est dans une session de groupe ou qu'il s'agit d'une session personnelle non-logout, on fait un /leave
+            if (isInGroup || (!shouldLogout && sessionInfo && sessionInfo.session_code)) { 
+                console.log(`[LOGOUT] Envoi de /leave pour la session de groupe/personnelle ${sessionCode}.`);
+                try {
+                     await fetch(`${API_URL}/leave`, {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ code: sessionCode, id: username })
+                     });
+                } catch (e) {
+                    console.error("Erreur lors du /leave silencieux:", e);
+                }
             }
         }
         
@@ -375,16 +379,15 @@
         }
 
         // 3. Redirection
-        if (shouldRedirect) {
-            window.location.href = 'index.html'; // Redirection vers la page de login
+        if (shouldRedirectToMenu) {
+            window.location.href = 'menu.html'; // Redirection vers la page du menu
         }
     }
     
-    // Bouton flèche (←) à gauche : /logout (pour détruire la session personnelle et revenir à login)
+    // Bouton flèche (←) à gauche : /leave de la session et retour au menu.
     async function handleBackButton() {
-        // Le créateur ou le joueur simple qui clique sur la flèche veut quitter complètement le système
-        // --> Logout complet et redirection vers index.html
-        logoutSilently(true, true); 
+        // Logique : Quitter la session de jeu (leave) SANS se déconnecter du launcher (logout), puis redirection vers menu.html
+        logoutSilently(false, true); 
     }
     
     // Événement de fermeture de page : /logout silencieux (sans redirection)
@@ -392,11 +395,11 @@
         if (isRedirecting) {
             return; 
         }
-        // Logout complet (true) sans redirection (false)
+        // Logout complet (true) sans redirection (false) pour marquer le joueur offline
         logoutSilently(true, false); 
     }
 
-    // Bouton croix (×) en haut à droite : /leave de la session de groupe uniquement, la sidebar reste ouverte si erreur.
+    // Bouton croix (×) en haut à droite : /leave de la session de groupe uniquement.
     async function handleLeaveSession() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const sidebarStatus = document.getElementById('sidebarStatus');
@@ -413,7 +416,7 @@
         const isInGroup = sessionInfo && sessionInfo.session_code === sessionCode && !isCreator;
 
         if (isCreator) {
-            sidebarStatus.textContent = "❌ Créateur : utilisez la flèche (←) pour vous déconnecter et détruire la session (Logout).";
+            sidebarStatus.textContent = "❌ Créateur : utilisez la flèche (←) pour revenir au menu et laisser votre session personnelle ouverte.";
             sidebarStatus.style.color = "#ef4444";
             return;
         }
@@ -421,9 +424,9 @@
         if (!isInGroup) {
              sidebarStatus.textContent = "⚠️ Vous êtes dans votre session personnelle (solo).";
              sidebarStatus.style.color = "#f59e0b";
-             // On cache la sidebar même si c'est une session solo
+             // On ferme la sidebar car il n'y a rien à 'leave'
              document.getElementById('sidebar').classList.add('hidden');
-             document.getElementById('toggleSidebar').style.display = 'flex';
+             document.getElementById('toggleSidebar').style.display = 'flex'; // Affiche le toggle
              return;
         }
 
@@ -461,7 +464,7 @@
             checkCloseButtonState();
             // Ferme la sidebar après avoir quitté le groupe
             document.getElementById('sidebar').classList.add('hidden');
-            document.getElementById('toggleSidebar').style.display = 'flex';
+            document.getElementById('toggleSidebar').style.display = 'flex'; // Affiche le toggle
         }
     }
 
@@ -535,16 +538,12 @@
             }
              // Si l'envoi échoue (erreur réseau), on garde les clics en mémoire.
         } finally {
-            // La relance de l'intervalle des clics se fait dans gameCycle() ou ici s'il n'y a pas de cycle en cours.
-            // On s'assure qu'un nouvel intervalle est toujours planifié après l'envoi.
             if (!timerInterval) { 
                  startClicksInterval();
             }
         }
     }
-    
-    // ... (Reste des fonctions fetchGameData, updatePlayersList, etc. inchangées)
-    
+
     async function fetchPlayers() {
         const sessionCodeElement = document.getElementById('sessionCode');
         const currentDisplayedCode = sessionCodeElement.textContent;
@@ -625,31 +624,30 @@
 
         if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
             closeBtn.disabled = true;
-            closeBtn.style.backgroundColor = "grey";
+            closeBtn.style.backgroundColor = "#6b7280";
             closeBtn.style.cursor = "not-allowed";
-            closeBtn.textContent = "×";
             return;
         }
 
         getPlayerSessionInfo().then(sessionInfo => {
             if (sessionInfo && sessionInfo.status === "success" && sessionInfo.session_code === sessionCode && sessionInfo.creator === username) {
+                // Le créateur ne peut pas utiliser le bouton '×' pour 'leave'
                 closeBtn.disabled = true;
                 closeBtn.style.backgroundColor = "#6b7280"; 
                 closeBtn.style.cursor = "not-allowed";
             } else if (sessionInfo && sessionInfo.status === "success" && sessionInfo.session_code === sessionCode) {
+                // Un simple joueur dans une session de groupe peut utiliser le bouton '×'
                 closeBtn.disabled = false;
                 closeBtn.style.backgroundColor = "#ef4444";
                 closeBtn.style.cursor = "pointer";
             } else {
+                // Session personnelle ou autre
                 closeBtn.disabled = true;
                 closeBtn.style.backgroundColor = "#6b7280"; 
                 closeBtn.style.cursor = "not-allowed";
             }
-            closeBtn.textContent = "×";
         });
     }
-
-    // ... (Fonctions updatePlayersList, updateDisplay, createSession, loadMySession, launchGameCycle inchangées)
 
     function updatePlayersList(players, creator) {
         const playerCount = document.getElementById('playerCount');
@@ -830,9 +828,14 @@
         const toggleSidebarBtn = document.getElementById('toggleSidebar');
 
         toggleSidebarBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('hidden');
-            // Gère la visibilité du bouton "☰"
-            toggleSidebarBtn.style.display = sidebar.classList.contains('hidden') ? 'flex' : 'none';
+            sidebar.classList.remove('hidden'); // Ouvre
+            toggleSidebarBtn.style.display = 'none'; // Cache le toggle
+        });
+        
+        // Fermeture de la Sidebar via le bouton 'x'
+        document.getElementById('closeBtn').addEventListener('click', () => {
+            sidebar.classList.add('hidden'); // Ferme
+            toggleSidebarBtn.style.display = 'flex'; // Affiche le toggle
         });
     });
 

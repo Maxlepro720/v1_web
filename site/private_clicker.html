@@ -147,11 +147,11 @@
         </div>
     </div>
 
-    <script>
+   <script>
     // --- VARIABLES GLOBALES ET CONSTANTES ---
     const API_URL = "https://project-3-api-2bgb.onrender.com";
-    const REFRESH_PERIOD_SECONDS = 10;
-    const FAST_REFRESH_SECONDS = 2; 
+    const REFRESH_PERIOD_SECONDS = 10; // Intervalle de rafraîchissement synchrone
+    const FAST_REFRESH_SECONDS = 2;    // Intervalle pour le rafraîchissement rapide (début de session)
     let clickCount = 0;
     let lastClickTime = 0;
     let clickIntervals = [];
@@ -164,6 +164,7 @@
 
     // --- FONCTIONS (DÉCLARATIONS) ---
 
+    // Fonction pour quitter la session au moment où l'utilisateur ferme la page
     async function leaveSessionSilently() {
         const codeElement = document.getElementById('sessionCode');
         if (!codeElement) return;
@@ -179,10 +180,12 @@
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json' }, 
                 body: data,
+                // Utilise keepalive ou sendBeacon pour garantir l'envoi même à la fermeture
                 keepalive: true
             };
 
             if (navigator.sendBeacon) {
+                // sendBeacon est plus fiable à la fermeture de page
                 navigator.beacon(`${API_URL}/leave`, data);
             } else {
                 await fetch(`${API_URL}/leave`, options);
@@ -192,6 +195,7 @@
         }
     }
 
+    // Gère le clic sur le bouton, y compris la détection d'autoclicker
     function onClickerClick() {
         const statusLabel = document.getElementById('statusLabel'); 
         const toSend = document.getElementById('toSend'); 
@@ -208,7 +212,7 @@
         }
         lastClickTime = now;
 
-        if (freq > 20) {
+        if (freq > 20) { // Limite arbitraire de 20 clics/seconde
             if (statusLabel) {
                 statusLabel.textContent = "⚠️ Autoclicker détecté ⚠️";
                 statusLabel.style.color = "#f87171";
@@ -221,6 +225,7 @@
         if (toSend) toSend.textContent = `-- ${clickCount} --`;
     }
 
+    // Envoie les clics cumulés à l'API et réinitialise le compteur local
     async function sendClicks() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const toSend = document.getElementById('toSend');
@@ -252,6 +257,7 @@
         }
     }
 
+    // Récupère la liste des joueurs et vérifie la session
     async function fetchPlayers() {
         const sessionCodeElement = document.getElementById('sessionCode');
         if (!sessionCodeElement || sessionCodeElement.textContent === "Chargement..." || sessionCodeElement.textContent === "Aucune session" || sessionCodeElement.textContent === "Erreur" || sessionCodeElement.textContent === "Création...") {
@@ -263,7 +269,7 @@
             const playersData = await playersResponse.json();
             
             if (playersData.status === "error" && playersData.message && playersData.message.includes("Session invalide")) {
-                console.warn("Session invalide ou expirée. Tentative de reconnexion à la session personnelle...");
+                console.warn("Session invalide ou expirée. Tentative de reconnexion...");
                 stopFastPlayerRefresh();
                 loadMySession().then(sessionLoaded => {
                     if (sessionLoaded) gameCycle();
@@ -280,6 +286,7 @@
         }
     }
 
+    // Récupère le score et appelle fetchPlayers
     async function fetchGameData() {
         const sessionCode = document.getElementById('sessionCode').textContent;
         const scoreCounter = document.getElementById('scoreCounter');
@@ -305,6 +312,7 @@
         }
     }
 
+    // Met à jour l'affichage de la liste des joueurs
     function updatePlayersList(players, creator) {
         const playerCount = document.getElementById('playerCount');
         const playerSlots = [
@@ -317,6 +325,7 @@
         if (!playerCount || !playerSlots[0]) return;
 
         let uniqueActivePlayers = [];
+        // Construction de la liste unique des joueurs (créateur inclus)
         if (creator && !uniqueActivePlayers.includes(creator)) {
             uniqueActivePlayers.push(creator);
         }
@@ -326,6 +335,7 @@
             }
         });
 
+        // Ajout de l'utilisateur actuel si nécessaire
         if (username && !uniqueActivePlayers.includes(username)) {
             uniqueActivePlayers.push(username); 
         }
@@ -363,43 +373,19 @@
         });
     }
 
-    function resetPlayersList() {
-        const playerCount = document.getElementById('playerCount');
-        const playerSlots = [
-            document.getElementById('player1'), 
-            document.getElementById('player2'), 
-            document.getElementById('player3'), 
-            document.getElementById('player4'), 
-            document.getElementById('player5')
-        ];
-        if (playerCount) playerCount.textContent = `0/5`;
-        playerSlots.forEach((slot, index) => {
-            if (slot) {
-                if (index === 0) {
-                    slot.textContent = `👤 Vous`; 
-                    slot.classList.remove('waiting');
-                    slot.style.color = '#ffd966'; 
-                    slot.style.borderLeft = '3px solid #ffb84d';
-                } else {
-                    slot.textContent = "⚪ En attente...";
-                    slot.classList.add('waiting');
-                    slot.style.color = '#64748b';
-                    slot.style.borderLeft = '3px solid #64748b';
-                }
-            }
-        });
-    }
-    
+    // Arrête le rafraîchissement rapide des joueurs
     function stopFastPlayerRefresh() {
         clearInterval(playerInterval);
         clearTimeout(fastRefreshTimeout);
     }
     
+    // Démarre le rafraîchissement rapide des joueurs (plus fréquent au début)
     function startFastPlayerRefresh() {
         stopFastPlayerRefresh(); 
         fetchPlayers();
         playerInterval = setInterval(fetchPlayers, FAST_REFRESH_SECONDS * 1000);
         
+        // Arrête le rafraîchissement rapide après 30 secondes pour économiser les ressources
         fastRefreshTimeout = setTimeout(() => {
             stopFastPlayerRefresh();
             console.log("Rafraîchissement rapide des joueurs terminé.");
@@ -407,6 +393,7 @@
         }, 30000); 
     }
 
+    // Crée une nouvelle session pour l'utilisateur
     async function createSession() {
         const sessionCode = document.getElementById('sessionCode');
         const sidebarStatus = document.getElementById('sidebarStatus');
@@ -450,6 +437,7 @@
         }
     }
 
+    // Charge la session personnelle de l'utilisateur (ou en crée une si aucune n'est trouvée)
     async function loadMySession() {
         const sessionCode = document.getElementById('sessionCode');
         const sidebarStatus = document.getElementById('sidebarStatus');
@@ -469,55 +457,80 @@
                 startFastPlayerRefresh(); 
                 return true;
             } else {
+                // Si aucune session n'est trouvée, on essaie d'en créer une
                 return await createSession(); 
             }
         } catch (e) {
+            // En cas d'erreur réseau, on essaie aussi d'en créer une
             return await createSession(); 
         }
     }
     
-    // --- LOGIQUE DE SYNCHRONISATION (TIMER INVISIBLE) ---
+    // --- LOGIQUE DE SYNCHRONISATION (TIMER) ---
 
-    // Calcule le temps d'attente pour que le cycle démarre pile à une seconde multiple de REFRESH_PERIOD_SECONDS (synchronisation UTC)
+    // Calcule le temps d'attente pour démarrer le cycle exactement à une seconde multiple de REFRESH_PERIOD_SECONDS (synchro UTC)
     function getWaitTime() {
         const now = new Date();
         const utcSeconds = now.getUTCSeconds(); 
-        // Calcule le temps écoulé depuis le dernier intervalle de 10s (e.g. 13s -> 3s écoulés)
         const elapsed = utcSeconds % REFRESH_PERIOD_SECONDS;
-        // Calcule le temps restant avant le prochain point synchrone (e.g. 10s - 3s = 7s)
         const waitTimeSeconds = REFRESH_PERIOD_SECONDS - elapsed;
         
-        // Retourne le temps en millisecondes.
-        // On enlève 100ms pour s'assurer que l'exécution commence juste AVANT le début de la seconde synchrone.
+        // On enlève 100ms pour compenser la latence et s'assurer que l'exécution commence juste AVANT le début de la seconde synchrone.
         return (waitTimeSeconds * 1000) - 100; 
     }
 
+    // Met à jour le compteur et la barre de progression
+    function updateDisplay(timeLeft) {
+        const counterElement = document.getElementById('timerCounter');
+        const barElement = document.getElementById('timerBarFill');
+        
+        // Calcul du pourcentage écoulé (pour la barre)
+        const timeElapsed = REFRESH_PERIOD_SECONDS - timeLeft;
+        const percentage = (timeElapsed / REFRESH_PERIOD_SECONDS) * 100;
+
+        if (counterElement) {
+            counterElement.textContent = `Prochaine synchronisation dans : ${timeLeft}s`;
+        }
+        
+        if (barElement) {
+            barElement.style.width = `${percentage}%`;
+        }
+    }
+
+    // Fonction de cycle principale (envoi des clics + rafraîchissement des données)
     async function gameCycle() {
         const sessionCode = document.getElementById('sessionCode').textContent;
          if (sessionCode === "Aucune session" || sessionCode === "Erreur") {
-            // Tente de charger/créer la session si elle est perdue
             const sessionLoaded = await loadMySession();
             if (!sessionLoaded) {
-                 // Si on ne peut pas charger/créer, on s'arrête.
                  console.error("Impossible de récupérer la session, cycle arrêté.");
                  return;
             }
          }
         
+        // Mise à jour de l'affichage avant le fetch
+        const counterElement = document.getElementById('timerCounter');
+        if (counterElement) {
+            counterElement.textContent = "Rafraîchissement en cours...";
+        }
+
         await sendClicks();
         await fetchGameData();
-        stopFastPlayerRefresh(); 
+        stopFastPlayerRefresh(); // S'assure que le rafraîchissement rapide s'arrête si nécessaire
+        
+        // Relance l'intervalle
         startInterval();
     }
 
+    // Démarre l'intervalle de 10 secondes
     function startInterval() {
         clearInterval(timerInterval);
         let timeLeft = REFRESH_PERIOD_SECONDS; 
+        updateDisplay(timeLeft); // Affiche le temps au début
 
-        // Le cycle démarre à la prochaine seconde synchrone
         timerInterval = setInterval(() => {
             timeLeft--;
-            // updateDisplay(timeLeft); // Désactivé
+            updateDisplay(timeLeft); // Met à jour l'affichage chaque seconde
             if (timeLeft === 0) {
                 clearInterval(timerInterval);
                 gameCycle(); // Relance le cycle après 10s
@@ -525,19 +538,19 @@
         }, 1000); 
     }
 
-    // --- EXÉCUTION AU CHARGEMENT DE LA PAGE ---
-    
     // Fonction utilitaire pour lancer le cycle après le délai UTC
     function launchGameCycle() {
         const waitTime = getWaitTime();
         
-        console.log(`Démarrage du cycle synchronisé dans ${waitTime}ms.`);
+        // console.log(`Démarrage du cycle synchronisé dans ${waitTime}ms.`);
         
         // Timeout pour démarrer le premier gameCycle exactement au point de synchronisation
         setTimeout(() => {
             gameCycle(); 
         }, waitTime);
     }
+    
+    // --- EXÉCUTION AU CHARGEMENT DE LA PAGE ---
     
     document.addEventListener('DOMContentLoaded', () => {
         
@@ -555,24 +568,28 @@
 
         if (usernameLabel) usernameLabel.textContent = username;
 
+        // Gestion de l'affichage de la barre latérale
         if (toggleSidebar && sidebar) toggleSidebar.addEventListener('click', () => { 
             sidebarVisible = !sidebarVisible; 
             sidebar.classList.toggle('hidden'); 
         });
 
         if (clickButton) clickButton.addEventListener('click', onClickerClick);
+        
+        // Gère la déconnexion silencieuse à la fermeture de l'onglet/page
+        window.addEventListener('beforeunload', leaveSessionSilently);
 
         window.addEventListener('pageshow', (event) => {
             if (event.persisted) {
                 loadMySession().then(sessionLoaded => {
                     if (sessionLoaded) {
-                         // Rélance le cycle au retour de la page
                          launchGameCycle();
                     }
                 });
             }
         });
 
+        // Gestion du bouton 'Rejoindre/Charger'
         if (joinButton) joinButton.addEventListener('click', async () => {
             let input = joinInput.value.trim();
             const sidebarStatus = document.getElementById('sidebarStatus');
@@ -581,12 +598,16 @@
             
             joinButton.disabled = true;
             
-            clearInterval(timerInterval); // Arrête le cycle principal
-            stopFastPlayerRefresh(); // Arrête le rafraîchissement rapide
+            clearInterval(timerInterval); 
+            stopFastPlayerRefresh(); 
+            
+            const counterElement = document.getElementById('timerCounter');
+            if (counterElement) counterElement.textContent = "Commande en cours...";
+
 
             try {
                 if (input.toLowerCase().startsWith("/cha ")) {
-                    // Logique /cha
+                    // Commande /cha (Changement de nom de session)
                     const newSessionName = input.substring(5).trim();
                     if (!newSessionName) {
                         sidebarStatus.textContent = "⚠️ Nom de session manquant";
@@ -640,14 +661,14 @@
                     joinInput.value = "";
                 }
                 
-                // Relance le cycle de rafraîchissement normal (gameCycle)
+                // Relance le cycle après l'action
                 await fetchGameData();
-                launchGameCycle(); // Lancement synchronisé
+                launchGameCycle(); 
 
             } catch (e) {
                 sidebarStatus.textContent = "❌ Erreur réseau / Commande non valide";
                 sidebarStatus.style.color = "#ef4444";
-                launchGameCycle(); // Tente de relancer le cycle même en cas d'erreur
+                launchGameCycle(); 
             } finally {
                 joinButton.disabled = false;
             }
@@ -656,7 +677,9 @@
         // --- Lancement Initial SÉCURISÉ ---
         loadMySession().then((sessionLoaded) => {
             if (sessionLoaded) {
+                // Effectue un premier rafraîchissement immédiat
                 fetchGameData(); 
+                // Démarre ensuite la boucle synchronisée
                 launchGameCycle(); 
             } else {
                 console.error("Impossible de charger ou créer une session. Le cycle ne démarrera pas.");

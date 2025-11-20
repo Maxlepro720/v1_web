@@ -514,6 +514,7 @@
         
         /**
          * Gère les commandes /cha et la jonction de session simple.
+         * C'est ici que la distinction /cha (change_session) vs. code simple (join_session) est effectuée.
          */
         async function handleJoinSession(inputId) {
             const inputElement = document.getElementById(inputId);
@@ -533,20 +534,21 @@
             let successMessage = '';
             let actionType = 'join';
             
+            // LOGIQUE CLÉ : Vérifie si c'est la commande /cha
             if (firstPart === '/cha') {
                 if (parts.length < 2) {
                      setStatus("Erreur: Spécifiez le code de session après /cha.", '#ef4444');
                      return;
                 }
                 const newCode = parts[1];
-                endpoint = '/change_session'; // Conforme à votre demande
+                endpoint = '/change_session'; // Appel vers /change_session
                 bodyData.session_code = newCode;
                 successMessage = `Session changée pour ${newCode}.`;
-                actionType = 'change';
+                actionType = 'changer';
             } else {
                 // Par défaut : simple code de session à rejoindre
                 const code = command;
-                endpoint = '/join_session'; 
+                endpoint = '/join_session'; // Appel vers /join_session
                 bodyData.session_code = code;
                 successMessage = `Session rejointe: ${code}.`;
             }

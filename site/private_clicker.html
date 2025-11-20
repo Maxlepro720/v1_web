@@ -565,7 +565,6 @@
             const joinButtonMobile = document.getElementById('joinButtonMobile');
             
             const code = joinInput.value.trim();
-            const currentSession = sessionCodeElement.textContent;
             
             if (!code) {
                 sidebarStatus.textContent = "⚠️ Veuillez entrer un code ou la commande /cha.";
@@ -580,23 +579,24 @@
             sidebarStatus.textContent = `Traitement de la demande pour "${code}"...`;
             sidebarStatus.style.color = "#60a5fa";
 
+            const isChangeCommand = code.toLowerCase().startsWith('/cha ');
+            const newCode = isChangeCommand ? code.substring(5).trim() : '';
+
             // ------------------------------------------
             // 1. GESTION DU CHANGEMENT DE NOM DE SESSION PERSO (/cha)
             // ------------------------------------------
-            if (code.toLowerCase().startsWith('/cha ')) {
-                const newCode = code.substring(5).trim();
+            if (isChangeCommand) {
                 let success = false;
                 
                 if (newCode.length < 3) {
                     sidebarStatus.textContent = "❌ Le nouveau nom de session doit contenir au moins 3 caractères.";
                     sidebarStatus.style.color = "#ef4444";
-                } else if (newCode === currentSession) {
-                    sidebarStatus.textContent = `⚠️ Le nom de session est déjà "${newCode}".`;
-                    sidebarStatus.style.color = "#f59e0b";
                 } else {
                     console.log(`[CHA] Tentative de changement de session personnelle à: ${newCode}`);
+                    
                     try {
-                        const response = await fetch(`${API_URL}/create`, {
+                        // Utilisation du nouvel endpoint /change_session
+                        const response = await fetch(`${API_URL}/change_session`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ code: newCode, id: username })
@@ -612,13 +612,36 @@
                             launchGameCycle(); 
                             success = true;
                         } else {
-                            sidebarStatus.textContent = `❌ Impossible de changer le nom: ${data.message || 'Erreur inconnue'}`;
-                            sidebarStatus.style.color = "#ef4444";
+                            // Si change_session échoue, l'API peut être dans un état bizarre. On tente une recréation.
+                             if (data.message && data.message.includes("déjà actif")) {
+                                 sidebarStatus.textContent = "⚠️ Tentative de création d'une nouvelle session après échec de 'change_session'.";
+                                 sidebarStatus.style.color = "#f59e0b";
+                                 
+                                 // Option de repli : Forcer un /leave puis /create (la logique précédente si /change_session n'existait pas)
+                                 await logoutSilently(false, false); 
+                                 success = await createSession(newCode);
+
+                                 if (success) {
+                                     stopAllCycles();
+                                     sessionCodeElement.textContent = newCode;
+                                     sessionCodeElement.dataset.forcedCode = newCode;
+                                     sidebarStatus.textContent = `✅ Nom de session personnelle mis à jour (re-création) : ${newCode}`;
+                                     sidebarStatus.style.color = "#10b981";
+                                     launchGameCycle();
+                                 } else {
+                                      sidebarStatus.textContent = `❌ Impossible de changer le nom (Erreur API /cha): ${data.message || 'Erreur inconnue'}`;
+                                      sidebarStatus.style.color = "#ef4444";
+                                 }
+                                 
+                             } else {
+                                sidebarStatus.textContent = `❌ Impossible de changer le nom (Erreur API /cha): ${data.message || 'Erreur inconnue'}`;
+                                sidebarStatus.style.color = "#ef4444";
+                             }
                         }
                     } catch (e) {
-                        sidebarStatus.textContent = "❌ Erreur réseau lors du changement de nom de session.";
+                        sidebarStatus.textContent = "❌ Erreur réseau lors du changement de nom de session (/cha).";
                         sidebarStatus.style.color = "#ef4444";
-                        console.error("Erreur /create (changement de nom):", e);
+                        console.error("Erreur /change_session:", e);
                     }
                 }
                 
@@ -633,7 +656,7 @@
                 console.log(`[JOIN] Tentative de rejoindre la session: ${code}`);
                 let joinedSuccessfully = false;
                 try {
-                    // 1. Quitter la session actuelle (leave), mais pas /logout
+                    // 1. Quitter la session actuelle (leave), mais pas /logout (pour ne pas perdre l'ID)
                     await logoutSilently(false, false); 
                     
                     // 2. Rejoindre la nouvelle session
@@ -851,14 +874,17 @@
                  const isInGroup = sessionInfo && sessionInfo.session_code === sessionCode && !isCreator;
                 
                 if (isCreator) {
+                    // Le créateur ne peut pas faire /leave, il doit faire /logout (←)
                     closeBtn.disabled = true; 
                     closeBtn.style.backgroundColor = "#6b7280"; 
                     closeBtn.style.cursor = "not-allowed";
                 } else if (isInGroup) {
+                    // Joueur dans une session de groupe, peut /leave
                     closeBtn.disabled = false; 
                     closeBtn.style.backgroundColor = "#ef4444";
                     closeBtn.style.cursor = "pointer";
                 } else {
+                    // Joueur dans sa session solo, pas de bouton actif
                     closeBtn.disabled = true; 
                     closeBtn.style.backgroundColor = "#6b7280"; 
                     closeBtn.style.cursor = "not-allowed";

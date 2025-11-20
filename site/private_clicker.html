@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Private Clicker Game</title>
     <style>
-        /* --- Styles CSS (Non Modifiés) --- */
+        /* --- Styles CSS (Exactement comme dans votre script) --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #232323; overflow: hidden; }
 
@@ -84,14 +84,12 @@
 
         .close-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); }
 
-        /* MODIFICATION CSS IMPORTANTE POUR LA DEMANDE */
         .close-btn:disabled { 
             background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); 
             cursor: not-allowed; 
             opacity: 0.6; 
             box-shadow: none;
         }
-        /* FIN MODIFICATION */
 
         .sidebar-title { color: #f8fafc; font-size: clamp(20px, 3vw, 28px); font-weight: bold; margin-bottom: 25px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
 
@@ -306,7 +304,7 @@
         
         let timerInterval; // Pour le rafraîchissement du score (toutes les 10s)
         let clicksTimeout; // Pour l'envoi aléatoire des clics (4-8s)
-        let currentSessionCreator = ''; // Stocke l'ID du créateur de session
+        let currentSessionCreator = ''; // Stocke l'ID du créateur de session (ajouté pour le bouton close)
         
         // --- FONCTIONS UTILITAIRES ---
         
@@ -409,7 +407,7 @@
             if (!closeBtn) return;
             
             // Si aucune session n'est connectée (code par défaut ou erreur)
-            if (!sessionCode || sessionCode.includes('Chargement') || sessionCode.includes('Erreur')) {
+            if (!sessionCode || sessionCode.includes('Chargement') || sessionCode.includes('Erreur') || sessionCode.includes('Vérification')) {
                 closeBtn.disabled = true;
                 closeBtn.title = "Pas de session active.";
                 closeBtn.onclick = null;
@@ -421,7 +419,7 @@
             
             if (isCreator) {
                 closeBtn.disabled = true; 
-                closeBtn.title = "Vous êtes le créateur (👑). Vous devez fermer la session depuis l'API ou l'interface de gestion (non implémenté ici).";
+                closeBtn.title = "Vous êtes le créateur (👑). Vous ne pouvez pas quitter sans la fermer (fonctionnalité non implémentée ici).";
                 closeBtn.onclick = null;
             } else {
                 closeBtn.disabled = false;
@@ -578,6 +576,8 @@
                     // Si la session n'est plus valide, on le signale
                     document.getElementById('statusLabel').textContent = "Erreur: Session perdue. Reconnexion...";
                     console.error("Session perdue ou invalide.", data);
+                    // Tentative de revenir à une session par défaut
+                    // await checkAndLoadSession(false); // On ne le fait pas ici pour éviter une boucle
                     return null;
                 }
             } catch (e) {
@@ -674,6 +674,7 @@
                     if (window.innerWidth <= 768) {
                         document.getElementById('sidebar').classList.add('hidden');
                     }
+                    updateCloseButtonState(); // S'assure que l'état du bouton Fermer est bon
 
                 } else {
                     setStatus(`Échec ${actionType}: ${data.message || 'Erreur API'}`, '#ef4444');
@@ -753,23 +754,37 @@
         function handleButtonClick() {
             clickCount++;     
             document.getElementById('toSend').textContent = `-- ${clickCount} --`;
+            
+            // L'ajout du clic réinitialise le minuteur d'envoi des clics si un certain temps s'est écoulé
+            const now = Date.now();
+            if (now - lastClickTime > 2000) { // Si le dernier clic date de plus de 2 secondes
+                // Optionnel : relancer le minuteur pour qu'il ne soit pas trop long si l'utilisateur clique beaucoup
+                // startClicksInterval(); 
+            }
+            lastClickTime = now;
         }
 
         function setupEventListeners() {
             document.getElementById('clickButton').addEventListener('click', handleButtonClick);
             document.getElementById('toggleSidebar').addEventListener('click', () => {
                 document.getElementById('sidebar').classList.toggle('hidden');
+                updateCloseButtonState(); // Met à jour l'état du bouton Fermer
             });
             
-            // Initialise l'état du bouton (désactivé au chargement)
-            updateCloseButtonState(); 
+            // Listener pour le bouton "Fermer"
+            document.getElementById('closeBtn').addEventListener('click', handleLeaveSession);
             
-            // Ajout des listeners pour mobile
-            const joinBtnMobile = document.getElementById('joinButtonMobile');
-            const joinInputMobile = document.getElementById('joinInputMobile');
-            if (joinBtnMobile) {
-                joinBtnMobile.addEventListener('click', () => handleJoinSession('joinInputMobile'));
+            // Ajout des listeners pour les inputs (Desktop et Mobile)
+            const joinInputDesktop = document.getElementById('joinInput');
+            if (joinInputDesktop) {
+                joinInputDesktop.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        handleJoinSession('joinInput');
+                    }
+                });
             }
+
+            const joinInputMobile = document.getElementById('joinInputMobile');
             if (joinInputMobile) {
                 joinInputMobile.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') {

@@ -292,7 +292,7 @@
 
     <script>
         // --- VARIABLES GLOBALES ET CONSTANTES ---
-        const API_URL = "https://project-3-api-2bgb.onrender.com"; // Assurez-vous que cette URL est correcte
+        const API_URL = "https://project-3-api-2bgb.onrender.com";
         
         // Fréquences pour les cycles
         const SCORE_REFRESH_PERIOD_SECONDS = 10; 
@@ -594,10 +594,9 @@
                     console.log(`[CHA] Tentative de changement de session personnelle à: ${newCode}`);
                     
                     try {
-                        // REQUÊTE /change_session : utilise la clé 'new_session_name' comme attendu par l'API Flask
                         const bodyData = { 
                             id: username, 
-                            new_session_name: newCode // Clé corrigée
+                            new_session_name: newCode // Clé corrigée pour /change_session
                         };
 
                         const response = await fetch(`${API_URL}/change_session`, {
@@ -608,34 +607,26 @@
                         const data = await response.json();
 
                         if (data.status === "success" && data.new_code === newCode) {
+                            // Succès du /change_session
                             stopAllCycles();
+                            
+                            // 1. Affiche le nouveau code
                             sessionCodeElement.textContent = newCode;
                             sessionCodeElement.dataset.forcedCode = newCode;
+                            
+                            // 2. Met à jour immédiatement le score et la liste des joueurs
+                            await fetchGameData();
+                            
                             sidebarStatus.textContent = `✅ Nom de session personnelle mis à jour: ${newCode}`;
                             sidebarStatus.style.color = "#10b981";
+                            
+                            // 3. Redémarre le cycle de jeu
                             launchGameCycle(); 
                             isSuccessful = true;
                         } else {
-                            // Échec de l'API /change_session (par exemple, nom déjà utilisé ou autre erreur)
-                            sidebarStatus.textContent = `⚠️ Échec /change_session: ${data.message || 'Erreur inconnue'}. Tentative de repli (leave + create)...`;
-                            sidebarStatus.style.color = "#f59e0b";
-                            
-                            // Logique de repli : Forcer un /leave puis /create 
-                            await logoutSilently(false, false); // Quitte l'ancienne session proprement (réinitialise la session personnelle)
-                            
-                            isSuccessful = await createSession(newCode); // Crée la nouvelle session avec le nom souhaité
-
-                            if (isSuccessful) {
-                                stopAllCycles();
-                                sessionCodeElement.textContent = newCode;
-                                sessionCodeElement.dataset.forcedCode = newCode;
-                                sidebarStatus.textContent = `✅ Nom de session personnelle mis à jour (via repli): ${newCode}`;
-                                sidebarStatus.style.color = "#10b981";
-                                launchGameCycle();
-                            } else {
-                                sidebarStatus.textContent = `❌ Impossible de changer le nom (Erreur finale).`;
-                                sidebarStatus.style.color = "#ef4444";
-                            }
+                            // Échec de l'API /change_session
+                            sidebarStatus.textContent = `❌ Impossible de changer le nom: ${data.message || 'Erreur inconnue'}`;
+                            sidebarStatus.style.color = "#ef4444";
                         }
                     } catch (e) {
                         sidebarStatus.textContent = "❌ Erreur réseau lors du changement de nom de session (/cha).";
@@ -655,11 +646,12 @@
                 const codeToJoin = input_value;
                 console.log(`[JOIN] Tentative de rejoindre la session: ${codeToJoin}`);
                 let joinedSuccessfully = false;
+                
+                // IMPORTANT: Quitter la session actuelle (pour que l'API puisse désactiver la session personnelle du joueur).
+                await logoutSilently(false, false); 
+
                 try {
-                    // 1. Quitter la session actuelle (leave), mais pas /logout (pour ne pas perdre l'ID)
-                    await logoutSilently(false, false); 
-                    
-                    // 2. Rejoindre la nouvelle session
+                    // Rejoindre la nouvelle session
                     const response = await fetch(`${API_URL}/join`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -668,26 +660,38 @@
                     const data = await response.json();
 
                     if (data.status === "success") {
+                        // --- SUCCÈS ---
                         stopAllCycles();
                         sessionCodeElement.textContent = codeToJoin;
                         sessionCodeElement.dataset.forcedCode = codeToJoin; 
+                        
+                        // Met à jour immédiatement le score et la liste des joueurs
+                        await fetchGameData();
+                        
                         sidebarStatus.textContent = `✅ Session de groupe rejointe: ${codeToJoin}`;
                         sidebarStatus.style.color = "#10b981";
                         launchGameCycle(); 
                         joinedSuccessfully = true;
                     } else {
+                        // --- ÉCHEC API ---
                         sidebarStatus.textContent = `❌ Impossible de rejoindre: ${data.message || 'Code invalide ou session pleine.'}`;
                         sidebarStatus.style.color = "#ef4444";
+                        
+                        // ÉCHEC: Doit revenir à sa session personnelle car l'ancienne a été désactivée.
+                        console.log("[JOIN FAIL] Retour à la session personnelle après échec de jonction.");
+                        stopAllCycles();
+                        await loadMySession(); 
+                        await fetchGameData();
+                        launchGameCycle();
                     }
                 } catch (e) {
+                    // --- ÉCHEC RÉSEAU ---
                     sidebarStatus.textContent = "❌ Erreur réseau lors de la tentative de rejoindre.";
                     sidebarStatus.style.color = "#ef4444";
                     console.error("Erreur /join:", e);
-                }
-                
-                // Si la jonction de groupe a échoué (ou en cas d'erreur réseau), revenir à la session solo par défaut
-                if (!joinedSuccessfully) {
-                    console.log("[JOIN FAIL] Retour à la session personnelle après échec de jonction.");
+                    
+                    // ÉCHEC RÉSEAU: Doit revenir à sa session personnelle.
+                    console.log("[JOIN FAIL] Retour à la session personnelle après erreur réseau.");
                     stopAllCycles();
                     await loadMySession(); 
                     await fetchGameData();

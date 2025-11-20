@@ -15,7 +15,7 @@
 
         .title { color: #ffffff; font-size: clamp(32px, 6vw, 60px); font-weight: bold; margin-bottom: 15px; text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); }
 
-        .score-counter { color: #ffffff; font-size: clamp(20px, 3vw, 32px); font-weight: bold; margin-bottom: 10px; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); background: rgba(255, 255, 255, 0.1); padding: 8px 25px; border-radius: 20px; backdrop-filter: blur(10px); }
+        .score-counter { color: #ffffff; font-size: clamp(20px, 3vw, 32px); font-weight: bold; margin-bottom: 10px; opacity: 0.9; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); background: rgba(255, 255, 255, 0.1); padding: 8px 25px; border-radius: 20px; backdrop-filter: blur(10px); }
 
         .to-send { color: #ffffff; font-size: clamp(14px, 2vw, 20px); margin-bottom: 30px; opacity: 0.9; }
 
@@ -43,7 +43,7 @@
         .toggle-sidebar-btn { 
             position: absolute; 
             top: 20px; 
-            left: 80px; /* Déplacé à gauche, après le back-btn */
+            left: 80px; 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
             color: white; 
             border: none; 
@@ -175,12 +175,11 @@
             
             /* Bouton "Rejoindre" pour mobile (visible uniquement sur mobile) */
             #joinButtonMobile {
-                display: block; /* Rendre visible */
+                display: block; 
                 width: 90%;
                 height: 50px;
                 margin: 10px auto;
                 order: 3; 
-                /* Style copié du .join-button */
                 border-radius: 12px; border: none; 
                 background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
                 color: white; font-size: 15px; font-weight: bold; cursor: pointer; 
@@ -193,12 +192,11 @@
 
             /* Input pour mobile (visible uniquement sur mobile) */
             #joinInputMobile {
-                display: block; /* Rendre visible */
+                display: block; 
                 width: 90%;
                 height: 45px;
                 margin: 0 auto;
                 order: 4; 
-                /* Style copié du .join-input */
                 border-radius: 12px; border: 2px solid #475569; 
                 background: rgba(51, 65, 85, 0.6); color: #f8fafc; 
                 padding: 0 14px; font-size: 15px;
@@ -380,7 +378,7 @@
                 counterElement.textContent = "⏳";
             }
             
-            // 1. Envoi des clics accumulés (gère sa propre réinitialisation de l'affichage)
+            // 1. Envoi des clics accumulés 
             await sendClicksRandomly();
             
             // 2. Récupération des données (score et joueurs)
@@ -433,8 +431,8 @@
                 isInGroup = sessionInfo.session_code === sessionCode && !isCreator;
             }
 
-            // 1. Gère le /leave si le joueur est dans une session de groupe ou si on ne fait PAS un logout complet.
-            if (sessionCode !== "Aucune session" && sessionCode !== "Erreur" && sessionCode !== "Chargement...") {
+            // 1. Gère le /leave si le joueur est dans une session de groupe (ou si on ne fait PAS un logout complet et qu'il a une session)
+            if (sessionCode !== "Aucune session" && sessionCode !== "Erreur" && sessionCode !== "Chargement..." && sessionCode !== "Création...") {
                  // Si c'est une session de groupe OU si c'est la session personnelle mais que l'on veut juste "revenir au menu" (leave seulement, pas logout)
                  if (isInGroup || (!shouldLogout && sessionInfo && sessionInfo.session_code)) { 
                      console.log(`[LOGOUT] Envoi de /leave pour la session ${sessionCode}.`);
@@ -477,8 +475,6 @@
         
         // Bouton flèche (←) à gauche : /logout (pour détruire la session personnelle et revenir à login)
         async function handleBackButton() {
-            // Le joueur clique sur la flèche pour se déconnecter du système
-            // -> Logout complet et redirection vers index.html
             logoutSilently(true, true); 
         }
         
@@ -487,7 +483,6 @@
             if (isRedirecting) {
                 return; 
             }
-            // Logout complet (true) sans redirection (false) pour marquer le joueur offline
             logoutSilently(true, false); 
         }
 
@@ -516,7 +511,6 @@
             if (!isInGroup) {
                  sidebarStatus.textContent = "⚠️ Vous êtes dans votre session personnelle (solo).";
                  sidebarStatus.style.color = "#f59e0b";
-                 // On cache la sidebar même si c'est une session solo
                  document.getElementById('sidebar').classList.add('hidden');
                  document.getElementById('toggleSidebar').style.display = 'flex';
                  return;
@@ -540,7 +534,6 @@
                     sidebarStatus.textContent = "✅ Session de groupe quittée. Retour à la session solo.";
                     sidebarStatus.style.color = "#10b981";
                     
-                    // Après un leave, l'utilisateur revient à sa session personnelle solo (nécessite de la recharger)
                     stopAllCycles();
                     await loadMySession(); 
                     await fetchGameData();
@@ -555,7 +548,6 @@
                 sidebarStatus.style.color = "#ef4444";
             } finally {
                 checkCloseButtonState();
-                // Ferme la sidebar après avoir quitté le groupe
                 document.getElementById('sidebar').classList.add('hidden');
                 document.getElementById('toggleSidebar').style.display = 'flex';
             }
@@ -591,8 +583,9 @@
             // ------------------------------------------
             // 1. GESTION DU CHANGEMENT DE NOM DE SESSION PERSO (/cha)
             // ------------------------------------------
-            if (code.startsWith('/cha ')) {
+            if (code.toLowerCase().startsWith('/cha ')) {
                 const newCode = code.substring(5).trim();
+                let success = false;
                 
                 if (newCode.length < 3) {
                     sidebarStatus.textContent = "❌ Le nouveau nom de session doit contenir au moins 3 caractères.";
@@ -601,9 +594,8 @@
                     sidebarStatus.textContent = `⚠️ Le nom de session est déjà "${newCode}".`;
                     sidebarStatus.style.color = "#f59e0b";
                 } else {
-                    console.log(`[JOIN] Tentative de changement de session personnelle à: ${newCode}`);
+                    console.log(`[CHA] Tentative de changement de session personnelle à: ${newCode}`);
                     try {
-                        // Requête /create pour changer le nom (si l'utilisateur est le créateur de sa session solo)
                         const response = await fetch(`${API_URL}/create`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -612,14 +604,13 @@
                         const data = await response.json();
 
                         if (data.status === "success" && data.session_code === newCode) {
-                             // Si le changement est réussi, on s'assure que les cycles redémarrent sur le nouveau nom
                             stopAllCycles();
                             sessionCodeElement.textContent = newCode;
-                            sessionCodeElement.dataset.forcedCode = newCode; // Marquer pour fetchPlayers
+                            sessionCodeElement.dataset.forcedCode = newCode;
                             sidebarStatus.textContent = `✅ Nom de session personnelle mis à jour: ${newCode}`;
                             sidebarStatus.style.color = "#10b981";
-                            // On relance le jeu immédiatement sur la nouvelle session
                             launchGameCycle(); 
+                            success = true;
                         } else {
                             sidebarStatus.textContent = `❌ Impossible de changer le nom: ${data.message || 'Erreur inconnue'}`;
                             sidebarStatus.style.color = "#ef4444";
@@ -630,15 +621,20 @@
                         console.error("Erreur /create (changement de nom):", e);
                     }
                 }
+                
+                if (success) {
+                    joinInput.value = ""; 
+                }
             } 
             // ------------------------------------------
-            // 2. GESTION DE REJOINDRE UNE SESSION DE GROUPE
+            // 2. GESTION DE REJOINDRE UNE SESSION DE GROUPE (JOIN)
             // ------------------------------------------
             else {
                 console.log(`[JOIN] Tentative de rejoindre la session: ${code}`);
+                let joinedSuccessfully = false;
                 try {
-                    // 1. Quitter la session actuelle (si ce n'est pas déjà le cas ou si on quitte sa session perso)
-                    await logoutSilently(false, false); // /leave seulement, pas /logout
+                    // 1. Quitter la session actuelle (leave), mais pas /logout
+                    await logoutSilently(false, false); 
                     
                     // 2. Rejoindre la nouvelle session
                     const response = await fetch(`${API_URL}/join`, {
@@ -651,31 +647,35 @@
                     if (data.status === "success" && data.session_code === code) {
                         stopAllCycles();
                         sessionCodeElement.textContent = code;
-                        sessionCodeElement.dataset.forcedCode = code; // Marquer pour fetchPlayers
+                        sessionCodeElement.dataset.forcedCode = code; 
                         sidebarStatus.textContent = `✅ Session de groupe rejointe: ${code}`;
                         sidebarStatus.style.color = "#10b981";
-                        // On relance le jeu immédiatement sur la nouvelle session
                         launchGameCycle(); 
+                        joinedSuccessfully = true;
                     } else {
                         sidebarStatus.textContent = `❌ Impossible de rejoindre: ${data.message || 'Code invalide ou session pleine.'}`;
                         sidebarStatus.style.color = "#ef4444";
-                         // Tenter de revenir à la session solo après l'échec
-                        await loadMySession(); 
-                        await fetchGameData();
-                        launchGameCycle(); 
                     }
                 } catch (e) {
                     sidebarStatus.textContent = "❌ Erreur réseau lors de la tentative de rejoindre.";
                     sidebarStatus.style.color = "#ef4444";
                     console.error("Erreur /join:", e);
-                    // Tenter de revenir à la session solo après l'échec
+                }
+                
+                // Si la jonction de groupe a échoué (ou en cas d'erreur réseau), revenir à la session solo par défaut
+                if (!joinedSuccessfully) {
+                    console.log("[JOIN FAIL] Retour à la session personnelle après échec de jonction.");
+                    stopAllCycles();
                     await loadMySession(); 
                     await fetchGameData();
                     launchGameCycle();
                 }
+
+                if (joinedSuccessfully) {
+                     joinInput.value = ""; 
+                }
             }
 
-            joinInput.value = ""; // Vider le champ d'entrée
             // Réactiver les boutons de join
             if (joinButton) joinButton.disabled = false;
             if (joinButtonMobile) joinButtonMobile.disabled = false;
@@ -719,7 +719,6 @@
         
         /**
          * Envoie les clics accumulés à l'API et réinitialise l'affichage.
-         * Est appelée aléatoirement (4-8s) ou lors du cycle de score (10s).
          */
         async function sendClicksRandomly() {
             const sessionCode = document.getElementById('sessionCode').textContent;
@@ -733,7 +732,7 @@
             try {
                 if (toSendValue > 0) {
                     console.log(`[CLICS] Envoi de ${toSendValue} clics pour la session ${sessionCode}`);
-                    // Utilisation de la requête /poire
+                    
                     const response = await fetch(`${API_URL}/poire`, { 
                         method: 'POST', 
                         headers: { 'Content-Type': 'application/json' }, 
@@ -741,12 +740,10 @@
                     });
                     
                     if (response.ok) {
-                        // RÉINITIALISATION DU COMPTEUR DE CLICS À L'AFFICHAGE UNIQUEMENT SI L'ENVOI RÉUSSI
                         clickCount = 0; 
                         const toSend = document.getElementById('toSend');
                         if (toSend) toSend.textContent = "-- 0 --";
                     } else {
-                        // Si l'envoi échoue (status non-ok), on garde les clics en mémoire.
                         console.error(`[CLICS] Échec de l'envoi des clics: ${response.status}`);
                     }
                 }
@@ -756,10 +753,7 @@
                     statusLabel.textContent = "❌ Erreur réseau envoi";
                     statusLabel.style.color = "#ef4444";
                 }
-                 // Si l'envoi échoue (erreur réseau), on garde les clics en mémoire.
             } finally {
-                // La relance de l'intervalle des clics se fait dans gameCycle() ou ici s'il n'y a pas de cycle en cours.
-                // On s'assure qu'un nouvel intervalle est toujours planifié après l'envoi.
                 if (!timerInterval) { 
                      startClicksInterval();
                 }
@@ -778,7 +772,6 @@
             console.log("[FETCH_PLAYERS] Requête /verify_session envoyée pour obtenir les joueurs et le statut.");
             
             try {
-                // Requête /verify_session pour obtenir l'état de la session
                 const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
                 const playersData = await playersResponse.json();
                 
@@ -786,7 +779,6 @@
                      return;
                 }
                 
-                // Si on vient de faire un /cha ou /join, on force l'affichage du code de l'API.
                 if (forcedCode && playersData.session_code !== forcedCode) {
                      sessionCodeElement.textContent = forcedCode; 
                      return;
@@ -797,7 +789,7 @@
                 }
 
                 sessionCodeElement.textContent = playersData.session_code; 
-                sessionCodeElement.dataset.forcedCode = ''; // Réinitialiser le forçage
+                sessionCodeElement.dataset.forcedCode = '';
                 updatePlayersList(playersData.players || [], playersData.creator);
                 checkCloseButtonState(); 
                 
@@ -816,7 +808,6 @@
 
             try {
                 // 1. Mise à jour du score
-                // Requête /get_poires
                 const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(sessionCode)}`);
                 const scoreData = await scoreResponse.json();
                 
@@ -860,15 +851,15 @@
                  const isInGroup = sessionInfo && sessionInfo.session_code === sessionCode && !isCreator;
                 
                 if (isCreator) {
-                    closeBtn.disabled = true; // Le créateur ne peut pas "leave" il doit "logout" (flèche)
+                    closeBtn.disabled = true; 
                     closeBtn.style.backgroundColor = "#6b7280"; 
                     closeBtn.style.cursor = "not-allowed";
                 } else if (isInGroup) {
-                    closeBtn.disabled = false; // Joueur dans un groupe peut "leave" (croix)
+                    closeBtn.disabled = false; 
                     closeBtn.style.backgroundColor = "#ef4444";
                     closeBtn.style.cursor = "pointer";
                 } else {
-                    closeBtn.disabled = true; // Session solo (pas de leave à faire)
+                    closeBtn.disabled = true; 
                     closeBtn.style.backgroundColor = "#6b7280"; 
                     closeBtn.style.cursor = "not-allowed";
                 }
@@ -888,10 +879,9 @@
             if (!playerCount || !playerSlots[0]) return;
 
             let uniqueActivePlayers = [];
-            // Assurer que le créateur est en tête
+            
             if (creator && !uniqueActivePlayers.includes(creator)) uniqueActivePlayers.push(creator);
             
-            // Ajouter les autres joueurs
             if (players) {
                 players.forEach(p => {
                      if (!uniqueActivePlayers.includes(p)) {
@@ -900,12 +890,11 @@
                 });
             }
             
-            // S'assurer que l'utilisateur courant est présent si il est le seul (session solo)
             if (username && !uniqueActivePlayers.includes(username)) {
                  uniqueActivePlayers.push(username); 
             }
 
-            uniqueActivePlayers = [...new Set(uniqueActivePlayers)].slice(0, 5); // Dé-dupliquer et limiter à 5
+            uniqueActivePlayers = [...new Set(uniqueActivePlayers)].slice(0, 5);
             
             playerCount.textContent = `${uniqueActivePlayers.length}/5`;
 
@@ -944,7 +933,6 @@
             sidebarStatus.style.color = "#60a5fa";
 
             try {
-                // Requête /create
                 const response = await fetch(`${API_URL}/create`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -982,7 +970,6 @@
             sidebarStatus.style.color = "#94a3b8";
             
             try {
-                // Requête /verify_session
                 const sessionInfo = await getPlayerSessionInfo();
 
                 if (sessionInfo && sessionInfo.session_code) {
@@ -993,9 +980,8 @@
                      return true;
                 }
                 
-                // Si aucune session n'est trouvée (ou session expirée), tenter d'en créer une par défaut.
                 sessionCodeElement.textContent = "Aucune session";
-                return await createSession(username); // Tente de créer une session avec le nom d'utilisateur comme code par défaut
+                return await createSession(username);
 
             } catch (e) {
                 console.error("[INIT] Erreur lors du chargement de session:", e);
@@ -1007,9 +993,7 @@
         }
 
         function launchGameCycle() {
-             // Démarre l'intervalle de rafraîchissement du score
-             startScoreInterval(3); // Premier rafraîchissement rapide pour l'initialisation
-             // Démarre le minuteur aléatoire pour l'envoi des clics
+             startScoreInterval(3);
              startClicksInterval();
         }
 
@@ -1027,7 +1011,6 @@
             document.getElementById('joinButton').addEventListener('click', () => handleJoinSession('joinInput'));
             document.getElementById('closeBtn').addEventListener('click', handleLeaveSession);
             
-            // Événement pour le bouton/input mobile (invisible sur desktop)
             document.getElementById('joinButtonMobile').addEventListener('click', () => handleJoinSession('joinInputMobile'));
             document.getElementById('joinInputMobile').addEventListener('keyup', (event) => {
                  if (event.key === 'Enter') handleJoinSession('joinInputMobile');
@@ -1040,19 +1023,18 @@
                  const sidebar = document.getElementById('sidebar');
                  const toggleBtn = document.getElementById('toggleSidebar');
                  const isHidden = sidebar.classList.toggle('hidden');
-                 toggleBtn.textContent = isHidden ? '☰' : '×'; // Changer l'icône
-                 toggleBtn.style.left = isHidden ? '80px' : 'calc(100vw - 30px)'; // Déplacer le toggle
+                 toggleBtn.textContent = isHidden ? '☰' : '×'; 
+                 toggleBtn.style.left = isHidden ? '80px' : 'calc(100vw - 30px)'; 
                  toggleBtn.style.transform = isHidden ? 'none' : 'translateX(-100%)';
             });
             
             window.addEventListener('beforeunload', handleLogoutOnClose);
 
-            // Tente de charger la session personnelle, puis lance le jeu
             loadMySession().then(success => {
                 if (success) {
                     launchGameCycle();
                 } else {
-                    stopAllCycles(); // S'assurer que rien ne tourne si l'init a échoué
+                    stopAllCycles();
                 }
             });
         }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Private Clicker Game</title>
     <style>
-        /* --- Styles CSS (Inchangé sauf pour le placement des boutons) --- */
+        /* --- Styles CSS --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #232323; overflow: hidden; }
 
@@ -39,7 +39,6 @@
 
         .sidebar.hidden { transform: translateX(100%); }
 
-        /* NOUVEAU PLACEMENT POUR LE TOGGLE (en haut à gauche, à côté du back-btn) */
         .toggle-sidebar-btn { 
             position: absolute; 
             top: 20px; 
@@ -293,7 +292,7 @@
 
     <script>
         // --- VARIABLES GLOBALES ET CONSTANTES ---
-        const API_URL = "https://project-3-api-2bgb.onrender.com";
+        const API_URL = "https://project-3-api-2bgb.onrender.com"; // Assurez-vous que cette URL est correcte
         
         // Fréquences pour les cycles
         const SCORE_REFRESH_PERIOD_SECONDS = 10; 
@@ -564,9 +563,9 @@
             const joinButton = document.getElementById('joinButton');
             const joinButtonMobile = document.getElementById('joinButtonMobile');
             
-            const code = joinInput.value.trim();
+            const input_value = joinInput.value.trim();
             
-            if (!code) {
+            if (!input_value) {
                 sidebarStatus.textContent = "⚠️ Veuillez entrer un code ou la commande /cha.";
                 sidebarStatus.style.color = "#f59e0b";
                 return;
@@ -576,17 +575,17 @@
             if (joinButton) joinButton.disabled = true;
             if (joinButtonMobile) joinButtonMobile.disabled = true;
             
-            sidebarStatus.textContent = `Traitement de la demande pour "${code}"...`;
+            sidebarStatus.textContent = `Traitement de la demande pour "${input_value}"...`;
             sidebarStatus.style.color = "#60a5fa";
 
-            const isChangeCommand = code.toLowerCase().startsWith('/cha ');
-            const newCode = isChangeCommand ? code.substring(5).trim() : '';
+            const isChangeCommand = input_value.toLowerCase().startsWith('/cha ');
+            const newCode = isChangeCommand ? input_value.substring(5).trim() : '';
+            let isSuccessful = false;
 
             // ------------------------------------------
             // 1. GESTION DU CHANGEMENT DE NOM DE SESSION PERSO (/cha)
             // ------------------------------------------
             if (isChangeCommand) {
-                let success = false;
                 
                 if (newCode.length < 3) {
                     sidebarStatus.textContent = "❌ Le nouveau nom de session doit contenir au moins 3 caractères.";
@@ -595,48 +594,48 @@
                     console.log(`[CHA] Tentative de changement de session personnelle à: ${newCode}`);
                     
                     try {
-                        // Utilisation du nouvel endpoint /change_session
+                        // REQUÊTE /change_session : utilise la clé 'new_session_name' comme attendu par l'API Flask
+                        const bodyData = { 
+                            id: username, 
+                            new_session_name: newCode // Clé corrigée
+                        };
+
                         const response = await fetch(`${API_URL}/change_session`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ code: newCode, id: username })
+                            body: JSON.stringify(bodyData)
                         });
                         const data = await response.json();
 
-                        if (data.status === "success" && data.session_code === newCode) {
+                        if (data.status === "success" && data.new_code === newCode) {
                             stopAllCycles();
                             sessionCodeElement.textContent = newCode;
                             sessionCodeElement.dataset.forcedCode = newCode;
                             sidebarStatus.textContent = `✅ Nom de session personnelle mis à jour: ${newCode}`;
                             sidebarStatus.style.color = "#10b981";
                             launchGameCycle(); 
-                            success = true;
+                            isSuccessful = true;
                         } else {
-                            // Si change_session échoue, l'API peut être dans un état bizarre. On tente une recréation.
-                             if (data.message && data.message.includes("déjà actif")) {
-                                 sidebarStatus.textContent = "⚠️ Tentative de création d'une nouvelle session après échec de 'change_session'.";
-                                 sidebarStatus.style.color = "#f59e0b";
-                                 
-                                 // Option de repli : Forcer un /leave puis /create (la logique précédente si /change_session n'existait pas)
-                                 await logoutSilently(false, false); 
-                                 success = await createSession(newCode);
+                            // Échec de l'API /change_session (par exemple, nom déjà utilisé ou autre erreur)
+                            sidebarStatus.textContent = `⚠️ Échec /change_session: ${data.message || 'Erreur inconnue'}. Tentative de repli (leave + create)...`;
+                            sidebarStatus.style.color = "#f59e0b";
+                            
+                            // Logique de repli : Forcer un /leave puis /create 
+                            await logoutSilently(false, false); // Quitte l'ancienne session proprement (réinitialise la session personnelle)
+                            
+                            isSuccessful = await createSession(newCode); // Crée la nouvelle session avec le nom souhaité
 
-                                 if (success) {
-                                     stopAllCycles();
-                                     sessionCodeElement.textContent = newCode;
-                                     sessionCodeElement.dataset.forcedCode = newCode;
-                                     sidebarStatus.textContent = `✅ Nom de session personnelle mis à jour (re-création) : ${newCode}`;
-                                     sidebarStatus.style.color = "#10b981";
-                                     launchGameCycle();
-                                 } else {
-                                      sidebarStatus.textContent = `❌ Impossible de changer le nom (Erreur API /cha): ${data.message || 'Erreur inconnue'}`;
-                                      sidebarStatus.style.color = "#ef4444";
-                                 }
-                                 
-                             } else {
-                                sidebarStatus.textContent = `❌ Impossible de changer le nom (Erreur API /cha): ${data.message || 'Erreur inconnue'}`;
+                            if (isSuccessful) {
+                                stopAllCycles();
+                                sessionCodeElement.textContent = newCode;
+                                sessionCodeElement.dataset.forcedCode = newCode;
+                                sidebarStatus.textContent = `✅ Nom de session personnelle mis à jour (via repli): ${newCode}`;
+                                sidebarStatus.style.color = "#10b981";
+                                launchGameCycle();
+                            } else {
+                                sidebarStatus.textContent = `❌ Impossible de changer le nom (Erreur finale).`;
                                 sidebarStatus.style.color = "#ef4444";
-                             }
+                            }
                         }
                     } catch (e) {
                         sidebarStatus.textContent = "❌ Erreur réseau lors du changement de nom de session (/cha).";
@@ -645,7 +644,7 @@
                     }
                 }
                 
-                if (success) {
+                if (isSuccessful) {
                     joinInput.value = ""; 
                 }
             } 
@@ -653,7 +652,8 @@
             // 2. GESTION DE REJOINDRE UNE SESSION DE GROUPE (JOIN)
             // ------------------------------------------
             else {
-                console.log(`[JOIN] Tentative de rejoindre la session: ${code}`);
+                const codeToJoin = input_value;
+                console.log(`[JOIN] Tentative de rejoindre la session: ${codeToJoin}`);
                 let joinedSuccessfully = false;
                 try {
                     // 1. Quitter la session actuelle (leave), mais pas /logout (pour ne pas perdre l'ID)
@@ -663,15 +663,15 @@
                     const response = await fetch(`${API_URL}/join`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code: code, id: username })
+                        body: JSON.stringify({ code: codeToJoin, id: username })
                     });
                     const data = await response.json();
 
-                    if (data.status === "success" && data.session_code === code) {
+                    if (data.status === "success") {
                         stopAllCycles();
-                        sessionCodeElement.textContent = code;
-                        sessionCodeElement.dataset.forcedCode = code; 
-                        sidebarStatus.textContent = `✅ Session de groupe rejointe: ${code}`;
+                        sessionCodeElement.textContent = codeToJoin;
+                        sessionCodeElement.dataset.forcedCode = codeToJoin; 
+                        sidebarStatus.textContent = `✅ Session de groupe rejointe: ${codeToJoin}`;
                         sidebarStatus.style.color = "#10b981";
                         launchGameCycle(); 
                         joinedSuccessfully = true;
@@ -967,8 +967,8 @@
                 const data = await response.json();
 
                 if (data.status === "success") {
-                    console.log(`[INIT] Session personnelle créée : ${data.session_code}`);
-                    sessionCodeElement.textContent = data.session_code;
+                    console.log(`[INIT] Session personnelle créée : ${data.session_name}`);
+                    sessionCodeElement.textContent = data.session_name;
                     sidebarStatus.textContent = "✅ Session personnelle prête.";
                     sidebarStatus.style.color = "#10b981";
                     return true;

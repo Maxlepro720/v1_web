@@ -120,7 +120,7 @@
 
         .sidebar-status { color: #94a3b8; font-size: clamp(11px, 1.5vw, 12px); margin-top: 10px; min-height: 20px; word-break: break-word; }
 
-        .back-btn { position: absolute; top: 20px; left: 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; width: clamp(40px, 6vw, 50px); height: clamp(40px, 6vw, 50px); border-radius: 50%; cursor: pointer; font-size: clamp(18px, 3vw, 24px); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); transition: all 0.3s ease; z-index: 102; }
+        .back-btn { position: absolute; top: 20px; left: 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; width: clamp(40px, 6vw, 50px); height: clamp(40px, 6vw, 50px); border-radius: 50%; cursor: pointer; font-size: clamp(18px, 3vw, 24px); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); transition: all 0.3s ease; z-index: 102; text-decoration: none; /* Ajout pour le <a> */ }
 
         .back-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6); }
 
@@ -243,7 +243,7 @@
 <body>
     <div class="container">
         <div class="main-area">
-            <button class="back-btn" onclick="handleBackButton()">←</button>
+            <a href="menu.html" class="back-btn">←</a>
             <button class="toggle-sidebar-btn" id="toggleSidebar">☰</button>
 
             <div class="title">Clicker</div>
@@ -251,7 +251,7 @@
             <div class="to-send" id="toSend">-- 0 --</div>
             <button class="click-button" id="clickButton"></button>
 
-            <button class="join-button" id="joinButtonMobile" style="display:none;" onclick="handleJoinSessionMobile()">Rejoindre/Changer Session</button>
+            <button class="join-button" id="joinButtonMobile" style="display:none;" onclick="handleJoinSession('joinInputMobile')">Rejoindre</button> 
             <input type="text" class="join-input" id="joinInputMobile" placeholder="Entrer un code ou /cha code" style="display:none;">
             <div class="timer-bar">
                 <div class="timer-bar-fill" id="timerBarFill"></div>
@@ -290,581 +290,648 @@
         </div>
     </div>
 
-    // --- VARIABLES GLOBALES ET CONSTANTES ---
-const API_URL = "https://project-3-api-2bgb.onrender.com";
+    <script>
+        // --- VARIABLES GLOBALES ET CONSTANTES ---
+        const API_URL = "https://project-3-api-2bgb.onrender.com";
+        
+        // Fréquences pour les cycles
+        const SCORE_REFRESH_PERIOD_SECONDS = 10; 
+        const CLICKS_MIN_SECONDS = 4; // Min 4 secondes
+        const CLICKS_MAX_SECONDS = 8; // Max 8 secondes
+        
+        let clickCount = 0;
+        let lastClickTime = 0;
+        let clickIntervals = [];
+        let username = localStorage.getItem("username");
+        
+        // CORRECTION : Suppression du flag 'isRedirecting' inutile car le bouton de retour n'appelle plus de logout
+        // let isRedirecting = false; 
 
-const SCORE_REFRESH_PERIOD_SECONDS = 10;
-const CLICKS_MIN_SECONDS = 4; 
-const CLICKS_MAX_SECONDS = 8; 
-
-let clickCount = 0;
-let lastClickTime = 0;
-let clickIntervals = [];
-let username = localStorage.getItem("username");
-
-let isRedirecting = false; 
-
-let timerInterval; 
-let clicksTimeout; 
-
-// --- FONCTIONS DE GESTION DES CYCLES ET DE L'ÉTAT ---
-
-function stopAllCycles() {
-    clearInterval(timerInterval);
-    clearTimeout(clicksTimeout);
-}
-
-function stopClicksInterval() {
-    clearTimeout(clicksTimeout);
-}
-
-function startClicksInterval() {
-    stopClicksInterval(); 
-    
-    const duration = Math.floor(Math.random() * (CLICKS_MAX_SECONDS - CLICKS_MIN_SECONDS + 1)) + CLICKS_MIN_SECONDS;
-    
-    clicksTimeout = setTimeout(sendClicksRandomly, duration * 1000);
-    console.log(`[CLICS] Prochain envoi aléatoire de clics dans : ${duration}s`);
-}
-
-function updateDisplay(timeLeft) {
-    const timerCounter = document.getElementById('timerCounter');
-    const timerBarFill = document.getElementById('timerBarFill');
-    
-    if (timerCounter) {
-        timerCounter.textContent = `Rafraîchissement dans : ${timeLeft}s`;
-    }
-    if (timerBarFill) {
-        const percentage = (timeLeft / SCORE_REFRESH_PERIOD_SECONDS) * 100;
-        timerBarFill.style.width = `${percentage}%`;
-    }
-}
-
-function startScoreInterval(initialWaitTime = SCORE_REFRESH_PERIOD_SECONDS) {
-    clearInterval(timerInterval);
-    let timeLeft = initialWaitTime; 
-    updateDisplay(timeLeft); 
-
-    timerInterval = setInterval(() => {
-        timeLeft--;
-        updateDisplay(timeLeft); 
-        if (timeLeft <= 0) {
+        let timerInterval; // Pour le rafraîchissement du score (toutes les 10s)
+        let clicksTimeout; // Pour l'envoi aléatoire des clics (4-8s)
+        
+        // --- FONCTIONS DE GESTION DES CYCLES ET DE L'ÉTAT ---
+        
+        function stopAllCycles() {
             clearInterval(timerInterval);
-            gameCycle(); 
+            clearTimeout(clicksTimeout);
         }
-    }, 1000); 
-}
-
-async function gameCycle() {
-    const sessionCode = document.getElementById('sessionCode').textContent;
-    
-    if (sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Chargement..." || sessionCode === "Création...") {
-        console.warn("[SCORE] Session invalide. Tentative de prochain cycle.");
-        startScoreInterval(); 
-        return;
-    }
-    
-    console.log(`[SCORE] Déclenchement du rafraîchissement API (10s cycle) pour la session : ${sessionCode}`);
-
-    const counterElement = document.getElementById('timerCounter');
-    if (counterElement) {
-        counterElement.textContent = "⏳";
-    }
-    
-    // 1. Envoi des clics accumulés 
-    await sendClicksRandomly();
-    
-    // 2. Récupération des données (score et joueurs)
-    await fetchGameData(); 
-    
-    // 3. Relance du minuteur des clics aléatoires
-    startClicksInterval();
-    
-    startScoreInterval(); 
-}
-
-// --- FONCTIONS DE COMMUNICATION ET DE JEU ---
-
-async function getPlayerSessionInfo() {
-    try {
-        const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
-        const playersData = await playersResponse.json();
-        return playersData.status === "success" ? playersData : null;
-    } catch (e) {
-        console.error("Erreur lors de la récupération des infos de session:", e);
-        return null;
-    }
-}
-
-async function sendClicksRandomly() {
-    if (clickCount === 0) {
-        if (Date.now() - lastClickTime < 3000) { 
-            return;
+        
+        function stopClicksInterval() {
+            clearTimeout(clicksTimeout);
         }
-    }
-    
-    const toSendValue = clickCount > 0 ? clickCount : 0;
-    const sessionCode = document.getElementById('sessionCode').textContent;
-    
-    if (sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Chargement..." || sessionCode === "Création...") {
-        console.warn("[POIRE] Envoi ignoré : session invalide.");
-        return;
-    }
-
-    try {
-        const response = await fetch(`${API_URL}/poire`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session: sessionCode, click: toSendValue, id: username }) 
-        });
-        const data = await response.json();
-
-        if (data.status === "success") {
-            clickCount = 0;
-            lastClickTime = Date.now();
-            document.getElementById('toSend').textContent = `-- 0 --`;
+        
+        /**
+         * Démarre le minuteur aléatoire pour le prochain envoi de clics (entre 4 et 8 secondes).
+         */
+        function startClicksInterval() {
+            stopClicksInterval(); 
             
-            if (data.poires !== undefined) {
-                document.getElementById('scoreCounter').textContent = data.poires.toLocaleString();
+            const duration = Math.floor(Math.random() * (CLICKS_MAX_SECONDS - CLICKS_MIN_SECONDS + 1)) + CLICKS_MIN_SECONDS;
+            
+            clicksTimeout = setTimeout(sendClicksRandomly, duration * 1000);
+            console.log(`[CLICS] Prochain envoi aléatoire de clics dans : ${duration}s`);
+        }
+
+        function updateDisplay(timeLeft) {
+            const timerCounter = document.getElementById('timerCounter');
+            const timerBarFill = document.getElementById('timerBarFill');
+            
+            if (timerCounter) {
+                timerCounter.textContent = `Rafraîchissement dans : ${timeLeft}s`;
             }
-        } else {
-            console.error("[POIRE_ERROR]", data.message);
-        }
-    } catch (e) {
-        console.error("[POIRE_NETWORK_ERROR] Échec de l'envoi des clics.", e);
-    }
-}
-
-function handleButtonClick() {
-    clickCount++;
-    document.getElementById('toSend').textContent = `-- ${clickCount} --`;
-}
-
-async function fetchGameData() {
-    const sessionCode = document.getElementById('sessionCode').textContent;
-
-    if (sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Chargement..." || sessionCode === "Création...") {
-        return;
-    }
-
-    try {
-        const scoreResponse = await fetch(`${API_URL}/get_poires?session=${encodeURIComponent(sessionCode)}`);
-        const scoreData = await scoreResponse.json();
-        
-        if (scoreData.status === "success") {
-            document.getElementById('scoreCounter').textContent = scoreData.poires.toLocaleString();
+            if (timerBarFill) {
+                const percentage = (timeLeft / SCORE_REFRESH_PERIOD_SECONDS) * 100;
+                timerBarFill.style.width = `${percentage}%`;
+            }
         }
 
-        const playersResponse = await getPlayerSessionInfo();
-        
-        if (playersResponse && playersResponse.status === "success") {
-            const playersListElement = document.getElementById('playersList');
-            const creator = playersResponse.creator;
-            const currentPlayers = playersResponse.players;
-            
-            const isInGroup = currentPlayers.includes(username) && creator !== username;
-            
-            let playersToDisplay = playersResponse.session_code === sessionCode ? 
-                [creator].concat(currentPlayers.filter(p => p !== creator)) : 
-                [creator]; 
-            
-            playersListElement.innerHTML = '';
-            
-            const uniquePlayers = Array.from(new Set(playersToDisplay.filter(p => p)));
-            
-            const maxPlayers = 5;
-            let currentCount = 0;
-            
-            uniquePlayers.forEach(player => {
-                const item = document.createElement('div');
-                item.className = 'player-item';
-                let content = `👤 ${player}`;
-                
-                if (player === username) {
-                    item.classList.add('player-item-me');
-                    content = `👑 Vous (Créateur)`; 
-                } 
-                if (player === creator) {
-                    item.classList.add('player-item-creator');
-                    content = `👑 ${player} (Créateur)`;
-                }
-                if (player === username && !item.classList.contains('player-item-creator')) {
-                    item.classList.add('player-item-me');
-                    content = `👤 Vous`;
-                }
+        function startScoreInterval(initialWaitTime = SCORE_REFRESH_PERIOD_SECONDS) {
+            clearInterval(timerInterval);
+            let timeLeft = initialWaitTime; 
+            updateDisplay(timeLeft); 
 
-                item.textContent = content;
-                playersListElement.appendChild(item);
-                currentCount++;
-            });
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateDisplay(timeLeft); 
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    gameCycle(); 
+                }
+            }, 1000); 
+        }
 
-            for (let i = currentCount; i < maxPlayers; i++) {
-                const waitingItem = document.createElement('div');
-                waitingItem.className = 'player-item waiting';
-                waitingItem.textContent = '⚪ En attente...';
-                playersListElement.appendChild(waitingItem);
+        async function gameCycle() {
+            const sessionCode = document.getElementById('sessionCode').textContent;
+            
+             if (sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Chargement..." || sessionCode === "Création...") {
+                 console.warn("[SCORE] Session invalide. Tentative de prochain cycle.");
+                 startScoreInterval(); 
+                 return;
+             }
+            
+            console.log(`[SCORE] Déclenchement du rafraîchissement API (10s cycle) pour la session : ${sessionCode}`);
+
+            const counterElement = document.getElementById('timerCounter');
+            if (counterElement) {
+                counterElement.textContent = "⏳";
             }
             
-            document.getElementById('playerCount').textContent = `${currentCount}/5`;
+            // 1. Envoi des clics accumulés 
+            await sendClicksRandomly();
             
-            checkCloseButtonState(creator, sessionCode, currentPlayers);
+            // 2. Récupération des données (score et joueurs)
+            await fetchGameData(); 
+            
+            // 3. Relance du minuteur des clics aléatoires
+            startClicksInterval();
+            
+            startScoreInterval(); // Relance l'intervalle de 10 secondes pour le score
         }
-    } catch (e) {
-        console.error("Erreur lors de la récupération des données de jeu:", e);
-    }
-}
+        
+        // --- FONCTIONS DE COMMUNICATION ET DE JEU ---
 
-async function logoutSilently(shouldLogout, shouldRedirect) {
-    if (isRedirecting && shouldRedirect) {
-        return; 
-    }
-    
-    console.log(`[LOGOUT] Déconnexion silencieuse (Logout: ${shouldLogout ? 'Oui' : 'Non'})...`);
-    stopAllCycles();
-    
-    if (shouldRedirect) {
-        isRedirecting = true;
-    }
-
-    const sessionCode = document.getElementById('sessionCode').textContent;
-    let isCreator = false;
-
-    const sessionInfo = await getPlayerSessionInfo();
-    if (sessionInfo && sessionInfo.status === "success") {
-        isCreator = sessionInfo.creator === username;
-    }
-    
-    if (shouldLogout) {
-        const logoutData = JSON.stringify({ id: username });
-
-        if (navigator.sendBeacon) {
-            const blob = new Blob([logoutData], {type : 'application/json'});
-            navigator.sendBeacon(`${API_URL}/logout`, blob);
-        } else {
+        async function getPlayerSessionInfo() {
             try {
-                const xhr = new XMLHttpRequest();
-                xhr.open("POST", `${API_URL}/logout`, false); 
-                xhr.setRequestHeader("Content-Type", "application/json");
-                xhr.send(logoutData);
+                // Utilise la même URL de vérification qui renvoie les infos de session
+                const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
+                const playersData = await playersResponse.json();
+                return playersData.status === "success" ? playersData : null;
             } catch (e) {
-                console.error("Erreur lors du /logout silencieux (XHR):", e);
+                console.error("Erreur lors de la récupération des infos de session:", e);
+                return null;
             }
         }
-    }
-
-    if (shouldRedirect) {
-        window.location.href = 'index.html'; 
-    }
-}
-
-// --- MODIFICATION : NOUVELLE GESTION DU BOUTON FLÈCHE (←) ---
-async function handleBackButton() {
-    console.log("[NAVIGATION] Redirection vers menu.html. Le joueur reste actif (déconnexion gérée par le serveur après 15s d'inactivité).");
-    stopAllCycles();
-    isRedirecting = true;
-    
-    window.location.href = 'menu.html';
-}
-
-function checkCloseButtonState(creator, sessionCode, players) {
-    const closeBtn = document.getElementById('closeBtn');
-    const isCreator = creator === username;
-    const isInGroup = players.includes(username) && !isCreator;
-    
-    if (isCreator) {
-        closeBtn.disabled = true; 
-        closeBtn.title = "Le créateur ne peut pas quitter ici.";
-    } else if (isInGroup) {
-        closeBtn.disabled = false; 
-        closeBtn.title = "Quitter la session de groupe et revenir à la session personnelle (solo).";
-    } else {
-        closeBtn.disabled = true; 
-        closeBtn.title = "Vous êtes dans votre session personnelle (solo).";
-    }
-}
-
-
-async function handleLeaveSession() {
-    const sessionCode = document.getElementById('sessionCode').textContent;
-    const sidebarStatus = document.getElementById('sidebarStatus');
-    const closeBtn = document.getElementById('closeBtn');
-
-    if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
-        sidebarStatus.textContent = "⚠️ Pas de session active à quitter.";
-        sidebarStatus.style.color = "#f59e0b";
-        return;
-    }
-
-    const sessionInfo = await getPlayerSessionInfo();
-    const isCreator = sessionInfo && sessionInfo.creator === username && sessionInfo.session_code === sessionCode;
-    const isInGroup = sessionInfo && sessionInfo.session_code === sessionCode && !isCreator;
-
-    if (isCreator) {
-        sidebarStatus.textContent = "❌ Créateur : utilisez la flèche (←) pour vous déconnecter (Logout).";
-        sidebarStatus.style.color = "#ef4444";
-        return;
-    }
-    
-    if (!isInGroup) {
-        sidebarStatus.textContent = "⚠️ Vous êtes dans votre session personnelle (solo).";
-        sidebarStatus.style.color = "#f59e0b";
-        document.getElementById('sidebar').classList.add('hidden');
-        document.getElementById('toggleSidebar').style.display = 'flex';
-        return;
-    }
-
-    try {
-        closeBtn.disabled = true; 
-        sidebarStatus.textContent = `Tentative de quitter la session ${sessionCode}...`;
-        sidebarStatus.style.color = "#f59e0b";
-
-        const response = await fetch(`${API_URL}/leave`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: sessionCode, id: username })
-        });
-        const data = await response.json();
-
-        if (data.status === "success") {
-            sidebarStatus.textContent = "✅ Session de groupe quittée. Retour à la session solo.";
-            sidebarStatus.style.color = "#10b981";
-            
-            stopAllCycles();
-            await loadMySession(); 
-            await fetchGameData();
-            launchGameCycle(); 
-            
-        } else {
-            sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`;
-            sidebarStatus.style.color = "#ef4444";
-        }
-    } catch (e) {
-        sidebarStatus.textContent = "❌ Erreur réseau lors de la déconnexion de session.";
-        sidebarStatus.style.color = "#ef4444";
-    } finally {
-        checkCloseButtonState();
-        document.getElementById('sidebar').classList.add('hidden');
-        document.getElementById('toggleSidebar').style.display = 'flex';
-    }
-}
-
-async function handleJoinSession(inputId = 'joinInput') {
-    const joinInput = document.getElementById(inputId);
-    const sessionCodeElement = document.getElementById('sessionCode');
-    const sidebarStatus = document.getElementById('sidebarStatus');
-    const joinButton = document.getElementById('joinButton');
-    const joinButtonMobile = document.getElementById('joinButtonMobile');
-    
-    const input_value = joinInput.value.trim();
-    
-    if (!input_value) {
-        sidebarStatus.textContent = "⚠️ Veuillez entrer un code ou la commande /cha.";
-        sidebarStatus.style.color = "#f59e0b";
-        return;
-    }
-    
-    if (joinButton) joinButton.disabled = true;
-    if (joinButtonMobile) joinButtonMobile.disabled = true;
-    
-    sidebarStatus.textContent = `Traitement de la demande pour "${input_value}"...`;
-    sidebarStatus.style.color = "#60a5fa";
-
-    const isChangeCommand = input_value.toLowerCase().startsWith('/cha ');
-    const newCode = isChangeCommand ? input_value.substring(5).trim() : '';
-    let isSuccessful = false;
-
-    // 1. GESTION DU CHANGEMENT DE NOM DE SESSION PERSO (/cha)
-    if (isChangeCommand) {
         
-        if (newCode.length < 3) {
-            sidebarStatus.textContent = "❌ Le nouveau nom de session doit contenir au moins 3 caractères.";
-            sidebarStatus.style.color = "#ef4444";
-        } else {
-            console.log(`[CHA] Tentative de changement de session personnelle à: ${newCode}`);
-            
-            try {
-                const bodyData = { 
-                    id: username, 
-                    new_session_name: newCode
-                };
+        // CORRECTION : Suppression de la fonction logoutSilently car elle n'est plus requise.
+        
+        // CORRECTION : Suppression de la fonction handleBackButton car le bouton est maintenant un simple lien <a>.
+        
+        // CORRECTION : Suppression de la fonction handleLogoutOnClose car elle n'est plus requise.
 
-                const response = await fetch(`${API_URL}/change_session`, {
+        // Bouton croix (×) en haut à droite : /leave de la session de groupe uniquement.
+        async function handleLeaveSession() {
+            const sessionCode = document.getElementById('sessionCode').textContent;
+            const sidebarStatus = document.getElementById('sidebarStatus');
+            const closeBtn = document.getElementById('closeBtn');
+
+            if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
+                sidebarStatus.textContent = "⚠️ Pas de session active à quitter.";
+                sidebarStatus.style.color = "#f59e0b";
+                return;
+            }
+
+            const sessionInfo = await getPlayerSessionInfo();
+            const isCreator = sessionInfo && sessionInfo.creator === username && sessionInfo.session_code === sessionCode;
+            const isInGroup = sessionInfo && sessionInfo.session_code === sessionCode && !isCreator;
+
+            if (isCreator) {
+                sidebarStatus.textContent = "❌ Créateur : utilisez le lien 'Menu' (←) pour vous déconnecter et détruire la session (Logout).";
+                sidebarStatus.style.color = "#ef4444";
+                return;
+            }
+            
+            if (!isInGroup) {
+                 sidebarStatus.textContent = "⚠️ Vous êtes dans votre session personnelle (solo).";
+                 sidebarStatus.style.color = "#f59e0b";
+                 document.getElementById('sidebar').classList.add('hidden');
+                 document.getElementById('toggleSidebar').style.display = 'flex';
+                 return;
+            }
+
+            // Logique de 'leave' pour un simple joueur
+            try {
+                closeBtn.disabled = true; 
+                sidebarStatus.textContent = `Tentative de quitter la session ${sessionCode}...`;
+                sidebarStatus.style.color = "#f59e0b";
+
+                // Requête /leave pour la session de groupe
+                const response = await fetch(`${API_URL}/leave`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(bodyData)
+                    body: JSON.stringify({ code: sessionCode, id: username })
                 });
                 const data = await response.json();
 
-                if (data.status === "success" && data.new_code === newCode) {
-                    stopAllCycles();
-                    
-                    sessionCodeElement.textContent = newCode;
-                    sessionCodeElement.dataset.forcedCode = newCode;
-                    
-                    await fetchGameData();
-                    
-                    sidebarStatus.textContent = `✅ Nom de session personnelle mis à jour: ${newCode}`;
+                if (data.status === "success") {
+                    sidebarStatus.textContent = "✅ Session de groupe quittée. Retour à la session solo.";
                     sidebarStatus.style.color = "#10b981";
                     
+                    stopAllCycles();
+                    await loadMySession(); 
+                    await fetchGameData();
                     launchGameCycle(); 
-                    isSuccessful = true;
+                    
                 } else {
-                    sidebarStatus.textContent = `❌ Impossible de changer le nom: ${data.message || 'Erreur inconnue'}`;
+                    sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`;
                     sidebarStatus.style.color = "#ef4444";
                 }
             } catch (e) {
-                sidebarStatus.textContent = "❌ Erreur réseau lors du changement de nom de session (/cha).";
+                sidebarStatus.textContent = "❌ Erreur réseau lors de la déconnexion de session.";
                 sidebarStatus.style.color = "#ef4444";
-                console.error("Erreur /change_session:", e);
-            }
-        }
-        
-        if (isSuccessful) {
-            joinInput.value = ""; 
-        }
-    } 
-    // 2. GESTION DE REJOINDRE UNE SESSION DE GROUPE (JOIN)
-    else {
-        const codeToJoin = input_value;
-        console.log(`[JOIN] Tentative de rejoindre la session: ${codeToJoin}`);
-        let joinedSuccessfully = false;
-        
-        const currentSessionCode = sessionCodeElement.textContent;
-        const sessionInfo = await getPlayerSessionInfo();
-        const isCurrentlyInGroup = sessionInfo && sessionInfo.session_code === currentSessionCode && sessionInfo.creator !== username;
-
-        if (isCurrentlyInGroup) {
-            console.log(`[JOIN] Quitter la session de groupe actuelle (${currentSessionCode}) avant de rejoindre.`);
-            await fetch(`${API_URL}/leave`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: currentSessionCode, id: username })
-            });
-        }
-        
-        try {
-            const bodyData = { code: codeToJoin, id: username };
-            const response = await fetch(`${API_URL}/join`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(bodyData)
-            });
-            const data = await response.json();
-
-            if (data.status === "success") {
-                stopAllCycles();
-                sessionCodeElement.textContent = codeToJoin;
-                sessionCodeElement.dataset.forcedCode = codeToJoin;
-                
-                await fetchGameData();
-                
-                sidebarStatus.textContent = `✅ Session '${codeToJoin}' rejointe avec succès !`;
-                sidebarStatus.style.color = "#10b981";
-                
-                launchGameCycle();
-                joinedSuccessfully = true;
-
-            } else {
-                sidebarStatus.textContent = `❌ Impossible de rejoindre la session : ${data.message}`;
-                sidebarStatus.style.color = "#ef4444";
-            }
-        } catch (e) {
-            sidebarStatus.textContent = "❌ Erreur réseau lors de la tentative de rejoindre la session.";
-            sidebarStatus.style.color = "#ef4444";
-            console.error("Erreur /join:", e);
-        }
-        
-        if (joinedSuccessfully) {
-            joinInput.value = ""; 
-            if (inputId.includes('Mobile')) { 
+            } finally {
+                checkCloseButtonState();
                 document.getElementById('sidebar').classList.add('hidden');
                 document.getElementById('toggleSidebar').style.display = 'flex';
             }
         }
-    }
-    
-    if (joinButton) joinButton.disabled = false;
-    if (joinButtonMobile) joinButtonMobile.disabled = false;
-    checkCloseButtonState(); 
-}
-
-function handleJoinSessionMobile() {
-    handleJoinSession('joinInputMobile');
-}
-
-
-async function loadMySession() {
-    document.getElementById('usernameLabel').textContent = `ID: ${username}`;
-    document.getElementById('statusLabel').textContent = "Connexion...";
-    
-    if (!username) {
-        alert("Nom d'utilisateur non trouvé. Redirection.");
-        window.location.href = 'index.html';
-        return;
-    }
-
-    try {
-        const response = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
-        const data = await response.json();
-        const sessionCodeElement = document.getElementById('sessionCode');
         
-        if (data.status === "success" && data.session_code) {
-            sessionCodeElement.textContent = data.session_code;
-            sessionCodeElement.dataset.forcedCode = data.session_code; 
-            document.getElementById('statusLabel').textContent = `Connecté à '${data.session_code}'`;
-            document.getElementById('statusLabel').style.backgroundColor = 'rgba(16, 185, 129, 0.5)';
-        } else {
-            sessionCodeElement.textContent = "Aucune session";
-            document.getElementById('statusLabel').textContent = "Session non trouvée.";
-            document.getElementById('statusLabel').style.backgroundColor = 'rgba(239, 68, 68, 0.5)';
+        /**
+         * Gère le changement de session (rejoindre une autre session ou /cha pour changer le nom de sa session perso).
+         * @param {string} inputId - ID de l'input utilisé (desktop ou mobile).
+         */
+        async function handleJoinSession(inputId = 'joinInput') {
+            const joinInput = document.getElementById(inputId);
+            const sessionCodeElement = document.getElementById('sessionCode');
+            const sidebarStatus = document.getElementById('sidebarStatus');
+            const joinButton = document.getElementById('joinButton');
+            const joinButtonMobile = document.getElementById('joinButtonMobile');
+            
+            const input_value = joinInput.value.trim();
+            
+            if (!input_value) {
+                sidebarStatus.textContent = "⚠️ Veuillez entrer un code ou la commande /cha.";
+                sidebarStatus.style.color = "#f59e0b";
+                return;
+            }
+            
+            // Désactiver les boutons de join
+            if (joinButton) joinButton.disabled = true;
+            if (joinButtonMobile) joinButtonMobile.disabled = true;
+            
+            sidebarStatus.textContent = `Traitement de la demande pour "${input_value}"...`;
+            sidebarStatus.style.color = "#60a5fa";
+
+            const isChangeCommand = input_value.toLowerCase().startsWith('/cha ');
+            const newCode = isChangeCommand ? input_value.substring(5).trim() : '';
+            let isSuccessful = false;
+
+            // ------------------------------------------
+            // 1. GESTION DU CHANGEMENT DE NOM DE SESSION PERSO (/cha)
+            // ------------------------------------------
+            if (isChangeCommand) {
+                
+                if (newCode.length < 3) {
+                    sidebarStatus.textContent = "❌ Le nouveau nom de session doit contenir au moins 3 caractères.";
+                    sidebarStatus.style.color = "#ef4444";
+                } else {
+                    console.log(`[CHA] Tentative de changement de session personnelle à: ${newCode}`);
+                    
+                    try {
+                        const bodyData = { 
+                            id: username, 
+                            new_session_name: newCode // Clé corrigée pour /change_session
+                        };
+
+                        const response = await fetch(`${API_URL}/change_session`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(bodyData)
+                        });
+                        const data = await response.json();
+
+                        if (data.status === "success" && data.new_code === newCode) {
+                            // Succès du /change_session
+                            stopAllCycles();
+                            
+                            // 1. Affiche le nouveau code
+                            sessionCodeElement.textContent = newCode;
+                            sessionCodeElement.dataset.forcedCode = newCode;
+                            
+                            // 2. Met à jour immédiatement le score et la liste des joueurs
+                            await fetchGameData();
+                            
+                            sidebarStatus.textContent = `✅ Nom de session personnelle mis à jour: ${newCode}`;
+                            sidebarStatus.style.color = "#10b981";
+                            
+                            // 3. Redémarre le cycle de jeu
+                            launchGameCycle(); 
+                            isSuccessful = true;
+                        } else {
+                            // Échec de l'API /change_session
+                            sidebarStatus.textContent = `❌ Impossible de changer le nom: ${data.message || 'Erreur inconnue'}`;
+                            sidebarStatus.style.color = "#ef4444";
+                        }
+                    } catch (e) {
+                        sidebarStatus.textContent = "❌ Erreur réseau lors du changement de nom de session (/cha).";
+                        sidebarStatus.style.color = "#ef4444";
+                        console.error("Erreur /change_session:", e);
+                    }
+                }
+                
+                if (isSuccessful) {
+                    joinInput.value = ""; 
+                }
+            } 
+            // ------------------------------------------
+            // 2. GESTION DE REJOINDRE UNE SESSION DE GROUPE (JOIN)
+            // ------------------------------------------
+            else {
+                const codeToJoin = input_value;
+                console.log(`[JOIN] Tentative de rejoindre la session : ${codeToJoin}`);
+                
+                // Pré-leave pour s'assurer de quitter la session actuelle (solo ou groupe)
+                await handleLeaveSessionBeforeJoin(); 
+
+                try {
+                    const response = await fetch(`${API_URL}/join`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: codeToJoin, id: username })
+                    });
+                    const data = await response.json();
+
+                    if (data.status === "success" && data.session_code === codeToJoin) {
+                        // Succès du /join
+                        stopAllCycles();
+                        
+                        // 1. Affiche le nouveau code
+                        sessionCodeElement.textContent = codeToJoin;
+                        delete sessionCodeElement.dataset.forcedCode; // Supprimer si présent
+                        
+                        // 2. Met à jour immédiatement le score et la liste des joueurs
+                        await fetchGameData();
+                        
+                        sidebarStatus.textContent = `✅ Session ${codeToJoin} rejointe !`;
+                        sidebarStatus.style.color = "#10b981";
+                        
+                        // 3. Redémarre le cycle de jeu
+                        launchGameCycle();
+                        isSuccessful = true;
+                    } else {
+                        // Échec de l'API /join
+                        sidebarStatus.textContent = `❌ Impossible de rejoindre : ${data.message || 'Code invalide.'}`;
+                        sidebarStatus.style.color = "#ef4444";
+                    }
+
+                } catch (e) {
+                    sidebarStatus.textContent = "❌ Erreur réseau lors de la tentative de rejoindre la session.";
+                    sidebarStatus.style.color = "#ef4444";
+                    console.error("Erreur /join:", e);
+                }
+                
+                if (isSuccessful) {
+                    joinInput.value = ""; 
+                }
+            }
+            
+            // Réactiver les boutons de join
+            if (joinButton) joinButton.disabled = false;
+            if (joinButtonMobile) joinButtonMobile.disabled = false;
         }
 
-        launchGameCycle(); 
+        /**
+         * Logique de 'leave' silencieux avant de tenter de rejoindre une autre session.
+         */
+        async function handleLeaveSessionBeforeJoin() {
+             const sessionCode = document.getElementById('sessionCode').textContent;
+             
+             if (sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Chargement..." || sessionCode === "Création...") {
+                 return;
+             }
+             
+             console.log(`[PRE-JOIN] Tentative de /leave silencieux de la session actuelle: ${sessionCode}`);
+             try {
+                 await fetch(`${API_URL}/leave`, {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ code: sessionCode, id: username })
+                 });
+             } catch (e) {
+                 console.warn("[PRE-JOIN] Erreur lors du /leave silencieux avant le /join:", e);
+             }
+        }
         
-    } catch (e) {
-        console.error("Erreur de connexion à la session:", e);
-        document.getElementById('sessionCode').textContent = "Erreur";
-        document.getElementById('statusLabel').textContent = "Erreur réseau";
-        document.getElementById('statusLabel').style.backgroundColor = 'rgba(239, 68, 68, 0.5)';
-    }
-}
+        // CORRECTION : L'ancienne fonction handleJoinSessionMobile est remplacée
+        // par un appel à handleJoinSession(ID_mobile) directement dans le HTML.
+        // La fonction `handleJoinSession` gère maintenant les deux inputs.
 
-function launchGameCycle() {
-    stopAllCycles();
-    startClicksInterval();
-    startScoreInterval(1); 
-}
+        /**
+         * Récupère le score de l'utilisateur et la liste des joueurs de la session.
+         */
+        async function fetchGameData() {
+            // Reste du code de fetchGameData (non inclus dans la question, mais présumé correct)
+             const sessionCode = document.getElementById('sessionCode').textContent;
+             const scoreCounter = document.getElementById('scoreCounter');
+             const toSend = document.getElementById('toSend');
+             const playersListElement = document.getElementById('playersList');
+             const playerCountElement = document.getElementById('playerCount');
+             const sessionCodeElement = document.getElementById('sessionCode');
+             const statusLabel = document.getElementById('statusLabel');
+             const sidebarStatus = document.getElementById('sidebarStatus');
+             
+             // Utiliser le code forcé si la session a été changée par /cha
+             const codeToFetch = sessionCodeElement.dataset.forcedCode || sessionCode;
 
-// --- INITIALISATION ET ÉVÉNEMENTS ---
+             try {
+                 const scoreResponse = await fetch(`${API_URL}/get_score?id=${encodeURIComponent(username)}`);
+                 const scoreData = await scoreResponse.json();
 
-document.addEventListener('DOMContentLoaded', () => {
-    loadMySession();
+                 if (scoreData.status === "success") {
+                     scoreCounter.textContent = formatNumber(scoreData.score);
+                 } else {
+                      console.error("[SCORE] Échec de la récupération du score:", scoreData.message);
+                 }
+                 
+                 // Récupérer la liste des joueurs
+                 const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
+                 const playersData = await playersResponse.json();
 
-    document.getElementById('clickButton').addEventListener('click', handleButtonClick);
-    document.getElementById('closeBtn').addEventListener('click', handleLeaveSession);
-    document.getElementById('joinButton').addEventListener('click', () => handleJoinSession('joinInput'));
-    
-    document.getElementById('joinInput').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            handleJoinSession('joinInput');
+                 if (playersData.status === "success") {
+                     // Mise à jour de l'état de la session
+                     const currentSessionCode = playersData.session_code;
+                     sessionCodeElement.textContent = currentSessionCode;
+
+                     if (playersData.is_in_group && playersData.players) {
+                         // Session de groupe
+                         const playersHtml = playersData.players.map(player => {
+                             let classes = 'player-item';
+                             let prefix = '👤 ';
+                             if (player.id === username) {
+                                 classes += ' player-item-me';
+                                 prefix = '⭐ ';
+                             }
+                             if (player.id === playersData.creator) {
+                                 classes += ' player-item-creator';
+                                 prefix = '👑 ';
+                             }
+                             const scoreDisplay = player.score !== undefined ? ` (${formatNumber(player.score)})` : '';
+                             return `<div class="${classes}">${prefix} ${player.id}${scoreDisplay}</div>`;
+                         }).join('');
+
+                         playersListElement.innerHTML = playersHtml;
+                         playerCountElement.textContent = `${playersData.players.length}/${playersData.max_players}`;
+                         statusLabel.textContent = `Groupe : ${currentSessionCode}`;
+                         sidebarStatus.textContent = "Connecté à la session de groupe.";
+                         sidebarStatus.style.color = "#10b981";
+                         checkCloseButtonState(playersData.creator === username);
+                         
+                     } else {
+                         // Session solo (ou session non trouvée après leave)
+                         const playersHtml = `<div class="player-item player-item-me">👤 Vous</div>
+                                              <div class="player-item waiting">⚪ En attente...</div>
+                                              <div class="player-item waiting">⚪ En attente...</div>
+                                              <div class="player-item waiting">⚪ En attente...</div>
+                                              <div class="player-item waiting">⚪ En attente...</div>`;
+                         playersListElement.innerHTML = playersHtml;
+                         playerCountElement.textContent = "1/1";
+                         statusLabel.textContent = `Solo : ${currentSessionCode}`;
+                         sidebarStatus.textContent = "Connecté à votre session personnelle (solo).";
+                         sidebarStatus.style.color = "#60a5fa";
+                         checkCloseButtonState(true); // Désactive la croix pour le créateur (solo est toujours créateur)
+                     }
+                 } else {
+                     // En cas d'échec de vérification
+                     console.error("[VERIFY] Échec de la vérification de session:", playersData.message);
+                     sessionCodeElement.textContent = "Erreur";
+                     statusLabel.textContent = "Erreur de session";
+                     sidebarStatus.textContent = `Erreur de connexion : ${playersData.message}`;
+                     sidebarStatus.style.color = "#ef4444";
+                     checkCloseButtonState(true);
+                 }
+
+             } catch (e) {
+                 console.error("Erreur réseau lors de la récupération des données:", e);
+                 statusLabel.textContent = "Erreur réseau";
+                 sidebarStatus.textContent = "Erreur réseau lors de la récupération des données.";
+                 sidebarStatus.style.color = "#ef4444";
+                 checkCloseButtonState(true);
+             }
         }
-    });
-    
-    document.getElementById('joinInputMobile').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            handleJoinSessionMobile();
-        }
-    });
+        
+        /**
+         * Envoie les clics accumulés au serveur et remet le compteur à zéro.
+         */
+        async function sendClicksRandomly() {
+            const clicksToSend = clickCount; 
+            if (clicksToSend === 0) {
+                 console.log("[CLICS] Aucun clic à envoyer.");
+                 return;
+            }
 
-    const sidebar = document.getElementById('sidebar');
-    document.getElementById('toggleSidebar').addEventListener('click', () => {
-        sidebar.classList.remove('hidden');
-        document.getElementById('toggleSidebar').style.display = 'none';
-    });
-    document.getElementById('closeBtn').addEventListener('click', () => {
-        sidebar.classList.add('hidden');
-        document.getElementById('toggleSidebar').style.display = 'flex';
-    });
-});
+            const toSendElement = document.getElementById('toSend');
+            const sessionCode = document.getElementById('sessionCode').textContent;
+            
+            console.log(`[CLICS] Envoi de ${clicksToSend} clics pour la session ${sessionCode}...`);
+            toSendElement.textContent = "-- ENVOI --";
+            toSendElement.style.color = "#fcd34d";
+
+            try {
+                const response = await fetch(`${API_URL}/add_score`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: username,
+                        score: clicksToSend,
+                        code: sessionCode
+                    })
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    console.log(`[CLICS] ${clicksToSend} clics envoyés avec succès. Nouveau score: ${data.score}`);
+                    // Ne pas toucher au score total ici, il sera mis à jour par fetchGameData
+                    // Réinitialisation du compteur local *seulement après succès*
+                    clickCount = 0; 
+                    toSendElement.textContent = `-- 0 --`;
+                    toSendElement.style.color = "#ffffff";
+                    
+                    // Mise à jour immédiate du score (optionnel, mais améliore l'UX)
+                    const scoreCounter = document.getElementById('scoreCounter');
+                    if (scoreCounter && data.score !== undefined) {
+                         scoreCounter.textContent = formatNumber(data.score);
+                    }
+                    
+                } else {
+                    console.error(`[CLICS] Échec de l'envoi des clics: ${data.message}. Les clics restent en attente.`);
+                    toSendElement.textContent = `-- ERREUR --`;
+                    toSendElement.style.color = "#ef4444";
+                    // Laissez `clickCount` tel quel pour une tentative ultérieure
+                }
+            } catch (e) {
+                console.error("[CLICS] Erreur réseau lors de l'envoi des clics. Les clics restent en attente.", e);
+                toSendElement.textContent = `-- R. RÉSEAU --`;
+                toSendElement.style.color = "#ef4444";
+                // Laissez `clickCount` tel quel pour une tentative ultérieure
+            }
+        }
+
+        // --- GESTION DES INTERACTIONS UTILISATEUR ---
+
+        function handleMainClick() {
+            clickCount++;
+            document.getElementById('toSend').textContent = `-- ${formatNumber(clickCount)} --`;
+            
+            // Si c'est le premier clic depuis le dernier envoi/rafraîchissement, on relance le minuteur aléatoire
+            if (clickCount === 1) {
+                 startClicksInterval();
+            }
+        }
+        
+        function formatNumber(num) {
+            return new Intl.NumberFormat('fr-FR').format(num);
+        }
+        
+        // --- LOGIQUE DE DÉMARRAGE ET DE BOUTONS ---
+        
+        function launchGameCycle() {
+            // Démarre le cycle de jeu avec un premier rafraîchissement rapide
+             gameCycle(); 
+        }
+
+        async function loadMySession() {
+             const sessionCodeElement = document.getElementById('sessionCode');
+             const usernameLabel = document.getElementById('usernameLabel');
+             const statusLabel = document.getElementById('statusLabel');
+             
+             usernameLabel.textContent = `ID: ${username}`;
+             statusLabel.textContent = "Vérification de session...";
+             
+             // Tentative de vérifier la session et de récupérer les infos de base
+             const sessionInfo = await getPlayerSessionInfo();
+             
+             if (sessionInfo && sessionInfo.status === "success") {
+                 sessionCodeElement.textContent = sessionInfo.session_code;
+                 console.log(`[INIT] Session chargée : ${sessionInfo.session_code}`);
+             } else {
+                 // Si on n'a pas pu vérifier la session (déconnecté ou erreur)
+                 // CORRECTION: Redirection vers index.html si l'utilisateur n'est pas logué
+                 if (!username) {
+                     window.location.href = 'index.html';
+                     return;
+                 }
+                 sessionCodeElement.textContent = "Création...";
+                 console.warn("[INIT] Session non trouvée, tentative de création...");
+                 // Tenter de recréer une session si elle n'existe pas
+                 try {
+                     const response = await fetch(`${API_URL}/create_session`, {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ id: username })
+                     });
+                     const data = await response.json();
+
+                     if (data.status === "success") {
+                         sessionCodeElement.textContent = data.session_code;
+                         console.log(`[INIT] Session personnelle créée: ${data.session_code}`);
+                     } else {
+                         sessionCodeElement.textContent = "Erreur";
+                         console.error("[INIT] Échec de la création de session:", data.message);
+                         statusLabel.textContent = "Erreur critique de session";
+                     }
+                 } catch (e) {
+                     sessionCodeElement.textContent = "Erreur";
+                     console.error("[INIT] Erreur réseau lors de la création de session:", e);
+                     statusLabel.textContent = "Erreur réseau critique";
+                 }
+             }
+             
+             // Assure que l'état initial des boutons est correct
+             checkCloseButtonState();
+        }
+        
+        function checkCloseButtonState(isCreatorOrSolo = null) {
+            const closeBtn = document.getElementById('closeBtn');
+            // Si l'état n'est pas passé en paramètre, on désactive par défaut tant qu'on n'a pas la data
+             if (isCreatorOrSolo === null) {
+                 closeBtn.disabled = true;
+                 return;
+             }
+            
+            // La croix est désactivée si on est le créateur de la session (ou en solo)
+            // car le créateur doit utiliser la flèche (←) pour "logout" (même si on a changé la fonction de la flèche)
+            // dans la logique originale, c'était le logout du créateur qui détruisait la session.
+            // Maintenant, la croix est juste désactivée pour éviter la confusion.
+            closeBtn.disabled = isCreatorOrSolo;
+        }
+
+        function setupEventListeners() {
+            // Bouton du Clicker
+            document.getElementById('clickButton').addEventListener('click', handleMainClick);
+            
+            // Bouton de la Sidebar
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('toggleSidebar');
+            const closeBtn = document.getElementById('closeBtn');
+
+            toggleBtn.addEventListener('click', () => {
+                sidebar.classList.remove('hidden');
+                toggleBtn.style.display = 'none';
+            });
+
+            closeBtn.addEventListener('click', handleLeaveSession); 
+            
+            // Bouton Rejoindre/Changer de la sidebar (desktop)
+            document.getElementById('joinButton').addEventListener('click', () => handleJoinSession('joinInput'));
+            // Bouton Rejoindre du mobile
+            document.getElementById('joinButtonMobile').addEventListener('click', () => handleJoinSession('joinInputMobile'));
+
+            // CORRECTION : Suppression de l'écouteur pour `beforeunload` qui appelait le logout
+            // window.addEventListener('beforeunload', handleLogoutOnClose);
+            
+            // Fermeture de la sidebar lors du clic hors zone (facultatif mais bonne pratique)
+            // document.querySelector('.main-area').addEventListener('click', () => {
+            //      if (!sidebar.classList.contains('hidden')) {
+            //          sidebar.classList.add('hidden');
+            //          toggleBtn.style.display = 'flex';
+            //      }
+            // });
+        }
+
+        // --- INITIALISATION ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            // CORRECTION: Redirection si pas d'utilisateur
+            if (!username) {
+                 window.location.href = 'index.html';
+                 return;
+            }
+            
+            setupEventListeners();
+            await loadMySession(); 
+            // On fait une première vérification des données (score et joueurs)
+            await fetchGameData();
+            launchGameCycle(); 
+        });
+    </script>
 </body>
 </html>

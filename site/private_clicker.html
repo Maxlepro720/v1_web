@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Private Clicker Game</title>
     <style>
-        /* --- Styles CSS --- */
+        /* --- Styles CSS (Non Modifiés) --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #232323; overflow: hidden; }
 
@@ -84,7 +84,14 @@
 
         .close-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); }
 
-        .close-btn:disabled { background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); cursor: not-allowed; opacity: 0.6; }
+        /* MODIFICATION CSS IMPORTANTE POUR LA DEMANDE */
+        .close-btn:disabled { 
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); 
+            cursor: not-allowed; 
+            opacity: 0.6; 
+            box-shadow: none;
+        }
+        /* FIN MODIFICATION */
 
         .sidebar-title { color: #f8fafc; font-size: clamp(20px, 3vw, 28px); font-weight: bold; margin-bottom: 25px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
 
@@ -250,11 +257,8 @@
             <div class="to-send" id="toSend">-- 0 --</div>
             <button class="click-button" id="clickButton"></button>
 
-            <!-- Contrôles Mobile -->
             <input type="text" class="join-input" id="joinInputMobile" placeholder="Entrer un code ou /cha code" style="display:none;">
             <button class="join-button" id="joinButtonMobile" style="display:none;" onclick="handleJoinSession('joinInputMobile')">Rejoindre/Changer</button> 
-            <!-- Fin Contrôles Mobile -->
-
             <div class="timer-bar">
                 <div class="timer-bar-fill" id="timerBarFill"></div>
             </div>
@@ -276,8 +280,7 @@
             <div class="player-count" id="playerCount">...</div>
 
             <div id="playersList">
-                <!-- Les joueurs seront insérés ici par JS -->
-            </div>
+                </div>
 
             <div class="section-title">Rejoindre / Changer session</div>
             <input type="text" class="join-input" id="joinInput" placeholder="Entrer code ou /cha code">
@@ -290,7 +293,6 @@
 
     <script>
         // --- VARIABLES GLOBALES ET CONSTANTES ---
-        // Remplacez par l'URL de votre API si elle change
         const API_URL = "https://project-3-api-2bgb.onrender.com"; 
         
         // Fréquences pour les cycles
@@ -304,6 +306,7 @@
         
         let timerInterval; // Pour le rafraîchissement du score (toutes les 10s)
         let clicksTimeout; // Pour l'envoi aléatoire des clics (4-8s)
+        let currentSessionCreator = ''; // Stocke l'ID du créateur de session
         
         // --- FONCTIONS UTILITAIRES ---
         
@@ -313,6 +316,11 @@
                 statusLabel.textContent = message;
                 statusLabel.style.color = color;
             }
+        }
+        
+        // Fonction d'attente pour le délai
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
         }
 
         // --- GESTION DES CYCLES ET DE L'ÉTAT ---
@@ -389,6 +397,69 @@
         }
         
         // --- FONCTIONS DE COMMUNICATION ET DE JEU ---
+        
+        /**
+         * Met à jour l'état du bouton de déconnexion.
+         * Il est désactivé si l'utilisateur est le créateur de la session.
+         */
+        function updateCloseButtonState() {
+            const closeBtn = document.getElementById('closeBtn');
+            const sessionCode = document.getElementById('sessionCode').textContent;
+
+            if (!closeBtn) return;
+            
+            // Si aucune session n'est connectée (code par défaut ou erreur)
+            if (!sessionCode || sessionCode.includes('Chargement') || sessionCode.includes('Erreur')) {
+                closeBtn.disabled = true;
+                closeBtn.title = "Pas de session active.";
+                closeBtn.onclick = null;
+                return;
+            }
+
+            // Seul un joueur qui n'est *pas* le créateur peut se déconnecter
+            const isCreator = (username === currentSessionCreator);
+            
+            if (isCreator) {
+                closeBtn.disabled = true; 
+                closeBtn.title = "Vous êtes le créateur (👑). Vous devez fermer la session depuis l'API ou l'interface de gestion (non implémenté ici).";
+                closeBtn.onclick = null;
+            } else {
+                closeBtn.disabled = false;
+                closeBtn.title = "Quitter la session actuelle (vous ne la fermerez pas).";
+                closeBtn.onclick = handleLeaveSession;
+            }
+        }
+        
+        /**
+         * Gère la déconnexion de l'utilisateur de la session en cours.
+         */
+        async function handleLeaveSession() {
+            if (document.getElementById('closeBtn').disabled) return;
+            
+            setStatus("Déconnexion de la session...", '#f59e0b');
+            
+            try {
+                const response = await fetch(`${API_URL}/leave_session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: username })
+                });
+                const data = await response.json();
+                
+                if (data.status === "success") {
+                    setStatus("Déconnecté. Création d'une nouvelle session par défaut.", '#10b981');
+                    stopAllCycles();
+                    // Retourne à une session par défaut
+                    await loadMySession(); 
+                    launchGameCycle();
+                } else {
+                    setStatus(`Échec de déconnexion: ${data.message || 'Erreur API'}`, '#ef4444');
+                }
+            } catch (e) {
+                setStatus("Erreur réseau lors de la déconnexion.", '#ef4444');
+                console.error("Erreur réseau lors de /leave_session:", e);
+            }
+        }
 
         async function sendClicksRandomly() {
             if (clickCount === 0) {
@@ -445,6 +516,10 @@
             const list = document.getElementById('playersList');
             const countElement = document.getElementById('playerCount');
             list.innerHTML = ''; 
+            
+            // Met à jour le créateur pour le bouton de déconnexion
+            currentSessionCreator = sessionCreator;
+            updateCloseButtonState(); 
 
             if (!players || players.length === 0) {
                 list.innerHTML = `<div class="player-item waiting">Aucun autre joueur.</div>`;
@@ -492,29 +567,29 @@
                 const response = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
                 const data = await response.json();
 
-                if (data.status === "success" && data.session_code === sessionCode) {
-                    document.getElementById('scoreCounter').textContent = data.score || '0';
-                    updatePlayersList(data.players, data.max_players || 5, data.creator_id);
-                    document.getElementById('statusLabel').textContent = `Dernier rafraîchissement: ${new Date().toLocaleTimeString('fr')}`;
-                } else if (data.status === "success" && data.session_code) {
-                    // L'utilisateur est dans une session mais ce n'est pas celle affichée (via join/cha)
+                if (data.status === "success" && data.session_code) {
+                    // Assure que le code de session est bien mis à jour si on a changé entre-temps
                     document.getElementById('sessionCode').textContent = data.session_code;
                     document.getElementById('scoreCounter').textContent = data.score || '0';
                     updatePlayersList(data.players, data.max_players || 5, data.creator_id);
                     document.getElementById('statusLabel').textContent = `Dernier rafraîchissement: ${new Date().toLocaleTimeString('fr')}`;
+                    return data; // Retourne les données pour le rafraîchissement forcé
                 } else {
+                    // Si la session n'est plus valide, on le signale
                     document.getElementById('statusLabel').textContent = "Erreur: Session perdue. Reconnexion...";
-                    console.error("Session perdue ou invalide. Tentative de reconnexion.", data);
+                    console.error("Session perdue ou invalide.", data);
+                    return null;
                 }
             } catch (e) {
                 document.getElementById('statusLabel').textContent = "Erreur réseau. Vérifiez l'API.";
                 console.error("Erreur réseau lors du rafraîchissement des données:", e);
+                return null;
             }
         }
         
         /**
          * Gère les commandes /cha et la jonction de session simple.
-         * C'est ici que la distinction /cha (change_session) vs. code simple (join_session) est effectuée.
+         * NOUVEAU : Logique de tentatives de rafraîchissement forcé.
          */
         async function handleJoinSession(inputId) {
             const inputElement = document.getElementById(inputId);
@@ -534,21 +609,19 @@
             let successMessage = '';
             let actionType = 'join';
             
-            // LOGIQUE CLÉ : Vérifie si c'est la commande /cha
             if (firstPart === '/cha') {
                 if (parts.length < 2) {
-                     setStatus("Erreur: Spécifiez le code de session après /cha.", '#ef4444');
-                     return;
+                    setStatus("Erreur: Spécifiez le code de session après /cha.", '#ef4444');
+                    return;
                 }
                 const newCode = parts[1];
-                endpoint = '/change_session'; // Appel vers /change_session
+                endpoint = '/change_session'; 
                 bodyData.session_code = newCode;
                 successMessage = `Session changée pour ${newCode}.`;
                 actionType = 'changer';
             } else {
-                // Par défaut : simple code de session à rejoindre
                 const code = command;
-                endpoint = '/join_session'; // Appel vers /join_session
+                endpoint = '/join_session'; 
                 bodyData.session_code = code;
                 successMessage = `Session rejointe: ${code}.`;
             }
@@ -566,14 +639,37 @@
                 if (data.status === "success" && data.session_code) {
                     sessionCodeElement.textContent = data.session_code;
                     document.getElementById('scoreCounter').textContent = data.score || '0';
-                    updatePlayersList(data.players, data.max_players || 5, data.creator_id);
-                    setStatus(successMessage, '#10b981');
+                    setStatus(`${successMessage} Vérification des joueurs (1/3)...`, '#f59e0b');
                     
-                    // Relance du cycle de jeu pour synchronisation immédiate
+                    // LOGIQUE DE TENTATIVE DE RAFRAÎCHISSEMENT (1-2-3 fois avec 2s de délai)
+                    const MAX_ATTEMPTS = 3;
+                    let attempt = 0;
+                    let fetchResult = null;
+                    
+                    while (attempt < MAX_ATTEMPTS) {
+                        attempt++;
+                        // La fonction fetchGameData met à jour l'affichage des joueurs
+                        fetchResult = await fetchGameData();
+                        
+                        // Vérifie si on a réussi à récupérer des joueurs
+                        const playersCount = (fetchResult && fetchResult.players) ? fetchResult.players.length : 0;
+                        if (playersCount > 0) {
+                            console.log(`[JOIN] Joueurs récupérés après ${attempt} tentative(s).`);
+                            break;
+                        }
+                        
+                        if (attempt < MAX_ATTEMPTS) {
+                            setStatus(`${successMessage} Re-vérification des joueurs (Tentative ${attempt + 1}/${MAX_ATTEMPTS})...`, '#f59e0b');
+                            await sleep(2000); // 2 secondes de délai
+                        }
+                    }
+                    // FIN LOGIQUE DE TENTATIVE
+
+                    setStatus(successMessage + (attempt > 1 ? ` (OK après ${attempt}s tentatives)` : ''), '#10b981');
+                    
                     stopAllCycles();
                     launchGameCycle(); 
 
-                    // Vider l'input et cacher la barre latérale sur mobile
                     inputElement.value = '';
                     if (window.innerWidth <= 768) {
                         document.getElementById('sidebar').classList.add('hidden');
@@ -581,7 +677,6 @@
 
                 } else {
                     setStatus(`Échec ${actionType}: ${data.message || 'Erreur API'}`, '#ef4444');
-                    // En cas d'échec, on essaie de revenir à la session précédente
                     await fetchGameData(); 
                 }
             } catch (e) {
@@ -611,7 +706,8 @@
                 await loadMySession();
             }
             
-            // 3. Lance les cycles de jeu
+            // 3. Lance les cycles de jeu et met à jour l'état du bouton
+            updateCloseButtonState();
             launchGameCycle();
         }
         
@@ -655,71 +751,40 @@
         // --- GESTION DES ÉVÉNEMENTS ---
 
         function handleButtonClick() {
-            clickCount++;
+            clickCount++;     
             document.getElementById('toSend').textContent = `-- ${clickCount} --`;
-            
-            const now = Date.now();
-            // Effet visuel du clic
-            const button = document.getElementById('clickButton');
-            button.style.transform = 'scale(0.9)';
-            setTimeout(() => {
-                button.style.transform = 'scale(1)';
-            }, 100);
-
-            // Gère le CPS (Clicks Per Second) - optionnel ici car l'envoi est temporel, 
-            // mais on pourrait l'utiliser pour des améliorations futures.
         }
 
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const toggleBtn = document.getElementById('toggleSidebar');
-            
-            sidebar.classList.toggle('hidden');
-            if (sidebar.classList.contains('hidden')) {
-                toggleBtn.textContent = '☰';
-            } else {
-                toggleBtn.textContent = '✖';
-            }
-        }
-
-        // --- INITIALISATION DU JEU ---
-        
-        function initGame() {
-            // S'assure qu'un username existe dans le localStorage
-            if (!localStorage.getItem("username")) {
-                localStorage.setItem("username", username);
-            }
-            
-            // Événements du bouton de clic
+        function setupEventListeners() {
             document.getElementById('clickButton').addEventListener('click', handleButtonClick);
-
-            // Événements de la barre latérale
-            document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
-            document.getElementById('closeBtn').addEventListener('click', toggleSidebar);
-
-            // Événement du bouton "Rejoindre/Changer" pour la version desktop
-            document.getElementById('joinButton').addEventListener('click', () => handleJoinSession('joinInput'));
-            
-            // Ajout du listener pour l'input desktop (touche Entrée)
-            document.getElementById('joinInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    handleJoinSession('joinInput');
-                }
+            document.getElementById('toggleSidebar').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('hidden');
             });
-
-            // Affichage des contrôles mobiles si nécessaire
-            if (window.innerWidth <= 768) {
-                document.getElementById('joinButtonMobile').style.display = 'block';
-                document.getElementById('joinInputMobile').style.display = 'block';
-                // Ajout du listener pour l'input mobile (touche Entrée)
-                document.getElementById('joinInputMobile').addEventListener('keypress', (e) => {
+            
+            // Initialise l'état du bouton (désactivé au chargement)
+            updateCloseButtonState(); 
+            
+            // Ajout des listeners pour mobile
+            const joinBtnMobile = document.getElementById('joinButtonMobile');
+            const joinInputMobile = document.getElementById('joinInputMobile');
+            if (joinBtnMobile) {
+                joinBtnMobile.addEventListener('click', () => handleJoinSession('joinInputMobile'));
+            }
+            if (joinInputMobile) {
+                joinInputMobile.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') {
                         handleJoinSession('joinInputMobile');
                     }
                 });
             }
+        }
 
-            // Démarrage du processus de connexion/création de session
+        function initGame() {
+            // Assurez-vous que l'username est dans le localStorage
+            if (!localStorage.getItem("username")) {
+                localStorage.setItem("username", username);
+            }
+            setupEventListeners();
             checkAndLoadSession();
         }
     </script>

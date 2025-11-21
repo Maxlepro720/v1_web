@@ -821,27 +821,65 @@
         }
         
         async function fetchPlayers() {
-            // Assurez-vous que 'username' est accessible (définissez-le globalement ou décommentez la ligne ci-dessous)
             const username = localStorage.getItem("username"); 
             
+            if (!username) {
+                console.error("[FETCH_PLAYERS] Nom d'utilisateur non disponible. Arrêt du rafraîchissement.");
+                return;
+            }
+            
             const sessionCodeElement = document.getElementById('sessionCode');
-            // 💡 Le code de session à interroger est le code actuellement affiché
             const currentDisplayedCode = sessionCodeElement.textContent; 
             const forcedCode = sessionCodeElement.dataset.forcedCode; 
             
-            // ... (vérifications initiales) ...
+            // Vérifications initiales (si le code affiché est un état temporaire, on ne fait rien)
+            if (currentDisplayedCode === "Chargement..." || currentDisplayedCode === "Aucune session" || currentDisplayedCode === "Erreur" || currentDisplayedCode === "Création...") {
+                return;
+            }
 
-            console.log("[FETCH_PLAYERS] Requête /verify_player_in_session envoyée pour obtenir les joueurs et le statut.");
+            console.log(`[FETCH_PLAYERS] Requête pour session: ${currentDisplayedCode}`);
             
             try {
                 const playersResponse = await fetch(
-                    // 🚀 UTILISER currentDisplayedCode !
+                    // On utilise le code de session actuellement affiché pour demander la vérification
                     `${API_URL}/verify_player_in_session?username=${encodeURIComponent(username)}&session_code=${encodeURIComponent(currentDisplayedCode)}`
                 );
                 
                 const playersData = await playersResponse.json();
-                // ... (le reste de votre logique reste parfait) ...
-                console.log(playersData)
+                console.log(playersData); // Affichage des données reçues (comme vous le faites)
+
+                // Si la requête échoue ou ne renvoie pas de code valide 
+                if (playersData.status !== "success" || !playersData.session_code) {
+                    console.warn(`[FETCH_PLAYERS] Échec de vérification pour ${currentDisplayedCode}: ${playersData.message || 'Données invalides.'}`);
+                    return;
+                }
+                
+                // Logique pour gérer le code forcé
+                if (forcedCode && playersData.session_code !== forcedCode) {
+                    sessionCodeElement.textContent = forcedCode; 
+                    return;
+                }
+
+                // Logique de prévention des désynchronisations (si le serveur renvoie le mauvais code)
+                if (playersData.session_code !== currentDisplayedCode) {
+                    console.warn(`[FETCH_PLAYERS] Désynchronisation détectée. Serveur renvoie ${playersData.session_code} au lieu de ${currentDisplayedCode}.`);
+                    // Pour l'instant, on ignore la mise à jour pour ne pas écraser l'affichage 'mode'
+                    // Vous pouvez commenter le 'return' si vous voulez que l'affichage soit écrasé
+                    // MAIS cela cause les problèmes de "joueurs qui disparaissent" que vous avez eus.
+                    return; 
+                }
+
+                // --- 🚀 APPEL CRITIQUE MANQUANT ---
+                
+                // Mise à jour de l'affichage du code (si on est synchro)
+                sessionCodeElement.textContent = playersData.session_code; 
+                sessionCodeElement.dataset.forcedCode = '';
+                
+                // 🚨 C'est l'appel qui met à jour l'interface utilisateur !
+                updatePlayersList(playersData.players || [], playersData.creator);
+                
+                // Mise à jour de l'état du bouton (si vous avez cette fonction)
+                // checkCloseButtonState(); 
                 
             } catch (e) {
                 console.error("Erreur réseau ou JSON lors du rafraîchissement des joueurs:", e);

@@ -566,55 +566,26 @@
 
         // Bouton croix (×) en haut à droite : /leave de la session de groupe uniquement.
         async function handleLeaveSession() {
-            // Récupération des éléments
+            // Récupération des éléments nécessaires pour l'affichage et la fermeture
             const sessionCode = document.getElementById('sessionCode').textContent;
             const sidebarStatus = document.getElementById('sidebarStatus');
-            // Le bouton 'closeBtn' sera le bouton qui appelle cette fonction (bouton "Quitter")
+            const closeBtn = document.getElementById('closeBtn');
+            const toggleBtn = document.getElementById('toggleSidebar');
 
-            // Assure que le bouton 'Quitter' est dans l'état correct au début (même s'il est désactivé)
-            // Nous supposons que checkCloseButtonState() gère la désactivation pour le créateur et les sessions non actives.
-            checkCloseButtonState(); 
-
-            // 1. Vérification de l'état de session (pas de session active/valide pour quitter)
-            if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
-                sidebarStatus.textContent = "⚠️ Pas de session active à quitter.";
+            // On suppose que le code de session et l'username sont disponibles globalement
+            if (!sessionCode || sessionCode === "Chargement...") {
+                sidebarStatus.textContent = "⚠️ Code de session manquant ou en cours de chargement.";
                 sidebarStatus.style.color = "#f59e0b";
                 return;
             }
 
-            const sessionInfo = await getPlayerSessionInfo();
-            const isCreator = sessionInfo && sessionInfo.creator === username && sessionInfo.session_code === sessionCode;
-            const isInGroup = sessionInfo && sessionInfo.session_code === sessionCode && !isCreator;
-
-            // ATTENTION : Si vous avez un code de session personnel qui n'est pas "Aucune session"
-            // et que vous n'êtes pas le créateur (isCreator=false), isInGroup sera false.
-
-            /* -------------------------------------------------------------
-            ⚠️ BLOC SUPPRIMÉ (Inutile si le bouton est désactivé au préalable)
-            
-            if (isCreator) {
-                sidebarStatus.textContent = "❌ Créateur : utilisez la flèche (←) pour vous déconnecter et détruire la session (Logout).";
-                sidebarStatus.style.color = "#ef4444";
-                return;
-            }
-            ----------------------------------------------------------------*/
-            
-            // 2. Cas de la session personnelle (Solo)
-            if (!isInGroup) {
-                sidebarStatus.textContent = "⚠️ Vous êtes dans votre session personnelle (solo). Fermeture de la barre latérale.";
-                sidebarStatus.style.color = "#f59e0b";
-                // Le bloc 'finally' gère la fermeture de la sidebar.
-                return;
-            }
-
-            // 3. Logique de 'leave' pour un simple joueur (dans une session de groupe)
             try {
-                const closeBtn = document.getElementById('closeBtn'); // Redéfinition locale pour le try/finally
-                closeBtn.disabled = true; 
-                sidebarStatus.textContent = `Tentative de quitter la session ${sessionCode}...`;
+                // Désactivation du bouton pour éviter les clics multiples
+                if (closeBtn) closeBtn.disabled = true; 
+                sidebarStatus.textContent = `Tentative de quitter la session ${sessionCode}... (Forcé)`;
                 sidebarStatus.style.color = "#f59e0b";
 
-                // Requête /leave pour la session de groupe
+                // Requête /leave forcée pour la session de groupe
                 const response = await fetch(`${API_URL}/leave`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -623,29 +594,30 @@
                 const data = await response.json();
 
                 if (data.status === "success") {
-                    sidebarStatus.textContent = "✅ Session de groupe quittée. Retour à la session solo.";
+                    sidebarStatus.textContent = "✅ Déconnexion de session effectuée.";
                     sidebarStatus.style.color = "#10b981";
                     
-                    // Mise à jour de l'état du jeu pour la session solo
+                    // Mise à jour de l'état du jeu
+                    // (Ces fonctions sont nécessaires pour passer en mode solo)
                     stopAllCycles();
                     await loadMySession(); 
                     await fetchGameData();
                     launchGameCycle(); 
                     
                 } else {
+                    // Affiche le message d'erreur du serveur
                     sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`;
                     sidebarStatus.style.color = "#ef4444";
                 }
             } catch (e) {
-                sidebarStatus.textContent = "❌ Erreur réseau lors de la déconnexion de session.";
+                sidebarStatus.textContent = "❌ Erreur réseau lors de la déconnexion de session forcée.";
                 sidebarStatus.style.color = "#ef4444";
             } finally {
-                // Nettoyage et fermeture de la barre latérale dans tous les cas après traitement
-                checkCloseButtonState();
+                // Nettoyage et fermeture de la barre latérale dans tous les cas
+                if (closeBtn) checkCloseButtonState(); // Réactive/vérifie l'état du bouton
                 document.getElementById('sidebar').classList.add('hidden');
                 
                 // Remet l'icône de menu en position "hamburger"
-                const toggleBtn = document.getElementById('toggleSidebar');
                 if (toggleBtn) {
                     toggleBtn.classList.remove('open'); 
                 }

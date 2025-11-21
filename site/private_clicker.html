@@ -859,7 +859,7 @@
         }
 
         async function fetchPlayersInSession(sessionCode) {
-            const username = // ... votre variable globale username ...
+            const username = localStorage.getItem("username");
 
             console.log(`[FETCH_PLAYERS_IN_SESSION] Tentative de récupération des joueurs pour la session ciblée: ${sessionCode}`);
 

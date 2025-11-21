@@ -9,7 +9,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #232323; overflow: hidden; }
 
-        .container { display: flex; width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+.container { display: flex; width: 100vw; height: 100vh; position: relative; overflow: hidden; }
 
 .main-area { flex: 1; background: #1b1b1b; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; min-width: 0; }
 
@@ -39,7 +39,9 @@
 
 .sidebar.hidden { transform: translateX(100%); }
 
-/* --- MODIFICATIONS POUR LE BOUTON MENU (HAMBURGER -> CROIX) --- */
+/* -------------------------------------
+   MODIFICATIONS POUR LE BOUTON MENU 
+   ------------------------------------- */
 .toggle-sidebar-btn { 
     position: absolute; 
     top: 20px; 
@@ -51,69 +53,71 @@
     height: clamp(40px, 6vw, 50px); 
     border-radius: 50%; 
     cursor: pointer; 
-    /* Retire la taille de police pour utiliser les pseudo-éléments */
-    /* font-size: clamp(18px, 3vw, 24px); */
     z-index: 101; 
-    transition: all 0.3s ease; /* Garde la transition de scale */
+    /* Retire la transition de scale pour qu'il ne bouge pas au survol */
+    transition: box-shadow 0.3s ease; 
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); 
     display: flex; 
     align-items: center; 
     justify-content: center; 
-    /* Ajout: transition pour l'icône interne (non nécessaire ici mais bonne pratique) */
-    transform: scale(1);
+    transform: none; /* S'assure qu'il n'y a pas de transformation de base */
 }
 
+/* Désactive l'effet de zoom au survol */
 .toggle-sidebar-btn:hover { 
-    transform: scale(1.1); 
+    transform: none; 
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); 
 }
 
-/* Base de l'icône hamburger */
-.toggle-sidebar-btn > * { /* Le contenu de base (e.g. les 3 barres si c'est du HTML, ici on va cacher l'icône existante */
-    /* Assurez-vous que l'icône originale est cachée ou remplacez-la par un élément vide */
+/* Cache le contenu interne du bouton (s'il y a du texte ou une ancienne icône) */
+.toggle-sidebar-btn > * {
     display: none;
 }
 
 /* Style des barres du hamburger */
-.toggle-sidebar-btn::before, .toggle-sidebar-btn::after {
+.toggle-sidebar-btn::before, 
+.toggle-sidebar-btn::after,
+.toggle-sidebar-btn .hamburger-middle { /* Ajout d'une barre centrale via un élément interne (besoin d'un <span> dans le HTML) */
     content: '';
     position: absolute;
     width: 60%;
-    height: 2px;
+    height: 3px; /* Épaissi légèrement les barres pour la visibilité */
     background: white;
     border-radius: 1px;
-    transition: transform 0.3s ease, top 0.3s ease, bottom 0.3s ease;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    left: 20%; /* Centre les barres */
 }
 
-/* Barre du haut */
+/* Positionnement des barres (hamburger) */
 .toggle-sidebar-btn::before {
-    top: 35%;
+    transform: translateY(-9px); /* Barre du haut */
+}
+
+.toggle-sidebar-btn .hamburger-middle { 
+    /* La barre du milieu est gérée par le span .hamburger-middle */
+    top: 50%;
     transform: translateY(-50%);
 }
 
-/* Barre du bas */
 .toggle-sidebar-btn::after {
-    bottom: 35%;
-    transform: translateY(50%);
+    transform: translateY(9px); /* Barre du bas */
 }
 
-/* Transformation en croix lors de l'ouverture (classe .open ajoutée par JS) */
+/* Transformation en croix (classe .open ajoutée par JS) */
 .toggle-sidebar-btn.open::before {
-    top: 50%;
-    transform: translateY(-50%) rotate(45deg);
+    transform: translateY(0) rotate(45deg); /* Barre du haut pivote pour former le bras de la croix */
 }
 
 .toggle-sidebar-btn.open::after {
-    bottom: 50%;
-    transform: translateY(50%) rotate(-45deg);
+    transform: translateY(0) rotate(-45deg); /* Barre du bas pivote pour former l'autre bras de la croix */
 }
 
-/* Cacher l'icône du milieu si elle existe (si l'élément principal est utilisé) */
-.toggle-sidebar-btn.open {
-    /* Assurez-vous que le scale(1) et l'ombre restent pour que le bouton ne bouge pas, mais le :hover permet de le faire bouger */
-    transform: scale(1); 
+.toggle-sidebar-btn.open .hamburger-middle {
+    opacity: 0; /* La barre du milieu disparaît */
 }
-/* Fin des modifications pour le bouton menu */
+/* -------------------------------------
+   FIN DES MODIFICATIONS POUR LE BOUTON MENU 
+   ------------------------------------- */
 
 .close-btn { 
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
@@ -174,7 +178,6 @@
 
 .sidebar-status { color: #94a3b8; font-size: clamp(11px, 1.5vw, 12px); margin-top: 10px; min-height: 20px; word-break: break-word; }
 
-/* --- MODIFICATIONS POUR LA FLÈCHE DE GAUCHE (ROTATION 360°) --- */
 .back-btn { 
     position: absolute; 
     top: 20px; 
@@ -191,19 +194,15 @@
     align-items: center; 
     justify-content: center; 
     box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); 
-    /* Met à jour la transition pour inclure la rotation */
     transition: all 0.3s ease, transform 0.6s ease-out; 
     z-index: 102; 
-    /* Etat normal (début de la transition) */
     transform: scale(1) rotate(0deg); 
 }
 
-/* Ajout de la rotation 360° au survol */
 .back-btn:hover { 
     transform: scale(1.1) rotate(360deg); 
     box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6); 
 }
-/* Fin des modifications pour la flèche */
 
 /* Joueur en attente */
 .player-item {
@@ -244,7 +243,6 @@
     .sidebar { width: 85vw; }
     .main-area { 
         padding: 15px; 
-        /* Activation Flexbox en colonne pour l'ordre mobile */
         display: flex;
         flex-direction: column; 
         justify-content: space-between; 

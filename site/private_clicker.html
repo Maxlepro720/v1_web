@@ -802,7 +802,6 @@
                     if (response.ok) {
                         clickCount = 0; 
                         const toSend = document.getElementById('toSend');
-                        if (toSend) toSend.textContent = "-- 0 --";
                     } else {
                         console.error(`[CLICS] Échec de l'envoi des clics: ${response.status}`);
                     }

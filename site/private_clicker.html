@@ -951,6 +951,7 @@
         }
 
         function updatePlayersList(players, creator) {
+            // Récupération des éléments DOM
             const playerCount = document.getElementById('playerCount');
             const playerSlots = [
                 document.getElementById('player1'), 
@@ -961,29 +962,39 @@
             ];
             if (!playerCount || !playerSlots[0]) return;
 
-            let uniqueActivePlayers = [];
+            // 💡 Point Clé: Récupérer le nom d'utilisateur actuel (assurez-vous que cette variable est disponible)
+            const username = localStorage.getItem("username"); 
+
+            // 1. Utilisation d'un Set pour assurer l'unicité des noms
+            const uniqueActivePlayersSet = new Set();
             
-            if (creator && !uniqueActivePlayers.includes(creator)) uniqueActivePlayers.push(creator);
-            
-            if (players) {
-                players.forEach(p => {
-                     if (!uniqueActivePlayers.includes(p)) {
-                         uniqueActivePlayers.push(p);
-                     }
-                });
+            // 2. Ajouter le créateur (s'il est présent)
+            if (creator) {
+                uniqueActivePlayersSet.add(creator);
             }
             
-            if (username && !uniqueActivePlayers.includes(username)) {
-                 uniqueActivePlayers.push(username); 
+            // 3. Ajouter la liste des joueurs reçue du serveur
+            // S'assure que 'players' est bien un tableau et ajoute chaque joueur au Set
+            if (players && Array.isArray(players)) {
+                players.forEach(p => uniqueActivePlayersSet.add(p));
+            }
+            
+            // 4. Ajouter l'utilisateur actuel (au cas où il ne serait pas explicitement listé par le serveur)
+            if (username) {
+                uniqueActivePlayersSet.add(username); 
             }
 
-            uniqueActivePlayers = [...new Set(uniqueActivePlayers)].slice(0, 5);
+            // 5. Convertir le Set en Array, limitant à 5 joueurs
+            let uniqueActivePlayers = Array.from(uniqueActivePlayersSet).slice(0, 5);
+            
+            // --- Mise à jour de l'Affichage ---
             
             playerCount.textContent = `${uniqueActivePlayers.length}/5`;
 
             playerSlots.forEach((slot, index) => {
                 const player = uniqueActivePlayers[index];
                 if (slot) {
+                    // Réinitialisation des classes pour chaque slot
                     slot.className = 'player-item'; 
 
                     if (player) {

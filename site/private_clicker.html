@@ -1257,12 +1257,10 @@
             });
             
             document.getElementById('toggleSidebar').addEventListener('click', () => {
-                 const sidebar = document.getElementById('sidebar');
-                 const toggleBtn = document.getElementById('toggleSidebar');
-                 const isHidden = sidebar.classList.toggle('hidden');
-                 toggleBtn.textContent = isHidden ? '☰' : '×'; 
-                 toggleBtn.style.left = isHidden ? '80px' : 'calc(100vw - 30px)'; 
-                 toggleBtn.style.transform = isHidden ? 'none' : 'translateX(-100%)';
+                const sidebar = document.getElementById('sidebar');
+                const toggleBtn = document.getElementById('toggleSidebar');
+                sidebar.classList.toggle('hidden');
+                toggleBtn.classList.toggle('open');
             });
             
             window.addEventListener('beforeunload', handleLogoutOnClose);

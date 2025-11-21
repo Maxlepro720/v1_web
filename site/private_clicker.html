@@ -569,12 +569,13 @@
             // Récupération des éléments
             const sessionCode = document.getElementById('sessionCode').textContent;
             const sidebarStatus = document.getElementById('sidebarStatus');
-            const closeBtn = document.getElementById('closeBtn');
+            // Le bouton 'closeBtn' sera le bouton qui appelle cette fonction (bouton "Quitter")
 
-            // Assure que le bouton 'Fermer' est dans l'état correct au début
-            checkCloseButtonState(); // (Assurez-vous que cette fonction existe)
+            // Assure que le bouton 'Quitter' est dans l'état correct au début (même s'il est désactivé)
+            // Nous supposons que checkCloseButtonState() gère la désactivation pour le créateur et les sessions non actives.
+            checkCloseButtonState(); 
 
-            // 1. Vérification de l'état de session (pas de session active)
+            // 1. Vérification de l'état de session (pas de session active/valide pour quitter)
             if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
                 sidebarStatus.textContent = "⚠️ Pas de session active à quitter.";
                 sidebarStatus.style.color = "#f59e0b";
@@ -585,30 +586,30 @@
             const isCreator = sessionInfo && sessionInfo.creator === username && sessionInfo.session_code === sessionCode;
             const isInGroup = sessionInfo && sessionInfo.session_code === sessionCode && !isCreator;
 
-            // 2. Cas du Créateur
+            // ATTENTION : Si vous avez un code de session personnel qui n'est pas "Aucune session"
+            // et que vous n'êtes pas le créateur (isCreator=false), isInGroup sera false.
+
+            /* -------------------------------------------------------------
+            ⚠️ BLOC SUPPRIMÉ (Inutile si le bouton est désactivé au préalable)
+            
             if (isCreator) {
                 sidebarStatus.textContent = "❌ Créateur : utilisez la flèche (←) pour vous déconnecter et détruire la session (Logout).";
                 sidebarStatus.style.color = "#ef4444";
                 return;
             }
+            ----------------------------------------------------------------*/
             
-            // 3. Cas de la session personnelle (Solo)
-            // On ne fait rien, car il n'y a pas d'API /leave à appeler
+            // 2. Cas de la session personnelle (Solo)
             if (!isInGroup) {
                 sidebarStatus.textContent = "⚠️ Vous êtes dans votre session personnelle (solo). Fermeture de la barre latérale.";
                 sidebarStatus.style.color = "#f59e0b";
-                
-                // On laisse le block 'finally' gérer la fermeture de la sidebar.
-                // Si vous voulez une action immédiate, décommentez les lignes ci-dessous :
-                /*
-                document.getElementById('sidebar').classList.add('hidden');
-                document.getElementById('toggleSidebar').classList.remove('open');
-                */
+                // Le bloc 'finally' gère la fermeture de la sidebar.
                 return;
             }
 
-            // 4. Logique de 'leave' pour un simple joueur (dans une session de groupe)
+            // 3. Logique de 'leave' pour un simple joueur (dans une session de groupe)
             try {
+                const closeBtn = document.getElementById('closeBtn'); // Redéfinition locale pour le try/finally
                 closeBtn.disabled = true; 
                 sidebarStatus.textContent = `Tentative de quitter la session ${sessionCode}...`;
                 sidebarStatus.style.color = "#f59e0b";
@@ -617,7 +618,7 @@
                 const response = await fetch(`${API_URL}/leave`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: sessionCode, id: username }) // Assurez-vous que 'username' est défini globalement
+                    body: JSON.stringify({ code: sessionCode, id: username })
                 });
                 const data = await response.json();
 
@@ -626,10 +627,10 @@
                     sidebarStatus.style.color = "#10b981";
                     
                     // Mise à jour de l'état du jeu pour la session solo
-                    stopAllCycles(); // (Assurez-vous que cette fonction existe)
+                    stopAllCycles();
                     await loadMySession(); 
                     await fetchGameData();
-                    launchGameCycle(); // (Assurez-vous que cette fonction existe)
+                    launchGameCycle(); 
                     
                 } else {
                     sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`;

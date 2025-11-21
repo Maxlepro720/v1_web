@@ -989,7 +989,10 @@
         }
 
         function updatePlayersList(players, creator) {
-            // Récupération des éléments DOM
+            // 💡 Définissez le pseudo de l'administrateur ici. À remplacer par le pseudo réel !
+            const ADMIN_USERNAME = 'admin'; 
+
+            // 1. Récupération des éléments DOM
             const playerCount = document.getElementById('playerCount');
             const playerSlots = [
                 document.getElementById('player1'), 
@@ -998,65 +1001,81 @@
                 document.getElementById('player4'), 
                 document.getElementById('player5')
             ];
-            if (!playerCount || !playerSlots[0]) return;
+            if (!playerCount || playerSlots.length === 0 || !playerSlots[0]) return;
 
-            // 💡 Point Clé: Récupérer le nom d'utilisateur actuel (assurez-vous que cette variable est disponible)
+            // Récupération du nom d'utilisateur actuel (celui qui regarde l'écran)
             const username = localStorage.getItem("username"); 
 
-            // 1. Utilisation d'un Set pour assurer l'unicité des noms
+            // --- Gestion de l'Unicité des Joueurs ---
+            
             const uniqueActivePlayersSet = new Set();
             
-            // 2. Ajouter le créateur (s'il est présent)
+            // Ajout du créateur
             if (creator) {
                 uniqueActivePlayersSet.add(creator);
             }
             
-            // 3. Ajouter la liste des joueurs reçue du serveur
-            // S'assure que 'players' est bien un tableau et ajoute chaque joueur au Set
+            // Ajout de la liste des joueurs reçue du serveur
             if (players && Array.isArray(players)) {
                 players.forEach(p => uniqueActivePlayersSet.add(p));
             }
             
-            // 4. Ajouter l'utilisateur actuel (au cas où il ne serait pas explicitement listé par le serveur)
+            // Ajout de l'utilisateur actuel (au cas où il ne serait pas explicitement listé)
             if (username) {
                 uniqueActivePlayersSet.add(username); 
             }
 
-            // 5. Convertir le Set en Array, limitant à 5 joueurs
+            // Conversion en Array et limitation à 5 joueurs
             let uniqueActivePlayers = Array.from(uniqueActivePlayersSet).slice(0, 5);
             
-            // --- Mise à jour de l'Affichage ---
+            // --- Mise à Jour de l'Affichage ---
             
             playerCount.textContent = `${uniqueActivePlayers.length}/5`;
 
             playerSlots.forEach((slot, index) => {
                 const player = uniqueActivePlayers[index];
+                
                 if (slot) {
-                    // Réinitialisation des classes pour chaque slot
+                    // Nettoyage et réinitialisation du slot pour le rafraîchissement
                     slot.className = 'player-item'; 
+                    slot.textContent = ''; 
 
                     if (player) {
-                        let displayString = "";
+                        // Détermination des rôles
                         const isCreator = player === creator;
                         const isMe = player === username;
+                        const isAdmin = player === ADMIN_USERNAME;
                         
+                        let displayString = player; // Par défaut, le pseudo du joueur
+                        let emoji = '👤'; // Emoji par défaut (Joueur standard)
+
+                        // 1. Détermination de l'Emoji (Priorité : Créateur > Admin > Joueur)
+                        if (isCreator) {
+                            emoji = '👑'; // Créateur
+                            slot.classList.add('player-item-creator');
+                        } else if (isAdmin) {
+                            emoji = '🤖'; // Administrateur
+                            slot.classList.add('player-item-admin');
+                        } 
+                        // Sinon, l'emoji reste 👤 (Joueur standard)
+
+                        // 2. Détermination du Texte à Afficher
                         if (isMe) {
-                            displayString = isCreator ? `👑 👤 Vous` : `👤 Vous`; 
+                            displayString = 'Vous'; 
                             slot.classList.add('player-item-me');
-                            if (isCreator) slot.classList.add('player-item-creator');
-                        } else {
-                            displayString = isCreator ? `👑 ${player}` : `🤖 ${player}`;
-                            if (isCreator) slot.classList.add('player-item-creator');
                         }
-                        slot.textContent = displayString;
+                        
+                        // 3. Affichage final
+                        slot.textContent = `${emoji} ${displayString}`;
+                        
                     } else {
+                        // Slot vide / En attente
                         slot.textContent = '⚪ En attente...';
                         slot.classList.add('waiting');
                     }
                 }
             });
         }
-
         async function createSession(sessionCode) {
             const sessionCodeElement = document.getElementById('sessionCode');
             const sidebarStatus = document.getElementById('sidebarStatus');

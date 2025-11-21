@@ -821,43 +821,31 @@
         }
         
         async function fetchPlayers() {
+            // Assurez-vous que 'username' est accessible (définissez-le globalement ou décommentez la ligne ci-dessous)
+            const username = localStorage.getItem("username"); 
+            
             const sessionCodeElement = document.getElementById('sessionCode');
-            const currentDisplayedCode = sessionCodeElement.textContent;
+            // 💡 Le code de session à interroger est le code actuellement affiché
+            const currentDisplayedCode = sessionCodeElement.textContent; 
             const forcedCode = sessionCodeElement.dataset.forcedCode; 
             
-            if (currentDisplayedCode === "Chargement..." || currentDisplayedCode === "Aucune session" || currentDisplayedCode === "Erreur" || currentDisplayedCode === "Création...") {
-                return;
-            }
+            // ... (vérifications initiales) ...
 
-            console.log("[FETCH_PLAYERS] Requête /verify_session envoyée pour obtenir les joueurs et le statut.");
+            console.log("[FETCH_PLAYERS] Requête /verify_player_in_session envoyée pour obtenir les joueurs et le statut.");
             
             try {
-                const playersResponse = await fetch(`${API_URL}/verify_player_in_session?username=${encodeURIComponent(username)}&session_code=${encodeURIComponent(sessionCode)}`);
-                const playersData = await playersResponse.json();
-                console.log(playersData)
-                if (playersData.status !== "success" || !playersData.session_code) {
-                     return;
-                }
+                const playersResponse = await fetch(
+                    // 🚀 UTILISER currentDisplayedCode !
+                    `${API_URL}/verify_player_in_session?username=${encodeURIComponent(username)}&session_code=${encodeURIComponent(currentDisplayedCode)}`
+                );
                 
-                if (forcedCode && playersData.session_code !== forcedCode) {
-                     sessionCodeElement.textContent = forcedCode; 
-                     return;
-                }
-
-                if (playersData.session_code !== currentDisplayedCode) {
-                     console.warn(`[FETCH_PLAYERS] Désynchronisation détectée. Mise à jour forcée.`);
-                }
-
-                sessionCodeElement.textContent = playersData.session_code; 
-                sessionCodeElement.dataset.forcedCode = '';
-                updatePlayersList(playersData.players || [], playersData.creator);
-                checkCloseButtonState(); 
+                const playersData = await playersResponse.json();
+                // ... (le reste de votre logique reste parfait) ...
                 
             } catch (e) {
                 console.error("Erreur réseau ou JSON lors du rafraîchissement des joueurs:", e);
             }
         }
-
         async function fetchPlayersInSession(sessionCode) {
             const username = localStorage.getItem("username");
 

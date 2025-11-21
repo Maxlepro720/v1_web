@@ -955,6 +955,7 @@
             const sessionCode = document.getElementById('sessionCode').textContent;
             const closeBtn = document.getElementById('closeBtn');
 
+            // 1. Désactivation pour les états transitoires ou non connectés
             if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
                 closeBtn.disabled = true;
                 closeBtn.style.backgroundColor = "#6b7280";
@@ -963,6 +964,14 @@
                 return;
             }
 
+            // 2. 🚀 Activation pour toutes les sessions valides (y compris les sessions de groupe)
+            // Le bouton doit être ACTIF, car handleLeaveSession() gère la logique complexe 
+            // (si c'est le créateur ou un simple joueur, etc.)
+            closeBtn.disabled = false;
+            closeBtn.style.backgroundColor = ""; // Retirer le style de désactivation
+            closeBtn.style.cursor = "pointer"; // Rétablir le curseur normal
+            closeBtn.textContent = "✖"; // Changer le texte pour indiquer qu'il est cliquable (ou garder '×')
+            }
             getPlayerSessionInfo().then(sessionInfo => {
                  const isCreator = sessionInfo && sessionInfo.creator === username && sessionInfo.session_code === sessionCode;
                  const isInGroup = sessionInfo && sessionInfo.session_code === sessionCode && !isCreator;
@@ -985,7 +994,6 @@
                 }
                 closeBtn.textContent = "×";
             });
-        }
 
         function updatePlayersList(players, creator) {
             // 💡 Définissez le pseudo de l'administrateur ici. À remplacer par le pseudo réel !

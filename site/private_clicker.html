@@ -566,10 +566,15 @@
 
         // Bouton croix (×) en haut à droite : /leave de la session de groupe uniquement.
         async function handleLeaveSession() {
+            // Récupération des éléments
             const sessionCode = document.getElementById('sessionCode').textContent;
             const sidebarStatus = document.getElementById('sidebarStatus');
             const closeBtn = document.getElementById('closeBtn');
 
+            // Assure que le bouton 'Fermer' est dans l'état correct au début
+            checkCloseButtonState(); // (Assurez-vous que cette fonction existe)
+
+            // 1. Vérification de l'état de session (pas de session active)
             if (sessionCode === "Chargement..." || sessionCode === "Aucune session" || sessionCode === "Erreur" || sessionCode === "Création...") {
                 sidebarStatus.textContent = "⚠️ Pas de session active à quitter.";
                 sidebarStatus.style.color = "#f59e0b";
@@ -580,21 +585,29 @@
             const isCreator = sessionInfo && sessionInfo.creator === username && sessionInfo.session_code === sessionCode;
             const isInGroup = sessionInfo && sessionInfo.session_code === sessionCode && !isCreator;
 
+            // 2. Cas du Créateur
             if (isCreator) {
                 sidebarStatus.textContent = "❌ Créateur : utilisez la flèche (←) pour vous déconnecter et détruire la session (Logout).";
                 sidebarStatus.style.color = "#ef4444";
                 return;
             }
             
+            // 3. Cas de la session personnelle (Solo)
+            // On ne fait rien, car il n'y a pas d'API /leave à appeler
             if (!isInGroup) {
-                 sidebarStatus.textContent = "⚠️ Vous êtes dans votre session personnelle (solo).";
-                 sidebarStatus.style.color = "#f59e0b";
-                 document.getElementById('sidebar').classList.add('hidden');
-                 document.getElementById('toggleSidebar').style.display = 'flex';
-                 return;
+                sidebarStatus.textContent = "⚠️ Vous êtes dans votre session personnelle (solo). Fermeture de la barre latérale.";
+                sidebarStatus.style.color = "#f59e0b";
+                
+                // On laisse le block 'finally' gérer la fermeture de la sidebar.
+                // Si vous voulez une action immédiate, décommentez les lignes ci-dessous :
+                /*
+                document.getElementById('sidebar').classList.add('hidden');
+                document.getElementById('toggleSidebar').classList.remove('open');
+                */
+                return;
             }
 
-            // Logique de 'leave' pour un simple joueur
+            // 4. Logique de 'leave' pour un simple joueur (dans une session de groupe)
             try {
                 closeBtn.disabled = true; 
                 sidebarStatus.textContent = `Tentative de quitter la session ${sessionCode}...`;
@@ -604,7 +617,7 @@
                 const response = await fetch(`${API_URL}/leave`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: sessionCode, id: username })
+                    body: JSON.stringify({ code: sessionCode, id: username }) // Assurez-vous que 'username' est défini globalement
                 });
                 const data = await response.json();
 
@@ -612,10 +625,11 @@
                     sidebarStatus.textContent = "✅ Session de groupe quittée. Retour à la session solo.";
                     sidebarStatus.style.color = "#10b981";
                     
-                    stopAllCycles();
+                    // Mise à jour de l'état du jeu pour la session solo
+                    stopAllCycles(); // (Assurez-vous que cette fonction existe)
                     await loadMySession(); 
                     await fetchGameData();
-                    launchGameCycle(); 
+                    launchGameCycle(); // (Assurez-vous que cette fonction existe)
                     
                 } else {
                     sidebarStatus.textContent = `❌ Impossible de quitter : ${data.message}`;
@@ -625,9 +639,15 @@
                 sidebarStatus.textContent = "❌ Erreur réseau lors de la déconnexion de session.";
                 sidebarStatus.style.color = "#ef4444";
             } finally {
+                // Nettoyage et fermeture de la barre latérale dans tous les cas après traitement
                 checkCloseButtonState();
                 document.getElementById('sidebar').classList.add('hidden');
-                document.getElementById('toggleSidebar').style.display = 'flex';
+                
+                // Remet l'icône de menu en position "hamburger"
+                const toggleBtn = document.getElementById('toggleSidebar');
+                if (toggleBtn) {
+                    toggleBtn.classList.remove('open'); 
+                }
             }
         }
         

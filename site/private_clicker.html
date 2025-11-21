@@ -834,7 +834,7 @@
             try {
                 const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
                 const playersData = await playersResponse.json();
-                
+                console.log(playersData)
                 if (playersData.status !== "success" || !playersData.session_code) {
                      return;
                 }
@@ -870,6 +870,7 @@
                 );
                 
                 const playersData = await playersResponse.json();
+                console.log(playersData)
                 
                 if (playersData.status === "success" && playersData.session_code === sessionCode) {
                     

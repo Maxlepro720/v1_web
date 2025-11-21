@@ -832,7 +832,7 @@
             console.log("[FETCH_PLAYERS] Requête /verify_session envoyée pour obtenir les joueurs et le statut.");
             
             try {
-                const playersResponse = await fetch(`${API_URL}/verify_session?id=${encodeURIComponent(username)}`);
+                const playersResponse = await fetch(`${API_URL}/verify_player_in_session?username=${encodeURIComponent(username)}&session_code=${encodeURIComponent(sessionCode)}`);
                 const playersData = await playersResponse.json();
                 console.log(playersData)
                 if (playersData.status !== "success" || !playersData.session_code) {

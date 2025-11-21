@@ -605,24 +605,61 @@
                             body: JSON.stringify(bodyData)
                         });
                         const data = await response.json();
+                        console.log(data)
 
-                        if (data.status === "success" && data.new_code === newCode) {
-                            // Succès du /change_session
+                        if (data.status === "success") {
+                            // 1. Nettoyage de l'ancienne session
                             stopAllCycles();
+                            sessionCodeElement.textContent = codeToJoin;
+                            sessionCodeElement.dataset.forcedCode = codeToJoin; 
+
+                            // =================================================================
+                            // 2. DÉBUT DE LA NOUVELLE LOGIQUE ROBUSTE DE RÉESSAI (REMPLACEMENT)
+                            // =================================================================
                             
-                            // 1. Affiche le nouveau code
-                            sessionCodeElement.textContent = newCode;
-                            sessionCodeElement.dataset.forcedCode = newCode;
+                            let fetchSuccess = false;
+                            const MAX_RETRIES = 3; 
                             
-                            // 2. Met à jour immédiatement le score et la liste des joueurs
-                            await fetchGameData();
+                            // Définir la fonction utilitaire pour la pause, pour plus de clarté
+                            const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+                            for (let i = 0; i < MAX_RETRIES; i++) {
+                                console.log(`[JOIN] Tentative de synchro des données de jeu (Essai ${i + 1}/${MAX_RETRIES})...`);
+                                
+                                // Pause entre les tentatives (1.5s pour la première, 2s pour les suivantes)
+                                const delay = (i === 0) ? 1500 : 2000; 
+                                
+                                // On attend ici (pause non bloquante)
+                                await sleep(delay); 
+                                
+                                // Récupération des données (met à jour le score et les joueurs)
+                                await fetchGameData();
+                                
+                                // Vérification du succès: si le slot 1 n'est plus "En attente...", c'est bon.
+                                const playerSlot1 = document.getElementById('player1');
+                                if (playerSlot1 && !playerSlot1.classList.contains('waiting')) {
+                                    fetchSuccess = true;
+                                    console.log("[JOIN] Synchro réussie après l'essai " + (i + 1));
+                                    break; 
+                                } else if (i < MAX_RETRIES - 1) {
+                                    console.warn("[JOIN] Liste encore vide. Réessai dans " + (delay / 1000) + "s...");
+                                }
+                            }
                             
-                            sidebarStatus.textContent = `✅ Nom de session personnelle mis à jour: ${newCode}`;
+                            // Si la synchro a échoué après 3 essais, on log l'erreur mais on continue.
+                            if (!fetchSuccess) {
+                                console.error("[JOIN] Échec de la synchro après " + MAX_RETRIES + " tentatives.");
+                            }
+
+                            // =================================================================
+                            // 3. FIN DE LA LOGIQUE DE RÉESSAI
+                            // =================================================================
+
+                            // 4. Finalisation
+                            sidebarStatus.textContent = `✅ Session de groupe rejointe: ${codeToJoin}`;
                             sidebarStatus.style.color = "#10b981";
-                            
-                            // 3. Redémarre le cycle de jeu
                             launchGameCycle(); 
-                            isSuccessful = true;
+                            joinedSuccessfully = true;
                         } else {
                             // Échec de l'API /change_session
                             sidebarStatus.textContent = `❌ Impossible de changer le nom: ${data.message || 'Erreur inconnue'}`;

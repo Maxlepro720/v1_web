@@ -903,7 +903,7 @@
             const currentDisplayedCode = sessionCodeElement.textContent; 
             const forcedCode = sessionCodeElement.dataset.forcedCode; 
             
-            // Vérifications initiales
+            // Vérifications initiales (si le code affiché est un état temporaire, on ne fait rien)
             if (currentDisplayedCode === "Chargement..." || currentDisplayedCode === "Aucune session" || currentDisplayedCode === "Erreur" || currentDisplayedCode === "Création...") {
                 return;
             }
@@ -912,42 +912,42 @@
             
             try {
                 const playersResponse = await fetch(
+                    // On utilise le code de session actuellement affiché pour demander la vérification
                     `${API_URL}/verify_player_in_session?username=${encodeURIComponent(username)}&session_code=${encodeURIComponent(currentDisplayedCode)}`
                 );
                 
                 const playersData = await playersResponse.json();
-                console.log(playersData);
+                console.log(playersData); // Affichage des données reçues (comme vous le faites)
 
-                // Si la requête échoue (session introuvable, par exemple)
-                if (playersData.status !== "success") {
-                    // L'erreur 404 est maintenant gérée par le code dans le corps JSON
+                // Si la requête échoue ou ne renvoie pas de code valide 
+                if (playersData.status !== "success" || !playersData.session_code) {
                     console.warn(`[FETCH_PLAYERS] Échec de vérification pour ${currentDisplayedCode}: ${playersData.message || 'Données invalides.'}`);
-                    // Si la session n'existe plus, on pourrait ici forcer une déconnexion visuelle
                     return;
                 }
                 
-                // --- LOGIQUE DE RAFRAÎCHISSEMENT ---
-                
-                // 🚨 ATTENTION : La route /verify_player_in_session ne renvoie PAS playersData.session_code
-                // On utilise donc le code affiché (currentDisplayedCode) comme code de session confirmé.
-                const confirmedSessionCode = currentDisplayedCode; 
-
                 // Logique pour gérer le code forcé
-                if (forcedCode && confirmedSessionCode !== forcedCode) {
+                if (forcedCode && playersData.session_code !== forcedCode) {
                     sessionCodeElement.textContent = forcedCode; 
                     return;
                 }
 
-                // Mise à jour de l'affichage du code (aucune désynchronisation possible ici)
-                sessionCodeElement.textContent = confirmedSessionCode; 
+                // Logique de prévention des désynchronisations (si le serveur renvoie le mauvais code)
+                if (playersData.session_code !== currentDisplayedCode) {
+                    console.warn(`[FETCH_PLAYERS] Désynchronisation détectée. Serveur renvoie ${playersData.session_code} au lieu de ${currentDisplayedCode}.`);
+                    // Pour l'instant, on ignore la mise à jour pour ne pas écraser l'affichage 'mode'
+                    // Vous pouvez commenter le 'return' si vous voulez que l'affichage soit écrasé
+                    // MAIS cela cause les problèmes de "joueurs qui disparaissent" que vous avez eus.
+                    return; 
+                }
+
+                // --- 🚀 APPEL CRITIQUE MANQUANT ---
+                
+                // Mise à jour de l'affichage du code (si on est synchro)
+                sessionCodeElement.textContent = playersData.session_code; 
                 sessionCodeElement.dataset.forcedCode = '';
                 
-                // 🚨 Mise à jour de l'interface utilisateur en utilisant playersData.player
-                // Le serveur Python renvoie les données de la liste des joueurs dans le champ 'player'.
-                const playersList = Array.isArray(playersData.player) ? playersData.player : [playersData.player];
-                const creator = Array.isArray(playersData.player) ? username : playersData.player;
-
-                updatePlayersList(playersList, creator);
+                // 🚨 C'est l'appel qui met à jour l'interface utilisateur !
+                updatePlayersList(playersData.players || [], playersData.creator);
                 
                 // Mise à jour de l'état du bouton (si vous avez cette fonction)
                 // checkCloseButtonState(); 
@@ -962,6 +962,7 @@
             console.log(`[FETCH_PLAYERS_IN_SESSION] Tentative de récupération des joueurs pour la session ciblée: ${sessionCode}`);
 
             try {
+                // *** Ceci utilise la NOUVELLE route serveur /verify_player_in_session ***
                 const playersResponse = await fetch(
                     `${API_URL}/verify_player_in_session?username=${encodeURIComponent(username)}&session_code=${encodeURIComponent(sessionCode)}`
                 );
@@ -969,20 +970,15 @@
                 const playersData = await playersResponse.json();
                 console.log(playersData)
                 
-                // La condition de succès est désormais basée sur le statut et la présence de la donnée 'player'
-                if (playersData.status === "success" && playersData.player) {
-                    
-                    // 🚨 Extraction des données du champ 'player' de la réponse
-                    const playersList = Array.isArray(playersData.player) ? playersData.player : [playersData.player];
-                    const creator = Array.isArray(playersData.player) ? username : playersData.player;
+                if (playersData.status === "success" && playersData.session_code === sessionCode) {
                     
                     // Mise à jour de l'affichage avec les données ciblées
-                    updatePlayersList(playersList, creator);
-                    // checkCloseButtonState(); // (Décommenter si vous utilisez cette fonction)
+                    updatePlayersList(playersData.players || [], playersData.creator);
+                    checkCloseButtonState(); 
                     return true; // Succès
                     
                 } else {
-                    console.warn("[FETCH_PLAYERS_IN_SESSION] Échec ciblé. Le serveur n'a pas encore mis à jour l'état ou la session n'existe pas.");
+                    console.warn("[FETCH_PLAYERS_IN_SESSION] Échec ciblé. Le serveur n'a pas encore mis à jour l'état.");
                     return false; // Échec
                 }
                 

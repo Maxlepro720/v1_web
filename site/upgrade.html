@@ -364,6 +364,8 @@ async function upgradePersonal(boostValue, price, quantity){
 
 // ====================================================================
 // === FULL SYNC 3s ===
+// ====================================================================
+// === FULL SYNC 3s (corrigé pour prix individuels) ===
 async function fullSync(){
     if(!PLAYER_ID) return;
 
@@ -375,9 +377,19 @@ async function fullSync(){
     }
 
     if(SESSION_CODE){
-        const BASE_PRICE = 100;
+        // Préparer les prix de base pour toutes les upgrades
+        const basePrices = {};
+        [...COLLECTIVE_UPGRADES, ...PERSONAL_UPGRADES].forEach(u => {
+            basePrices[u.id] = u.price;
+        });
+
         const upgradesPriceData = await fetchData(
-            `/upgrades_price?session=${encodeURIComponent(SESSION_CODE)}&base_price=${BASE_PRICE}`
+            `/upgrades_price?session=${encodeURIComponent(SESSION_CODE)}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ base_prices: basePrices })
+            }
         );
 
         if(upgradesPriceData && upgradesPriceData.upgrades_price){
@@ -388,6 +400,7 @@ async function fullSync(){
         }
     }
 }
+
 
 // ====================================================================
 // === INIT ===

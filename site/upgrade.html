@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Système d'Amélioration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #2d3561 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+            gap: 10px;
+            padding: 10px;
+        }
+        .sidebar {
+            background: rgba(26, 26, 46, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .upgrades-container {
+            overflow-y: auto;
+            max-height: 400px;
+            padding-right: 5px;
+            margin-bottom: 15px;
+        }
+        .upgrades-container.collapsed {
+            max-height: 250px;
+        }
+        .sidebar-left {
+            width: 280px;
+            flex-shrink: 0;
+        }
+        .sidebar-right {
+            width: 280px;
+            flex-shrink: 0;
+        }
+        .toggle-btn {
+            width: 100%;
+            padding: 10px;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .sidebar-left .toggle-btn {
+            background: linear-gradient(135deg, #00d4aa 0%, #00ffaa 100%);
+            box-shadow: 0 0 15px rgba(0, 255, 170, 0.4);
+        }
+        .sidebar-left .toggle-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 20px rgba(0, 255, 170, 0.6);
+        }
+        .sidebar-right .toggle-btn {
+            background: linear-gradient(135deg, #ff3385 0%, #ff1a75 100%);
+            box-shadow: 0 0 15px rgba(255, 51, 133, 0.4);
+        }
+        .sidebar-right .toggle-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 20px rgba(255, 51, 133, 0.6);
+        }
+        .toggle-btn:active {
+            transform: translateY(0);
+        }
+        .center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+        }
+        .sidebar h2 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            text-align: center;
+            border-bottom: 2px solid;
+            padding-bottom: 10px;
+        }
+        .sidebar-left h2 {
+            color: #00ffaa;
+            border-bottom-color: #00ffaa;
+            text-shadow: 0 0 15px rgba(0, 255, 170, 0.8);
+        }
+        .sidebar-right h2 {
+            color: #ff3385;
+            border-bottom-color: #ff3385;
+            text-shadow: 0 0 15px rgba(255, 51, 133, 0.8);
+        }
+        .upgrade-btn {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 12px;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .sidebar-left .upgrade-btn {
+            background: linear-gradient(135deg, #00ffaa 0%, #00d4aa 100%);
+            box-shadow: 0 0 20px rgba(0, 255, 170, 0.5), 0 4px 15px rgba(0, 255, 170, 0.3);
+        }
+        .sidebar-left .upgrade-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 255, 170, 0.7), 0 6px 20px rgba(0, 255, 170, 0.5);
+            background: linear-gradient(135deg, #33ffc4 0%, #00e6bb 100%);
+        }
+        .sidebar-right .upgrade-btn {
+            background: linear-gradient(135deg, #ff3385 0%, #ff1a75 100%);
+            box-shadow: 0 0 20px rgba(255, 51, 133, 0.5), 0 4px 15px rgba(255, 51, 133, 0.3);
+        }
+        .sidebar-right .upgrade-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(255, 51, 133, 0.7), 0 6px 20px rgba(255, 51, 133, 0.5);
+            background: linear-gradient(135deg, #ff4d94 0%, #ff3385 100%);
+        }
+        .upgrade-btn:active {
+            transform: translateY(0);
+        }
+        .boost-session {
+            background: rgba(26, 26, 46, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(0, 255, 170, 0.2);
+            text-align: center;
+            min-width: 300px;
+            border: 2px solid rgba(0, 255, 170, 0.3);
+        }
+        .money-display {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 255, 170, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(0, 255, 170, 0.3);
+        }
+        .money-display h3 {
+            color: #00ffaa;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+        }
+        .money-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #00ffaa;
+            text-shadow: 0 0 25px rgba(0, 255, 170, 0.8);
+        }
+        .boost-session h1 {
+            color: #00ffaa;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(0, 255, 170, 0.8);
+        }
+        .boost-value {
+            font-size: 3em;
+            font-weight: bold;
+            color: #00ffaa;
+            margin: 20px 0;
+            text-shadow: 0 0 30px rgba(0, 255, 170, 1);
+        }
+        .boost-personnel {
+            background: rgba(26, 26, 46, 0.9);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 51, 133, 0.2);
+            text-align: center;
+            min-width: 250px;
+            border: 2px solid rgba(255, 51, 133, 0.3);
+        }
+        .boost-personnel h2 {
+            color: #ff3385;
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(255, 51, 133, 0.8);
+        }
+        .boost-personnel .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ff3385;
+            text-shadow: 0 0 25px rgba(255, 51, 133, 1);
+        }
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+            .sidebar-left,
+            .sidebar-right {
+                width: 100%;
+                max-height: none;
+            }
+            .center {
+                order: -1;
+            }
+        }
+        @media (max-width: 768px) {
+            .boost-session {
+                padding: 30px 20px;
+                min-width: auto;
+                width: 100%;
+            }
+            .boost-session h1 {
+                font-size: 2em;
+            }
+            .boost-value {
+                font-size: 2.5em;
+            }
+            .boost-personnel {
+                min-width: auto;
+                width: 100%;
+            }
+            .sidebar {
+                padding: 15px;
+            }
+            .upgrade-btn {
+                padding: 12px;
+                font-size: 14px;
+            }
+        }
+        @media (max-width: 480px) {
+            .container {
+                padding: 5px;
+                gap: 5px;
+            }
+            .boost-session h1 {
+                font-size: 1.5em;
+            }
+            .boost-value {
+                font-size: 2em;
+            }
+            .sidebar h2 {
+                font-size: 1.2em;
+            }
+        }
+        /* Scrollbar styling */
+        .upgrades-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .upgrades-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        .sidebar-left .upgrades-container::-webkit-scrollbar-thumb {
+            background: #00ffaa;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+        }
+        .sidebar-left .upgrades-container::-webkit-scrollbar-thumb:hover {
+            background: #33ffc4;
+        }
+        .sidebar-right .upgrades-container::-webkit-scrollbar-thumb {
+            background: #ff3385;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(255, 51, 133, 0.5);
+        }
+        .sidebar-right .upgrades-container::-webkit-scrollbar-thumb:hover {
+            background: #ff4d94;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar sidebar-left">
+            <h2>Améliorations Collectives</h2>
+            <div class="upgrades-container collapsed" id="leftUpgrades">
+                </div>
+            <button class="toggle-btn" id="leftToggle" onclick="toggleUpgrades('left')">
+                ▼ Afficher plus
+            </button>
+        </div>
+        <div class="center">
+            <div class="boost-session">
+                <div class="money-display">
+                    <h3>💰 Argent Total (Poires)</h3>
+                    <div class="money-value" id="moneyValue">...</div>
+                </div>                                
+                <h1>Boost de Session</h1>
+                <div class="boost-value" id="sessionBoostValue">x1.0</div>
+                <p>Multiplicateur actuel</p>
+            </div>
+            <div class="boost-personnel">
+                <h2>Boost Personnel</h2>
+                <div class="value" id="personalBoostValue">x1.0</div>
+                
+            </div>
+            <p style="color: white; font-size: 0.9em;">Session: <span id="sessionCodeDisplay">...</span> | Joueur: <span id="playerIdDisplay">...</span></p>
+        </div>
+        <div class="sidebar sidebar-right">
+            <h2>Améliorations Personnelles</h2>
+            <div class="upgrades-container collapsed" id="rightUpgrades">
+                </div>
+            <button class="toggle-btn" id="rightToggle" onclick="toggleUpgrades('right')">
+                ▼ Afficher plus
+            </button>
+        </div>
+    </div>
+    <script>
+        // ====================================================================
+        // === API SETUP & CONSTANTS ===
+        // ====================================================================
+        
+        const API_URL = "https://project-3-api-2bgb.onrender.com"; 
+        
+        let PLAYER_ID = null;    // Récupéré depuis localStorage
+        let SESSION_CODE = null; // Récupéré depuis /verify_session
+        
+        let money = 0; 
+        let isUpdateScheduled = false;
+
+        // Variables pour le Batching (attendre 1s avant d'envoyer la requête)
+        let upgradeQueue = {}; // { 'upgradeId': quantity }
+        let upgradeTimeout = null;
+        const BATCHING_DELAY = 1000; // 1 seconde
+
+        // ====================================================================
+        // === CATALOGUES D'AMÉLIORATIONS (JSON) ===
+        // ====================================================================
+        
+        const COLLECTIVE_UPGRADES = [
+            { id: 'ADD_0_1', label: '+0.1 par click', type: 'add', upgrade: 0.1, price: 100 },
+            { id: 'ADD_0_5', label: '+0.5 par click', type: 'add', upgrade: 1.0, price: 100 },
+            { id: 'MUL_1_1', label: 'x1.1 Multi (200 poires)', type: 'multiply', upgrade: 1.1, price: 200 },
+            { id: 'MUL_1_5', label: 'x1.5 Multi (500 poires)', type: 'multiply', upgrade: 1.5, price: 500 },
+            { id: 'ADD_10_0', label: '+10.0 By Click (800 poires)', type: 'add', upgrade: 10.0, price: 800 },
+            { id: 'ADD_50_0', label: '+50.0 By Click (3K poires)', type: 'add', upgrade: 50.0, price: 3000 },
+            { id: 'MUL_2_0', label: 'x2.0 Multi (5K poires)', type: 'multiply', upgrade: 2.0, price: 5000 },
+        ];
+        
+        const PERSONAL_UPGRADES = [
+            { id: 'PERSO_0_1', label: '+0.1 Perso (20 poires)', upgrade: 0.1, price: 20 },
+            { id: 'PERSO_0_5', label: '+0.5 Perso (80 poires)', upgrade: 0.5, price: 80 },
+            { id: 'PERSO_1_0', label: '+1.0 Perso (150 poires)', upgrade: 1.0, price: 150 },
+            { id: 'PERSO_2_0', label: '+2.0 Perso (250 poires)', upgrade: 2.0, price: 250 },
+            { id: 'PERSO_5_0', label: '+5.0 Perso (500 poires)', upgrade: 5.0, price: 500 },
+            { id: 'PERSO_10_0', label: '+10.0 Perso (1K poires)', upgrade: 10.0, price: 1000 },
+            { id: 'PERSO_50_0', label: '+50.0 Perso (4K poires)', upgrade: 50.0, price: 4000 },
+        ];
+
+        // ====================================================================
+        // === CORE LOGIC & API UTILITIES ===
+        // ====================================================================
+
+        async function initUserData() {
+            PLAYER_ID = localStorage.getItem("username");
+            document.getElementById('playerIdDisplay').textContent = PLAYER_ID || "Non connecté";
+
+            if (!PLAYER_ID) {
+                alert("Erreur: ID joueur (username) non trouvé dans localStorage. Connectez-vous d'abord.");
+                return false;
+            }
+
+            // Récupérer le code de session actif
+            const sessionData = await fetchData(`/verify_session?id=${encodeURIComponent(PLAYER_ID)}`);
+            if (sessionData && sessionData.session_code) {
+                SESSION_CODE = sessionData.session_code;
+                document.getElementById('sessionCodeDisplay').textContent = SESSION_CODE;
+                return true;
+            } else {
+                alert("Erreur: Session active non trouvée pour ce joueur.");
+                return false;
+            }
+        }
+
+        async function fetchData(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, options);
+                const data = await response.json();
+                
+                if (data.status === 'error') {
+                    console.error(`Erreur API [${endpoint}]:`, data.message);
+                    // alert(`Erreur: ${data.message}`); // Désactivé pour le batching
+                    return null;
+                }
+                console.log(`Succès API [${endpoint}]:`, data);
+                return data;
+            } catch (error) {
+                console.error(`Erreur réseau/parsing [${endpoint}]:`, error);
+                alert('Erreur de communication avec le serveur.');
+                return null;
+            }
+        }
+
+        // ====================================================================
+        // === BATCHING LOGIC ===
+        // ====================================================================
+
+        /**
+         * Met en file d'attente un achat d'amélioration et déclenche l'envoi groupé après BATCHING_DELAY.
+         * @param {string} id - ID unique de l'amélioration (du catalogue JSON).
+         */
+        function handleUpgradeClick(id) {
+            upgradeQueue[id] = (upgradeQueue[id] || 0) + 1;
+            console.log(`Clic sur ${id}. Quantité en file: ${upgradeQueue[id]}`);
+
+            if (upgradeTimeout) {
+                clearTimeout(upgradeTimeout);
+            }
+            
+            // Réinitialiser le timer pour regrouper tous les clics dans la BATCHING_DELAY
+            upgradeTimeout = setTimeout(processUpgradeBatch, BATCHING_DELAY);
+        }
+
+        /**
+         * Traite la file d'attente d'achats groupés et envoie les requêtes au serveur.
+         */
+        async function processUpgradeBatch() {
+            if (Object.keys(upgradeQueue).length === 0) return;
+
+            const batchToProcess = { ...upgradeQueue };
+            upgradeQueue = {}; // Réinitialiser la file d'attente immédiatement
+
+            console.log("--- Traitement du Batch d'Upgrades ---", batchToProcess);
+            
+            for (const id in batchToProcess) {
+                const quantity = batchToProcess[id];
+                
+                // 1. Déterminer si c'est un boost collectif ou personnel
+                let item = COLLECTIVE_UPGRADES.find(u => u.id === id);
+                let isPersonal = false;
+
+                if (!item) {
+                    item = PERSONAL_UPGRADES.find(u => u.id === id);
+                    isPersonal = true;
+                }
+
+                if (!item) {
+                    console.error(`ID d'amélioration inconnu: ${id}`);
+                    continue;
+                }
+
+                // 2. Déterminer la fonction d'achat
+                let success = false;
+                if (isPersonal) {
+                    success = await upgradePersonal(item.upgrade, item.price, quantity);
+                } else if (item.type === 'add') {
+                    success = await upgradeSessionAdd(item.upgrade, item.price, quantity);
+                } else if (item.type === 'multiply') {
+                    success = await upgradeSessionMultiply(item.upgrade, item.price, quantity);
+                }
+
+                if (!success) {
+                    console.warn(`Achat échoué pour ${item.label} (Quantité: ${quantity}). Le solde est insuffisant ou autre erreur.`);
+                }
+            }
+
+            // Mettre à jour l'UI une seule fois après tout le batch
+            await updateUI();
+        }
+
+
+        // ====================================================================
+        // === UI & DISPLAY UTILITIES & SYNCHRONIZATION ===
+        // ====================================================================
+
+        function formatNumber(num) {
+            if (num >= 1000000000) {
+                return (num / 1000000000).toFixed(2) + 'B';
+            } else if (num >= 1000000) {
+                return (num / 1000000).toFixed(2) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(2) + 'K';
+            }
+            return num.toFixed(0);
+        }
+
+        function toggleUpgrades(side) {
+            const container = document.getElementById(side + 'Upgrades');
+            const button = document.getElementById(side + 'Toggle');
+
+            if (container.classList.contains('collapsed')) {
+                container.classList.remove('collapsed');
+                button.innerHTML = '▲ Afficher moins';
+            } else {
+                container.classList.add('collapsed');
+                button.innerHTML = '▼ Afficher plus';
+            }
+        }
+        
+        function generateUpgradeButtons() {
+            const leftContainer = document.getElementById('leftUpgrades');
+            const rightContainer = document.getElementById('rightUpgrades');
+
+            // Collective Upgrades
+            leftContainer.innerHTML = COLLECTIVE_UPGRADES.map(item => {
+                const totalCost = item.price; // Le coût total sera calculé dans le batching
+                const label = `${item.label} (Cout: ${formatNumber(totalCost)})`;
+                return `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')">${label}</button>`;
+            }).join('');
+
+            // Personal Upgrades
+            rightContainer.innerHTML = PERSONAL_UPGRADES.map(item => {
+                const totalCost = item.price;
+                 const label = `${item.label} (Cout: ${formatNumber(totalCost)})`;
+                return `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')">${label}</button>`;
+            }).join('');
+        }
+
+        /**
+         * Récupère toutes les données nécessaires depuis l'API et met à jour l'UI.
+         */
+        async function updateUI() {
+            if (!SESSION_CODE || !PLAYER_ID) return; // Ne fait rien si la session n'est pas initialisée
+
+            // 1. Récupérer le score (Poires)
+            const poiresData = await fetchData(`/get_poires?session=${encodeURIComponent(SESSION_CODE)}`);
+            if (poiresData) {
+                money = poiresData.poires; 
+                document.getElementById('moneyValue').textContent = formatNumber(money);
+            }
+
+            // 2. Récupérer le Multiplicateur de Session
+            const sessionMultiData = await fetchData(`/get_session_multiplier?session=${encodeURIComponent(SESSION_CODE)}`);
+            if (sessionMultiData) {
+                const multi = sessionMultiData.by_click_multiplier.toFixed(2);
+                document.getElementById('sessionBoostValue').textContent = `x${multi}`;
+            }
+
+            // 3. Récupérer le Boost Personnel
+            const personalBoostData = await fetchData(`/get_personnel_boost?id=${encodeURIComponent(PLAYER_ID)}`);
+            if (personalBoostData) {
+                const boost = personalBoostData.personnel_boost.toFixed(2);
+                document.getElementById('personalBoostValue').textContent = `x${boost}`;
+            }
+        }
+
+        // Simule l'ajout de poires (clic ou autre événement)
+        async function addPoires(clickCount) {
+            const data = await fetchData('/poire', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: PLAYER_ID,
+                    session: SESSION_CODE,
+                    click: clickCount 
+                })
+            });
+
+            if (data) {
+                await updateUI(); 
+            }
+        }
+
+        // Fonction appelée toutes les 10 secondes pour synchroniser l'affichage
+        function syncWithSystemClock() {
+            if (!SESSION_CODE || !PLAYER_ID) return; 
+
+            const now = new Date();
+            const seconds = now.getSeconds();
+            
+            if (seconds % 10 === 0 && !isUpdateScheduled) {
+                updateUI(); 
+                isUpdateScheduled = true;
+            } else if (seconds % 10 !== 0) {
+                isUpdateScheduled = false;
+            }
+        }
+        
+        // ====================================================================
+        // === UPGRADE API CALL FUNCTIONS ===
+        // ====================================================================
+
+        async function upgradeSessionAdd(upgradeValue, price, quantity) {
+            const data = await fetchData('/upgrade_add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session: SESSION_CODE,
+                    upgrade: upgradeValue,
+                    price: price,
+                    quantity: quantity
+                })
+            });
+            return !!data;
+        }
+        
+        async function upgradeSessionMultiply(upgradeMultiplier, price, quantity) {
+            const data = await fetchData('/upgrade_multiply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session: SESSION_CODE,
+                    upgrade: upgradeMultiplier,
+                    price: price,
+                    quantity: quantity
+                })
+            });
+            return !!data;
+        }
+        
+        async function upgradePersonal(boostValue, price, quantity) {
+            const data = await fetchData('/personnel_boost', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: PLAYER_ID,
+                    boost: boostValue,
+                    price: price,
+                    quantity: quantity
+                })
+            });
+            return !!data;
+        }
+
+        // ====================================================================
+        // === INITIALIZATION ===
+        // ====================================================================
+
+        async function initializeApp() {
+            generateUpgradeButtons();
+            const initialized = await initUserData();
+            
+            if (initialized) {
+                await updateUI(); 
+                setInterval(syncWithSystemClock, 1000); 
+            } else {
+                // Afficher un état d'erreur ou de non-connexion
+                document.getElementById('moneyValue').textContent = 'Connexion requise';
+            }
+        }
+        
+        initializeApp();
+
+    </script>
+</body>
+</html>

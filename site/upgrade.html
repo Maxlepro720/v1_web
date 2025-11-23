@@ -379,22 +379,31 @@ async function upgradePersonal(boostValue, price, quantity){
 // === FULL SYNC 3s ===
 async function fullSync(){
     if(!PLAYER_ID) return;
+
+    // 1️⃣ Récupérer la session du joueur
     const sessionData = await fetchData(`/verify_session?id=${encodeURIComponent(PLAYER_ID)}`);
     if(sessionData && sessionData.session_code){
-        SESSION_CODE=sessionData.session_code;
-        document.getElementById('sessionCodeDisplay').textContent=SESSION_CODE;
+        SESSION_CODE = sessionData.session_code;
+        document.getElementById('sessionCodeDisplay').textContent = SESSION_CODE;
         await updateUI();
     }
+
+    // 2️⃣ Récupérer les prix des upgrades seulement si SESSION_CODE existe
     if(SESSION_CODE){
-        const upgradesPriceData = await fetchData(`/upgrades_price?session=${encodeURIComponent(SESSION_CODE)}`);
-        if(upgradesPriceData && upgradesPriceData.upgrades){
-            for(const upgradeName in upgradesPriceData.upgrades){
-                const elem = document.getElementById(upgradeName+'_price');
-                if(elem) elem.textContent=formatNumber(upgradesPriceData.upgrades[upgradeName].price);
+        const BASE_PRICE = 100; // ou la valeur que tu veux utiliser
+        const upgradesPriceData = await fetchData(
+            `/upgrades_price?session=${encodeURIComponent(SESSION_CODE)}&base_price=${BASE_PRICE}`
+        );
+
+        if(upgradesPriceData && upgradesPriceData.upgrades_price){
+            for(const upgradeName in upgradesPriceData.upgrades_price){
+                const elem = document.getElementById(upgradeName + '_price');
+                if(elem) elem.textContent = formatNumber(upgradesPriceData.upgrades_price[upgradeName]);
             }
         }
     }
 }
+
 
 // ====================================================================
 // === INIT ===

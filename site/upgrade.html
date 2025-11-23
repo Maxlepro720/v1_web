@@ -170,16 +170,16 @@
     
     const API_URL = "https://project-3-api-2bgb.onrender.com"; 
     
-    let PLAYER_ID = null;    // Récupéré depuis localStorage
-    let SESSION_CODE = null; // Récupéré depuis /verify_session
+    let PLAYER_ID = null;    
+    let SESSION_CODE = null; 
     
     let money = 0; 
     let isUpdateScheduled = false;
 
     // Variables pour le Batching (attendre 1s avant d'envoyer la requête)
-    let upgradeQueue = {}; // { 'upgradeId': quantity }
+    let upgradeQueue = {}; 
     let upgradeTimeout = null;
-    const BATCHING_DELAY = 1000; // 1 seconde
+    const BATCHING_DELAY = 1000; 
 
     // ====================================================================
     // === CATALOGUES D'AMÉLIORATIONS (JSON) ===
@@ -187,22 +187,22 @@
     
     const COLLECTIVE_UPGRADES = [
         { id: 'ADD_0_1', label: '+0.1 par click', type: 'add', upgrade: 0.1, price: 100 },
-        { id: 'ADD_0_5', label: '+0.5 par click', type: 'add', upgrade: 1.0, price: 100 },
-        { id: 'MUL_1_1', label: 'x1.1 Multi (200 poires)', type: 'multiply', upgrade: 1.1, price: 200 },
-        { id: 'MUL_1_5', label: 'x1.5 Multi (500 poires)', type: 'multiply', upgrade: 1.5, price: 500 },
-        { id: 'ADD_10_0', label: '+10.0 By Click (800 poires)', type: 'add', upgrade: 10.0, price: 800 },
-        { id: 'ADD_50_0', label: '+50.0 By Click (3K poires)', type: 'add', upgrade: 50.0, price: 3000 },
-        { id: 'MUL_2_0', label: 'x2.0 Multi (5K poires)', type: 'multiply', upgrade: 2.0, price: 5000 },
+        { id: 'ADD_0_5', label: '+0.5 par click', type: 'add', upgrade: 1.0, price: 500 },
+        { id: 'MUL_1_1', label: 'x1.1 Multi', type: 'multiply', upgrade: 1.1, price: 200 },
+        { id: 'MUL_1_5', label: 'x1.5 Multi', type: 'multiply', upgrade: 1.5, price: 500 },
+        { id: 'ADD_10_0', label: '+10.0 By Click', type: 'add', upgrade: 10.0, price: 800 },
+        { id: 'ADD_50_0', label: '+50.0 By Click', type: 'add', upgrade: 50.0, price: 3000 },
+        { id: 'MUL_2_0', label: 'x2.0 Multi', type: 'multiply', upgrade: 2.0, price: 5000 },
     ];
     
     const PERSONAL_UPGRADES = [
-        { id: 'PERSO_0_1', label: '+0.1 Perso (20 poires)', upgrade: 0.1, price: 20 },
-        { id: 'PERSO_0_5', label: '+0.5 Perso (80 poires)', upgrade: 0.5, price: 80 },
-        { id: 'PERSO_1_0', label: '+1.0 Perso (150 poires)', upgrade: 1.0, price: 150 },
-        { id: 'PERSO_2_0', label: '+2.0 Perso (250 poires)', upgrade: 2.0, price: 250 },
-        { id: 'PERSO_5_0', label: '+5.0 Perso (500 poires)', upgrade: 5.0, price: 500 },
-        { id: 'PERSO_10_0', label: '+10.0 Perso (1K poires)', upgrade: 10.0, price: 1000 },
-        { id: 'PERSO_50_0', label: '+50.0 Perso (4K poires)', upgrade: 50.0, price: 4000 },
+        { id: 'PERSO_0_1', label: '+0.1 Perso', upgrade: 0.1, price: 20 },
+        { id: 'PERSO_0_5', label: '+0.5 Perso', upgrade: 0.5, price: 80 },
+        { id: 'PERSO_1_0', label: '+1.0 Perso', upgrade: 1.0, price: 150 },
+        { id: 'PERSO_2_0', label: '+2.0 Perso', upgrade: 2.0, price: 250 },
+        { id: 'PERSO_5_0', label: '+5.0 Perso', upgrade: 5.0, price: 500 },
+        { id: 'PERSO_10_0', label: '+10.0 Perso', upgrade: 10.0, price: 1000 },
+        { id: 'PERSO_50_0', label: '+50.0 Perso', upgrade: 50.0, price: 4000 },
     ];
 
     // ====================================================================
@@ -218,7 +218,6 @@
             return false;
         }
 
-        // Récupérer le code de session actif
         const sessionData = await fetchData(`/verify_session?id=${encodeURIComponent(PLAYER_ID)}`);
         if (sessionData && sessionData.session_code) {
             SESSION_CODE = sessionData.session_code;
@@ -256,10 +255,7 @@
         upgradeQueue[id] = (upgradeQueue[id] || 0) + 1;
         console.log(`Clic sur ${id}. Quantité en file: ${upgradeQueue[id]}`);
 
-        if (upgradeTimeout) {
-            clearTimeout(upgradeTimeout);
-        }
-        
+        if (upgradeTimeout) clearTimeout(upgradeTimeout);
         upgradeTimeout = setTimeout(processUpgradeBatch, BATCHING_DELAY);
     }
 
@@ -291,34 +287,31 @@
             if (isPersonal) {
                 success = await upgradePersonal(item.upgrade, item.price, quantity);
             } else if (item.type === 'add') {
-                success = await upgradeSessionAdd(item.upgrade, item.price, quantity);
+                success = await upgradeSessionAdd(item.upgrade, item.price, quantity, item.id);
             } else if (item.type === 'multiply') {
-                success = await upgradeSessionMultiply(item.upgrade, item.price, quantity);
+                success = await upgradeSessionMultiply(item.upgrade, item.price, quantity, item.id);
             }
 
-            if (!success) {
-                console.warn(`Achat échoué pour ${item.label} (Quantité: ${quantity}).`);
-            }
+            if (!success) console.warn(`Achat échoué pour ${item.label} (Quantité: ${quantity}).`);
         }
 
         await updateUI();
     }
 
     // ====================================================================
-    // === UI & DISPLAY UTILITIES & SYNCHRONIZATION ===
+    // === UI & DISPLAY UTILITIES ===
     // ====================================================================
 
     function formatNumber(num) {
-        if (num >= 1000000000) return (num / 1000000000).toFixed(2) + 'B';
-        if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
-        if (num >= 1000) return (num / 1000).toFixed(2) + 'K';
+        if (num >= 1_000_000_000) return (num / 1_000_000_000).toFixed(2) + 'B';
+        if (num >= 1_000_000) return (num / 1_000_000).toFixed(2) + 'M';
+        if (num >= 1_000) return (num / 1_000).toFixed(2) + 'K';
         return num.toFixed(0);
     }
 
     function toggleUpgrades(side) {
         const container = document.getElementById(side + 'Upgrades');
         const button = document.getElementById(side + 'Toggle');
-
         if (container.classList.contains('collapsed')) {
             container.classList.remove('collapsed');
             button.innerHTML = '▲ Afficher moins';
@@ -333,13 +326,15 @@
         const rightContainer = document.getElementById('rightUpgrades');
 
         leftContainer.innerHTML = COLLECTIVE_UPGRADES.map(item => {
-            const label = `${item.label} (Cout: ${formatNumber(item.price)})`;
-            return `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')">${label}</button>`;
+            return `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')">
+                        ${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span> poires)
+                    </button>`;
         }).join('');
 
         rightContainer.innerHTML = PERSONAL_UPGRADES.map(item => {
-            const label = `${item.label} (Cout: ${formatNumber(item.price)})`;
-            return `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')">${label}</button>`;
+            return `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')">
+                        ${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span> poires)
+                    </button>`;
         }).join('');
     }
 
@@ -369,19 +364,13 @@
         const data = await fetchData('/poire', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: PLAYER_ID,
-                session: SESSION_CODE,
-                click: clickCount 
-            })
+            body: JSON.stringify({ id: PLAYER_ID, session: SESSION_CODE, click: clickCount })
         });
-
         if (data) await updateUI();
     }
 
     function syncWithSystemClock() {
         if (!SESSION_CODE || !PLAYER_ID) return; 
-
         const now = new Date();
         const seconds = now.getSeconds();
         
@@ -397,30 +386,20 @@
     // === UPGRADE API CALL FUNCTIONS ===
     // ====================================================================
 
-    async function upgradeSessionAdd(upgradeValue, price, quantity) {
+    async function upgradeSessionAdd(upgradeValue, price, quantity, upgrade_name) {
         const data = await fetchData('/upgrade_add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                session: SESSION_CODE,
-                upgrade: upgradeValue,
-                price: price,
-                quantity: quantity
-            })
+            body: JSON.stringify({ session: SESSION_CODE, upgrade: upgradeValue, price: price, quantity: quantity, upgrade_name })
         });
         return !!data;
     }
     
-    async function upgradeSessionMultiply(upgradeMultiplier, price, quantity) {
+    async function upgradeSessionMultiply(upgradeMultiplier, price, quantity, upgrade_name) {
         const data = await fetchData('/upgrade_multiply', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                session: SESSION_CODE,
-                upgrade: upgradeMultiplier,
-                price: price,
-                quantity: quantity
-            })
+            body: JSON.stringify({ session: SESSION_CODE, upgrade: upgradeMultiplier, price: price, quantity: quantity, upgrade_name })
         });
         return !!data;
     }
@@ -429,19 +408,15 @@
         const data = await fetchData('/personnel_boost', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: PLAYER_ID,
-                boost: boostValue,
-                price: price,
-                quantity: quantity
-            })
+            body: JSON.stringify({ id: PLAYER_ID, boost: boostValue, price: price, quantity: quantity })
         });
         return !!data;
     }
 
     // ====================================================================
-    // === FULL SYNC FUNCTION (3s interval) ===
+    // === FULL SYNC FUNCTION (3s interval) + upgrades_price ===
     // ====================================================================
+
     async function fullSync() {
         if (!PLAYER_ID) return;
 
@@ -451,6 +426,17 @@
             SESSION_CODE = sessionData.session_code;
             document.getElementById('sessionCodeDisplay').textContent = SESSION_CODE;
             await updateUI();
+        }
+
+        // Récupérer prix upgrades
+        if (SESSION_CODE) {
+            const upgradesPriceData = await fetchData(`/upgrades_price?session=${encodeURIComponent(SESSION_CODE)}`);
+            if (upgradesPriceData && upgradesPriceData.upgrades) {
+                for (const upgradeName in upgradesPriceData.upgrades) {
+                    const elem = document.getElementById(upgradeName + '_price');
+                    if (elem) elem.textContent = formatNumber(upgradesPriceData.upgrades[upgradeName].price);
+                }
+            }
         }
     }
 
@@ -465,15 +451,15 @@
         if (initialized) {
             await updateUI(); 
             setInterval(syncWithSystemClock, 1000); 
-            setInterval(fullSync, 3000); // Vérification session + poires toutes les 3s
+            setInterval(fullSync, 3000); // 3 sec interval pour session, poires et upgrades_price
         } else {
             document.getElementById('moneyValue').textContent = 'Connexion requise';
         }
     }
     
     initializeApp();
-
 </script>
+
 
 </body>
 </html>

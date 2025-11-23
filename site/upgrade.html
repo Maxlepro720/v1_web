@@ -4,316 +4,163 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Système d'Amélioration</title>
+
+    <!-- FONT CLEAN -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #2d3561 0%, #1a1a2e 100%);
+            font-family: 'Inter', sans-serif;
+            background: #1F1F1F;
+            color: #eee;
             min-height: 100vh;
-            overflow-x: hidden;
         }
+
         .container {
             display: flex;
-            min-height: 100vh;
-            gap: 10px;
-            padding: 10px;
-        }
-        .sidebar {
-            background: rgba(26, 26, 46, 0.95);
-            border-radius: 15px;
             padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            gap: 20px;
+            min-height: 100vh;
         }
-        .upgrades-container {
-            overflow-y: auto;
-            max-height: 400px;
-            padding-right: 5px;
+
+        /* PANNEAUX */
+        .sidebar {
+            width: 280px;
+            background: #2A2A2A;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .sidebar h2 {
+            font-size: 1.2em;
+            font-weight: 600;
             margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3A3A3A;
         }
-        .upgrades-container.collapsed {
-            max-height: 250px;
+
+        .sidebar-left h2 { border-color: #4CAF50; }
+        .sidebar-right h2 { border-color: #E91E63; }
+
+        /* LISTES UPGRADE */
+        .upgrades-container {
+            max-height: 350px;
+            overflow-y: auto;
         }
-        .sidebar-left {
-            width: 280px;
-            flex-shrink: 0;
-        }
-        .sidebar-right {
-            width: 280px;
-            flex-shrink: 0;
-        }
-        .toggle-btn {
+
+        /* BOUTONS UPGRADE */
+        .upgrade-btn {
             width: 100%;
-            padding: 10px;
-            color: #1a1a2e;
-            border: none;
+            background: #3A3A3A;
+            border: 2px solid transparent;
+            color: white;
+            padding: 12px;
+            margin-bottom: 10px;
+            font-size: 14px;
             border-radius: 8px;
             cursor: pointer;
+            transition: 0.15s;
+            text-align: left;
+        }
+
+        .sidebar-left .upgrade-btn:hover { border-color: #4CAF50; }
+        .sidebar-right .upgrade-btn:hover { border-color: #E91E63; }
+
+        /* BOUTON AFFICHER + / - */
+        .toggle-btn {
+            width: 100%;
+            background: #3A3A3A;
+            color: white;
+            padding: 10px;
             font-size: 14px;
-            font-weight: bold;
-            transition: all 0.3s ease;
+            border: none;
+            border-radius: 8px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: 0.15s;
         }
-        .sidebar-left .toggle-btn {
-            background: linear-gradient(135deg, #00d4aa 0%, #00ffaa 100%);
-            box-shadow: 0 0 15px rgba(0, 255, 170, 0.4);
-        }
-        .sidebar-left .toggle-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 0 20px rgba(0, 255, 170, 0.6);
-        }
-        .sidebar-right .toggle-btn {
-            background: linear-gradient(135deg, #ff3385 0%, #ff1a75 100%);
-            box-shadow: 0 0 15px rgba(255, 51, 133, 0.4);
-        }
-        .sidebar-right .toggle-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 0 20px rgba(255, 51, 133, 0.6);
-        }
-        .toggle-btn:active {
-            transform: translateY(0);
-        }
+
+        .toggle-btn:hover { background: #444; }
+
+        /* CENTRE */
         .center {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: 30px;
-            padding: 20px;
+            gap: 25px;
         }
-        .sidebar h2 {
-            margin-bottom: 20px;
-            font-size: 1.5em;
-            text-align: center;
-            border-bottom: 2px solid;
-            padding-bottom: 10px;
-        }
-        .sidebar-left h2 {
-            color: #00ffaa;
-            border-bottom-color: #00ffaa;
-            text-shadow: 0 0 15px rgba(0, 255, 170, 0.8);
-        }
-        .sidebar-right h2 {
-            color: #ff3385;
-            border-bottom-color: #ff3385;
-            text-shadow: 0 0 15px rgba(255, 51, 133, 0.8);
-        }
-        .upgrade-btn {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 12px;
-            color: #1a1a2e;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        .sidebar-left .upgrade-btn {
-            background: linear-gradient(135deg, #00ffaa 0%, #00d4aa 100%);
-            box-shadow: 0 0 20px rgba(0, 255, 170, 0.5), 0 4px 15px rgba(0, 255, 170, 0.3);
-        }
-        .sidebar-left .upgrade-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 30px rgba(0, 255, 170, 0.7), 0 6px 20px rgba(0, 255, 170, 0.5);
-            background: linear-gradient(135deg, #33ffc4 0%, #00e6bb 100%);
-        }
-        .sidebar-right .upgrade-btn {
-            background: linear-gradient(135deg, #ff3385 0%, #ff1a75 100%);
-            box-shadow: 0 0 20px rgba(255, 51, 133, 0.5), 0 4px 15px rgba(255, 51, 133, 0.3);
-        }
-        .sidebar-right .upgrade-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 30px rgba(255, 51, 133, 0.7), 0 6px 20px rgba(255, 51, 133, 0.5);
-            background: linear-gradient(135deg, #ff4d94 0%, #ff3385 100%);
-        }
-        .upgrade-btn:active {
-            transform: translateY(0);
-        }
-        .boost-session {
-            background: rgba(26, 26, 46, 0.95);
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(0, 255, 170, 0.2);
-            text-align: center;
-            min-width: 300px;
-            border: 2px solid rgba(0, 255, 170, 0.3);
-        }
-        .money-display {
-            margin-bottom: 30px;
-            padding: 20px;
-            background: rgba(0, 255, 170, 0.1);
-            border-radius: 15px;
-            border: 1px solid rgba(0, 255, 170, 0.3);
-        }
-        .money-display h3 {
-            color: #00ffaa;
-            font-size: 1.2em;
-            margin-bottom: 10px;
-            text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
-        }
-        .money-value {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #00ffaa;
-            text-shadow: 0 0 25px rgba(0, 255, 170, 0.8);
-        }
-        .boost-session h1 {
-            color: #00ffaa;
-            font-size: 2.5em;
-            margin-bottom: 20px;
-            text-shadow: 0 0 20px rgba(0, 255, 170, 0.8);
-        }
-        .boost-value {
-            font-size: 3em;
-            font-weight: bold;
-            color: #00ffaa;
-            margin: 20px 0;
-            text-shadow: 0 0 30px rgba(0, 255, 170, 1);
-        }
+
+        .boost-session,
         .boost-personnel {
-            background: rgba(26, 26, 46, 0.9);
+            background: #2A2A2A;
             padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 51, 133, 0.2);
+            border-radius: 10px;
+            width: 320px;
             text-align: center;
-            min-width: 250px;
-            border: 2px solid rgba(255, 51, 133, 0.3);
         }
-        .boost-personnel h2 {
-            color: #ff3385;
-            font-size: 1.5em;
-            margin-bottom: 10px;
-            text-shadow: 0 0 20px rgba(255, 51, 133, 0.8);
-        }
-        .boost-personnel .value {
+
+        .money-value {
             font-size: 2em;
-            font-weight: bold;
-            color: #ff3385;
-            text-shadow: 0 0 25px rgba(255, 51, 133, 1);
+            font-weight: 700;
+            margin-top: 10px;
+            color: #4CAF50;
         }
-        /* Responsive Design */
+
+        .boost-value { font-size: 2.2em; font-weight: 700; color: #4CAF50; }
+        .boost-personnel .value { font-size: 2em; color: #E91E63; }
+
+        /* SCROLLBAR MINIMAL */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #3A3A3A; border-radius: 5px; }
+
+        /* RESPONSIVE */
         @media (max-width: 1024px) {
-            .container {
-                flex-direction: column;
-            }
-            .sidebar-left,
-            .sidebar-right {
-                width: 100%;
-                max-height: none;
-            }
-            .center {
-                order: -1;
-            }
-        }
-        @media (max-width: 768px) {
-            .boost-session {
-                padding: 30px 20px;
-                min-width: auto;
-                width: 100%;
-            }
-            .boost-session h1 {
-                font-size: 2em;
-            }
-            .boost-value {
-                font-size: 2.5em;
-            }
-            .boost-personnel {
-                min-width: auto;
-                width: 100%;
-            }
-            .sidebar {
-                padding: 15px;
-            }
-            .upgrade-btn {
-                padding: 12px;
-                font-size: 14px;
-            }
-        }
-        @media (max-width: 480px) {
-            .container {
-                padding: 5px;
-                gap: 5px;
-            }
-            .boost-session h1 {
-                font-size: 1.5em;
-            }
-            .boost-value {
-                font-size: 2em;
-            }
-            .sidebar h2 {
-                font-size: 1.2em;
-            }
-        }
-        /* Scrollbar styling */
-        .upgrades-container::-webkit-scrollbar {
-            width: 8px;
-        }
-        .upgrades-container::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-        }
-        .sidebar-left .upgrades-container::-webkit-scrollbar-thumb {
-            background: #00ffaa;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
-        }
-        .sidebar-left .upgrades-container::-webkit-scrollbar-thumb:hover {
-            background: #33ffc4;
-        }
-        .sidebar-right .upgrades-container::-webkit-scrollbar-thumb {
-            background: #ff3385;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(255, 51, 133, 0.5);
-        }
-        .sidebar-right .upgrades-container::-webkit-scrollbar-thumb:hover {
-            background: #ff4d94;
+            .container { flex-direction: column; }
+            .sidebar { width: 100%; }
+            .boost-session, .boost-personnel { width: 100%; }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
+
+        <!-- COLLECTIVES -->
         <div class="sidebar sidebar-left">
             <h2>Améliorations Collectives</h2>
-            <div class="upgrades-container collapsed" id="leftUpgrades">
-                </div>
-            <button class="toggle-btn" id="leftToggle" onclick="toggleUpgrades('left')">
-                ▼ Afficher plus
-            </button>
+            <div class="upgrades-container" id="leftUpgrades"></div>
+            <button class="toggle-btn" id="leftToggle" onclick="toggleUpgrades('left')">▼ Afficher plus</button>
         </div>
+
+        <!-- CENTRE -->
         <div class="center">
             <div class="boost-session">
-                <div class="money-display">
-                    <h3>💰 Argent Total (Poires)</h3>
-                    <div class="money-value" id="moneyValue">...</div>
-                </div>                                
-                <h1>Boost de Session</h1>
+                <h3>💰 Poires Totales</h3>
+                <div class="money-value" id="moneyValue">...</div>
+
+                <h1 style="margin-top:20px;">Boost de Session</h1>
                 <div class="boost-value" id="sessionBoostValue">x1.0</div>
-                <p>Multiplicateur actuel</p>
             </div>
+
             <div class="boost-personnel">
                 <h2>Boost Personnel</h2>
                 <div class="value" id="personalBoostValue">x1.0</div>
-                
             </div>
-            <p style="color: white; font-size: 0.9em;">Session: <span id="sessionCodeDisplay">...</span> | Joueur: <span id="playerIdDisplay">...</span></p>
+
+            <p style="font-size:0.85em; opacity:0.7;">
+                Session: <span id="sessionCodeDisplay">...</span> |
+                Joueur: <span id="playerIdDisplay">...</span>
+            </p>
         </div>
+
+        <!-- PERSONNELLES -->
         <div class="sidebar sidebar-right">
             <h2>Améliorations Personnelles</h2>
-            <div class="upgrades-container collapsed" id="rightUpgrades">
-                </div>
-            <button class="toggle-btn" id="rightToggle" onclick="toggleUpgrades('right')">
-                ▼ Afficher plus
-            </button>
+            <div class="upgrades-container" id="rightUpgrades"></div>
+            <button class="toggle-btn" id="rightToggle" onclick="toggleUpgrades('right')">▼ Afficher plus</button>
         </div>
     </div>
     <script>

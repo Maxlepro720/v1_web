@@ -186,13 +186,13 @@
     // ====================================================================
     
     const COLLECTIVE_UPGRADES = [
-        { id: 'ADD_0_1', label: '+0.1 par click', type: 'add', upgrade: 0.1, price: 100 },
-        { id: 'ADD_0_5', label: '+0.5 par click', type: 'add', upgrade: 0.5, price: 500 },
-        { id: 'MUL_1_1', label: 'x1.1 Multi', type: 'multiply', upgrade: 1.1, price: 200 },
-        { id: 'MUL_1_5', label: 'x1.5 Multi', type: 'multiply', upgrade: 1.5, price: 500 },
-        { id: 'ADD_10_0', label: '+10.0 By Click', type: 'add', upgrade: 10.0, price: 800 },
-        { id: 'ADD_50_0', label: '+50.0 By Click', type: 'add', upgrade: 50.0, price: 3000 },
-        { id: 'MUL_2_0', label: 'x2.0 Multi', type: 'multiply', upgrade: 2.0, price: 5000 },
+        { id: 'ADD_0_1', name: 'upgrade1', label: '+0.1 par click', type: 'add', upgrade: 0.1, price: 100 },
+        { id: 'ADD_0_5', name: 'upgrade2', label: '+0.5 par click', type: 'add', upgrade: 0.5, price: 500 },
+        { id: 'MUL_1_1', name: 'upgrade3', label: 'x1.1 Multi', type: 'multiply', upgrade: 1.1, price: 200 },
+        { id: 'MUL_1_5', name: 'upgrade4', label: 'x1.5 Multi', type: 'multiply', upgrade: 1.5, price: 500 },
+        { id: 'ADD_10_0', name: 'upgrade5', label: '+10.0 By Click', type: 'add', upgrade: 10.0, price: 800 },
+        { id: 'ADD_50_0', name: 'upgrade6', label: '+50.0 By Click', type: 'add', upgrade: 50.0, price: 3000 },
+        { id: 'MUL_2_0', name: 'upgrade7', label: 'x2.0 Multi', type: 'multiply', upgrade: 2.0, price: 5000 },
     ];
     
     const PERSONAL_UPGRADES = [
@@ -285,12 +285,13 @@
 
             let success = false;
             if (isPersonal) {
-                success = await upgradePersonal(item.upgrade, item.price, quantity);
+            success = await upgradePersonal(item.upgrade, item.price, quantity); 
             } else if (item.type === 'add') {
-                success = await upgradeSessionAdd(item.upgrade, item.price, quantity, item.id);
+                success = await upgradeSessionAdd(item.upgrade, item.price, quantity, item.name);
             } else if (item.type === 'multiply') {
-                success = await upgradeSessionMultiply(item.upgrade, item.price, quantity, item.id);
+                success = await upgradeSessionMultiply(item.upgrade, item.price, quantity, item.name);
             }
+
 
             if (!success) console.warn(`Achat échoué pour ${item.label} (Quantité: ${quantity}).`);
         }

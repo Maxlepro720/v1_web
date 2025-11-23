@@ -836,11 +836,11 @@
             }
             lastClickTime = now;
 
-            if (freq > 20) { 
+            if (freq > 50) { 
                 if (statusLabel) {
                     statusLabel.textContent = "⚠️ Autoclicker détecté ⚠️";
                     statusLabel.style.color = "#f87171";
-                    setTimeout(() => { statusLabel.textContent = "", statusLabel.style.color = "#FFFFFF"; }, 1000);
+                    
                 }
                 return;
             }

@@ -133,6 +133,9 @@ body {
 </head>
 
 <body>
+<!-- Audio click -->
+<audio id="clickSound" src="831995__sanedish__click-satisfying-mouse-retro-gaming.wav" preload="auto"></audio>
+
 <div class="container">
 
     <!-- COLLECTIVES -->
@@ -179,7 +182,6 @@ let PLAYER_ID = null;
 let SESSION_CODE = null; 
 let money = 0; 
 
-// Variables pour le Batching (attendre 1s avant d'envoyer la requête)
 let upgradeQueue = {}; 
 let upgradeTimeout = null;
 const BATCHING_DELAY = 1000; 
@@ -240,27 +242,12 @@ async function initUserData() {
 
 // ====================================================================
 // === BATCHING & CLICK EFFECT ===
-function playClickEffect(buttonElement){
-    buttonElement.classList.add('clicked');
-    setTimeout(()=>buttonElement.classList.remove('clicked'),150);
-
-    try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        osc.type='square'; osc.frequency.setValueAtTime(600,audioCtx.currentTime);
-        gainNode.gain.setValueAtTime(0.1,audioCtx.currentTime);
-        osc.connect(gainNode); gainNode.connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime+0.08);
-    } catch(err){ console.warn("Son non joué:", err);}
-}
-
 function handleUpgradeClick(id){
     upgradeQueue[id] = (upgradeQueue[id]||0)+1;
 
-    // Effet visuel + sonore
     const btn = document.querySelector(`button[onclick="handleUpgradeClick('${id}')"]`);
-    if(btn) playClickEffect(btn);
+    if(btn) btn.classList.add('clicked');
+    setTimeout(()=>{if(btn) btn.classList.remove('clicked');},150);
 
     if(upgradeTimeout) clearTimeout(upgradeTimeout);
     upgradeTimeout = setTimeout(processUpgradeBatch, BATCHING_DELAY);
@@ -380,7 +367,6 @@ async function upgradePersonal(boostValue, price, quantity){
 async function fullSync(){
     if(!PLAYER_ID) return;
 
-    // 1️⃣ Récupérer la session du joueur
     const sessionData = await fetchData(`/verify_session?id=${encodeURIComponent(PLAYER_ID)}`);
     if(sessionData && sessionData.session_code){
         SESSION_CODE = sessionData.session_code;
@@ -388,9 +374,8 @@ async function fullSync(){
         await updateUI();
     }
 
-    // 2️⃣ Récupérer les prix des upgrades seulement si SESSION_CODE existe
     if(SESSION_CODE){
-        const BASE_PRICE = 100; // ou la valeur que tu veux utiliser
+        const BASE_PRICE = 100;
         const upgradesPriceData = await fetchData(
             `/upgrades_price?session=${encodeURIComponent(SESSION_CODE)}&base_price=${BASE_PRICE}`
         );
@@ -404,7 +389,6 @@ async function fullSync(){
     }
 }
 
-
 // ====================================================================
 // === INIT ===
 async function initializeApp(){
@@ -414,6 +398,18 @@ async function initializeApp(){
         await updateUI();
         setInterval(fullSync,3000);
     } else { document.getElementById('moneyValue').textContent='Connexion requise'; }
+
+    // ====================================================================
+    // Jouer le son sur tous les boutons
+    const clickSound = document.getElementById('clickSound');
+    document.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            try {
+                clickSound.currentTime = 0;
+                clickSound.play();
+            } catch(err){ console.warn("Son non joué:", err);}
+        });
+    });
 }
 
 initializeApp();

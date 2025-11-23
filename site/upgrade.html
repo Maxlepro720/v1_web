@@ -1,178 +1,196 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Système d'Amélioration</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Système d'Amélioration</title>
 
-    <!-- FONT CLEAN -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<!-- FONT CLEAN -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #1F1F1F;
-            color: #eee;
-            min-height: 100vh;
-        }
+body {
+    font-family: 'Inter', sans-serif;
+    background: #1F1F1F;
+    color: #eee;
+    min-height: 100vh;
+}
 
-        .container {
-            display: flex;
-            padding: 20px;
-            gap: 20px;
-            min-height: 100vh;
-        }
+.container {
+    display: flex;
+    padding: 20px;
+    gap: 20px;
+    min-height: 100vh;
+}
 
-        /* PANNEAUX */
-        .sidebar {
-            width: 280px;
-            background: #2A2A2A;
-            padding: 20px;
-            border-radius: 10px;
-        }
+/* PANNEAUX */
+.sidebar {
+    width: 280px;
+    background: #2A2A2A;
+    padding: 20px;
+    border-radius: 10px;
+}
 
-        .sidebar h2 {
-            font-size: 1.2em;
-            font-weight: 600;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #3A3A3A;
-        }
+.sidebar h2 {
+    font-size: 1.2em;
+    font-weight: 600;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #3A3A3A;
+}
 
-        .sidebar-left h2 { border-color: #4CAF50; }
-        .sidebar-right h2 { border-color: #E91E63; }
+.sidebar-left h2 { border-color: #4CAF50; }
+.sidebar-right h2 { border-color: #E91E63; }
 
-        /* LISTES UPGRADE */
-        .upgrades-container {
-            max-height: 350px;
-            overflow-y: auto;
-        }
+/* LISTES UPGRADE */
+.upgrades-container {
+    max-height: 350px;
+    overflow-y: auto;
+}
 
-        /* BOUTONS UPGRADE */
-        .upgrade-btn {
-            width: 100%;
-            background: #3A3A3A;
-            border: 2px solid transparent;
-            color: white;
-            padding: 12px;
-            margin-bottom: 10px;
-            font-size: 14px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.15s;
-            text-align: left;
-        }
+/* BOUTONS UPGRADE */
+.upgrade-btn {
+    width: 100%;
+    background: #3A3A3A;
+    border: 2px solid transparent;
+    color: white;
+    padding: 12px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.15s;
+    text-align: left;
+}
+/* Effet visuel sur clic d'upgrade */
+.upgrade-btn.clicked {
+    background-color: #4CAF50 !important;
+    color: #fff;
+    box-shadow: 0 0 10px #4CAF50;
+    transform: scale(1.05);
+}
 
-        .sidebar-left .upgrade-btn:hover { border-color: #4CAF50; }
-        .sidebar-right .upgrade-btn:hover { border-color: #E91E63; }
+.sidebar-left .upgrade-btn:hover { border-color: #4CAF50; }
+.sidebar-right .upgrade-btn:hover { border-color: #E91E63; }
 
-        /* BOUTON AFFICHER + / - */
-        .toggle-btn {
-            width: 100%;
-            background: #3A3A3A;
-            color: white;
-            padding: 10px;
-            font-size: 14px;
-            border: none;
-            border-radius: 8px;
-            margin-top: 10px;
-            cursor: pointer;
-            transition: 0.15s;
-        }
+/* BOUTON AFFICHER + / - */
+.toggle-btn {
+    width: 100%;
+    background: #3A3A3A;
+    color: white;
+    padding: 10px;
+    font-size: 14px;
+    border: none;
+    border-radius: 8px;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: 0.15s;
+}
 
-        .toggle-btn:hover { background: #444; }
+.toggle-btn:hover { background: #444; }
 
-        /* CENTRE */
-        .center {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 25px;
-        }
+/* CENTRE */
+.center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 25px;
+}
 
-        .boost-session,
-        .boost-personnel {
-            background: #2A2A2A;
-            padding: 25px;
-            border-radius: 10px;
-            width: 320px;
-            text-align: center;
-        }
+.boost-session,
+.boost-personnel {
+    background: #2A2A2A;
+    padding: 25px;
+    border-radius: 10px;
+    width: 320px;
+    text-align: center;
+}
 
-        .money-value {
-            font-size: 2em;
-            font-weight: 700;
-            margin-top: 10px;
-            color: #4CAF50;
-        }
+.money-value {
+    font-size: 2em;
+    font-weight: 700;
+    margin-top: 10px;
+    color: #4CAF50;
+}
 
-        .boost-value { font-size: 2.2em; font-weight: 700; color: #4CAF50; }
-        .boost-personnel .value { font-size: 2em; color: #E91E63; }
+.boost-value { font-size: 2.2em; font-weight: 700; color: #4CAF50; }
+.boost-personnel .value { font-size: 2em; color: #E91E63; }
 
-        /* SCROLLBAR MINIMAL */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: #3A3A3A; border-radius: 5px; }
+/* SCROLLBAR MINIMAL */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-thumb { background: #3A3A3A; border-radius: 5px; }
 
-        /* RESPONSIVE */
-        @media (max-width: 1024px) {
-            .container { flex-direction: column; }
-            .sidebar { width: 100%; }
-            .boost-session, .boost-personnel { width: 100%; }
-        }
-    </style>
+/* RESPONSIVE */
+@media (max-width: 1024px) {
+    .container { flex-direction: column; }
+    .sidebar { width: 100%; }
+    .boost-session, .boost-personnel { width: 100%; }
+}
+</style>
 </head>
 
 <body>
-    <div class="container">
+<div class="container">
 
-        <!-- COLLECTIVES -->
-        <div class="sidebar sidebar-left">
-            <h2>Améliorations Collectives</h2>
-            <div class="upgrades-container" id="leftUpgrades"></div>
-            <button class="toggle-btn" id="leftToggle" onclick="toggleUpgrades('left')">▼ Afficher plus</button>
-        </div>
-
-        <!-- CENTRE -->
-        <div class="center">
-            <div class="boost-session">
-                <h3>💰 Poires Totales</h3>
-                <div class="money-value" id="moneyValue">...</div>
-
-                <h1 style="margin-top:20px;">Boost de Session</h1>
-                <div class="boost-value" id="sessionBoostValue">x1.0</div>
-            </div>
-
-            <div class="boost-personnel">
-                <h2>Boost Personnel</h2>
-                <div class="value" id="personalBoostValue">x1.0</div>
-            </div>
-
-            <p style="font-size:0.85em; opacity:0.7;">
-                Session: <span id="sessionCodeDisplay">...</span> |
-                Joueur: <span id="playerIdDisplay">...</span>
-            </p>
-        </div>
-
-        <!-- PERSONNELLES -->
-        <div class="sidebar sidebar-right">
-            <h2>Améliorations Personnelles</h2>
-            <div class="upgrades-container" id="rightUpgrades"></div>
-            <button class="toggle-btn" id="rightToggle" onclick="toggleUpgrades('right')">▼ Afficher plus</button>
-        </div>
+    <!-- COLLECTIVES -->
+    <div class="sidebar sidebar-left">
+        <h2>Améliorations Collectives</h2>
+        <div class="upgrades-container" id="leftUpgrades"></div>
+        <button class="toggle-btn" id="leftToggle" onclick="toggleUpgrades('left')">▼ Afficher plus</button>
     </div>
-    <script>
-const API_URL = "https://project-3-api-2bgb.onrender.com";
 
-let PLAYER_ID = localStorage.getItem("username");
-let SESSION_CODE = null;
-let money = 0;
-let upgradeQueue = {};
+    <!-- CENTRE -->
+    <div class="center">
+        <div class="boost-session">
+            <h3>💰 Poires Totales</h3>
+            <div class="money-value" id="moneyValue">...</div>
+
+            <h1 style="margin-top:20px;">Boost de Session</h1>
+            <div class="boost-value" id="sessionBoostValue">x1.0</div>
+        </div>
+
+        <div class="boost-personnel">
+            <h2>Boost Personnel</h2>
+            <div class="value" id="personalBoostValue">x1.0</div>
+        </div>
+
+        <p style="font-size:0.85em; opacity:0.7;">
+            Session: <span id="sessionCodeDisplay">...</span> |
+            Joueur: <span id="playerIdDisplay">...</span>
+        </p>
+    </div>
+
+    <!-- PERSONNELLES -->
+    <div class="sidebar sidebar-right">
+        <h2>Améliorations Personnelles</h2>
+        <div class="upgrades-container" id="rightUpgrades"></div>
+        <button class="toggle-btn" id="rightToggle" onclick="toggleUpgrades('right')">▼ Afficher plus</button>
+    </div>
+</div>
+
+<script>
+// ====================================================================
+// === API SETUP & CONSTANTS ===
+// ====================================================================
+const API_URL = "https://project-3-api-2bgb.onrender.com"; 
+let PLAYER_ID = null;    
+let SESSION_CODE = null; 
+let money = 0; 
+
+// Variables pour le Batching (attendre 1s avant d'envoyer la requête)
+let upgradeQueue = {}; 
 let upgradeTimeout = null;
-const BATCHING_DELAY = 1000;
+const BATCHING_DELAY = 1000; 
 
+// Max upgrades visibles avant toggle
+const MAX_VISIBLE_UPGRADES = 4;
+
+// ====================================================================
+// === CATALOGUES D'AMÉLIORATIONS (JSON) ===
+// ====================================================================
 const COLLECTIVE_UPGRADES = [
     { id: 'ADD_0_1', name: 'upgrade1', label: '+0.1 par click', type: 'add', upgrade: 0.1, price: 100 },
     { id: 'ADD_0_5', name: 'upgrade2', label: '+0.5 par click', type: 'add', upgrade: 0.5, price: 500 },
@@ -194,37 +212,16 @@ const PERSONAL_UPGRADES = [
 ];
 
 // ====================================================================
-// === UTILITAIRES ===
-// ====================================================================
-function formatNumber(num) {
-    if (num >= 1_000_000_000) return (num / 1_000_000_000).toFixed(2) + 'B';
-    if (num >= 1_000_000) return (num / 1_000_000).toFixed(2) + 'M';
-    if (num >= 1_000) return (num / 1_000).toFixed(2) + 'K';
-    return num.toFixed(0);
-}
-
-async function fetchData(endpoint, options = {}) {
-    try {
-        const response = await fetch(`${API_URL}${endpoint}`, options);
-        const data = await response.json();
-        if (data.status === 'error') {
-            console.error(`Erreur API [${endpoint}]:`, data.message);
-            return null;
-        }
-        return data;
-    } catch (err) {
-        console.error(`Erreur réseau [${endpoint}]:`, err);
-        alert('Erreur de communication avec le serveur.');
-        return null;
-    }
-}
-
-// ====================================================================
-// === INITIALISATION UTILISATEUR ===
+// === CORE LOGIC & API UTILITIES ===
 // ====================================================================
 async function initUserData() {
+    PLAYER_ID = localStorage.getItem("username");
     document.getElementById('playerIdDisplay').textContent = PLAYER_ID || "Non connecté";
-    if (!PLAYER_ID) { alert("Erreur: ID joueur non trouvé."); return false; }
+
+    if (!PLAYER_ID) {
+        alert("Erreur: ID joueur (username) non trouvé dans localStorage. Connectez-vous d'abord.");
+        return false;
+    }
 
     const sessionData = await fetchData(`/verify_session?id=${encodeURIComponent(PLAYER_ID)}`);
     if (sessionData && sessionData.session_code) {
@@ -232,105 +229,206 @@ async function initUserData() {
         document.getElementById('sessionCodeDisplay').textContent = SESSION_CODE;
         return true;
     } else {
-        alert("Erreur: Session active non trouvée.");
+        alert("Erreur: Session active non trouvée pour ce joueur.");
         return false;
     }
 }
 
-// ====================================================================
-// === GESTION DES UPGRADE BUTTONS ===
-// ====================================================================
-function generateUpgradeButtons() {
-    const leftContainer = document.getElementById('leftUpgrades');
-    const rightContainer = document.getElementById('rightUpgrades');
-
-    leftContainer.innerHTML = COLLECTIVE_UPGRADES.map(item => `
-        <button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')">
-            ${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span> poires)
-        </button>
-    `).join('');
-
-    rightContainer.innerHTML = PERSONAL_UPGRADES.map(item => `
-        <button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')">
-            ${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span> poires)
-        </button>
-    `).join('');
+async function fetchData(endpoint, options = {}) {
+    try {
+        const response = await fetch(`${API_URL}${endpoint}`, options);
+        const data = await response.json();
+        
+        if (data.status === 'error') {
+            console.error(`Erreur API [${endpoint}]:`, data.message);
+            return null;
+        }
+        return data;
+    } catch (error) {
+        console.error(`Erreur réseau/parsing [${endpoint}]:`, error);
+        alert('Erreur de communication avec le serveur.');
+        return null;
+    }
 }
 
+// ====================================================================
+// === BATCHING LOGIC ===
+// ====================================================================
 function handleUpgradeClick(id) {
     upgradeQueue[id] = (upgradeQueue[id] || 0) + 1;
     if (upgradeTimeout) clearTimeout(upgradeTimeout);
     upgradeTimeout = setTimeout(processUpgradeBatch, BATCHING_DELAY);
 }
+// Effet visuel et sonore sur click d'upgrade
+function playClickEffect(buttonElement) {
+    // --- Visuel ---
+    buttonElement.classList.add('clicked');
+    setTimeout(() => buttonElement.classList.remove('clicked'), 150);
 
-// ====================================================================
-// === API D'ACHAT UPGRADE ===
-// ====================================================================
+    // --- Sonore ---
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.type = 'square';
+        oscillator.frequency.setValueAtTime(600, audioCtx.currentTime); // fréquence
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // volume faible
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.08); // durée 80ms
+    } catch (err) {
+        console.warn("Impossible de jouer le son:", err);
+    }
+}
+
+// Modifier handleUpgradeClick pour appeler l'effet
+function handleUpgradeClick(id) {
+    upgradeQueue[id] = (upgradeQueue[id] || 0) + 1;
+
+    // Appliquer effet visuel et sonore
+    const btn = document.querySelector(`button[onclick="handleUpgradeClick('${id}')"]`);
+    if (btn) playClickEffect(btn);
+
+    if (upgradeTimeout) clearTimeout(upgradeTimeout);
+    upgradeTimeout = setTimeout(processUpgradeBatch, BATCHING_DELAY);
+}
+
 async function processUpgradeBatch() {
-    if (!SESSION_CODE || !PLAYER_ID) return;
-    const batch = { ...upgradeQueue };
+    if (Object.keys(upgradeQueue).length === 0) return;
+
+    const batchToProcess = { ...upgradeQueue };
     upgradeQueue = {};
 
-    for (const id in batch) {
-        const qty = batch[id];
+    for (const id in batchToProcess) {
+        const quantity = batchToProcess[id];
+        
         let item = COLLECTIVE_UPGRADES.find(u => u.id === id);
         let isPersonal = false;
-        if (!item) { item = PERSONAL_UPGRADES.find(u => u.id === id); isPersonal = true; }
+
+        if (!item) {
+            item = PERSONAL_UPGRADES.find(u => u.id === id);
+            isPersonal = true;
+        }
+
         if (!item) continue;
 
-        if (isPersonal) await upgradePersonal(item.upgrade, item.price, qty);
-        else if (item.type === 'add') await upgradeSessionAdd(item.upgrade, item.price, qty, item.name);
-        else if (item.type === 'multiply') await upgradeSessionMultiply(item.upgrade, item.price, qty, item.name);
+        let success = false;
+        if (isPersonal) {
+            success = await upgradePersonal(item.upgrade, item.price, quantity); 
+        } else if (item.type === 'add') {
+            success = await upgradeSessionAdd(item.upgrade, item.price, quantity, item.name);
+        } else if (item.type === 'multiply') {
+            success = await upgradeSessionMultiply(item.upgrade, item.price, quantity, item.name);
+        }
+
+        if (!success) console.warn(`Achat échoué pour ${item.label} (Quantité: ${quantity}).`);
     }
+
     await updateUI();
 }
 
-async function upgradeSessionAdd(value, price, quantity, name) {
-    const data = await fetchData('/upgrade_add', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ session: SESSION_CODE, upgrade: value, price: price, quantity: quantity, upgrade_name: name })
-    });
-    return !!data;
-}
-
-async function upgradeSessionMultiply(value, price, quantity, name) {
-    const data = await fetchData('/upgrade_multiply', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ session: SESSION_CODE, upgrade: value, price: price, quantity: quantity, upgrade_name: name })
-    });
-    return !!data;
-}
-
-async function upgradePersonal(value, price, quantity) {
-    const data = await fetchData('/personnel_boost', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ id: PLAYER_ID, boost: value, price: price, quantity: quantity })
-    });
-    return !!data;
-}
-
 // ====================================================================
-// === MISE À JOUR UI ===
-// ====================================================================
+// === UI & DISPLAY UTILITIES ===
+function formatNumber(num) {
+    if (num >= 1_000_000_000) return (num / 1_000_000_000).toFixed(2) + 'B';
+    if (num >= 1_000_000) return (num / 1_000_000).toFixed(2) + 'M';
+    if (num >= 1_000) return (num / 1_000).toFixed(2) + 'K';
+    return num.toFixed(0);
+}
+
+// Toggle upgrades
+function toggleUpgrades(side) {
+    const container = document.getElementById(side + 'Upgrades');
+    const toggleBtn = document.getElementById(side + 'Toggle');
+    const upgrades = Array.from(container.children);
+
+    if (toggleBtn.dataset.expanded === 'true') {
+        upgrades.forEach((btn, i) => { if(i >= MAX_VISIBLE_UPGRADES) btn.style.display = 'none'; });
+        toggleBtn.textContent = '▼ Afficher plus';
+        toggleBtn.dataset.expanded = 'false';
+    } else {
+        upgrades.forEach(btn => btn.style.display = 'block');
+        toggleBtn.textContent = '▲ Afficher moins';
+        toggleBtn.dataset.expanded = 'true';
+    }
+}
+
+function generateUpgradeButtons() {
+    const leftContainer = document.getElementById('leftUpgrades');
+    const rightContainer = document.getElementById('rightUpgrades');
+
+    leftContainer.innerHTML = COLLECTIVE_UPGRADES.map((item,index) => 
+        `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')"
+        style="${index>=MAX_VISIBLE_UPGRADES?'display:none;':''}">
+        ${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span> poires)
+        </button>`).join('');
+
+    rightContainer.innerHTML = PERSONAL_UPGRADES.map((item,index) => 
+        `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')"
+        style="${index>=MAX_VISIBLE_UPGRADES?'display:none;':''}">
+        ${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span> poires)
+        </button>`).join('');
+
+    document.getElementById('leftToggle').dataset.expanded = 'false';
+    document.getElementById('rightToggle').dataset.expanded = 'false';
+}
+
 async function updateUI() {
     if (!SESSION_CODE || !PLAYER_ID) return;
 
     const poiresData = await fetchData(`/get_poires?session=${encodeURIComponent(SESSION_CODE)}`);
-    if (poiresData) document.getElementById('moneyValue').textContent = formatNumber(poiresData.poires);
+    if (poiresData) {
+        money = poiresData.poires; 
+        document.getElementById('moneyValue').textContent = formatNumber(money);
+    }
 
-    const multiData = await fetchData(`/get_session_multiplier?session=${encodeURIComponent(SESSION_CODE)}`);
-    if (multiData) document.getElementById('sessionBoostValue').textContent = `x${multiData.by_click_multiplier.toFixed(2)}`;
+    const sessionMultiData = await fetchData(`/get_session_multiplier?session=${encodeURIComponent(SESSION_CODE)}`);
+    if (sessionMultiData) {
+        const multi = sessionMultiData.by_click_multiplier.toFixed(2);
+        document.getElementById('sessionBoostValue').textContent = `x${multi}`;
+    }
 
-    const boostData = await fetchData(`/get_personnel_boost?id=${encodeURIComponent(PLAYER_ID)}`);
-    if (boostData) document.getElementById('personalBoostValue').textContent = `x${boostData.personnel_boost.toFixed(2)}`;
+    const personalBoostData = await fetchData(`/get_personnel_boost?id=${encodeURIComponent(PLAYER_ID)}`);
+    if (personalBoostData) {
+        const boost = personalBoostData.personnel_boost.toFixed(2);
+        document.getElementById('personalBoostValue').textContent = `x${boost}`;
+    }
 }
 
 // ====================================================================
-// === SYNC COMPLET ET PRIX DYNAMIQUES ===
+// === UPGRADE API CALL FUNCTIONS ===
+async function upgradeSessionAdd(upgradeValue, price, quantity, upgrade_name) {
+    const data = await fetchData('/upgrade_add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session: SESSION_CODE, upgrade: upgradeValue, price: price, quantity: quantity, upgrade_name })
+    });
+    return !!data;
+}
+
+async function upgradeSessionMultiply(upgradeMultiplier, price, quantity, upgrade_name) {
+    const data = await fetchData('/upgrade_multiply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session: SESSION_CODE, upgrade: upgradeMultiplier, price: price, quantity: quantity, upgrade_name })
+    });
+    return !!data;
+}
+
+async function upgradePersonal(boostValue, price, quantity) {
+    const data = await fetchData('/personnel_boost', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: PLAYER_ID, boost: boostValue, price: price, quantity: quantity })
+    });
+    return !!data;
+}
+
 // ====================================================================
+// === FULL SYNC FUNCTION (3s interval) ===
 async function fullSync() {
     if (!PLAYER_ID) return;
 
@@ -342,40 +440,31 @@ async function fullSync() {
     }
 
     if (SESSION_CODE) {
-        const pricesData = await fetchData(`/upgrades_price?session=${encodeURIComponent(SESSION_CODE)}`);
-        if (pricesData && pricesData.upgrades) {
-            for (const u in pricesData.upgrades) {
-                const el = document.getElementById(u + '_price');
-                if (el) el.textContent = formatNumber(pricesData.upgrades[u].price);
+        const upgradesPriceData = await fetchData(`/upgrades_price?session=${encodeURIComponent(SESSION_CODE)}`);
+        if (upgradesPriceData && upgradesPriceData.upgrades) {
+            for (const upgradeName in upgradesPriceData.upgrades) {
+                const elem = document.getElementById(upgradeName + '_price');
+                if (elem) elem.textContent = formatNumber(upgradesPriceData.upgrades[upgradeName].price);
             }
         }
     }
 }
 
 // ====================================================================
-// === INITIALISATION APP ===
-// ====================================================================
+// === INITIALIZATION ===
 async function initializeApp() {
     generateUpgradeButtons();
-    const ready = await initUserData();
-    if (ready) {
-        await updateUI();
-        setInterval(fullSync, 3000);
+    const initialized = await initUserData();
+    
+    if (initialized) {
+        await updateUI(); 
+        setInterval(fullSync, 3000); 
     } else {
         document.getElementById('moneyValue').textContent = 'Connexion requise';
     }
 }
 
 initializeApp();
-
-// ====================================================================
-// === TOGGLE UPGRADE LIST ===
-// ====================================================================
-function toggleUpgrades(side) {
-    const container = document.getElementById(side+'Upgrades');
-    container.style.maxHeight = container.style.maxHeight === '350px' ? 'none' : '350px';
-}
 </script>
-
 </body>
 </html>

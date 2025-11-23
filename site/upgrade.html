@@ -64,16 +64,21 @@ body {
     transition: 0.15s;
     text-align: left;
 }
-/* Effet visuel sur clic d'upgrade */
 .upgrade-btn.clicked {
     background-color: #4CAF50 !important;
     color: #fff;
     box-shadow: 0 0 10px #4CAF50;
     transform: scale(1.05);
 }
+.upgrade-btn.disabled {
+    background-color: #555 !important;
+    color: #999 !important;
+    cursor: not-allowed;
+    box-shadow: none !important;
+}
 
-.sidebar-left .upgrade-btn:hover { border-color: #4CAF50; }
-.sidebar-right .upgrade-btn:hover { border-color: #E91E63; }
+.sidebar-left .upgrade-btn:hover:not(.disabled) { border-color: #4CAF50; }
+.sidebar-right .upgrade-btn:hover:not(.disabled) { border-color: #E91E63; }
 
 /* BOUTON AFFICHER + / - */
 .toggle-btn {
@@ -133,19 +138,16 @@ body {
 </head>
 
 <body>
-<!-- Audio click -->
 <audio id="clickSound" src="831995__sanedish__click-satisfying-mouse-retro-gaming.wav" preload="auto"></audio>
 
 <div class="container">
 
-    <!-- COLLECTIVES -->
     <div class="sidebar sidebar-left">
         <h2>Améliorations Collectives</h2>
         <div class="upgrades-container" id="leftUpgrades"></div>
         <button class="toggle-btn" id="leftToggle" onclick="toggleUpgrades('left')">▼ Afficher plus</button>
     </div>
 
-    <!-- CENTRE -->
     <div class="center">
         <div class="boost-session">
             <h3>💰 Poires Totales</h3>
@@ -166,7 +168,6 @@ body {
         </p>
     </div>
 
-    <!-- PERSONNELLES -->
     <div class="sidebar sidebar-right">
         <h2>Améliorations Personnelles</h2>
         <div class="upgrades-container" id="rightUpgrades"></div>
@@ -175,26 +176,17 @@ body {
 </div>
 
 <script>
-// ====================================================================
-// === API & CONSTANTES ===
 const API_URL = "https://project-3-api-2bgb.onrender.com"; 
-let PLAYER_ID = null;    
-let SESSION_CODE = null; 
-let money = 0; 
+let PLAYER_ID = null, SESSION_CODE = null, money = 0;
+let upgradeQueue = {}, upgradeTimeout = null;
+const BATCHING_DELAY = 1000, MAX_VISIBLE_UPGRADES = 4;
 
-let upgradeQueue = {}; 
-let upgradeTimeout = null;
-const BATCHING_DELAY = 1000; 
-const MAX_VISIBLE_UPGRADES = 4;
-
-// ====================================================================
-// === CATALOGUES D'AMÉLIORATIONS ===
 const COLLECTIVE_UPGRADES = [
     { id: 'upgrade1', name: 'upgrade1', label: '+0.1 par click', type: 'add', upgrade: 0.1, price: 100 },
     { id: 'upgrade2', name: 'upgrade2', label: '+0.5 par click', type: 'add', upgrade: 0.5, price: 10000 },
     { id: 'upgrade3', name: 'upgrade3', label: '+1.0 par click', type: 'add', upgrade: 1.0, price: 1000000 },
     { id: 'upgrade4', name: 'upgrade4', label: 'x2 Multiplier', type: 'multiply', upgrade: 2.0, price: 50000000 },
-    { id: 'upgrade5', name: 'upgrade5', label: 'x5 Multiplier', type: 'multiplier', upgrade: 5.0, price: 8000000000 },
+    { id: 'upgrade5', name: 'upgrade5', label: 'x5 Multiplier', type: 'multiply', upgrade: 5.0, price: 8000000000 },
     { id: 'upgrade6', name: 'upgrade6', label: '+500000000.0 By Click', type: 'add', upgrade: 50.0, price: 100000000000 },
     { id: 'upgrade7', name: 'upgrade7', label: 'x100.0 Multiplier', type: 'multiply', upgrade: 2.0, price: 100000000000000000 },
 ];
@@ -209,75 +201,55 @@ const PERSONAL_UPGRADES = [
     { id: 'PERSO_50_0', label: '+50.0 Perso', upgrade: 50.0, price: 4000000 },
 ];
 
-// ====================================================================
-// === FONCTIONS API & UTILITAIRES ===
-async function fetchData(endpoint, options = {}) {
+async function fetchData(endpoint, options={}) {
     try {
         const response = await fetch(`${API_URL}${endpoint}`, options);
         const data = await response.json();
-        if (data.status === 'error') {
-            console.error(`Erreur API [${endpoint}]:`, data.message);
-            return null;
-        }
+        if(data.status==='error') console.error(`Erreur API [${endpoint}]:`, data.message);
         return data;
-    } catch (error) {
-        console.error(`Erreur réseau/parsing [${endpoint}]:`, error);
-        return null;
-    }
+    } catch(err){ console.error(`Erreur réseau/parsing [${endpoint}]:`, err); return null;}
 }
 
 async function initUserData() {
     PLAYER_ID = localStorage.getItem("username");
     document.getElementById('playerIdDisplay').textContent = PLAYER_ID || "Non connecté";
-
-    if (!PLAYER_ID) { alert("ID joueur non trouvé."); return false; }
-
+    if(!PLAYER_ID){ alert("ID joueur non trouvé."); return false;}
     const sessionData = await fetchData(`/verify_session?id=${encodeURIComponent(PLAYER_ID)}`);
-    if (sessionData && sessionData.session_code) {
+    if(sessionData && sessionData.session_code){
         SESSION_CODE = sessionData.session_code;
         document.getElementById('sessionCodeDisplay').textContent = SESSION_CODE;
         return true;
-    } else { alert("Session active non trouvée."); return false; }
+    } else { alert("Session active non trouvée."); return false;}
 }
 
-// ====================================================================
-// === BATCHING & CLICK EFFECT ===
 function handleUpgradeClick(id){
-    upgradeQueue[id] = (upgradeQueue[id]||0)+1;
-
     const btn = document.querySelector(`button[onclick="handleUpgradeClick('${id}')"]`);
+    if(btn && btn.classList.contains('disabled')) return; // empêche click si pas assez
+    upgradeQueue[id] = (upgradeQueue[id]||0)+1;
     if(btn) btn.classList.add('clicked');
     setTimeout(()=>{if(btn) btn.classList.remove('clicked');},150);
-
     if(upgradeTimeout) clearTimeout(upgradeTimeout);
     upgradeTimeout = setTimeout(processUpgradeBatch, BATCHING_DELAY);
 }
 
 async function processUpgradeBatch(){
     if(Object.keys(upgradeQueue).length===0) return;
-
     const batch = {...upgradeQueue}; upgradeQueue={};
-
     for(const id in batch){
         const quantity = batch[id];
         let item = COLLECTIVE_UPGRADES.find(u=>u.id===id);
         let isPersonal=false;
         if(!item){ item=PERSONAL_UPGRADES.find(u=>u.id===id); isPersonal=true;}
         if(!item) continue;
-
         let success=false;
         if(isPersonal) success = await upgradePersonal(item.upgrade,item.price,quantity);
         else if(item.type==='add') success = await upgradeSessionAdd(item.upgrade,item.price,quantity,item.name);
         else if(item.type==='multiply') success = await upgradeSessionMultiply(item.upgrade,item.price,quantity,item.name);
-
         if(!success) console.warn(`Achat échoué pour ${item.label} x${quantity}`);
     }
-
     await updateUI();
 }
 
-// ====================================================================
-// === UI ===
 function formatNumber(num){
     if(num>=1_000_000_000) return (num/1_000_000_000).toFixed(2)+'B';
     if(num>=1_000_000) return (num/1_000_000).toFixed(2)+'M';
@@ -301,36 +273,50 @@ function toggleUpgrades(side){
 function generateUpgradeButtons(){
     const leftContainer=document.getElementById('leftUpgrades');
     const rightContainer=document.getElementById('rightUpgrades');
-
     leftContainer.innerHTML = COLLECTIVE_UPGRADES.map((item,index)=>
         `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')"
         style="${index>=MAX_VISIBLE_UPGRADES?'display:none;':''}">
         ${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span> poires)
         </button>`).join('');
-
     rightContainer.innerHTML = PERSONAL_UPGRADES.map((item,index)=>
         `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')"
         style="${index>=MAX_VISIBLE_UPGRADES?'display:none;':''}">
         ${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span> poires)
         </button>`).join('');
-
     document.getElementById('leftToggle').dataset.expanded='false';
     document.getElementById('rightToggle').dataset.expanded='false';
+}
+
+function updateUpgradeButtonsState() {
+    const allUpgrades = [...COLLECTIVE_UPGRADES, ...PERSONAL_UPGRADES];
+    allUpgrades.forEach(u=>{
+        const btn = document.querySelector(`button[onclick="handleUpgradeClick('${u.id}')"]`);
+        const elem = document.getElementById(u.id+'_price');
+        if(!btn || !elem) return;
+        const price = Number(elem.textContent.replace(/[^0-9.-]+/g,""));
+        if(price > money){
+            btn.classList.add('disabled');
+        } else {
+            btn.classList.remove('disabled');
+        }
+    });
 }
 
 async function updateUI(){
     if(!SESSION_CODE||!PLAYER_ID) return;
 
-    const poiresData=await fetchData(`/get_poires?session=${encodeURIComponent(SESSION_CODE)}`);
+    const poiresData = await fetchData(`/get_poires?session=${encodeURIComponent(SESSION_CODE)}`);
     if(poiresData){ money = poiresData.poires; document.getElementById('moneyValue').textContent=formatNumber(money);}
 
-    const sessionMultiData=await fetchData(`/get_session_multiplier?session=${encodeURIComponent(SESSION_CODE)}`);
+    const sessionMultiData = await fetchData(`/get_session_multiplier?session=${encodeURIComponent(SESSION_CODE)}`);
     if(sessionMultiData){ const multi=sessionMultiData.by_click_multiplier.toFixed(2);
         document.getElementById('sessionBoostValue').textContent=`x${multi}`;}
 
-    const personalBoostData=await fetchData(`/get_personnel_boost?id=${encodeURIComponent(PLAYER_ID)}`);
+    const personalBoostData = await fetchData(`/get_personnel_boost?id=${encodeURIComponent(PLAYER_ID)}`);
     if(personalBoostData){ const boost=personalBoostData.personnel_boost.toFixed(2);
         document.getElementById('personalBoostValue').textContent=`x${boost}`;}
+
+    updateUpgradeButtonsState(); // <-- update buttons selon argent
 }
 
 // ====================================================================
@@ -363,13 +349,9 @@ async function upgradePersonal(boostValue, price, quantity){
 }
 
 // ====================================================================
-// === FULL SYNC 3s ===
-// ====================================================================
 // === FULL SYNC 3s CORRIGÉ ===
 async function fullSync() {
     if (!PLAYER_ID) return;
-
-    // Vérifier la session
     const sessionData = await fetchData(`/verify_session?id=${encodeURIComponent(PLAYER_ID)}`);
     if (sessionData && sessionData.session_code) {
         SESSION_CODE = sessionData.session_code;
@@ -378,37 +360,25 @@ async function fullSync() {
     }
 
     if (SESSION_CODE) {
-        // Préparer les prix de base pour toutes les upgrades
         const basePrices = {};
         [...COLLECTIVE_UPGRADES, ...PERSONAL_UPGRADES].forEach(u => {
-            basePrices[u.id] = u.price.toString(); // envoyer en string pour les très grands nombres
+            basePrices[u.id] = u.price.toString();
         });
-
-        // Envoyer au serveur pour obtenir les prix actualisés
         const upgradesPriceData = await fetchData(
             `/upgrades_price?session=${encodeURIComponent(SESSION_CODE)}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ base_prices: basePrices })
-            }
+            { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ base_prices: basePrices }) }
         );
-
-        // Mettre à jour l'affichage des prix côté client
-        if (upgradesPriceData && upgradesPriceData.upgrades_price) {
-            for (const upgradeName in upgradesPriceData.upgrades_price) {
-                const elem = document.getElementById(upgradeName + '_price');
-                if (elem) {
-                    const priceValue = upgradesPriceData.upgrades_price[upgradeName];
-                    // On s'assure que priceValue est un nombre ou une string convertible
-                    elem.textContent = formatNumber(Number(priceValue));
+        if(upgradesPriceData && upgradesPriceData.upgrades_price){
+            for(const upgradeName in upgradesPriceData.upgrades_price){
+                const elem = document.getElementById(upgradeName+'_price');
+                if(elem){
+                    elem.textContent = formatNumber(Number(upgradesPriceData.upgrades_price[upgradeName]));
                 }
             }
+            updateUpgradeButtonsState(); // <-- update après prix
         }
     }
 }
-
-
 
 // ====================================================================
 // === INIT ===
@@ -420,15 +390,10 @@ async function initializeApp(){
         setInterval(fullSync,3000);
     } else { document.getElementById('moneyValue').textContent='Connexion requise'; }
 
-    // ====================================================================
-    // Jouer le son sur tous les boutons
     const clickSound = document.getElementById('clickSound');
     document.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', () => {
-            try {
-                clickSound.currentTime = 0;
-                clickSound.play();
-            } catch(err){ console.warn("Son non joué:", err);}
+            try { clickSound.currentTime = 0; clickSound.play(); } catch(err){ console.warn("Son non joué:", err);}
         });
     });
 }

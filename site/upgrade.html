@@ -187,7 +187,7 @@
     
     const COLLECTIVE_UPGRADES = [
         { id: 'ADD_0_1', label: '+0.1 par click', type: 'add', upgrade: 0.1, price: 100 },
-        { id: 'ADD_0_5', label: '+0.5 par click', type: 'add', upgrade: 1.0, price: 500 },
+        { id: 'ADD_0_5', label: '+0.5 par click', type: 'add', upgrade: 0.5, price: 500 },
         { id: 'MUL_1_1', label: 'x1.1 Multi', type: 'multiply', upgrade: 1.1, price: 200 },
         { id: 'MUL_1_5', label: 'x1.5 Multi', type: 'multiply', upgrade: 1.5, price: 500 },
         { id: 'ADD_10_0', label: '+10.0 By Click', type: 'add', upgrade: 10.0, price: 800 },
@@ -309,18 +309,6 @@
         return num.toFixed(0);
     }
 
-    function toggleUpgrades(side) {
-        const container = document.getElementById(side + 'Upgrades');
-        const button = document.getElementById(side + 'Toggle');
-        if (container.classList.contains('collapsed')) {
-            container.classList.remove('collapsed');
-            button.innerHTML = '▲ Afficher moins';
-        } else {
-            container.classList.add('collapsed');
-            button.innerHTML = '▼ Afficher plus';
-        }
-    }
-    
     function generateUpgradeButtons() {
         const leftContainer = document.getElementById('leftUpgrades');
         const rightContainer = document.getElementById('rightUpgrades');
@@ -360,28 +348,6 @@
         }
     }
 
-    async function addPoires(clickCount) {
-        const data = await fetchData('/poire', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: PLAYER_ID, session: SESSION_CODE, click: clickCount })
-        });
-        if (data) await updateUI();
-    }
-
-    function syncWithSystemClock() {
-        if (!SESSION_CODE || !PLAYER_ID) return; 
-        const now = new Date();
-        const seconds = now.getSeconds();
-        
-        if (seconds % 10 === 0 && !isUpdateScheduled) {
-            updateUI(); 
-            isUpdateScheduled = true;
-        } else if (seconds % 10 !== 0) {
-            isUpdateScheduled = false;
-        }
-    }
-
     // ====================================================================
     // === UPGRADE API CALL FUNCTIONS ===
     // ====================================================================
@@ -414,13 +380,12 @@
     }
 
     // ====================================================================
-    // === FULL SYNC FUNCTION (3s interval) + upgrades_price ===
+    // === FULL SYNC FUNCTION (3s interval) ===
     // ====================================================================
 
     async function fullSync() {
         if (!PLAYER_ID) return;
 
-        // Vérifier session active via API
         const sessionData = await fetchData(`/verify_session?id=${encodeURIComponent(PLAYER_ID)}`);
         if (sessionData && sessionData.session_code) {
             SESSION_CODE = sessionData.session_code;
@@ -428,7 +393,6 @@
             await updateUI();
         }
 
-        // Récupérer prix upgrades
         if (SESSION_CODE) {
             const upgradesPriceData = await fetchData(`/upgrades_price?session=${encodeURIComponent(SESSION_CODE)}`);
             if (upgradesPriceData && upgradesPriceData.upgrades) {
@@ -450,7 +414,6 @@
         
         if (initialized) {
             await updateUI(); 
-            setInterval(syncWithSystemClock, 1000); 
             setInterval(fullSync, 3000); // 3 sec interval pour session, poires et upgrades_price
         } else {
             document.getElementById('moneyValue').textContent = 'Connexion requise';
@@ -458,8 +421,7 @@
     }
     
     initializeApp();
+
 </script>
-
-
 </body>
 </html>

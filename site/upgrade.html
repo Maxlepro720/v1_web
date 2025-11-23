@@ -365,24 +365,26 @@ async function upgradePersonal(boostValue, price, quantity){
 // ====================================================================
 // === FULL SYNC 3s ===
 // ====================================================================
-// === FULL SYNC 3s (corrigé pour prix individuels) ===
-async function fullSync(){
-    if(!PLAYER_ID) return;
+// === FULL SYNC 3s CORRIGÉ ===
+async function fullSync() {
+    if (!PLAYER_ID) return;
 
+    // Vérifier la session
     const sessionData = await fetchData(`/verify_session?id=${encodeURIComponent(PLAYER_ID)}`);
-    if(sessionData && sessionData.session_code){
+    if (sessionData && sessionData.session_code) {
         SESSION_CODE = sessionData.session_code;
         document.getElementById('sessionCodeDisplay').textContent = SESSION_CODE;
         await updateUI();
     }
 
-    if(SESSION_CODE){
+    if (SESSION_CODE) {
         // Préparer les prix de base pour toutes les upgrades
         const basePrices = {};
         [...COLLECTIVE_UPGRADES, ...PERSONAL_UPGRADES].forEach(u => {
-            basePrices[u.id] = u.price;
+            basePrices[u.id] = u.price.toString(); // envoyer en string pour les très grands nombres
         });
 
+        // Envoyer au serveur pour obtenir les prix actualisés
         const upgradesPriceData = await fetchData(
             `/upgrades_price?session=${encodeURIComponent(SESSION_CODE)}`,
             {
@@ -392,14 +394,20 @@ async function fullSync(){
             }
         );
 
-        if(upgradesPriceData && upgradesPriceData.upgrades_price){
-            for(const upgradeName in upgradesPriceData.upgrades_price){
+        // Mettre à jour l'affichage des prix côté client
+        if (upgradesPriceData && upgradesPriceData.upgrades_price) {
+            for (const upgradeName in upgradesPriceData.upgrades_price) {
                 const elem = document.getElementById(upgradeName + '_price');
-                if(elem) elem.textContent = formatNumber(upgradesPriceData.upgrades_price[upgradeName]);
+                if (elem) {
+                    const priceValue = upgradesPriceData.upgrades_price[upgradeName];
+                    // On s'assure que priceValue est un nombre ou une string convertible
+                    elem.textContent = formatNumber(Number(priceValue));
+                }
             }
         }
     }
 }
+
 
 
 // ====================================================================

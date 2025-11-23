@@ -196,6 +196,9 @@ let PLAYER_ID = null, SESSION_CODE = null, money = 0;
 let upgradeQueue = {}, upgradeTimeout = null;
 const BATCHING_DELAY = 1000, MAX_VISIBLE_UPGRADES = 4;
 
+// Stockage des prix numériques pour comparaison
+const upgradePricesNumeric = {};
+
 const COLLECTIVE_UPGRADES = [
     { id: 'upgrade1', name: 'upgrade1', label: '+0.1 par click', type: 'add', upgrade: 0.1, price: 100 },
     { id: 'upgrade2', name: 'upgrade2', label: '+0.5 par click', type: 'add', upgrade: 0.5, price: 10000 },
@@ -237,20 +240,11 @@ async function initUserData() {
     } else { alert("Session active non trouvée."); return false;}
 }
 
-function disableAllButtonsTemporarily() {
-    const allButtons = document.querySelectorAll('.upgrade-btn');
-    allButtons.forEach(btn => btn.classList.add('disabled'));
-    setTimeout(updateUpgradeButtonsState, 1000);
-}
-
 function handleUpgradeClick(id){
-    const quantity = Number(document.getElementById('quantitySelector').value) || 1;
-    const quantityRight = Number(document.getElementById('quantitySelectorRight').value) || 1;
     const btn = document.querySelector(`button[onclick="handleUpgradeClick('${id}')"]`);
-    if(btn && btn.classList.contains('disabled')) return; 
-    upgradeQueue[id] = (upgradeQueue[id]||0) + (id.startsWith('PERSO') ? quantityRight : quantity);
+    if(btn && btn.classList.contains('disabled')) return; // empêche click si pas assez
+    upgradeQueue[id] = (upgradeQueue[id]||0)+1;
     if(btn) btn.classList.add('clicked');
-    disableAllButtonsTemporarily();
     setTimeout(()=>{if(btn) btn.classList.remove('clicked');},150);
     if(upgradeTimeout) clearTimeout(upgradeTimeout);
     upgradeTimeout = setTimeout(processUpgradeBatch, BATCHING_DELAY);
@@ -297,16 +291,23 @@ function toggleUpgrades(side){
 function generateUpgradeButtons(){
     const leftContainer=document.getElementById('leftUpgrades');
     const rightContainer=document.getElementById('rightUpgrades');
-    leftContainer.innerHTML = COLLECTIVE_UPGRADES.map((item,index)=>
-        `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')"
+
+    leftContainer.innerHTML = COLLECTIVE_UPGRADES.map((item,index)=>{
+        upgradePricesNumeric[item.id] = item.price;
+        return `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')"
         style="${index>=MAX_VISIBLE_UPGRADES?'display:none;':''}">
         ${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span>)
-        </button>`).join('');
-    rightContainer.innerHTML = PERSONAL_UPGRADES.map((item,index)=>
-        `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')"
+        </button>`;
+    }).join('');
+
+    rightContainer.innerHTML = PERSONAL_UPGRADES.map((item,index)=>{
+        upgradePricesNumeric[item.id] = item.price;
+        return `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')"
         style="${index>=MAX_VISIBLE_UPGRADES?'display:none;':''}">
         ${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span>)
-        </button>`).join('');
+        </button>`;
+    }).join('');
+
     document.getElementById('leftToggle').dataset.expanded='false';
     document.getElementById('rightToggle').dataset.expanded='false';
 }
@@ -315,10 +316,9 @@ function updateUpgradeButtonsState() {
     const allUpgrades = [...COLLECTIVE_UPGRADES, ...PERSONAL_UPGRADES];
     allUpgrades.forEach(u=>{
         const btn = document.querySelector(`button[onclick="handleUpgradeClick('${u.id}')"]`);
-        const elem = document.getElementById(u.id+'_price');
-        if(!btn || !elem) return;
-        const price = Number(elem.textContent.replace(/[^0-9.-]+/g,""));
-        if(price > money){
+        if(!btn) return;
+        const numericPrice = upgradePricesNumeric[u.id];
+        if(numericPrice > money){
             btn.classList.add('disabled');
         } else {
             btn.classList.remove('disabled');
@@ -343,7 +343,8 @@ async function updateUI(){
     updateUpgradeButtonsState();
 }
 
-// API upgrade functions
+// ====================================================================
+// === API UPGRADE ===
 async function upgradeSessionAdd(upgradeValue, price, quantity, upgrade_name){
     const data = await fetchData('/upgrade_add',{
         method:'POST',
@@ -371,7 +372,8 @@ async function upgradePersonal(boostValue, price, quantity){
     return !!data;
 }
 
-// Full sync
+// ====================================================================
+// === FULL SYNC 3s CORRIGÉ ===
 async function fullSync() {
     if (!PLAYER_ID) return;
     const sessionData = await fetchData(`/verify_session?id=${encodeURIComponent(PLAYER_ID)}`);
@@ -386,15 +388,19 @@ async function fullSync() {
         [...COLLECTIVE_UPGRADES, ...PERSONAL_UPGRADES].forEach(u => {
             basePrices[u.id] = u.price.toString();
         });
+
         const upgradesPriceData = await fetchData(
             `/upgrades_price?session=${encodeURIComponent(SESSION_CODE)}`,
             { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ base_prices: basePrices }) }
         );
+
         if(upgradesPriceData && upgradesPriceData.upgrades_price){
             for(const upgradeName in upgradesPriceData.upgrades_price){
                 const elem = document.getElementById(upgradeName+'_price');
                 if(elem){
-                    elem.textContent = formatNumber(Number(upgradesPriceData.upgrades_price[upgradeName]));
+                    const numeric = Number(upgradesPriceData.upgrades_price[upgradeName]);
+                    upgradePricesNumeric[upgradeName] = numeric;
+                    elem.textContent = formatNumber(numeric);
                 }
             }
             updateUpgradeButtonsState();
@@ -402,7 +408,8 @@ async function fullSync() {
     }
 }
 
-// INIT
+// ====================================================================
+// === INIT ===
 async function initializeApp(){
     generateUpgradeButtons();
     const initialized = await initUserData();
@@ -420,6 +427,7 @@ async function initializeApp(){
 }
 
 initializeApp();
+
 </script>
 </body>
 </html>

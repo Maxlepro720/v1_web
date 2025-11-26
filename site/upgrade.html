@@ -3,19 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Système d'Amélioration</title>
+<title>Système d'Amélioration - Clash Royale</title>
 
 <!-- FONT CLEAN -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
     font-family: 'Inter', sans-serif;
-    background: #1F1F1F;
-    color: #eee;
+    background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #3949ab 100%);
+    color: #fff;
     min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 30%, rgba(255,193,7,0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(33,150,243,0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
 }
 
 .container {
@@ -23,90 +39,160 @@ body {
     padding: 20px;
     gap: 20px;
     min-height: 100vh;
+    position: relative;
+    z-index: 1;
 }
 
 /* PANNEAUX */
 .sidebar {
     width: 280px;
-    background: #2A2A2A;
+    background: linear-gradient(145deg, #2d3561 0%, #1f2547 100%);
     padding: 20px;
-    border-radius: 10px;
+    border-radius: 16px;
+    border: 3px solid #4a5788;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.1);
 }
 
 .sidebar h2 {
-    font-size: 1.2em;
-    font-weight: 600;
+    font-size: 1.3em;
+    font-weight: 700;
     margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #3A3A3A;
+    padding-bottom: 12px;
+    border-bottom: 3px solid;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
-.sidebar-left h2 { border-color: #4CAF50; }
-.sidebar-right h2 { border-color: #E91E63; }
+.sidebar-left h2 { 
+    border-color: #4CAF50;
+    color: #66ff66;
+}
+.sidebar-right h2 { 
+    border-color: #ff4081;
+    color: #ff6b9d;
+}
 
 /* LISTES UPGRADE */
 .upgrades-container {
     max-height: 350px;
     overflow-y: auto;
+    padding-right: 5px;
 }
 
 /* BOUTONS UPGRADE */
 .upgrade-btn {
     width: 100%;
-    background: #3A3A3A;
-    border: 2px solid transparent;
+    background: linear-gradient(145deg, #3d4a7a 0%, #2d3561 100%);
+    border: 2px solid #5a6ba8;
     color: white;
-    padding: 12px;
-    margin-bottom: 10px;
-    font-size: 14px;
-    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 12px;
     cursor: pointer;
-    transition: 0.15s;
+    transition: all 0.2s ease;
     text-align: left;
-}
-.upgrade-btn.clicked {
-    background-color: #4CAF50 !important;
-    color: #fff;
-    box-shadow: 0 0 10px #4CAF50;
-    transform: scale(1.05);
-}
-.upgrade-btn.disabled {
-    background-color: #555 !important;
-    color: #999 !important;
-    cursor: not-allowed;
-    box-shadow: none !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+    position: relative;
+    overflow: hidden;
 }
 
-.sidebar-left .upgrade-btn:hover:not(.disabled) { border-color: #4CAF50; }
-.sidebar-right .upgrade-btn:hover:not(.disabled) { border-color: #E91E63; }
+.upgrade-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.upgrade-btn:hover::before {
+    left: 100%;
+}
+
+.upgrade-btn.clicked {
+    background: linear-gradient(145deg, #66bb6a 0%, #4caf50 100%) !important;
+    color: #fff;
+    border-color: #81c784;
+    box-shadow: 0 0 20px rgba(76,175,80,0.6),
+                0 4px 12px rgba(0,0,0,0.3) !important;
+    transform: scale(1.05);
+}
+
+.upgrade-btn.disabled {
+    background: linear-gradient(145deg, #37474f 0%, #263238 100%) !important;
+    color: #607d8b !important;
+    border-color: #455a64 !important;
+    cursor: not-allowed;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+    opacity: 0.6;
+}
+
+.sidebar-left .upgrade-btn:hover:not(.disabled) { 
+    border-color: #66ff66;
+    box-shadow: 0 0 16px rgba(102,255,102,0.4),
+                0 4px 12px rgba(0,0,0,0.3);
+    transform: translateY(-2px);
+}
+
+.sidebar-right .upgrade-btn:hover:not(.disabled) { 
+    border-color: #ff6b9d;
+    box-shadow: 0 0 16px rgba(255,107,157,0.4),
+                0 4px 12px rgba(0,0,0,0.3);
+    transform: translateY(-2px);
+}
 
 /* BOUTON AFFICHER + / - */
 .toggle-btn {
     width: 100%;
-    background: #3A3A3A;
+    background: linear-gradient(145deg, #5a6ba8 0%, #4a5788 100%);
     color: white;
-    padding: 10px;
+    padding: 12px;
     font-size: 14px;
-    border: none;
-    border-radius: 8px;
+    font-weight: 600;
+    border: 2px solid #6a7bb8;
+    border-radius: 10px;
     margin-top: 10px;
     cursor: pointer;
-    transition: 0.15s;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.toggle-btn:hover { background: #444; }
+.toggle-btn:hover { 
+    background: linear-gradient(145deg, #6a7bc8 0%, #5a6ba8 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+}
 
 /* INPUT QUANTITÉ */
 .quantity-input {
     width: 100%;
-    padding: 12px;
-    margin-bottom: 10px;
-    font-size: 14px;
-    border-radius: 8px;
-    border: 2px solid #3A3A3A;
-    background: #3A3A3A;
+    padding: 14px;
+    margin-bottom: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 10px;
+    border: 2px solid #5a6ba8;
+    background: linear-gradient(145deg, #2d3561 0%, #1f2547 100%);
     color: #fff;
     text-align: center;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+    transition: all 0.2s ease;
+}
+
+.quantity-input:focus {
+    outline: none;
+    border-color: #ffc107;
+    box-shadow: 0 0 12px rgba(255,193,7,0.5),
+                inset 0 2px 8px rgba(0,0,0,0.3);
 }
 
 /* CENTRE */
@@ -115,31 +201,89 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 25px;
+    gap: 30px;
 }
 
 .boost-session,
 .boost-personnel {
-    background: #2A2A2A;
-    padding: 25px;
-    border-radius: 10px;
-    width: 320px;
+    background: linear-gradient(145deg, #2d3561 0%, #1f2547 100%);
+    padding: 30px;
+    border-radius: 20px;
+    width: 340px;
     text-align: center;
+    border: 3px solid #4a5788;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+    position: relative;
+}
+
+.boost-session::before,
+.boost-personnel::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border-radius: 20px;
+    background: linear-gradient(145deg, #4a5788, #2d3561);
+    z-index: -1;
+}
+
+.boost-session h3,
+.boost-session h1,
+.boost-personnel h2 {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
 .money-value {
-    font-size: 2em;
-    font-weight: 700;
-    margin-top: 10px;
-    color: #4CAF50;
+    font-size: 2.4em;
+    font-weight: 800;
+    margin-top: 12px;
+    color: #ffc107;
+    text-shadow: 0 0 20px rgba(255,193,7,0.6),
+                 0 4px 8px rgba(0,0,0,0.5);
+    animation: pulse 2s ease-in-out infinite;
 }
 
-.boost-value { font-size: 2.2em; font-weight: 700; color: #4CAF50; }
-.boost-personnel .value { font-size: 2em; color: #E91E63; }
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.boost-value { 
+    font-size: 2.6em; 
+    font-weight: 800; 
+    color: #66ff66;
+    text-shadow: 0 0 20px rgba(102,255,102,0.6),
+                 0 4px 8px rgba(0,0,0,0.5);
+}
+
+.boost-personnel .value { 
+    font-size: 2.4em;
+    font-weight: 800; 
+    color: #ff6b9d;
+    text-shadow: 0 0 20px rgba(255,107,157,0.6),
+                 0 4px 8px rgba(0,0,0,0.5);
+}
 
 /* SCROLLBAR MINIMAL */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-thumb { background: #3A3A3A; border-radius: 5px; }
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { 
+    background: rgba(0,0,0,0.3); 
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb { 
+    background: linear-gradient(145deg, #5a6ba8 0%, #4a5788 100%); 
+    border-radius: 10px;
+    border: 2px solid rgba(0,0,0,0.3);
+}
+::-webkit-scrollbar-thumb:hover { 
+    background: linear-gradient(145deg, #6a7bc8 0%, #5a6ba8 100%); 
+}
 
 /* RESPONSIVE */
 @media (max-width: 1024px) {
@@ -198,42 +342,38 @@ const BATCHING_DELAY = 1000, MAX_VISIBLE_UPGRADES = 4;
 const upgradePricesNumeric = {};
 
 const COLLECTIVE_UPGRADES = [
-    { id: 'upgrade1', name: 'upgrade1', label: 'SQUELETTE  |  +0.1 par click', type: 'add', upgrade: 0.1, price: 10 },//10
-    { id: 'upgrade2', name: 'upgrade2', label: 'FIRE SPIRIT  |  +1 par click', type: 'add', upgrade: 1.0, price: 100 },//100
-    { id: 'upgrade3', name: 'upgrade3', label: 'E-SPIRIT  |  +5 par click', type: 'add', upgrade: 5.0, price: 1000 },//mille
-    { id: 'upgrade4', name: 'upgrade4', label: 'ICE SPIRIT  |  +10 par click', type: 'add', upgrade: 10.0, price: 2500 },//2,5k
-    { id: 'upgrade5', name: 'upgrade5', label: 'HEALING SPIRIT  |  +15 par click ', type: 'add', upgrade: 15.0, price: 25000 },//25k
-    { id: 'upgrade6', name: 'upgrade6', label: 'GOBLIN LANCE  |  +50 par click', type: 'add', upgrade: 50.0, price: 150000 },//150k
-    { id: 'upgrade7', name: 'upgrade7', label: 'BOMBARDIER  |  +100 par click', type: 'add', upgrade: 100.0, price:450000 },//450k
-    { id: 'upgrade8', name: 'upgrade8', label: 'CHAUVE SOURIS  |  +500 par click', type: 'add', upgrade: 500.0, price:1000000 },//1m
-    { id: 'upgrade9', name: 'upgrade9', label: 'ZAP  |  x1,1 multiplier', type: 'multiply', upgrade: 1.1, price:10000000 },//10m
-    { id: 'upgrade10', name: 'upgrade10', label: 'ICE GOLEM  |  +10k par click', type: 'add', upgrade: 10000.0, price:25000000 },//25m
-    { id: 'upgrade11', name: 'upgrade11', label: 'SNOWBALL  |  x1,5 par click', type: 'multiply', upgrade: 1.5, price:500000000 },//500m
-    { id: 'upgrade12', name: 'upgrade12', label: 'BERSERKER  |  +100k par click', type: 'add', upgrade: 100000.0, price:1000000000 },//1B
-    { id: 'upgrade13', name: 'upgrade13', label: 'FUT BA BARBARE  |  +500k par click', type: 'add', upgrade: 500000.0, price:5500000000 },//5B
-    { id: 'upgrade14', name: 'upgrade14', label: 'BUCHE  |  x2 multiplier', type: 'multiply', upgrade: 2.0, price:25000000000 },//25B
-    { id: 'upgrade15', name: 'upgrade15', label: 'SAPEURS  |  1m par click', type: 'add', upgrade: 1000000.0, price:500000000000 },//500B
-    { id: 'upgrade16', name: 'upgrade16', label: 'SUSPICIOUS BUSH  |  +10m par click', type: 'add', upgrade: 10000000.0, price:1000000000000 },//1T
-    { id: 'upgrade17', name: 'upgrade17', label: 'RAGE  |  x2.25 multiplier', type: 'multiply', upgrade: 2.25, price:1500000000000 },
-    { id: 'upgrade18', name: 'upgrade18', label: 'MALEDICTION  |  x2.5 par click', type: 'multiply', upgrade: 2.5, price:500000 },
-    { id: 'upgrade19', name: 'upgrade19', label: 'CHEVALIER  |  +100 par click', type: 'add', upgrade: 100.0, price:500000 },
-    { id: 'upgrade20', name: 'upgrade20', label: 'ARCHERE  |  +100 par click', type: 'add', upgrade: 100.0, price:500000 },
-    { id: 'upgrade21', name: 'upgrade21', label: 'GARGOUILLE  |  +100 par click', type: 'add', upgrade: 100.0, price:500000 },
-    { id: 'upgrade22', name: 'upgrade22', label: 'FLECHE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
-    { id: 'upgrade23', name: 'upgrade23', label: 'TOMBSTONE  |  +100 par click', type: 'add', upgrade: 100.0, price:500000 },
-    { id: 'upgrade24', name: 'upgrade24', label: 'CANON  |  +100 par click', type: 'add', upgrade: 100.0, price:500000 },
-    { id: 'upgrade25', name: 'upgrade25', label: 'MEGA GARGOUILLE  |  +100 par click', type: 'add', upgrade: 100.0, price:500000 },
-    { id: 'upgrade26', name: 'upgrade26', label: 'ARMEE DE SQUELETTE  |  +100 par click', type: 'add', upgrade: 100.0, price:500000 },
+    { id: 'upgrade1', name: 'upgrade1', label: '💀 SQUELETTE  |  +0.1 par click', type: 'add', upgrade: 0.1, price: 10, color: '#B0BEC5' },
+    { id: 'upgrade2', name: 'upgrade2', label: '🔥 FIRE SPIRIT  |  +1 par click', type: 'add', upgrade: 1.0, price: 100, color: '#FF5722' },
+    { id: 'upgrade3', name: 'upgrade3', label: '⚡ E-SPIRIT  |  +5 par click', type: 'add', upgrade: 5.0, price: 1000, color: '#FFD700' },
+    { id: 'upgrade4', name: 'upgrade4', label: '❄️ ICE SPIRIT  |  +10 par click', type: 'add', upgrade: 10.0, price: 2500, color: '#64B5F6' },
+    { id: 'upgrade5', name: 'upgrade5', label: '💚 HEALING SPIRIT  |  +15 par click ', type: 'add', upgrade: 15.0, price: 25000, color: '#66BB6A' },
+    { id: 'upgrade6', name: 'upgrade6', label: '👺 GOBLIN LANCE  |  +50 par click', type: 'add', upgrade: 50.0, price: 150000, color: '#8BC34A' },
+    { id: 'upgrade7', name: 'upgrade7', label: '💣 BOMBARDIER  |  +100 par click', type: 'add', upgrade: 100.0, price:450000, color: '#FF9800' },
+    { id: 'upgrade8', name: 'upgrade8', label: '🦇 CHAUVE SOURIS  |  +500 par click', type: 'add', upgrade: 500.0, price:1000000, color: '#9C27B0' },
+    { id: 'upgrade9', name: 'upgrade9', label: '⚡ ZAP  |  x1,1 multiplier', type: 'multiply', upgrade: 1.1, price:10000000, color: '#00BCD4' },
+    { id: 'upgrade10', name: 'upgrade10', label: '🗿 ICE GOLEM  |  +10k par click', type: 'add', upgrade: 10000.0, price:25000000, color: '#B3E5FC' },
+    { id: 'upgrade11', name: 'upgrade11', label: '⛄ SNOWBALL  |  x1,5 par click', type: 'multiply', upgrade: 1.5, price:500000000, color: '#E1F5FE' },
+    { id: 'upgrade12', name: 'upgrade12', label: '🪓 BERSERKER  |  +100k par click', type: 'add', upgrade: 100000.0, price:1000000000, color: '#F44336' },
+    { id: 'upgrade13', name: 'upgrade13', label: '🛢️ FUT BA BARBARE  |  +500k par click', type: 'add', upgrade: 500000.0, price:5500000000, color: '#FF6F00' },
+    { id: 'upgrade14', name: 'upgrade14', label: '🪵 BUCHE  |  x2 multiplier', type: 'multiply', upgrade: 2.0, price:25000000000, color: '#795548' },
+    { id: 'upgrade15', name: 'upgrade15', label: '⛏️ SAPEURS  |  1m par click', type: 'add', upgrade: 1000000.0, price:500000000000, color: '#607D8B' },
+    { id: 'upgrade16', name: 'upgrade16', label: '🌿 SUSPICIOUS BUSH  |  +10m par click', type: 'add', upgrade: 10000000.0, price:1000000000000000, color: '#4CAF50' },
+    { id: 'upgrade17', name: 'upgrade17', label: '😡 RAGE  |  x2.25 multiplier', type: 'multiply', upgrade: 2.25, price:1500000000000000, color: '#E91E63' },
+    { id: 'upgrade18', name: 'upgrade18', label: '🔮 MALEDICTION  |  x2.5 par click', type: 'multiply', upgrade: 2.5, price:100000000000000, color: '#9C27B0' },
+    { id: 'upgrade19', name: 'upgrade19', label: '🛡️ CHEVALIER  |  +1B par click', type: 'add', upgrade: 1000000000.0, price:500000000000000, color: '#757575' },
+    { id: 'upgrade20', name: 'upgrade20', label: '🏹 ARCHERE  |  +100B par click', type: 'add', upgrade: 100000000000.0, price:1000000000000000, color: '#EC407A' },
+    { id: 'upgrade21', name: 'upgrade21', label: '👿 GARGOUILLE  |  +5T par click', type: 'add', upgrade: 5000000000000.0, price:10000000000000000, color: '#424242' },
+    { id: 'upgrade22', name: 'upgrade22', label: '🏹 FLECHE  |  x5 multiplier', type: 'multiply', upgrade: 5.0, price:100000000000000000000, color: '#00BCD4' },
 ];
 
 const PERSONAL_UPGRADES = [
-    { id: 'PERSO_0_1', label: '+0.1 Perso', upgrade: 0.1, price: 200000000000 },
-    { id: 'PERSO_0_5', label: '+0.5 Perso', upgrade: 0.5, price: 800000000000 },
-    { id: 'PERSO_1_0', label: '+1.0 Perso', upgrade: 1.0, price: 1500000000000 },
-    { id: 'PERSO_2_0', label: '+2.0 Perso', upgrade: 2.0, price: 2500000000000 },
-    { id: 'PERSO_5_0', label: '+5.0 Perso', upgrade: 5.0, price: 5000000000000 },
-    { id: 'PERSO_10_0', label: '+10.0 Perso', upgrade: 10.0, price: 10000000000000 },
-    { id: 'PERSO_50_0', label: '+50.0 Perso', upgrade: 50.0, price: 400000000000000 },
+    { id: 'PERSO_0_1', label: '💎 +0.1 Perso', upgrade: 0.1, price: 200000000000 },
+    { id: 'PERSO_0_5', label: '💎 +0.5 Perso', upgrade: 0.5, price: 800000000000 },
+    { id: 'PERSO_1_0', label: '💎 +1.0 Perso', upgrade: 1.0, price: 1500000000000 },
+    { id: 'PERSO_2_0', label: '💎 +2.0 Perso', upgrade: 2.0, price: 2500000000000 },
+    { id: 'PERSO_5_0', label: '💎 +5.0 Perso', upgrade: 5.0, price: 5000000000000 },
+    { id: 'PERSO_10_0', label: '💎 +10.0 Perso', upgrade: 10.0, price: 10000000000000 },
+    { id: 'PERSO_50_0', label: '💎 +50.0 Perso', upgrade: 50.0, price: 400000000000000 },
 ];
 
 async function fetchData(endpoint, options={}) {
@@ -322,8 +462,9 @@ function generateUpgradeButtons(){
 
     leftContainer.innerHTML = COLLECTIVE_UPGRADES.map((item,index)=>{
         upgradePricesNumeric[item.id] = item.price;
+        const bgColor = item.color || '#3d4a7a';
         return `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')"
-        style="${index>=MAX_VISIBLE_UPGRADES?'display:none;':''}">${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span>)</button>`;
+        style="${index>=MAX_VISIBLE_UPGRADES?'display:none;':''}background: linear-gradient(145deg, ${bgColor}, ${bgColor}dd);">${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span>)</button>`;
     }).join('');
 
     rightContainer.innerHTML = PERSONAL_UPGRADES.map((item,index)=>{
@@ -368,7 +509,6 @@ async function updateUI(){
     updateUpgradeButtonsState();
 }
 
-// --- API POST CORRECTED ---
 async function upgradeSessionAdd(upgradeValue, price, quantity, upgrade_name){
     const data = await fetchData('/upgrade_add', {
         method:'POST',
@@ -396,7 +536,6 @@ async function upgradePersonal(boostValue, price, quantity){
     return !!data;
 }
 
-// --- FULL SYNC ---
 async function fullSync() {
     if (!PLAYER_ID) return;
 
@@ -435,8 +574,6 @@ async function fullSync() {
     }
 }
 
-
-// --- INIT ---
 async function initializeApp(){
     generateUpgradeButtons();
     const initialized = await initUserData();
@@ -458,8 +595,6 @@ async function initializeApp(){
 
 initializeApp();
 </script>
-
-
 
 </body>
 </html>

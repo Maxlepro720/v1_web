@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Système d'Amélioration</title>
+
+<!-- FONT CLEAN -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: #1F1F1F;
+    color: #eee;
+    min-height: 100vh;
+}
+
+.container {
+    display: flex;
+    padding: 20px;
+    gap: 20px;
+    min-height: 100vh;
+}
+
+/* PANNEAUX */
+.sidebar {
+    width: 280px;
+    background: #2A2A2A;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.sidebar h2 {
+    font-size: 1.2em;
+    font-weight: 600;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #3A3A3A;
+}
+
+.sidebar-left h2 { border-color: #4CAF50; }
+.sidebar-right h2 { border-color: #E91E63; }
+
+/* LISTES UPGRADE */
+.upgrades-container {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+/* BOUTONS UPGRADE */
+.upgrade-btn {
+    width: 100%;
+    background: #3A3A3A;
+    border: 2px solid transparent;
+    color: white;
+    padding: 12px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.15s;
+    text-align: left;
+}
+.upgrade-btn.clicked {
+    background-color: #4CAF50 !important;
+    color: #fff;
+    box-shadow: 0 0 10px #4CAF50;
+    transform: scale(1.05);
+}
+.upgrade-btn.disabled {
+    background-color: #555 !important;
+    color: #999 !important;
+    cursor: not-allowed;
+    box-shadow: none !important;
+}
+
+.sidebar-left .upgrade-btn:hover:not(.disabled) { border-color: #4CAF50; }
+.sidebar-right .upgrade-btn:hover:not(.disabled) { border-color: #E91E63; }
+
+/* BOUTON AFFICHER + / - */
+.toggle-btn {
+    width: 100%;
+    background: #3A3A3A;
+    color: white;
+    padding: 10px;
+    font-size: 14px;
+    border: none;
+    border-radius: 8px;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.toggle-btn:hover { background: #444; }
+
+/* INPUT QUANTITÉ */
+.quantity-input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    border-radius: 8px;
+    border: 2px solid #3A3A3A;
+    background: #3A3A3A;
+    color: #fff;
+    text-align: center;
+}
+
+/* CENTRE */
+.center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 25px;
+}
+
+.boost-session,
+.boost-personnel {
+    background: #2A2A2A;
+    padding: 25px;
+    border-radius: 10px;
+    width: 320px;
+    text-align: center;
+}
+
+.money-value {
+    font-size: 2em;
+    font-weight: 700;
+    margin-top: 10px;
+    color: #4CAF50;
+}
+
+.boost-value { font-size: 2.2em; font-weight: 700; color: #4CAF50; }
+.boost-personnel .value { font-size: 2em; color: #E91E63; }
+
+/* SCROLLBAR MINIMAL */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-thumb { background: #3A3A3A; border-radius: 5px; }
+
+/* RESPONSIVE */
+@media (max-width: 1024px) {
+    .container { flex-direction: column; }
+    .sidebar { width: 100%; }
+    .boost-session, .boost-personnel { width: 100%; }
+}
+</style>
+</head>
+
+<body>
+<audio id="clickSound" preload="auto"></audio>
+
+<div class="container">
+
+    <div class="sidebar sidebar-left">
+        <h2>Améliorations Collectives</h2>
+        <input type="number" min="1" max="1000" value="1" id="quantitySelector" class="quantity-input">
+        <div class="upgrades-container" id="leftUpgrades"></div>
+        <button class="toggle-btn" id="leftToggle" onclick="toggleUpgrades('left')">▼ Afficher plus</button>
+    </div>
+
+    <div class="center">
+        <div class="boost-session">
+            <h3>Total</h3>
+            <div class="money-value" id="moneyValue">...</div>
+
+            <h1 style="margin-top:20px;">Par Click</h1>
+            <div class="boost-value" id="sessionBoostValue">x1.0</div>
+        </div>
+
+        <div class="boost-personnel">
+            <h2>Boost Personnel</h2>
+            <div class="value" id="personalBoostValue">x1.0</div>
+        </div>
+
+        <p style="font-size:0.85em; opacity:0.7;">
+            Session: <span id="sessionCodeDisplay">...</span> |
+            Joueur: <span id="playerIdDisplay">...</span>
+        </p>
+    </div>
+
+    <div class="sidebar sidebar-right">
+        <h2>Améliorations Personnelles</h2>
+        <input type="number" min="1" max="1000" value="1" id="quantitySelectorRight" class="quantity-input">
+        <div class="upgrades-container" id="rightUpgrades"></div>
+        <button class="toggle-btn" id="rightToggle" onclick="toggleUpgrades('right')">▼ Afficher plus</button>
+    </div>
+</div>
+
+<script>
+const API_URL = "https://project-3-api-2bgb.onrender.com"; 
+let PLAYER_ID = null, SESSION_CODE = null, money = 0;
+let upgradeQueue = {}, upgradeTimeout = null;
+const BATCHING_DELAY = 1000, MAX_VISIBLE_UPGRADES = 4;
+const upgradePricesNumeric = {};
+
+const COLLECTIVE_UPGRADES = [
+    { id: 'upgrade1', name: 'upgrade1', label: 'SQUELETTE  |  +0.1 par click', type: 'add', upgrade: 0.1, price: 10 },//10
+    { id: 'upgrade2', name: 'upgrade2', label: 'FIRE SPIRIT  |  +1 par click', type: 'add', upgrade: 1.0, price: 100 },//100
+    { id: 'upgrade3', name: 'upgrade3', label: 'E-SPIRIT  |  +5 par click', type: 'add', upgrade: 5.0, price: 1000 },//mille
+    { id: 'upgrade4', name: 'upgrade4', label: 'ICE SPIRIT  |  +10 par click', type: 'add', upgrade: 10.0, price: 2500 },//2,5k
+    { id: 'upgrade5', name: 'upgrade5', label: 'HEALING SPIRIT  |  +15 par click ', type: 'add', upgrade: 15.0, price: 25000 },//25k
+    { id: 'upgrade6', name: 'upgrade6', label: 'GOBLIN LANCE  |  +50 par click', type: 'add', upgrade: 50.0, price: 150000 },//150k
+    { id: 'upgrade7', name: 'upgrade7', label: 'BOMBARDIER  |  +100 par click', type: 'add', upgrade: 100.0, price:450000 },//450k
+    { id: 'upgrade8', name: 'upgrade8', label: 'CHAUVE SOURIS  |  +500 par click', type: 'add', upgrade: 500.0, price:1000000 },//1m
+    { id: 'upgrade9', name: 'upgrade9', label: 'ZAP  |  x1,1 multiplier', type: 'multiply', upgrade: 1.1, price:10000000 },//10m
+    { id: 'upgrade10', name: 'upgrade10', label: 'ICE GOLEM  |  +10k par click', type: 'add', upgrade: 10000.0, price:25000000 },//25m
+    { id: 'upgrade11', name: 'upgrade11', label: 'SNOWBALL  |  x1,5 par click', type: 'multiply', upgrade: 1.5, price:500000000 },//500m
+    { id: 'upgrade12', name: 'upgrade12', label: 'BERSERKER  |  +100k par click', type: 'add', upgrade: 100000.0, price:1000000000 },//1B
+    { id: 'upgrade13', name: 'upgrade13', label: 'FUT BA BARBARE  |  +500k par click', type: 'add', upgrade: 500000.0, price:5500000000 },//5B
+    { id: 'upgrade14', name: 'upgrade14', label: 'BUCHE  |  x2 multiplier', type: 'multiply', upgrade: 2.0, price:25000000000 },//25B
+    { id: 'upgrade15', name: 'upgrade15', label: 'SAPEURS  |  1m par click', type: 'add', upgrade: 1000000.0, price:500000000000 },//500B
+    { id: 'upgrade16', name: 'upgrade16', label: 'SUSPICIOUS BUSH  |  +10m par click', type: 'add', upgrade: 10000000.0, price:1000000000000000 },//1T
+    { id: 'upgrade17', name: 'upgrade17', label: 'RAGE  |  x2.25 multiplier', type: 'multiply', upgrade: 2.25, price:1500000000000000 },//15T
+    { id: 'upgrade18', name: 'upgrade18', label: 'MALEDICTION  |  x2.5 par click', type: 'multiply', upgrade: 2.5, price:100000000000000 },//100T
+    { id: 'upgrade19', name: 'upgrade19', label: 'CHEVALIER  |  +1B par click', type: 'add', upgrade: 1000000000.0, price:500000000000000 },//500T
+    { id: 'upgrade20', name: 'upgrade20', label: 'ARCHERE  |  +100B par click', type: 'add', upgrade: 100000000000.0, price:1000000000000000 },//1Q
+    { id: 'upgrade21', name: 'upgrade21', label: 'GARGOUILLE  |  +5T par click', type: 'add', upgrade: 5000000000000.0, price:10000000000000000 },//10Q
+    { id: 'upgrade22', name: 'upgrade22', label: 'FLECHE  |  x5 multiplier', type: 'multiply', upgrade: 5.0, price:100000000000000000000 },//
+];
+
+const PERSONAL_UPGRADES = [
+    { id: 'PERSO_0_1', label: '+0.1 Perso', upgrade: 0.1, price: 200000000000 },
+    { id: 'PERSO_0_5', label: '+0.5 Perso', upgrade: 0.5, price: 800000000000 },
+    { id: 'PERSO_1_0', label: '+1.0 Perso', upgrade: 1.0, price: 1500000000000 },
+    { id: 'PERSO_2_0', label: '+2.0 Perso', upgrade: 2.0, price: 2500000000000 },
+    { id: 'PERSO_5_0', label: '+5.0 Perso', upgrade: 5.0, price: 5000000000000 },
+    { id: 'PERSO_10_0', label: '+10.0 Perso', upgrade: 10.0, price: 10000000000000 },
+    { id: 'PERSO_50_0', label: '+50.0 Perso', upgrade: 50.0, price: 400000000000000 },
+];
+
+async function fetchData(endpoint, options={}) {
+    try {
+        const response = await fetch(`${API_URL}${endpoint}`, options);
+        const text = await response.text();
+        try { return JSON.parse(text); } 
+        catch(e){ console.error(`Erreur parsing JSON [${endpoint}]:`, text); return null; }
+    } catch(err){ console.error(`Erreur réseau [${endpoint}]:`, err); return null;}
+}
+
+async function initUserData() {
+    PLAYER_ID = localStorage.getItem("username");
+    document.getElementById('playerIdDisplay').textContent = PLAYER_ID || "Non connecté";
+    if(!PLAYER_ID){ alert("ID joueur non trouvé."); return false;}
+    const sessionData = await fetchData(`/verify_session?id=${encodeURIComponent(PLAYER_ID)}`);
+    if(sessionData && sessionData.session_code){
+        SESSION_CODE = sessionData.session_code;
+        document.getElementById('sessionCodeDisplay').textContent = SESSION_CODE;
+        return true;
+    } else { alert("Session active non trouvée."); return false;}
+}
+
+function handleUpgradeClick(id){
+    const btn = document.querySelector(`button[onclick="handleUpgradeClick('${id}')"]`);
+    if(btn && btn.classList.contains('disabled')) return;
+
+    let quantity = 1;
+    if(COLLECTIVE_UPGRADES.find(u => u.id === id)) {
+        quantity = parseInt(document.getElementById('quantitySelector').value) || 1;
+    } else if(PERSONAL_UPGRADES.find(u => u.id === id)) {
+        quantity = parseInt(document.getElementById('quantitySelectorRight').value) || 1;
+    }
+
+    upgradeQueue[id] = (upgradeQueue[id]||0) + quantity;
+
+    if(btn) btn.classList.add('clicked');
+    setTimeout(()=>{if(btn) btn.classList.remove('clicked');},150);
+
+    if(upgradeTimeout) clearTimeout(upgradeTimeout);
+    upgradeTimeout = setTimeout(processUpgradeBatch, BATCHING_DELAY);
+}
+
+async function processUpgradeBatch(){
+    if(Object.keys(upgradeQueue).length===0) return;
+    const batch = {...upgradeQueue}; upgradeQueue={};
+    for(const id in batch){
+        const quantity = batch[id];
+        let item = COLLECTIVE_UPGRADES.find(u=>u.id===id);
+        let isPersonal=false;
+        if(!item){ item=PERSONAL_UPGRADES.find(u=>u.id===id); isPersonal=true;}
+        if(!item) continue;
+
+        let success=false;
+        if(isPersonal) success = await upgradePersonal(item.upgrade,item.price,quantity);
+        else if(item.type==='add') success = await upgradeSessionAdd(item.upgrade,item.price,quantity,item.name);
+        else if(item.type==='multiply') success = await upgradeSessionMultiply(item.upgrade,item.price,quantity,item.name);
+        if(!success) console.warn(`Achat échoué pour ${item.label} x${quantity}`);
+    }
+    await updateUI();
+}
+
+function formatNumber(num){
+    if(num>=1_000_000_000) return (num/1_000_000_000).toFixed(2)+'B';
+    if(num>=1_000_000) return (num/1_000_000).toFixed(2)+'M';
+    if(num>=1_000) return (num/1_000).toFixed(2)+'K';
+    return num.toFixed(0);
+}
+
+function toggleUpgrades(side){
+    const container=document.getElementById(side+'Upgrades');
+    const toggleBtn=document.getElementById(side+'Toggle');
+    const upgrades=Array.from(container.children);
+    if(toggleBtn.dataset.expanded==='true'){
+        upgrades.forEach((btn,i)=>{if(i>=MAX_VISIBLE_UPGRADES) btn.style.display='none';});
+        toggleBtn.textContent='▼ Afficher plus'; toggleBtn.dataset.expanded='false';
+    }else{
+        upgrades.forEach(btn=>btn.style.display='block');
+        toggleBtn.textContent='▲ Afficher moins'; toggleBtn.dataset.expanded='true';
+    }
+}
+
+function generateUpgradeButtons(){
+    const leftContainer=document.getElementById('leftUpgrades');
+    const rightContainer=document.getElementById('rightUpgrades');
+
+    leftContainer.innerHTML = COLLECTIVE_UPGRADES.map((item,index)=>{
+        upgradePricesNumeric[item.id] = item.price;
+        return `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')"
+        style="${index>=MAX_VISIBLE_UPGRADES?'display:none;':''}">${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span>)</button>`;
+    }).join('');
+
+    rightContainer.innerHTML = PERSONAL_UPGRADES.map((item,index)=>{
+        upgradePricesNumeric[item.id] = item.price;
+        return `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')"
+        style="${index>=MAX_VISIBLE_UPGRADES?'display:none;':''}">${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span>)</button>`;
+    }).join('');
+
+    document.getElementById('leftToggle').dataset.expanded='false';
+    document.getElementById('rightToggle').dataset.expanded='false';
+}
+
+function updateUpgradeButtonsState() {
+    const allUpgrades = [...COLLECTIVE_UPGRADES, ...PERSONAL_UPGRADES];
+    const quantityLeft = parseInt(document.getElementById('quantitySelector').value) || 1;
+    const quantityRight = parseInt(document.getElementById('quantitySelectorRight').value) || 1;
+
+    allUpgrades.forEach(u=>{
+        const btn = document.querySelector(`button[onclick="handleUpgradeClick('${u.id}')"]`);
+        if(!btn) return;
+        const numericPrice = upgradePricesNumeric[u.id];
+        const quantity = COLLECTIVE_UPGRADES.find(c=>c.id===u.id) ? quantityLeft : quantityRight;
+        if(numericPrice * quantity > money) btn.classList.add('disabled');
+        else btn.classList.remove('disabled');
+    });
+}
+
+async function updateUI(){
+    if(!SESSION_CODE||!PLAYER_ID) return;
+
+    const poiresData = await fetchData(`/get_poires?session=${encodeURIComponent(SESSION_CODE)}`);
+    if(poiresData){ money = poiresData.poires; document.getElementById('moneyValue').textContent=formatNumber(money);}
+
+    const sessionMultiData = await fetchData(`/get_session_multiplier?session=${encodeURIComponent(SESSION_CODE)}`);
+    if(sessionMultiData){ const multi=sessionMultiData.by_click_multiplier.toFixed(2);
+        document.getElementById('sessionBoostValue').textContent=`x${multi}`;}
+
+    const personalBoostData = await fetchData(`/get_personnel_boost?id=${encodeURIComponent(PLAYER_ID)}`);
+    if(personalBoostData){ const boost=personalBoostData.personnel_boost.toFixed(2);
+        document.getElementById('personalBoostValue').textContent=`x${boost}`;}
+
+    updateUpgradeButtonsState();
+}
+
+// --- API POST CORRECTED ---
+async function upgradeSessionAdd(upgradeValue, price, quantity, upgrade_name){
+    const data = await fetchData('/upgrade_add', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ session: SESSION_CODE, upgrade: upgradeValue, price, quantity, upgrade_name })
+    });
+    return !!data;
+}
+
+async function upgradeSessionMultiply(upgradeMultiplier, price, quantity, upgrade_name){
+    const data = await fetchData('/upgrade_multiply', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ session: SESSION_CODE, upgrade: upgradeMultiplier, price, quantity, upgrade_name })
+    });
+    return !!data;
+}
+
+async function upgradePersonal(boostValue, price, quantity){
+    const data = await fetchData('/personnel_boost', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ id: PLAYER_ID, boost: boostValue, price, quantity })
+    });
+    return !!data;
+}
+
+// --- FULL SYNC ---
+async function fullSync() {
+    if (!PLAYER_ID) return;
+
+    const sessionData = await fetchData(`/verify_session?id=${encodeURIComponent(PLAYER_ID)}`);
+    if (sessionData && sessionData.session_code) {
+        SESSION_CODE = sessionData.session_code;
+        document.getElementById('sessionCodeDisplay').textContent = SESSION_CODE;
+        await updateUI();
+    }
+
+    if (SESSION_CODE) {
+        const basePrices = {};
+        [...COLLECTIVE_UPGRADES, ...PERSONAL_UPGRADES].forEach(u => {
+            basePrices[u.id] = u.price;
+        });
+
+        const upgradesPriceData = await fetchData('/upgrades_price', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ session: SESSION_CODE, base_prices: basePrices })
+        });
+
+        if (upgradesPriceData && upgradesPriceData.upgrades_price) {
+            for (const upgradeName in upgradesPriceData.upgrades_price) {
+                const elem = document.getElementById(upgradeName+'_price');
+                if (elem) {
+                    const numeric = Number(upgradesPriceData.upgrades_price[upgradeName]);
+                    upgradePricesNumeric[upgradeName] = numeric;
+                    elem.textContent = formatNumber(numeric);
+                }
+            }
+            updateUpgradeButtonsState();
+        } else {
+            console.warn("Aucune donnée upgrades_price reçue ou format incorrect");
+        }
+    }
+}
+
+
+// --- INIT ---
+async function initializeApp(){
+    generateUpgradeButtons();
+    const initialized = await initUserData();
+    if(initialized){
+        await updateUI();
+        setInterval(fullSync,3000);
+    } else { document.getElementById('moneyValue').textContent='Connexion requise'; }
+
+    const clickSound = document.getElementById('clickSound');
+    document.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            try { clickSound.currentTime = 0; clickSound.play(); } catch(err){ console.warn("Son non joué:", err);}
+        });
+    });
+
+    document.getElementById('quantitySelector').addEventListener('input', updateUpgradeButtonsState);
+    document.getElementById('quantitySelectorRight').addEventListener('input', updateUpgradeButtonsState);
+}
+
+initializeApp();
+</script>
+
+
+
+</body>
+</html>

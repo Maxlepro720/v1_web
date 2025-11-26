@@ -151,7 +151,6 @@ body {
 </head>
 
 <body>
-<audio id="clickSound" src="831995__sanedish__click-satisfying-mouse-retro-gaming.wav" preload="auto"></audio>
 
 <div class="container">
 
@@ -394,19 +393,10 @@ async function fullSync() {
             basePrices[u.id] = u.price;
         });
 
-        const clientUpgrades = {};
-        [...COLLECTIVE_UPGRADES, ...PERSONAL_UPGRADES].forEach(u => {
-            clientUpgrades[u.id] = u.upgrade; // valeur envoyée par le client
-        });
-
         const upgradesPriceData = await fetchData('/upgrades_price', {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ 
-                session: SESSION_CODE, 
-                base_prices: basePrices,
-                upgrades: clientUpgrades
-            })
+            body: JSON.stringify({ session: SESSION_CODE, base_prices: basePrices })
         });
 
         if (upgradesPriceData && upgradesPriceData.upgrades_price) {
@@ -424,7 +414,6 @@ async function fullSync() {
         }
     }
 }
-
 
 
 // --- INIT ---

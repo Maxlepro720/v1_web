@@ -8,21 +8,22 @@
         /* --- Styles CSS --- */
        /* ==================================================
 /* ==================================================
-CSS COMPLET - STYLE 'DARK MODE ÉLOQUENT'
+CLASH ROYALE STYLE CSS COMPLET (avec nouvelles images)
 ==================================================
 */
 
-/* Variables basées sur votre style */
+/* Variables Couleurs Clash Royale */
 :root {
-    --bg-dark-primary: #1a237e;     /* Fond principal foncé */
-    --bg-panel-primary: #2d3561;    /* Fond des panneaux */
-    --accent-blue: #2196F3;         /* Bleu Vif (pour les reflets/accents) */
-    --accent-gold: #ffc107;         /* Or Vif (pour le score/l'action) */
-    --accent-green: #4CAF50;        /* Vert pour les succès/éléments gauche */
-    --accent-pink: #ff4081;         /* Rose pour les éléments droite */
-    --border-color: #4a5788;        /* Couleur de bordure des panneaux */
-    --text-color: #fff;             /* Couleur du texte */
-    --font-family: 'Inter', sans-serif;
+    --cr-gold-light: #FFD700;    /* Or Clair */
+    --cr-gold-dark: #FFC107;     /* Or Foncé (Primaire) */
+    --cr-red-light: #FF4081;     /* Rouge Royal Clair (Actions) */
+    --cr-red-dark: #D32F2F;      /* Rouge Royal Foncé */
+    --cr-blue-light: #42A5F5;    /* Bleu Royal Clair */
+    --cr-blue-dark: #1976D2;     /* Bleu Royal Foncé */
+    --cr-stone-dark: #37474F;    /* Pierre Foncé (Fond) */
+    --cr-stone-light: #546E7A;   /* Pierre Clair (Bordures/Panneaux) */
+    --cr-text-color: #F8F8F8;    /* Texte Clair */
+    --cr-font-family: 'Arial Black', Gadget, sans-serif;
 }
 
 * { 
@@ -31,87 +32,86 @@ CSS COMPLET - STYLE 'DARK MODE ÉLOQUENT'
     box-sizing: border-box; 
 }
 
-body {
-    font-family: var(--font-family);
-    background: linear-gradient(135deg, var(--bg-dark-primary) 0%, #283593 50%, #3949ab 100%);
-    color: var(--text-color);
-    min-height: 100vh;
-    position: relative;
-    overflow-x: hidden;
+body { 
+    font-family: var(--cr-font-family); 
+    /* Fond de texture de pierre/arène */
+    background: var(--cr-stone-dark);
+    /* *** NOUVELLE URL DE L'IMAGE DE FOND (TEXTURE DE PIERRE) *** */
+    background-image: 
+        url('http://googleusercontent.com/image_collection/image_retrieval/11353838652469528070_0'), 
+        linear-gradient(135deg, #263238 0%, #37474F 100%);
+    background-size: cover, cover;
+    background-blend-mode: multiply;
+    overflow: hidden; 
+    color: var(--cr-text-color);
 }
 
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-        radial-gradient(circle at 20% 30%, rgba(255,193,7,0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 70%, rgba(33,150,243,0.1) 0%, transparent 50%);
-    pointer-events: none;
-    z-index: 0;
-}
-
-.container {
-    display: flex;
-    padding: 20px;
-    gap: 20px;
-    min-height: 100vh;
-    position: relative;
-    z-index: 1;
+.container { 
+    display: flex; 
+    width: 100vw; 
+    height: 100vh; 
+    position: relative; 
+    overflow: hidden; 
 }
 
 /* ==================================================
-ZONE CENTRALE (MAIN-AREA)
+ZONE PRINCIPALE (MAIN-AREA)
 ==================================================
 */
-.center {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 30px;
-    padding-top: 50px; /* Espace pour les titres/score */
+
+.main-area { 
+    flex: 1; 
+    /* Simule un champ de bataille */
+    background: linear-gradient(180deg, rgba(33, 150, 243, 0.05) 0%, rgba(76, 175, 80, 0.05) 100%);
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    padding: 20px; 
+    position: relative; 
+    min-width: 0; 
+    z-index: 1;
 }
 
 .title { 
-    color: var(--accent-gold); 
+    color: var(--cr-gold-light); 
     font-size: clamp(36px, 6vw, 70px); 
     font-weight: 900; 
-    /* Calque l'effet d'ombre de votre .money-value */
-    text-shadow: 0 0 20px rgba(255,193,7,0.6), 0 4px 8px rgba(0,0,0,0.5);
+    margin-bottom: 20px; 
+    /* Effet 3D et étincelant */
+    text-shadow: 
+        0 0 15px rgba(255, 215, 0, 0.7),
+        0 5px 10px rgba(0, 0, 0, 0.6),
+        0 8px var(--cr-gold-dark); /* Effet d'épaisseur */
     text-transform: uppercase;
     letter-spacing: 2px;
-    margin-bottom: 10px;
 }
 
 .score-counter { 
-    color: var(--accent-gold); 
-    font-size: clamp(28px, 4vw, 45px); 
-    font-weight: 800; 
-    margin-bottom: 20px; 
-    /* Style du panneau central pour l'affichage du score */
-    background: linear-gradient(145deg, #2d3561 0%, #1f2547 100%); 
-    padding: 12px 35px; 
-    border-radius: 40px; 
-    border: 3px solid var(--accent-gold);
-    box-shadow: 0 0 20px rgba(255,193,7,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
-    animation: pulse 2s ease-in-out infinite;
+    color: var(--cr-gold-light); 
+    font-size: clamp(24px, 3vw, 40px); 
+    font-weight: bold; 
+    margin-bottom: 15px; 
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); 
+    /* Conteneur de gemme/pièce */
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.9), rgba(255, 165, 0, 0.9));
+    padding: 10px 30px; 
+    border-radius: 30px; 
+    border: 4px solid var(--cr-gold-light);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.3);
 }
 
 .to-send { 
-    color: var(--text-color); 
+    color: var(--cr-text-color); 
     font-size: clamp(16px, 2vw, 24px); 
     margin-bottom: 40px; 
-    opacity: 0.8; 
+    opacity: 0.9; 
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); 
     font-weight: 600;
 }
 
 /* -------------------------------------
-   LE BOUTON PRINCIPAL (CLIC)
+   LE BOUTON PRINCIPAL (ROI CLASH ROYAL)
    ------------------------------------- */
 .click-button { 
     width: min(35vh, 35vw, 250px); 
@@ -120,323 +120,511 @@ ZONE CENTRALE (MAIN-AREA)
     max-height: 250px; 
     aspect-ratio: 1/1; 
     border-radius: 50%; 
-    
-    /* Reprise du style du panneau, mais rond */
-    background: linear-gradient(145deg, var(--accent-gold) 0%, #ff9800 100%); 
-    border: 5px solid #ffa000; 
+    /* Style de bouclier ou de gemme */
+    background: linear-gradient(145deg, var(--cr-gold-light), var(--cr-gold-dark)); 
+    border: 8px solid var(--cr-red-dark); 
     cursor: pointer; 
     transition: all 0.1s ease; 
-    
-    /* Ombre de brillance Or */
+    /* Ombre épique */
     box-shadow: 
-        0 0 30px rgba(255, 193, 7, 0.8), 
+        0 0 20px var(--cr-red-light), 
         0 15px 40px rgba(0, 0, 0, 0.7),
-        inset 0 0 20px rgba(255, 255, 255, 0.3);
-    
+        inset 0 0 30px rgba(255, 255, 255, 0.3);
     position: relative; 
     overflow: hidden; 
     flex-shrink: 0; 
 }
 
-/* Placeholder pour une image ou icône au centre */
 .click-button::before { 
     content: ''; 
     position: absolute; 
     top: 50%; 
     left: 50%; 
     transform: translate(-50%, -50%); 
-    width: 80%;
-    height: 80%;
-    /* Utilisation de l'icône or pour le style */
-    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23FFFFFF"><path d="M12 2L2 21h20L12 2zm0 3.96L18.47 19H5.53L12 5.96zM11 17h2v2h-2zM11 9h2v6h-2z"/></svg>') no-repeat center center;
-    background-size: 80%;
-    opacity: 0.9;
+    width: 95%; 
+    height: 95%; 
+    border-radius: 50%; 
+    /* *** NOUVELLE URL DE L'IMAGE DU ROI CLASH ROYAL (PNG) *** */
+    background-image: url('http://googleusercontent.com/image_collection/image_retrieval/13817263764281147592_0'); 
+    background-size: 80%; /* Ajuster la taille du Roi */
+    background-repeat: no-repeat;
+    background-position: center; 
     z-index: 2; 
-    filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.5));
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
 }
 
 .click-button:hover { 
-    transform: scale(1.05); 
+    transform: scale(1.05) rotate(1deg); 
     box-shadow: 
-        0 0 40px rgba(255, 193, 7, 1), 
+        0 0 30px var(--cr-gold-light), 
         0 20px 50px rgba(0, 0, 0, 0.9);
 }
 
 .click-button:active { 
     transform: scale(0.95); 
-    background: linear-gradient(145deg, #ffc107 0%, #ffb300 100%);
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(0, 0, 0, 0.5);
+    border-color: var(--cr-gold-dark);
 }
 /* ------------------------------------- */
-
-.boost-session,
-.boost-personnel {
-    background: linear-gradient(145deg, #2d3561 0%, #1f2547 100%);
-    padding: 30px;
-    border-radius: 20px;
-    width: 340px;
-    text-align: center;
-    border: 3px solid #4a5788;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
-    position: relative;
-}
-/* Votre pseudo-élément de contour reste le même, assurant la cohésion visuelle */
 
 .timer-counter { 
     position: absolute; 
     bottom: 20px; 
     left: 50%; 
     transform: translateX(-50%); 
-    color: var(--text-color); 
-    font-size: clamp(14px, 1.8vw, 18px); 
-    font-weight: 600; 
-    /* Style de puce/interface */
-    background: linear-gradient(145deg, #2d3561 0%, #1f2547 100%);
-    border: 2px solid var(--accent-blue);
+    color: var(--cr-text-color); 
+    font-size: clamp(12px, 1.5vw, 16px); 
+    font-weight: bold; 
+    /* Style CR */
+    background: linear-gradient(90deg, var(--cr-blue-dark), var(--cr-blue-light));
+    border: 2px solid var(--cr-blue-light);
     padding: 10px 25px; 
     border-radius: 30px; 
     backdrop-filter: blur(5px);
-    min-width: 220px; 
+    min-width: 200px; 
+    max-width: 90%; 
     text-align: center; 
-    box-shadow: 0 0 10px rgba(33, 150, 243, 0.5); /* Ombre de l'accent bleu */
-    z-index: 10;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 .timer-bar { 
     position: absolute; 
-    bottom: 70px; 
+    bottom: 60px; 
     left: 50%; 
     transform: translateX(-50%); 
     width: min(250px, 80%); 
-    height: 8px;
-    background: rgba(255, 255, 255, 0.15); 
-    border-radius: 4px; 
+    height: 6px; 
+    background: rgba(0, 0, 0, 0.4); 
+    border-radius: 3px; 
     overflow: hidden; 
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .timer-bar-fill { 
     height: 100%; 
-    /* Barre de progression/mana */
-    background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); 
-    border-radius: 4px; 
+    /* Gradient de couleur pour l'élixir */
+    background: linear-gradient(90deg, #10b981, var(--cr-blue-light)); 
+    border-radius: 3px; 
     transition: width 0.1s linear; 
-    box-shadow: 0 0 5px var(--accent-green);
 }
 
 .status-label { 
     position: absolute; 
-    top: 15px; 
+    top: 10px; 
     left: 50%; 
     transform: translateX(-50%); 
-    color: var(--accent-pink); 
-    font-size: clamp(12px, 1.5vw, 16px); 
-    padding: 8px 16px; 
-    border-radius: 10px; 
-    /* Indicateur d'état */
-    background: linear-gradient(145deg, #2d3561 0%, #1f2547 100%);
-    border: 2px solid var(--accent-pink);
+    color: var(--cr-text-color); 
+    font-size: clamp(11px, 1.5vw, 14px); 
+    padding: 6px 14px; 
+    border-radius: 8px; 
+    /* Style CR */
+    background: rgba(0, 0, 0, 0.6); 
+    border: 1px solid var(--cr-gold-light);
+    max-width: 90%; 
     text-align: center; 
     text-transform: uppercase;
-    box-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
-    z-index: 10;
 }
 
 /* ==================================================
-VOS STYLES EXISTANTS (SIDEBAR / UPGRADES)
+SIDEBAR / PANNEAU LATÉRAL
 ==================================================
 */
-
-/* PANNEAUX */
-.sidebar {
-    width: 280px;
-    background: linear-gradient(145deg, #2d3561 0%, #1f2547 100%);
-    padding: 20px;
-    border-radius: 16px;
-    border: 3px solid var(--border-color);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4),
-                inset 0 1px 0 rgba(255,255,255,0.1);
+.sidebar { 
+    width: clamp(300px, 30vw, 400px); 
+    max-width: 100vw; 
+    /* Style de panneau en pierre/bois */
+    background: linear-gradient(180deg, var(--cr-stone-light) 0%, var(--cr-stone-dark) 100%); 
+    padding: 30px 20px; 
+    border: 5px solid var(--cr-gold-dark);
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.7); 
+    position: absolute; 
+    right: 0; 
+    top: 0; 
+    height: 100vh; 
+    transform: translateX(0); 
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+    z-index: 100; 
+    overflow-y: auto; 
+    border-radius: 0; 
 }
 
-.sidebar h2 {
-    font-size: 1.3em;
-    font-weight: 700;
-    margin-bottom: 15px;
-    padding-bottom: 12px;
-    border-bottom: 3px solid;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+.sidebar.hidden { 
+    transform: translateX(100%); 
 }
 
-.sidebar-left h2 { 
-    border-color: var(--accent-green);
-    color: #66ff66;
-}
-.sidebar-right h2 { 
-    border-color: var(--accent-pink);
-    color: #ff6b9d;
-}
-
-/* LISTES UPGRADE */
-.upgrades-container {
-    max-height: 350px;
-    overflow-y: auto;
-    padding-right: 5px;
-}
-
-/* BOUTONS UPGRADE */
-.upgrade-btn {
-    width: 100%;
-    background: linear-gradient(145deg, #3d4a7a 0%, #2d3561 100%);
-    border: 2px solid #5a6ba8;
-    color: white;
-    padding: 14px;
-    margin-bottom: 12px;
-    font-size: 13px;
-    font-weight: 600;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: left;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3),
-                inset 0 1px 0 rgba(255,255,255,0.1);
-    position: relative;
-    overflow: hidden;
+/* -------------------------------------
+   BOUTONS DE NAVIGATION
+   ------------------------------------- */
+.toggle-sidebar-btn { 
+    position: absolute; 
+    top: 20px; 
+    left: 80px; 
+    /* Style de pièce/blason */
+    background: linear-gradient(135deg, var(--cr-stone-light) 0%, var(--cr-stone-dark) 100%); 
+    color: white; 
+    border: 3px solid var(--cr-gold-dark);
+    width: clamp(40px, 6vw, 50px); 
+    height: clamp(40px, 6vw, 50px); 
+    border-radius: 50%; 
+    cursor: pointer; 
+    z-index: 101; 
+    transition: box-shadow 0.3s ease; 
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    transform: none; 
 }
 
-.upgrade-btn::before {
+.toggle-sidebar-btn:hover { 
+    transform: none; 
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7); 
+}
+
+.toggle-sidebar-btn > * {
+    display: none;
+}
+
+.toggle-sidebar-btn::before, 
+.toggle-sidebar-btn::after,
+.toggle-sidebar-btn .hamburger-middle {
     content: '';
     position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s;
+    width: 60%;
+    height: 3px;
+    background: var(--cr-gold-light); /* Couleur or pour les barres */
+    border-radius: 1px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    left: 20%;
 }
 
-.upgrade-btn:hover::before {
-    left: 100%;
+.toggle-sidebar-btn::before { transform: translateY(-9px); }
+.toggle-sidebar-btn .hamburger-middle { top: 50%; transform: translateY(-50%); }
+.toggle-sidebar-btn::after { transform: translateY(9px); }
+
+.toggle-sidebar-btn.open::before { transform: translateY(0) rotate(45deg); }
+.toggle-sidebar-btn.open::after { transform: translateY(0) rotate(-45deg); }
+.toggle-sidebar-btn.open .hamburger-middle { opacity: 0; }
+
+.close-btn { 
+    background: linear-gradient(135deg, var(--cr-red-light) 0%, var(--cr-red-dark) 100%); 
+    color: white; 
+    border: 2px solid var(--cr-gold-light);
+    width: clamp(35px, 5vw, 40px); 
+    height: clamp(35px, 5vw, 40px); 
+    border-radius: 50%; 
+    cursor: pointer; 
+    font-size: clamp(18px, 3vw, 24px); 
+    font-weight: bold; 
+    position: absolute; 
+    top: 20px; 
+    right: 20px; 
+    transition: all 0.2s ease; 
+    box-shadow: 0 2px 10px rgba(211, 47, 47, 0.5); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    line-height: 1;
 }
 
-.upgrade-btn.clicked {
-    background: linear-gradient(145deg, #66bb6a 0%, var(--accent-green) 100%) !important;
-    color: var(--text-color);
-    border-color: #81c784;
-    box-shadow: 0 0 20px rgba(76,175,80,0.6),
-                0 4px 12px rgba(0,0,0,0.3) !important;
-    transform: scale(1.02); /* Réduit un peu l'effet pour l'harmonisation */
+.close-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 4px 15px rgba(211, 47, 47, 0.8); }
+
+.close-btn:disabled { 
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); 
+    cursor: not-allowed; 
+    opacity: 0.6; 
 }
 
-.upgrade-btn.disabled {
-    background: linear-gradient(145deg, #37474f 0%, #263238 100%) !important;
-    color: #607d8b !important;
-    border-color: #455a64 !important;
-    cursor: not-allowed;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
-    opacity: 0.6;
+.back-btn { 
+    position: absolute; 
+    top: 20px; 
+    left: 20px; 
+    /* Style de blason ou de sceau */
+    background: linear-gradient(135deg, var(--cr-red-light) 0%, var(--cr-red-dark) 100%); 
+    color: white; 
+    border: 3px solid var(--cr-gold-light);
+    width: clamp(40px, 6vw, 50px); 
+    height: clamp(40px, 6vw, 50px); 
+    border-radius: 50%; 
+    cursor: pointer; 
+    font-size: clamp(18px, 3vw, 24px); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    box-shadow: 0 4px 15px rgba(211, 47, 47, 0.5); 
+    transition: all 0.3s ease, transform 0.6s ease-out; 
+    z-index: 102; 
+    transform: scale(1) rotate(0deg); 
 }
 
-.sidebar-left .upgrade-btn:hover:not(.disabled) { 
-    border-color: #66ff66;
-    box-shadow: 0 0 16px rgba(102,255,102,0.4),
-                0 4px 12px rgba(0,0,0,0.3);
-    transform: translateY(-2px);
+.back-btn:hover { 
+    transform: scale(1.1) rotate(360deg); 
+    box-shadow: 0 6px 20px rgba(211, 47, 47, 0.8); 
+}
+/* ------------------------------------- */
+
+.sidebar-title { 
+    color: var(--cr-gold-light); 
+    font-size: clamp(24px, 3vw, 32px); 
+    font-weight: bold; 
+    margin-bottom: 30px; 
+    text-shadow: 0 3px 6px rgba(0, 0, 0, 0.5), 0 2px var(--cr-gold-dark); 
+    text-transform: uppercase;
 }
 
-.sidebar-right .upgrade-btn:hover:not(.disabled) { 
-    border-color: #ff6b9d;
-    box-shadow: 0 0 16px rgba(255,107,157,0.4),
-                0 4px 12px rgba(0,0,0,0.3);
-    transform: translateY(-2px);
+.section-title { 
+    color: var(--cr-gold-light); 
+    font-size: clamp(12px, 1.5vw, 15px); 
+    font-weight: bold; 
+    margin-top: 20px; 
+    margin-bottom: 10px; 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+    border-bottom: 2px solid var(--cr-gold-dark);
+    padding-bottom: 5px;
 }
 
-/* BOUTON AFFICHER + / - */
-.toggle-btn {
-    width: 100%;
-    background: linear-gradient(145deg, #5a6ba8 0%, #4a5788 100%);
-    color: var(--text-color);
-    padding: 12px;
-    font-size: 14px;
-    font-weight: 600;
-    border: 2px solid #6a7bb8;
-    border-radius: 10px;
-    margin-top: 10px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+.session-code { 
+    color: var(--cr-red-light); 
+    font-size: clamp(26px, 3.5vw, 36px); 
+    font-weight: bold; 
+    margin-bottom: 18px; 
+    text-shadow: 0 0 10px rgba(255, 64, 129, 0.5); 
+    word-break: break-all; 
+    background: rgba(0, 0, 0, 0.3);
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.username-label, .player-count { 
+    color: var(--cr-text-color); 
+    font-size: clamp(14px, 2vw, 16px); 
+    margin-bottom: 10px; 
+}
+
+.player-item { 
+    color: var(--cr-text-color); 
+    font-size: clamp(13px, 1.8vw, 15px); 
+    margin: 8px 0; 
+    padding: 8px 12px; 
+    /* Style de carte */
+    background: rgba(0, 0, 0, 0.3); 
+    border-radius: 10px; 
+    border-left: 5px solid var(--cr-blue-light); 
+    transition: all 0.3s ease; 
+    word-break: break-word; 
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.player-item:hover { 
+    background: rgba(0, 0, 0, 0.5); 
+    transform: translateX(5px); 
+    border-color: var(--cr-gold-light);
+}
+
+/* Joueur en attente */
+.player-item.waiting { 
+    color: #b0bec5; 
+    background: rgba(0, 0, 0, 0.1); 
+    border-left: 5px solid var(--cr-stone-light); 
+}
+
+/* L'utilisateur courant */
+.player-item-me {
+    font-weight: bold;
+    color: var(--cr-gold-light);
+    border-left: 5px solid var(--cr-gold-light); 
+    background: rgba(255, 215, 0, 0.2); 
+}
+
+/* Le créateur de la session (la couronne 👑) */
+.player-item-creator {
+    color: var(--cr-red-light);
+    border-left: 5px solid var(--cr-red-light); 
+    background: rgba(255, 64, 129, 0.2); 
+}
+
+.join-input { 
+    width: 100%; 
+    height: clamp(40px, 5vh, 45px); 
+    border-radius: 12px; 
+    border: 2px solid var(--cr-stone-light); 
+    background: rgba(0, 0, 0, 0.4); 
+    color: var(--cr-text-color); 
+    padding: 0 14px; 
+    font-size: clamp(13px, 1.8vw, 15px); 
+    margin-top: 10px; 
+    transition: all 0.3s ease; 
+    backdrop-filter: blur(5px); 
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.join-input:focus { 
+    outline: none; 
+    border-color: var(--cr-gold-light); 
+    background: rgba(0, 0, 0, 0.6); 
+    box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.3); 
+}
+
+.join-input::placeholder { 
+    color: #b0bec5; 
+}
+
+.join-button { 
+    width: 100%; 
+    height: clamp(42px, 5.5vh, 48px); 
+    border-radius: 12px; 
+    border: none; 
+    /* Style Bleu Royal */
+    background: linear-gradient(135deg, var(--cr-blue-light) 0%, var(--cr-blue-dark) 100%); 
+    color: white; 
+    font-size: clamp(13px, 1.8vw, 15px); 
+    font-weight: bold; 
+    cursor: pointer; 
+    margin-top: 12px; 
+    transition: all 0.3s ease; 
+    box-shadow: 0 4px 15px rgba(66, 165, 245, 0.4); 
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-.toggle-btn:hover { 
-    background: linear-gradient(145deg, #6a7bc8 0%, #5a6ba8 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+.join-button:hover { 
+    transform: translateY(-2px); 
+    box-shadow: 0 6px 20px rgba(66, 165, 245, 0.6); 
+    background: linear-gradient(135deg, #64B5F6 0%, var(--cr-blue-light) 100%); 
 }
 
-/* INPUT QUANTITÉ */
-.quantity-input {
-    width: 100%;
-    padding: 14px;
-    margin-bottom: 12px;
-    font-size: 16px;
-    font-weight: 700;
-    border-radius: 10px;
-    border: 2px solid #5a6ba8;
-    background: linear-gradient(145deg, #2d3561 0%, #1f2547 100%);
-    color: var(--text-color);
-    text-align: center;
-    box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
-    transition: all 0.2s ease;
+.join-button:active { 
+    transform: translateY(0); 
 }
 
-.quantity-input:focus {
-    outline: none;
-    border-color: var(--accent-gold);
-    box-shadow: 0 0 12px rgba(255,193,7,0.5),
-                inset 0 2px 8px rgba(0,0,0,0.3);
+.upgrade-button { 
+    width: 100%; 
+    height: clamp(42px, 5.5vh, 48px); 
+    border-radius: 12px; 
+    border: none; 
+    /* Style Rouge/Orange Royal */
+    background: linear-gradient(135deg, #FF9800 0%, #F44336 100%); 
+    color: white; 
+    font-size: clamp(13px, 1.8vw, 15px); 
+    font-weight: bold; 
+    cursor: pointer; 
+    margin-top: 12px; 
+    transition: all 0.3s ease; 
+    box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4); 
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* ... (Les styles .boost-session, .money-value, @keyframes pulse, etc. restent les mêmes) ... */
-
-/* SCROLLBAR MINIMAL */
-::-webkit-scrollbar { width: 10px; }
-::-webkit-scrollbar-track { 
-    background: rgba(0,0,0,0.3); 
-    border-radius: 10px;
-}
-::-webkit-scrollbar-thumb { 
-    background: linear-gradient(145deg, #5a6ba8 0%, #4a5788 100%); 
-    border-radius: 10px;
-    border: 2px solid rgba(0,0,0,0.3);
-}
-::-webkit-scrollbar-thumb:hover { 
-    background: linear-gradient(145deg, #6a7bc8 0%, #5a6ba8 100%); 
+.upgrade-button:hover { 
+    transform: translateY(-2px); 
+    box-shadow: 0 6px 20px rgba(255, 152, 0, 0.6); 
+    background: linear-gradient(135deg, #FFC107 0%, #FF9800 100%); 
 }
 
-/* RESPONSIVE */
-@media (max-width: 1024px) {
-    .container { 
+.upgrade-button:active { 
+    transform: translateY(0); 
+}
+
+.sidebar-status { 
+    color: #b0bec5; 
+    font-size: clamp(11px, 1.5vw, 12px); 
+    margin-top: 10px; 
+    min-height: 20px; 
+    word-break: break-word; 
+    font-style: italic;
+}
+
+/* -------------------------------------
+   📲 MODIFICATIONS CSS POUR MOBILE (Max 768px)
+   ------------------------------------- */
+@media (max-width: 768px) {
+    .sidebar { 
+        width: 85vw; 
+        padding-top: 80px; 
+    }
+    .main-area { 
+        padding: 15px; 
+        display: flex;
         flex-direction: column; 
-        gap: 15px;
-    }
-    .sidebar { width: 100%; }
-    .boost-session, .boost-personnel { width: 100%; }
-    
-    .center {
-        padding-top: 10px;
-        gap: 20px;
+        justify-content: space-around; 
+        align-items: center;
+        padding-top: 70px; 
+        padding-bottom: 20px;
     }
     
-    /* Le bouton de clic s'adapte mieux sur mobile */
-    .click-button {
-        width: 180px; 
-        height: 180px;
-        margin-top: 20px; 
-        margin-bottom: 20px;
+    .click-button { 
+        width: min(50vw, 50vh, 220px); 
+        height: min(50vw, 50vh, 220px); 
+        flex-shrink: 0; 
     }
+    
+    /* Bouton "Rejoindre" pour mobile (visible uniquement sur mobile) */
+    #joinButtonMobile {
+        display: block; 
+        width: 90%;
+        height: 50px;
+        margin: 10px auto;
+        order: 3; 
+        border-radius: 12px; border: none; 
+        /* Style CR */
+        background: linear-gradient(135deg, var(--cr-blue-light) 0%, var(--cr-blue-dark) 100%); 
+        color: white; font-size: 15px; font-weight: bold; cursor: pointer; 
+        box-shadow: 0 4px 15px rgba(66, 165, 245, 0.4);
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+    }
+    
+    #joinButtonMobile:hover { transform: translateY(-2px); }
+    #joinButtonMobile:active { transform: translateY(0); }
+
+    /* Input pour mobile (visible uniquement sur mobile) */
+    #joinInputMobile {
+        display: block; 
+        width: 90%;
+        height: 45px;
+        margin: 0 auto;
+        order: 4; 
+        border-radius: 12px; 
+        border: 2px solid var(--cr-stone-light); 
+        background: rgba(0, 0, 0, 0.4); 
+        color: var(--cr-text-color); 
+        padding: 0 14px; font-size: 15px;
+        margin-bottom: 20px; 
+        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+    }
+    
+    #joinInputMobile::placeholder { color: #b0bec5; }
+    #joinInputMobile:focus { 
+        outline: none; 
+        border-color: var(--cr-gold-light); 
+        background: rgba(0, 0, 0, 0.6); 
+        box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.3); 
+    }
+
+    /* Ordre des éléments existants dans main-area */
+    .score-counter { order: 1; margin-bottom: 30px; margin-top: 10px; }
+    .click-button { order: 2; margin: 30px 0; }
+
+    /* Cache les contrôles originaux (sidebar ou desktop) */
+    .join-input, .join-button, .upgrade-button {
+        display: none !important; 
+    }
+    
+    /* Ajustements divers pour le header */
+    .back-btn { top: 10px; left: 10px; }
+    .toggle-sidebar-btn { top: 10px; left: 70px; }
+    .title { order: -2; margin-top: 0; }
+    .to-send { order: -1; margin-bottom: 0; font-size: 14px; }
+    
+    /* Simplification de l'affichage pour le mobile */
+    .timer-bar, .timer-counter, .status-label { 
+        display: none !important; 
+    } 
+}
+@media (max-width: 480px) {
+    .sidebar { width: 90vw; }
+    .click-button { width: min(55vw, 50vh, 180px); height: min(55vw, 50vh, 180px); }
 }
     </style>
 

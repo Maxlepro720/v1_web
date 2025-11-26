@@ -6,313 +6,126 @@
     <title>Private Clicker Game</title>
     <style>
         /* --- Styles CSS --- */
-       /* ==================================================
-/* ==================================================
-CLASH ROYALE STYLE CSS COMPLET (avec nouvelles images)
-==================================================
-*/
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #232323; overflow: hidden; }
 
-/* Variables Couleurs Clash Royale */
-:root {
-    --cr-gold-light: #FFD700;    /* Or Clair */
-    --cr-gold-dark: #FFC107;     /* Or Foncé (Primaire) */
-    --cr-red-light: #FF4081;     /* Rouge Royal Clair (Actions) */
-    --cr-red-dark: #D32F2F;      /* Rouge Royal Foncé */
-    --cr-blue-light: #42A5F5;    /* Bleu Royal Clair */
-    --cr-blue-dark: #1976D2;     /* Bleu Royal Foncé */
-    --cr-stone-dark: #37474F;    /* Pierre Foncé (Fond) */
-    --cr-stone-light: #546E7A;   /* Pierre Clair (Bordures/Panneaux) */
-    --cr-text-color: #F8F8F8;    /* Texte Clair */
-    --cr-font-family: 'Arial Black', Gadget, sans-serif;
-}
+.container { display: flex; width: 100vw; height: 100vh; position: relative; overflow: hidden; }
 
-* { 
-    margin: 0; 
-    padding: 0; 
-    box-sizing: border-box; 
-}
+.main-area { flex: 1; background: #1b1b1b; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; min-width: 0; }
 
-body { 
-    font-family: var(--cr-font-family); 
-    /* Fond de texture de pierre/arène */
-    background: var(--cr-stone-dark);
-    /* *** NOUVELLE URL DE L'IMAGE DE FOND (TEXTURE DE PIERRE) *** */
-    background-image: 
-        url('http://googleusercontent.com/image_collection/image_retrieval/11353838652469528070_0'), 
-        linear-gradient(135deg, #263238 0%, #37474F 100%);
-    background-size: cover, cover;
-    background-blend-mode: multiply;
-    overflow: hidden; 
-    color: var(--cr-text-color);
-}
+.title { color: #ffffff; font-size: clamp(32px, 6vw, 60px); font-weight: bold; margin-bottom: 15px; text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); }
 
-.container { 
-    display: flex; 
-    width: 100vw; 
-    height: 100vh; 
-    position: relative; 
-    overflow: hidden; 
-}
+.score-counter { color: #ffffff; font-size: clamp(20px, 3vw, 32px); font-weight: bold; margin-bottom: 10px; opacity: 0.9; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); background: rgba(255, 255, 255, 0.1); padding: 8px 25px; border-radius: 20px; backdrop-filter: blur(10px); }
 
-/* ==================================================
-ZONE PRINCIPALE (MAIN-AREA)
-==================================================
-*/
+.to-send { color: #ffffff; font-size: clamp(14px, 2vw, 20px); margin-bottom: 30px; opacity: 0.9; }
 
-.main-area { 
-    flex: 1; 
-    /* Simule un champ de bataille */
-    background: linear-gradient(180deg, rgba(33, 150, 243, 0.05) 0%, rgba(76, 175, 80, 0.05) 100%);
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center; 
-    padding: 20px; 
-    position: relative; 
-    min-width: 0; 
-    z-index: 1;
-}
+.click-button { width: min(30vh, 30vw, 220px); height: min(30vh, 30vw, 220px); max-width: 220px; max-height: 220px; aspect-ratio: 1/1; border-radius: 50%; background: linear-gradient(145deg, #ffd966, #ffb84d); border: 6px solid #ff6b35; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 10px 30px rgba(255, 107, 53, 0.4); position: relative; overflow: hidden; flex-shrink: 0; }
 
-.title { 
-    color: var(--cr-gold-light); 
-    font-size: clamp(36px, 6vw, 70px); 
-    font-weight: 900; 
-    margin-bottom: 20px; 
-    /* Effet 3D et étincelant */
-    text-shadow: 
-        0 0 15px rgba(255, 215, 0, 0.7),
-        0 5px 10px rgba(0, 0, 0, 0.6),
-        0 8px var(--cr-gold-dark); /* Effet d'épaisseur */
-    text-transform: uppercase;
-    letter-spacing: 2px;
-}
+.click-button::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; height: 85%; border-radius: 50%; background-size: cover; background-position: center; }
 
-.score-counter { 
-    color: var(--cr-gold-light); 
-    font-size: clamp(24px, 3vw, 40px); 
-    font-weight: bold; 
-    margin-bottom: 15px; 
-    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); 
-    /* Conteneur de gemme/pièce */
-    background: linear-gradient(135deg, rgba(255, 193, 7, 0.9), rgba(255, 165, 0, 0.9));
-    padding: 10px 30px; 
-    border-radius: 30px; 
-    border: 4px solid var(--cr-gold-light);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.3);
-}
+.click-button:hover { transform: scale(1.1); box-shadow: 0 15px 40px rgba(255, 107, 53, 0.6); }
 
-.to-send { 
-    color: var(--cr-text-color); 
-    font-size: clamp(16px, 2vw, 24px); 
-    margin-bottom: 40px; 
-    opacity: 0.9; 
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); 
-    font-weight: 600;
-}
+.click-button:active { transform: scale(0.95); box-shadow: 0 5px 20px rgba(255, 107, 53, 0.3); }
+
+.timer-counter { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: #FFFFFF; font-size: clamp(12px, 1.5vw, 16px); font-weight: bold; background: rgba(0, 0, 0, 0.3); padding: 10px 25px; border-radius: 30px; backdrop-filter: blur(10px); min-width: 200px; max-width: 90%; text-align: center; }
+
+.timer-bar { position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); width: min(250px, 80%); height: 4px; background: rgba(255, 255, 255, 0.2); border-radius: 2px; overflow: hidden; }
+
+.timer-bar-fill { height: 100%; background: linear-gradient(90deg, #10b981, #3b82f6); border-radius: 2px; transition: width 0.1s linear; }
+
+.status-label { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); color: #FFFFFF; font-size: clamp(11px, 1.5vw, 14px); padding: 6px 14px; border-radius: 8px; background: rgba(0, 0, 0, 0.5); max-width: 90%; text-align: center; }
+
+.sidebar { width: clamp(280px, 30vw, 350px); max-width: 100vw; background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); padding: 20px; position: absolute; right: 0; top: 0; height: 100vh; transform: translateX(0); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; overflow-y: auto; box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3); }
+
+.sidebar.hidden { transform: translateX(100%); }
 
 /* -------------------------------------
-   LE BOUTON PRINCIPAL (ROI CLASH ROYAL)
-   ------------------------------------- */
-.click-button { 
-    width: min(35vh, 35vw, 250px); 
-    height: min(35vh, 35vw, 250px); 
-    max-width: 250px; 
-    max-height: 250px; 
-    aspect-ratio: 1/1; 
-    border-radius: 50%; 
-    /* Style de bouclier ou de gemme */
-    background: linear-gradient(145deg, var(--cr-gold-light), var(--cr-gold-dark)); 
-    border: 8px solid var(--cr-red-dark); 
-    cursor: pointer; 
-    transition: all 0.1s ease; 
-    /* Ombre épique */
-    box-shadow: 
-        0 0 20px var(--cr-red-light), 
-        0 15px 40px rgba(0, 0, 0, 0.7),
-        inset 0 0 30px rgba(255, 255, 255, 0.3);
-    position: relative; 
-    overflow: hidden; 
-    flex-shrink: 0; 
-}
-
-.click-button::before { 
-    content: ''; 
-    position: absolute; 
-    top: 50%; 
-    left: 50%; 
-    transform: translate(-50%, -50%); 
-    width: 95%; 
-    height: 95%; 
-    border-radius: 50%; 
-    /* *** NOUVELLE URL DE L'IMAGE DU ROI CLASH ROYAL (PNG) *** */
-    background-image: url('http://googleusercontent.com/image_collection/image_retrieval/13817263764281147592_0'); 
-    background-size: 80%; /* Ajuster la taille du Roi */
-    background-repeat: no-repeat;
-    background-position: center; 
-    z-index: 2; 
-    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
-}
-
-.click-button:hover { 
-    transform: scale(1.05) rotate(1deg); 
-    box-shadow: 
-        0 0 30px var(--cr-gold-light), 
-        0 20px 50px rgba(0, 0, 0, 0.9);
-}
-
-.click-button:active { 
-    transform: scale(0.95); 
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(0, 0, 0, 0.5);
-    border-color: var(--cr-gold-dark);
-}
-/* ------------------------------------- */
-
-.timer-counter { 
-    position: absolute; 
-    bottom: 20px; 
-    left: 50%; 
-    transform: translateX(-50%); 
-    color: var(--cr-text-color); 
-    font-size: clamp(12px, 1.5vw, 16px); 
-    font-weight: bold; 
-    /* Style CR */
-    background: linear-gradient(90deg, var(--cr-blue-dark), var(--cr-blue-light));
-    border: 2px solid var(--cr-blue-light);
-    padding: 10px 25px; 
-    border-radius: 30px; 
-    backdrop-filter: blur(5px);
-    min-width: 200px; 
-    max-width: 90%; 
-    text-align: center; 
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-}
-
-.timer-bar { 
-    position: absolute; 
-    bottom: 60px; 
-    left: 50%; 
-    transform: translateX(-50%); 
-    width: min(250px, 80%); 
-    height: 6px; 
-    background: rgba(0, 0, 0, 0.4); 
-    border-radius: 3px; 
-    overflow: hidden; 
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-.timer-bar-fill { 
-    height: 100%; 
-    /* Gradient de couleur pour l'élixir */
-    background: linear-gradient(90deg, #10b981, var(--cr-blue-light)); 
-    border-radius: 3px; 
-    transition: width 0.1s linear; 
-}
-
-.status-label { 
-    position: absolute; 
-    top: 10px; 
-    left: 50%; 
-    transform: translateX(-50%); 
-    color: var(--cr-text-color); 
-    font-size: clamp(11px, 1.5vw, 14px); 
-    padding: 6px 14px; 
-    border-radius: 8px; 
-    /* Style CR */
-    background: rgba(0, 0, 0, 0.6); 
-    border: 1px solid var(--cr-gold-light);
-    max-width: 90%; 
-    text-align: center; 
-    text-transform: uppercase;
-}
-
-/* ==================================================
-SIDEBAR / PANNEAU LATÉRAL
-==================================================
-*/
-.sidebar { 
-    width: clamp(300px, 30vw, 400px); 
-    max-width: 100vw; 
-    /* Style de panneau en pierre/bois */
-    background: linear-gradient(180deg, var(--cr-stone-light) 0%, var(--cr-stone-dark) 100%); 
-    padding: 30px 20px; 
-    border: 5px solid var(--cr-gold-dark);
-    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.7); 
-    position: absolute; 
-    right: 0; 
-    top: 0; 
-    height: 100vh; 
-    transform: translateX(0); 
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-    z-index: 100; 
-    overflow-y: auto; 
-    border-radius: 0; 
-}
-
-.sidebar.hidden { 
-    transform: translateX(100%); 
-}
-
-/* -------------------------------------
-   BOUTONS DE NAVIGATION
+   MODIFICATIONS POUR LE BOUTON MENU 
    ------------------------------------- */
 .toggle-sidebar-btn { 
     position: absolute; 
     top: 20px; 
     left: 80px; 
-    /* Style de pièce/blason */
-    background: linear-gradient(135deg, var(--cr-stone-light) 0%, var(--cr-stone-dark) 100%); 
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
     color: white; 
-    border: 3px solid var(--cr-gold-dark);
+    border: none; 
     width: clamp(40px, 6vw, 50px); 
     height: clamp(40px, 6vw, 50px); 
     border-radius: 50%; 
     cursor: pointer; 
     z-index: 101; 
+    /* Retire la transition de scale pour qu'il ne bouge pas au survol */
     transition: box-shadow 0.3s ease; 
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); 
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); 
     display: flex; 
     align-items: center; 
     justify-content: center; 
-    transform: none; 
+    transform: none; /* S'assure qu'il n'y a pas de transformation de base */
 }
 
+/* Désactive l'effet de zoom au survol */
 .toggle-sidebar-btn:hover { 
     transform: none; 
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7); 
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); 
 }
 
+/* Cache le contenu interne du bouton (s'il y a du texte ou une ancienne icône) */
 .toggle-sidebar-btn > * {
     display: none;
 }
 
+/* Style des barres du hamburger */
 .toggle-sidebar-btn::before, 
 .toggle-sidebar-btn::after,
-.toggle-sidebar-btn .hamburger-middle {
+.toggle-sidebar-btn .hamburger-middle { /* Ajout d'une barre centrale via un élément interne (besoin d'un <span> dans le HTML) */
     content: '';
     position: absolute;
     width: 60%;
-    height: 3px;
-    background: var(--cr-gold-light); /* Couleur or pour les barres */
+    height: 3px; /* Épaissi légèrement les barres pour la visibilité */
+    background: white;
     border-radius: 1px;
     transition: transform 0.3s ease, opacity 0.3s ease;
-    left: 20%;
+    left: 20%; /* Centre les barres */
 }
 
-.toggle-sidebar-btn::before { transform: translateY(-9px); }
-.toggle-sidebar-btn .hamburger-middle { top: 50%; transform: translateY(-50%); }
-.toggle-sidebar-btn::after { transform: translateY(9px); }
+/* Positionnement des barres (hamburger) */
+.toggle-sidebar-btn::before {
+    transform: translateY(-9px); /* Barre du haut */
+}
 
-.toggle-sidebar-btn.open::before { transform: translateY(0) rotate(45deg); }
-.toggle-sidebar-btn.open::after { transform: translateY(0) rotate(-45deg); }
-.toggle-sidebar-btn.open .hamburger-middle { opacity: 0; }
+.toggle-sidebar-btn .hamburger-middle { 
+    /* La barre du milieu est gérée par le span .hamburger-middle */
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.toggle-sidebar-btn::after {
+    transform: translateY(9px); /* Barre du bas */
+}
+
+/* Transformation en croix (classe .open ajoutée par JS) */
+.toggle-sidebar-btn.open::before {
+    transform: translateY(0) rotate(45deg); /* Barre du haut pivote pour former le bras de la croix */
+}
+
+.toggle-sidebar-btn.open::after {
+    transform: translateY(0) rotate(-45deg); /* Barre du bas pivote pour former l'autre bras de la croix */
+}
+
+.toggle-sidebar-btn.open .hamburger-middle {
+    opacity: 0; /* La barre du milieu disparaît */
+}
+/* -------------------------------------
+   FIN DES MODIFICATIONS POUR LE BOUTON MENU 
+   ------------------------------------- */
 
 .close-btn { 
-    background: linear-gradient(135deg, var(--cr-red-light) 0%, var(--cr-red-dark) 100%); 
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
     color: white; 
-    border: 2px solid var(--cr-gold-light);
+    border: none; 
     width: clamp(35px, 5vw, 40px); 
     height: clamp(35px, 5vw, 40px); 
-    border-radius: 50%; 
+    border-radius: 12px; 
     cursor: pointer; 
     font-size: clamp(18px, 3vw, 24px); 
     font-weight: bold; 
@@ -320,29 +133,58 @@ SIDEBAR / PANNEAU LATÉRAL
     top: 20px; 
     right: 20px; 
     transition: all 0.2s ease; 
-    box-shadow: 0 2px 10px rgba(211, 47, 47, 0.5); 
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3); 
     display: flex; 
     align-items: center; 
     justify-content: center; 
     line-height: 1;
 }
 
-.close-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 4px 15px rgba(211, 47, 47, 0.8); }
+.close-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); }
 
-.close-btn:disabled { 
-    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); 
-    cursor: not-allowed; 
-    opacity: 0.6; 
-}
+.close-btn:disabled { background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); cursor: not-allowed; opacity: 0.6; }
+
+.sidebar-title { color: #f8fafc; font-size: clamp(20px, 3vw, 28px); font-weight: bold; margin-bottom: 25px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+
+.section-title { color: #cbd5e1; font-size: clamp(11px, 1.5vw, 13px); font-weight: bold; margin-top: 20px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.session-code { color: #60a5fa; font-size: clamp(22px, 3.5vw, 32px); font-weight: bold; margin-bottom: 18px; text-shadow: 0 2px 8px rgba(96, 165, 250, 0.3); word-break: break-all; }
+
+.username-label, .player-count { color: #f8fafc; font-size: clamp(14px, 2vw, 16px); margin-bottom: 10px; }
+
+.player-item { color: #10b981; font-size: clamp(13px, 1.8vw, 15px); margin: 8px 0; padding: 8px 12px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; border-left: 3px solid #10b981; transition: all 0.3s ease; word-break: break-word; }
+
+.player-item:hover { background: rgba(16, 185, 129, 0.2); transform: translateX(5px); }
+
+.player-item.waiting { color: #64748b; background: rgba(100, 116, 139, 0.1); border-left: 3px solid #64748b; }
+
+.join-input { width: 100%; height: clamp(40px, 5vh, 45px); border-radius: 12px; border: 2px solid #475569; background: rgba(51, 65, 85, 0.6); color: #f8fafc; padding: 0 14px; font-size: clamp(13px, 1.8vw, 15px); margin-top: 10px; transition: all 0.3s ease; backdrop-filter: blur(5px); }
+
+.join-input:focus { outline: none; border-color: #60a5fa; background: rgba(51, 65, 85, 0.8); box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2); }
+
+.join-input::placeholder { color: #94a3b8; }
+
+.join-button { width: 100%; height: clamp(42px, 5.5vh, 48px); border-radius: 12px; border: none; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; font-size: clamp(13px, 1.8vw, 15px); font-weight: bold; cursor: pointer; margin-top: 12px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
+
+.join-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
+
+.join-button:active { transform: translateY(0); }
+
+.upgrade-button { width: 100%; height: clamp(42px, 5.5vh, 48px); border-radius: 12px; border: none; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; font-size: clamp(13px, 1.8vw, 15px); font-weight: bold; cursor: pointer; margin-top: 12px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
+
+.upgrade-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4); background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); }
+
+.upgrade-button:active { transform: translateY(0); }
+
+.sidebar-status { color: #94a3b8; font-size: clamp(11px, 1.5vw, 12px); margin-top: 10px; min-height: 20px; word-break: break-word; }
 
 .back-btn { 
     position: absolute; 
     top: 20px; 
     left: 20px; 
-    /* Style de blason ou de sceau */
-    background: linear-gradient(135deg, var(--cr-red-light) 0%, var(--cr-red-dark) 100%); 
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
     color: white; 
-    border: 3px solid var(--cr-gold-light);
+    border: none; 
     width: clamp(40px, 6vw, 50px); 
     height: clamp(40px, 6vw, 50px); 
     border-radius: 50%; 
@@ -351,7 +193,7 @@ SIDEBAR / PANNEAU LATÉRAL
     display: flex; 
     align-items: center; 
     justify-content: center; 
-    box-shadow: 0 4px 15px rgba(211, 47, 47, 0.5); 
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); 
     transition: all 0.3s ease, transform 0.6s ease-out; 
     z-index: 102; 
     transform: scale(1) rotate(0deg); 
@@ -359,205 +201,55 @@ SIDEBAR / PANNEAU LATÉRAL
 
 .back-btn:hover { 
     transform: scale(1.1) rotate(360deg); 
-    box-shadow: 0 6px 20px rgba(211, 47, 47, 0.8); 
-}
-/* ------------------------------------- */
-
-.sidebar-title { 
-    color: var(--cr-gold-light); 
-    font-size: clamp(24px, 3vw, 32px); 
-    font-weight: bold; 
-    margin-bottom: 30px; 
-    text-shadow: 0 3px 6px rgba(0, 0, 0, 0.5), 0 2px var(--cr-gold-dark); 
-    text-transform: uppercase;
-}
-
-.section-title { 
-    color: var(--cr-gold-light); 
-    font-size: clamp(12px, 1.5vw, 15px); 
-    font-weight: bold; 
-    margin-top: 20px; 
-    margin-bottom: 10px; 
-    text-transform: uppercase; 
-    letter-spacing: 1px; 
-    border-bottom: 2px solid var(--cr-gold-dark);
-    padding-bottom: 5px;
-}
-
-.session-code { 
-    color: var(--cr-red-light); 
-    font-size: clamp(26px, 3.5vw, 36px); 
-    font-weight: bold; 
-    margin-bottom: 18px; 
-    text-shadow: 0 0 10px rgba(255, 64, 129, 0.5); 
-    word-break: break-all; 
-    background: rgba(0, 0, 0, 0.3);
-    padding: 5px 10px;
-    border-radius: 5px;
-}
-
-.username-label, .player-count { 
-    color: var(--cr-text-color); 
-    font-size: clamp(14px, 2vw, 16px); 
-    margin-bottom: 10px; 
-}
-
-.player-item { 
-    color: var(--cr-text-color); 
-    font-size: clamp(13px, 1.8vw, 15px); 
-    margin: 8px 0; 
-    padding: 8px 12px; 
-    /* Style de carte */
-    background: rgba(0, 0, 0, 0.3); 
-    border-radius: 10px; 
-    border-left: 5px solid var(--cr-blue-light); 
-    transition: all 0.3s ease; 
-    word-break: break-word; 
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-}
-
-.player-item:hover { 
-    background: rgba(0, 0, 0, 0.5); 
-    transform: translateX(5px); 
-    border-color: var(--cr-gold-light);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6); 
 }
 
 /* Joueur en attente */
-.player-item.waiting { 
-    color: #b0bec5; 
-    background: rgba(0, 0, 0, 0.1); 
-    border-left: 5px solid var(--cr-stone-light); 
+.player-item {
+    padding: 8px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    background-color: #374151;
+    border-left: 3px solid #10b981;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Joueur en attente */
+.player-item.waiting {
+    color: #64748b;
+    background: #1f2937;
+    border-left: 3px solid #64748b;
 }
 
 /* L'utilisateur courant */
 .player-item-me {
     font-weight: bold;
-    color: var(--cr-gold-light);
-    border-left: 5px solid var(--cr-gold-light); 
-    background: rgba(255, 215, 0, 0.2); 
+    color: #fcd34d;
+    border-left: 3px solid #fcd34d; 
+    background: #3f3f46; 
 }
 
 /* Le créateur de la session (la couronne 👑) */
 .player-item-creator {
-    color: var(--cr-red-light);
-    border-left: 5px solid var(--cr-red-light); 
-    background: rgba(255, 64, 129, 0.2); 
-}
-
-.join-input { 
-    width: 100%; 
-    height: clamp(40px, 5vh, 45px); 
-    border-radius: 12px; 
-    border: 2px solid var(--cr-stone-light); 
-    background: rgba(0, 0, 0, 0.4); 
-    color: var(--cr-text-color); 
-    padding: 0 14px; 
-    font-size: clamp(13px, 1.8vw, 15px); 
-    margin-top: 10px; 
-    transition: all 0.3s ease; 
-    backdrop-filter: blur(5px); 
-    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
-}
-
-.join-input:focus { 
-    outline: none; 
-    border-color: var(--cr-gold-light); 
-    background: rgba(0, 0, 0, 0.6); 
-    box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.3); 
-}
-
-.join-input::placeholder { 
-    color: #b0bec5; 
-}
-
-.join-button { 
-    width: 100%; 
-    height: clamp(42px, 5.5vh, 48px); 
-    border-radius: 12px; 
-    border: none; 
-    /* Style Bleu Royal */
-    background: linear-gradient(135deg, var(--cr-blue-light) 0%, var(--cr-blue-dark) 100%); 
-    color: white; 
-    font-size: clamp(13px, 1.8vw, 15px); 
-    font-weight: bold; 
-    cursor: pointer; 
-    margin-top: 12px; 
-    transition: all 0.3s ease; 
-    box-shadow: 0 4px 15px rgba(66, 165, 245, 0.4); 
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.join-button:hover { 
-    transform: translateY(-2px); 
-    box-shadow: 0 6px 20px rgba(66, 165, 245, 0.6); 
-    background: linear-gradient(135deg, #64B5F6 0%, var(--cr-blue-light) 100%); 
-}
-
-.join-button:active { 
-    transform: translateY(0); 
-}
-
-.upgrade-button { 
-    width: 100%; 
-    height: clamp(42px, 5.5vh, 48px); 
-    border-radius: 12px; 
-    border: none; 
-    /* Style Rouge/Orange Royal */
-    background: linear-gradient(135deg, #FF9800 0%, #F44336 100%); 
-    color: white; 
-    font-size: clamp(13px, 1.8vw, 15px); 
-    font-weight: bold; 
-    cursor: pointer; 
-    margin-top: 12px; 
-    transition: all 0.3s ease; 
-    box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4); 
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.upgrade-button:hover { 
-    transform: translateY(-2px); 
-    box-shadow: 0 6px 20px rgba(255, 152, 0, 0.6); 
-    background: linear-gradient(135deg, #FFC107 0%, #FF9800 100%); 
-}
-
-.upgrade-button:active { 
-    transform: translateY(0); 
-}
-
-.sidebar-status { 
-    color: #b0bec5; 
-    font-size: clamp(11px, 1.5vw, 12px); 
-    margin-top: 10px; 
-    min-height: 20px; 
-    word-break: break-word; 
-    font-style: italic;
+    color: #ff6b35;
+    border-left: 3px solid #ff6b35; 
+    background: rgba(255, 107, 53, 0.15); 
 }
 
 /* -------------------------------------
-   📲 MODIFICATIONS CSS POUR MOBILE (Max 768px)
-   ------------------------------------- */
+    📲 MODIFICATIONS CSS POUR MOBILE (Max 768px)
+    ------------------------------------- */
 @media (max-width: 768px) {
-    .sidebar { 
-        width: 85vw; 
-        padding-top: 80px; 
-    }
+    .sidebar { width: 85vw; }
     .main-area { 
         padding: 15px; 
         display: flex;
         flex-direction: column; 
-        justify-content: space-around; 
+        justify-content: space-between; 
         align-items: center;
-        padding-top: 70px; 
-        padding-bottom: 20px;
     }
     
-    .click-button { 
-        width: min(50vw, 50vh, 220px); 
-        height: min(50vw, 50vh, 220px); 
-        flex-shrink: 0; 
-    }
+    .click-button { width: min(40vw, 40vh, 200px); height: min(40vw, 40vh, 200px); flex-shrink: 0; }
     
     /* Bouton "Rejoindre" pour mobile (visible uniquement sur mobile) */
     #joinButtonMobile {
@@ -567,12 +259,10 @@ SIDEBAR / PANNEAU LATÉRAL
         margin: 10px auto;
         order: 3; 
         border-radius: 12px; border: none; 
-        /* Style CR */
-        background: linear-gradient(135deg, var(--cr-blue-light) 0%, var(--cr-blue-dark) 100%); 
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
         color: white; font-size: 15px; font-weight: bold; cursor: pointer; 
-        box-shadow: 0 4px 15px rgba(66, 165, 245, 0.4);
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
         transition: all 0.3s ease;
-        text-transform: uppercase;
     }
     
     #joinButtonMobile:hover { transform: translateY(-2px); }
@@ -585,26 +275,26 @@ SIDEBAR / PANNEAU LATÉRAL
         height: 45px;
         margin: 0 auto;
         order: 4; 
-        border-radius: 12px; 
-        border: 2px solid var(--cr-stone-light); 
-        background: rgba(0, 0, 0, 0.4); 
-        color: var(--cr-text-color); 
+        border-radius: 12px; border: 2px solid #475569; 
+        background: rgba(51, 65, 85, 0.6); color: #f8fafc; 
         padding: 0 14px; font-size: 15px;
         margin-bottom: 20px; 
-        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
     }
     
-    #joinInputMobile::placeholder { color: #b0bec5; }
-    #joinInputMobile:focus { 
-        outline: none; 
-        border-color: var(--cr-gold-light); 
-        background: rgba(0, 0, 0, 0.6); 
-        box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.3); 
-    }
+    #joinInputMobile::placeholder { color: #94a3b8; }
+    #joinInputMobile:focus { outline: none; border-color: #60a5fa; background: rgba(51, 65, 85, 0.8); box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2); }
 
     /* Ordre des éléments existants dans main-area */
-    .score-counter { order: 1; margin-bottom: 30px; margin-top: 10px; }
-    .click-button { order: 2; margin: 30px 0; }
+    .score-counter {
+        order: 1; 
+        margin-bottom: 30px; 
+        margin-top: 50px; 
+    }
+
+    .click-button {
+        order: 2; 
+        margin: 30px 0; 
+    }
 
     /* Cache les contrôles originaux (sidebar ou desktop) */
     .join-input, .join-button, .upgrade-button {
@@ -615,7 +305,7 @@ SIDEBAR / PANNEAU LATÉRAL
     .back-btn { top: 10px; left: 10px; }
     .toggle-sidebar-btn { top: 10px; left: 70px; }
     .title { order: -2; margin-top: 0; }
-    .to-send { order: -1; margin-bottom: 0; font-size: 14px; }
+    .to-send { order: -1; margin-bottom: 0; }
     
     /* Simplification de l'affichage pour le mobile */
     .timer-bar, .timer-counter, .status-label { 
@@ -624,7 +314,7 @@ SIDEBAR / PANNEAU LATÉRAL
 }
 @media (max-width: 480px) {
     .sidebar { width: 90vw; }
-    .click-button { width: min(55vw, 50vh, 180px); height: min(55vw, 50vh, 180px); }
+    .click-button { width: min(50vw, 45vh, 180px); height: min(50vw, 45vh, 180px); }
 }
     </style>
 

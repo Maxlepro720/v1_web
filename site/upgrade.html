@@ -380,6 +380,7 @@ async function upgradePersonal(boostValue, price, quantity){
 // --- FULL SYNC ---
 async function fullSync() {
     if (!PLAYER_ID) return;
+
     const sessionData = await fetchData(`/verify_session?id=${encodeURIComponent(PLAYER_ID)}`);
     if (sessionData && sessionData.session_code) {
         SESSION_CODE = sessionData.session_code;
@@ -388,24 +389,33 @@ async function fullSync() {
     }
 
     if (SESSION_CODE) {
-        const upgradesPriceData = await fetchData('/upgrades_price', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ session: SESSION_CODE })
+        const basePrices = {};
+        [...COLLECTIVE_UPGRADES, ...PERSONAL_UPGRADES].forEach(u => {
+            basePrices[u.id] = u.price;
         });
-        if(upgradesPriceData && upgradesPriceData.upgrades_price){
-            for(const upgradeName in upgradesPriceData.upgrades_price){
+
+        const upgradesPriceData = await fetchData('/upgrades_price', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ session: SESSION_CODE, base_prices: basePrices })
+        });
+
+        if (upgradesPriceData && upgradesPriceData.upgrades_price) {
+            for (const upgradeName in upgradesPriceData.upgrades_price) {
                 const elem = document.getElementById(upgradeName+'_price');
-                if(elem){
+                if (elem) {
                     const numeric = Number(upgradesPriceData.upgrades_price[upgradeName]);
                     upgradePricesNumeric[upgradeName] = numeric;
                     elem.textContent = formatNumber(numeric);
                 }
             }
             updateUpgradeButtonsState();
-        } else { console.warn("Aucune donnée upgrades_price reçue ou format incorrect"); }
+        } else {
+            console.warn("Aucune donnée upgrades_price reçue ou format incorrect");
+        }
     }
 }
+
 
 // --- INIT ---
 async function initializeApp(){

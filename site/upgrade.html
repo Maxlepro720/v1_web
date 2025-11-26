@@ -199,22 +199,22 @@ const upgradePricesNumeric = {};
 
 const COLLECTIVE_UPGRADES = [
     { id: 'upgrade1', name: 'upgrade1', label: '+0.1 par click', type: 'add', upgrade: 0.1, price: 100 },
-    { id: 'upgrade2', name: 'upgrade2', label: '+0.5 par click', type: 'add', upgrade: 0.5, price: 10000 },
-    { id: 'upgrade3', name: 'upgrade3', label: '+1.0 par click', type: 'add', upgrade: 1.0, price: 1000000 },
-    { id: 'upgrade4', name: 'upgrade4', label: 'x2 Multiplier', type: 'multiply', upgrade: 2.0, price: 50000000 },
-    { id: 'upgrade5', name: 'upgrade5', label: 'x5 Multiplier', type: 'multiply', upgrade: 5.0, price: 8000000000 },
+    { id: 'upgrade2', name: 'upgrade2', label: '+1 par click', type: 'add', upgrade: 1, price: 100 },
+    { id: 'upgrade3', name: 'upgrade3', label: '+5 par click', type: 'add', upgrade: 5, price: 1000 },
+    { id: 'upgrade4', name: 'upgrade4', label: 'x1.5 Multiplier', type: 'multiply', upgrade: 1.1, price: 10000 },
+    { id: 'upgrade5', name: 'upgrade5', label: '+10 ', type: 'multiply', upgrade: 5.0, price: 8000000000 },
     { id: 'upgrade6', name: 'upgrade6', label: '+50 By Click', type: 'add', upgrade: 50.0, price: 100000000000 },
     { id: 'upgrade7', name: 'upgrade7', label: 'x100 Multiplier', type: 'multiply', upgrade: 100.0, price: 100000000000000000 },
 ];
 
 const PERSONAL_UPGRADES = [
-    { id: 'PERSO_0_1', label: '+0.1 Perso', upgrade: 0.1, price: 20000 },
-    { id: 'PERSO_0_5', label: '+0.5 Perso', upgrade: 0.5, price: 80000 },
-    { id: 'PERSO_1_0', label: '+1.0 Perso', upgrade: 1.0, price: 150000 },
-    { id: 'PERSO_2_0', label: '+2.0 Perso', upgrade: 2.0, price: 250000 },
-    { id: 'PERSO_5_0', label: '+5.0 Perso', upgrade: 5.0, price: 500000 },
-    { id: 'PERSO_10_0', label: '+10.0 Perso', upgrade: 10.0, price: 1000000 },
-    { id: 'PERSO_50_0', label: '+50.0 Perso', upgrade: 50.0, price: 4000000 },
+    { id: 'PERSO_0_1', label: '+0.1 Perso', upgrade: 0.1, price: 200000000000 },
+    { id: 'PERSO_0_5', label: '+0.5 Perso', upgrade: 0.5, price: 800000000000 },
+    { id: 'PERSO_1_0', label: '+1.0 Perso', upgrade: 1.0, price: 1500000000000 },
+    { id: 'PERSO_2_0', label: '+2.0 Perso', upgrade: 2.0, price: 2500000000000 },
+    { id: 'PERSO_5_0', label: '+5.0 Perso', upgrade: 5.0, price: 5000000000000 },
+    { id: 'PERSO_10_0', label: '+10.0 Perso', upgrade: 10.0, price: 10000000000000 },
+    { id: 'PERSO_50_0', label: '+50.0 Perso', upgrade: 50.0, price: 400000000000000 },
 ];
 
 async function fetchData(endpoint, options={}) {

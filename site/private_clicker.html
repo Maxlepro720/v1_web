@@ -7,7 +7,8 @@
     <style>
         /* --- Styles CSS --- */
        /* ==================================================
-CLASH ROYALE STYLE CSS COMPLET
+/* ==================================================
+CLASH ROYALE STYLE CSS COMPLET (avec nouvelles images)
 ==================================================
 */
 
@@ -35,9 +36,9 @@ body {
     font-family: var(--cr-font-family); 
     /* Fond de texture de pierre/arène */
     background: var(--cr-stone-dark);
-    /* Image de fond de texture de pierre/arène - REMPLACEZ CETTE URL */
+    /* *** NOUVELLE URL DE L'IMAGE DE FOND (TEXTURE DE PIERRE) *** */
     background-image: 
-        url('https://i.imgur.com/vH9jH8A.png'), 
+        url('http://googleusercontent.com/image_collection/image_retrieval/11353838652469528070_0'), 
         linear-gradient(135deg, #263238 0%, #37474F 100%);
     background-size: cover, cover;
     background-blend-mode: multiply;
@@ -140,11 +141,11 @@ ZONE PRINCIPALE (MAIN-AREA)
     top: 50%; 
     left: 50%; 
     transform: translate(-50%, -50%); 
-    width: 95%; /* Légèrement plus grand pour couvrir */
+    width: 95%; 
     height: 95%; 
     border-radius: 50%; 
-    /* *** IMAGE DU ROI CLASH ROYAL - REMPLACEZ CETTE URL *** */
-    background-image: url('https://i.imgur.com/kS9ZtJq.png'); 
+    /* *** NOUVELLE URL DE L'IMAGE DU ROI CLASH ROYAL (PNG) *** */
+    background-image: url('http://googleusercontent.com/image_collection/image_retrieval/13817263764281147592_0'); 
     background-size: 80%; /* Ajuster la taille du Roi */
     background-repeat: no-repeat;
     background-position: center; 
@@ -192,7 +193,7 @@ ZONE PRINCIPALE (MAIN-AREA)
     left: 50%; 
     transform: translateX(-50%); 
     width: min(250px, 80%); 
-    height: 6px; /* Épaissi légèrement */
+    height: 6px; 
     background: rgba(0, 0, 0, 0.4); 
     border-radius: 3px; 
     overflow: hidden; 
@@ -244,7 +245,7 @@ SIDEBAR / PANNEAU LATÉRAL
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
     z-index: 100; 
     overflow-y: auto; 
-    border-radius: 0; /* Garder les coins droits sauf sur le bord extérieur */
+    border-radius: 0; 
 }
 
 .sidebar.hidden { 
@@ -311,7 +312,7 @@ SIDEBAR / PANNEAU LATÉRAL
     border: 2px solid var(--cr-gold-light);
     width: clamp(35px, 5vw, 40px); 
     height: clamp(35px, 5vw, 40px); 
-    border-radius: 50%; /* Rond pour une meilleure apparence */
+    border-radius: 50%; 
     cursor: pointer; 
     font-size: clamp(18px, 3vw, 24px); 
     font-weight: bold; 
@@ -540,7 +541,7 @@ SIDEBAR / PANNEAU LATÉRAL
 @media (max-width: 768px) {
     .sidebar { 
         width: 85vw; 
-        padding-top: 80px; /* Ajoute de l'espace pour les boutons de navigation */
+        padding-top: 80px; 
     }
     .main-area { 
         padding: 15px; 
@@ -548,7 +549,7 @@ SIDEBAR / PANNEAU LATÉRAL
         flex-direction: column; 
         justify-content: space-around; 
         align-items: center;
-        padding-top: 70px; /* Espace pour les boutons de nav en haut */
+        padding-top: 70px; 
         padding-bottom: 20px;
     }
     

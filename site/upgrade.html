@@ -304,17 +304,13 @@ function generateUpgradeButtons(){
     leftContainer.innerHTML = COLLECTIVE_UPGRADES.map((item,index)=>{
         upgradePricesNumeric[item.id] = item.price;
         return `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')"
-        style="${index>=MAX_VISIBLE_UPGRADES?'display:none;':''}">
-        ${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span>)
-        </button>`;
+        style="${index>=MAX_VISIBLE_UPGRADES?'display:none;':''}">${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span>)</button>`;
     }).join('');
 
     rightContainer.innerHTML = PERSONAL_UPGRADES.map((item,index)=>{
         upgradePricesNumeric[item.id] = item.price;
         return `<button class="upgrade-btn" onclick="handleUpgradeClick('${item.id}')"
-        style="${index>=MAX_VISIBLE_UPGRADES?'display:none;':''}">
-        ${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span>)
-        </button>`;
+        style="${index>=MAX_VISIBLE_UPGRADES?'display:none;':''}">${item.label} (<span id="${item.id}_price">${formatNumber(item.price)}</span>)</button>`;
     }).join('');
 
     document.getElementById('leftToggle').dataset.expanded='false';
@@ -353,7 +349,7 @@ async function updateUI(){
     updateUpgradeButtonsState();
 }
 
-// API UPGRADE
+// API
 async function upgradeSessionAdd(upgradeValue, price, quantity, upgrade_name){
     const data = await fetchData(`/upgrade_add?session=${encodeURIComponent(SESSION_CODE)}&upgrade=${upgradeValue}&price=${price}&quantity=${quantity}&upgrade_name=${upgrade_name}`);
     return !!data;
@@ -391,7 +387,7 @@ async function fullSync() {
                 }
             }
             updateUpgradeButtonsState();
-        } else { console.warn("Aucune donnée upgrades_price reçue ou format incorrect"); }
+        }
     }
 }
 
@@ -417,6 +413,7 @@ async function initializeApp(){
 
 initializeApp();
 </script>
+
 
 
 </body>

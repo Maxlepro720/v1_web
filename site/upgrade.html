@@ -198,13 +198,32 @@ const BATCHING_DELAY = 1000, MAX_VISIBLE_UPGRADES = 4;
 const upgradePricesNumeric = {};
 
 const COLLECTIVE_UPGRADES = [
-    { id: 'upgrade1', name: 'upgrade1', label: 'ESPRIT  |  +0.1 par click', type: 'add', upgrade: 0.1, price: 100 },
-    { id: 'upgrade2', name: 'upgrade2', label: 'SQUELETTE  |  +1 par click', type: 'add', upgrade: 1, price: 100 },
-    { id: 'upgrade3', name: 'upgrade3', label: 'GOBELIN  |  +5 par click', type: 'add', upgrade: 5, price: 1000 },
-    { id: 'upgrade4', name: 'upgrade4', label: 'RAGE  |  x1.1 Multiplier', type: 'multiply', upgrade: 1.1, price: 10000 },
-    { id: 'upgrade5', name: 'upgrade5', label: 'ICE GOLEM  |  +15 par click ', type: 'add', upgrade: 15, price: 25000 },
-    { id: 'upgrade6', name: 'upgrade6', label: '+50 By Click', type: 'add', upgrade: 50.0, price: 100000000000 },
-    { id: 'upgrade7', name: 'upgrade7', label: 'x100 Multiplier', type: 'multiply', upgrade: 100.0, price: 100000000000000000 },
+    { id: 'upgrade1', name: 'upgrade1', label: 'SQUELETTE  |  +0.1 par click', type: 'add', upgrade: 0.1, price: 10 },//10
+    { id: 'upgrade2', name: 'upgrade2', label: 'FIRE SPIRIT  |  +1 par click', type: 'add', upgrade: 1.0, price: 100 },//100
+    { id: 'upgrade3', name: 'upgrade3', label: 'E-SPIRIT  |  +5 par click', type: 'add', upgrade: 5.0, price: 1000 },//mille
+    { id: 'upgrade4', name: 'upgrade4', label: 'ICE SPIRIT  |  +10 par click', type: 'add', upgrade: 10.0, price: 2500 },//2,5k
+    { id: 'upgrade5', name: 'upgrade5', label: 'HEALING SPIRIT  |  +15 par click ', type: 'add', upgrade: 15.0, price: 25000 },//25k
+    { id: 'upgrade6', name: 'upgrade6', label: 'GOBLIN LANCE  |  +50 par click', type: 'add', upgrade: 50.0, price: 150000 },//150k
+    { id: 'upgrade7', name: 'upgrade7', label: 'BOMBARDIER  |  +100 par click', type: 'add', upgrade: 100.0, price:450000 },//450k
+    { id: 'upgrade8', name: 'upgrade7', label: 'CHAUVE SOURIS  |  +500 par click', type: 'add', upgrade: 500.0, price:1000000 },//1m
+    { id: 'upgrade9', name: 'upgrade7', label: 'ZAP  |  x1,1 multiplier', type: 'multiply', upgrade: 1.1, price:10000000 },//10m
+    { id: 'upgrade10', name: 'upgrade7', label: 'ICE GOLEM  |  +10k par click', type: 'add', upgrade: 10000.0, price:500000 },//25m
+    { id: 'upgrade11', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade12', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade13', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade14', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade15', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade16', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade17', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade18', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade19', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade20', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade21', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade22', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade23', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade24', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade25', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
+    { id: 'upgrade26', name: 'upgrade7', label: 'GARGOUILLE  |  +100 par click', type: 'multiply', upgrade: 100.0, price:500000 },
 ];
 
 const PERSONAL_UPGRADES = [

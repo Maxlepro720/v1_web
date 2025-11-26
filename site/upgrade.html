@@ -203,8 +203,8 @@ const COLLECTIVE_UPGRADES = [
     { id: 'upgrade3', name: 'upgrade3', label: '+1.0 par click', type: 'add', upgrade: 1.0, price: 1000000 },
     { id: 'upgrade4', name: 'upgrade4', label: 'x2 Multiplier', type: 'multiply', upgrade: 2.0, price: 50000000 },
     { id: 'upgrade5', name: 'upgrade5', label: 'x5 Multiplier', type: 'multiply', upgrade: 5.0, price: 8000000000 },
-    { id: 'upgrade6', name: 'upgrade6', label: '+500000000.0 By Click', type: 'add', upgrade: 50.0, price: 100000000000 },
-    { id: 'upgrade7', name: 'upgrade7', label: 'x100.0 Multiplier', type: 'multiply', upgrade: 2.0, price: 100000000000000000 },
+    { id: 'upgrade6', name: 'upgrade6', label: '+50 By Click', type: 'add', upgrade: 50.0, price: 100000000000 },
+    { id: 'upgrade7', name: 'upgrade7', label: 'x100 Multiplier', type: 'multiply', upgrade: 100.0, price: 100000000000000000 },
 ];
 
 const PERSONAL_UPGRADES = [
@@ -349,23 +349,35 @@ async function updateUI(){
     updateUpgradeButtonsState();
 }
 
-// API
+// --- API POST CORRECTED ---
 async function upgradeSessionAdd(upgradeValue, price, quantity, upgrade_name){
-    const data = await fetchData(`/upgrade_add?session=${encodeURIComponent(SESSION_CODE)}&upgrade=${upgradeValue}&price=${price}&quantity=${quantity}&upgrade_name=${upgrade_name}`);
+    const data = await fetchData('/upgrade_add', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ session: SESSION_CODE, upgrade: upgradeValue, price, quantity, upgrade_name })
+    });
     return !!data;
 }
 
 async function upgradeSessionMultiply(upgradeMultiplier, price, quantity, upgrade_name){
-    const data = await fetchData(`/upgrade_multiply?session=${encodeURIComponent(SESSION_CODE)}&upgrade=${upgradeMultiplier}&price=${price}&quantity=${quantity}&upgrade_name=${upgrade_name}`);
+    const data = await fetchData('/upgrade_multiply', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ session: SESSION_CODE, upgrade: upgradeMultiplier, price, quantity, upgrade_name })
+    });
     return !!data;
 }
 
 async function upgradePersonal(boostValue, price, quantity){
-    const data = await fetchData(`/personnel_boost?id=${encodeURIComponent(PLAYER_ID)}&boost=${boostValue}&price=${price}&quantity=${quantity}`);
+    const data = await fetchData('/personnel_boost', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ id: PLAYER_ID, boost: boostValue, price, quantity })
+    });
     return !!data;
 }
 
-// FULL SYNC
+// --- FULL SYNC ---
 async function fullSync() {
     if (!PLAYER_ID) return;
     const sessionData = await fetchData(`/verify_session?id=${encodeURIComponent(PLAYER_ID)}`);
@@ -376,7 +388,11 @@ async function fullSync() {
     }
 
     if (SESSION_CODE) {
-        const upgradesPriceData = await fetchData(`/upgrades_price?session=${encodeURIComponent(SESSION_CODE)}`);
+        const upgradesPriceData = await fetchData('/upgrades_price', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ session: SESSION_CODE })
+        });
         if(upgradesPriceData && upgradesPriceData.upgrades_price){
             for(const upgradeName in upgradesPriceData.upgrades_price){
                 const elem = document.getElementById(upgradeName+'_price');
@@ -387,11 +403,11 @@ async function fullSync() {
                 }
             }
             updateUpgradeButtonsState();
-        }
+        } else { console.warn("Aucune donnée upgrades_price reçue ou format incorrect"); }
     }
 }
 
-// INIT
+// --- INIT ---
 async function initializeApp(){
     generateUpgradeButtons();
     const initialized = await initUserData();

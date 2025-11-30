@@ -3,28 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Connexion</title>
+<title>Connexion Glass</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;}
-body,html{height:100%;display:flex;justify-content:center;align-items:center;background:#121212;}
-.container{background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);border-radius:20px;padding:40px 30px;width:100%;max-width:400px;box-shadow:0 10px 40px rgba(0,0,0,0.5);text-align:center;transition:transform 0.3s;}
+body,html{height:100%;display:flex;justify-content:center;align-items:center;background:#0b0c10;}
+.container{background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);border-radius:25px;padding:40px 35px;width:100%;max-width:420px;box-shadow:0 15px 40px rgba(0,0,0,0.6);text-align:center;transition:transform 0.3s ease;}
 .container:hover{transform:translateY(-5px);}
-.logo{font-size:50px;margin-bottom:20px;color:#00bfff;transition:0.3s;}
+.logo{font-size:55px;margin-bottom:25px;color:#00bfff;transition:0.3s;}
 .logo:hover{color:#1de9b6;}
-h1{color:#fff;font-size:26px;margin-bottom:10px;}
-p.subtitle{color:#aaa;margin-bottom:25px;font-size:14px;}
-.field{display:flex;align-items:center;margin-bottom:15px;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border-radius:12px;padding:12px;transition:all 0.2s;}
-.field:hover{background:rgba(255,255,255,0.15);}
-.field i{margin-right:10px;color:#888;font-size:18px;}
-.field input{background:transparent;border:none;outline:none;color:#fff;flex:1;font-size:14px;padding:10px;}
-.field input:focus{border-bottom:2px solid #00bfff;}
-.toggle-password{cursor:pointer;margin-left:5px;font-size:18px;color:#888;}
+h1{color:#fff;font-size:26px;margin-bottom:12px;}
+p.subtitle{color:#aaa;margin-bottom:30px;font-size:14px;}
+.field{display:flex;align-items:center;margin-bottom:18px;background:rgba(255,255,255,0.08);backdrop-filter:blur(15px);border-radius:15px;padding:14px 12px;transition:all 0.3s ease;box-shadow:0 0 10px rgba(0,0,0,0.3);}
+.field:hover{background:rgba(255,255,255,0.12);box-shadow:0 0 15px rgba(0,191,255,0.2);}
+.field i{margin-right:12px;color:#888;font-size:18px;}
+.field input{background:transparent;border:none;outline:none;color:#fff;flex:1;font-size:15px;padding:10px;border-radius:12px;transition:all 0.3s ease;}
+.field input:focus{background:rgba(255,255,255,0.15);box-shadow:0 0 10px #00bfff88;backdrop-filter:blur(20px);}
+.toggle-password{cursor:pointer;margin-left:8px;font-size:18px;color:#888;transition:0.3s;}
 .toggle-password:hover{color:#00bfff;}
-.btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer;margin-bottom:15px;transition:all 0.3s;}
-.btn-login{background:#00bfff;color:#fff;}
-.btn-login:hover{background:#009acd;box-shadow:0 0 15px #00bfff88;}
-.switch-mode{background:transparent;border:2px solid #444;color:#00bfff;border-radius:12px;padding:12px;cursor:pointer;width:100%;font-weight:bold;font-size:14px;transition:all 0.3s;}
-.switch-mode:hover{background:rgba(0,191,255,0.1);box-shadow:0 0 12px #00bfff66;}
+.btn{width:100%;padding:14px;border:none;border-radius:18px;font-size:16px;font-weight:bold;cursor:pointer;margin-bottom:15px;transition:all 0.3s ease;backdrop-filter:blur(10px);}
+.btn-login{background:rgba(0,191,255,0.8);color:#fff;box-shadow:0 5px 20px rgba(0,191,255,0.4);}
+.btn-login:hover{background:rgba(0,191,255,1);box-shadow:0 0 25px #00bfff88;transform:translateY(-2px);}
+.switch-mode{background:transparent;border:2px solid #444;color:#00bfff;border-radius:18px;padding:14px;cursor:pointer;width:100%;font-weight:bold;font-size:14px;transition:all 0.3s;}
+.switch-mode:hover{background:rgba(0,191,255,0.1);box-shadow:0 0 15px #00bfff66;}
 .separator{display:flex;align-items:center;text-align:center;margin:15px 0;}
 .separator::before,.separator::after{content:"";flex:1;height:1px;background:#333;}
 .separator::before{margin-right:10px;}

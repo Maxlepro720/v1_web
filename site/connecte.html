@@ -4,146 +4,110 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Connexion</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 <style>
-/* --- Ton CSS existant --- */
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-body, html { height: 100%; background: #13131b; display: flex; justify-content: center; align-items: center; padding: 10px; }
-.container { background: #13131b; border-radius: 20px; padding: 30px 20px; width: 100%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.5); text-align: center; transition: all 0.3s ease; }
-.logo { font-size: 50px; margin-bottom: 10px; cursor: grab; }
-h1 { color: #fff; font-size: 24px; margin-bottom: 8px; word-break: break-word; }
-p.subtitle { color: #888899; margin-bottom: 20px; font-size: 14px; }
-.field { display: flex; align-items: center; margin-bottom: 12px; background: #1e1e2e; border: 2px solid #2d2d45; border-radius: 10px; padding: 5px 10px; transition: all 0.2s ease; }
-.field i { margin-right: 10px; color: #888899; font-size: 18px; }
-.field input { background: transparent; border: none; outline: none; color: #fff; flex: 1; font-size: 14px; padding: 10px; }
-.toggle-password { cursor: pointer; margin-left: 5px; font-size: 18px; color: #888899; }
-.btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 12px; transition: all 0.2s ease; }
-.btn-login { background: #4a9eff; color: #fff; }
-.btn-login:hover { background: #3d85e6; }
-.switch-mode { background: transparent; border: 2px solid #2d2d45; color: #4a9eff; border-radius: 12px; padding: 12px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px; transition: all 0.2s ease; }
-.switch-mode:hover { background: #1e1e2e; }
-.separator { display: flex; align-items: center; text-align: center; margin: 10px 0 15px 0; }
-.separator::before, .separator::after { content: ""; flex: 1; height: 1px; background: #2d2d45; }
-.separator::before { margin-right: 10px; }
-.separator::after { margin-left: 10px; }
-.separator span { color: #666677; font-size: 12px; }
-#statusLabel { min-height: 20px; margin-bottom: 10px; font-size: 14px; font-weight: bold; transition: all 0.2s ease; }
-.loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; z-index: 9999; flex-direction: column; color: #fff; font-size: 16px; padding: 20px; text-align: center; }
-.spinner { width: 60px; height: 60px; border: 6px solid #2d2d40; border-top: 6px solid #4a9eff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+* {box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;}
+body, html {height:100%;background:#0f1419;display:flex;justify-content:center;align-items:center;padding:10px;scroll-behavior:smooth;}
+.container {background:rgba(20,20,30,0.8);backdrop-filter:blur(20px);border-radius:20px;padding:30px 25px;width:100%;max-width:400px;box-shadow:0 10px 30px rgba(0,0,0,0.7);text-align:center;transition:transform 0.3s,box-shadow 0.3s;}
+.container:hover {transform:translateY(-5px);box-shadow:0 15px 40px rgba(0,191,255,0.4);}
+.logo {font-size:50px;margin-bottom:10px;cursor:grab;transition:0.3s;color:#00bfff;}
+.logo:hover {color:#00e6ff;}
+h1 {color:#fff;font-size:24px;margin-bottom:8px;word-break:break-word;}
+p.subtitle {color:#888899;margin-bottom:20px;font-size:14px;}
+.field {display:flex;align-items:center;margin-bottom:12px;background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border-radius:12px;padding:10px;transition:all 0.2s;}
+.field:hover {background:rgba(0,191,255,0.1);}
+.field i {margin-right:10px;color:#888899;font-size:18px;}
+.field input {background:transparent;border:none;outline:none;color:#fff;flex:1;font-size:14px;padding:10px;}
+.toggle-password {cursor:pointer;margin-left:5px;font-size:18px;color:#888899;transition:0.2s;}
+.toggle-password:hover {color:#00bfff;}
+.btn {width:100%;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer;margin-bottom:12px;transition:all 0.2s ease;}
+.btn-login {background:#00bfff;color:#fff;}
+.btn-login:hover {background:#009acd;box-shadow:0 0 15px #00bfff88;}
+.switch-mode {background:transparent;border:2px solid #2d2d45;color:#00bfff;border-radius:12px;padding:12px;cursor:pointer;width:100%;font-weight:bold;font-size:14px;transition:all 0.2s;}
+.switch-mode:hover {background:rgba(0,191,255,0.1);}
+.separator {display:flex;align-items:center;text-align:center;margin:10px 0 15px 0;}
+.separator::before, .separator::after {content:"";flex:1;height:1px;background:#2d2d45;}
+.separator::before {margin-right:10px;}
+.separator::after {margin-left:10px;}
+.separator span {color:#666677;font-size:12px;}
+#statusLabel {min-height:20px;margin-bottom:10px;font-size:14px;font-weight:bold;transition:all 0.2s ease;}
+.loading-overlay {position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:9999;flex-direction:column;color:#fff;font-size:16px;padding:20px;text-align:center;}
+.spinner {width:60px;height:60px;border:6px solid #2d2d40;border-top:6px solid #00bfff;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:15px;}
+@keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
 
 <div class="loading-overlay" id="loadingScreen" style="display:none;">
-    <div class="spinner"></div>
-    <div>Connexion au serveur...</div>
+    <div class="spinner"></div>
+    <div>Connexion au serveur...</div>
 </div>
 
 <div class="container" id="authContainer">
-    <div class="logo">🎮</div>
+    <div class="logo">🎮</div>
 
-    <h1 id="title">Se connecter</h1>
-    <p class="subtitle" id="subtitle">Accédez à votre espace de jeu</p>
+    <h1 id="title">Se connecter</h1>
+    <p class="subtitle" id="subtitle">Accédez à votre espace de jeu</p>
 
-    <div class="field">
-        <i>👤</i>
-        <input type="text" id="username" placeholder="Nom d'utilisateur">
-    </div>
+    <div class="field">
+        <i>👤</i>
+        <input type="text" id="username" placeholder="Nom d'utilisateur">
+    </div>
 
-    <div class="field">
-        <i>🔒</i>
-        <input type="password" id="password" placeholder="Mot de passe">
-        <span class="toggle-password" id="togglePassword">👁</span>
-    </div>
+    <div class="field">
+        <i>🔒</i>
+        <input type="password" id="password" placeholder="Mot de passe">
+        <span class="toggle-password" id="togglePassword">👁</span>
+    </div>
 
-    <button class="btn btn-login" id="submitBtn">Se connecter</button>
+    <button class="btn btn-login" id="submitBtn">Se connecter</button>
 
-        <div id="statusLabel"></div>
+    <div id="statusLabel"></div>
 
-    <div class="separator"><span>ou</span></div>
+    <div class="separator"><span>ou</span></div>
 
-    <button class="switch-mode" id="switchBtn">Créer un compte</button>
+    <button class="switch-mode" id="switchBtn">Créer un compte</button>
 </div>
 
 <script>
-const switchBtn = document.getElementById('switchBtn');
-const title = document.getElementById('title');
-const subtitle = document.getElementById('subtitle');
-const submitBtn = document.getElementById('submitBtn');
-const passwordInput = document.getElementById('password'); // Nouveau
-const togglePassword = document.getElementById('togglePassword'); // Nouveau
+const switchBtn=document.getElementById('switchBtn');
+const title=document.getElementById('title');
+const subtitle=document.getElementById('subtitle');
+const submitBtn=document.getElementById('submitBtn');
+const passwordInput=document.getElementById('password');
+const togglePassword=document.getElementById('togglePassword');
+let isLoginMode=true;
 
-let isLoginMode = true;
-
-// 🔹 Toggle entre login et signup
-switchBtn.addEventListener('click', () => {
-    isLoginMode = !isLoginMode;
-    if (isLoginMode) {
-        title.textContent = "Se connecter";
-        subtitle.textContent = "Accédez à votre espace de jeu";
-        submitBtn.textContent = "Se connecter";
-        switchBtn.textContent = "Créer un compte";
-    } else {
-        title.textContent = "Créer un compte";
-        subtitle.textContent = "Inscrivez-vous pour commencer à jouer";
-        submitBtn.textContent = "S'inscrire";
-        switchBtn.textContent = "Se connecter";
-    }
+switchBtn.addEventListener('click',()=>{
+    isLoginMode=!isLoginMode;
+    if(isLoginMode){title.textContent="Se connecter";subtitle.textContent="Accédez à votre espace de jeu";submitBtn.textContent="Se connecter";switchBtn.textContent="Créer un compte";}
+    else{title.textContent="Créer un compte";subtitle.textContent="Inscrivez-vous pour commencer à jouer";submitBtn.textContent="S'inscrire";switchBtn.textContent="Se connecter";}
 });
 
-// 🔹 Toggle Afficher/Masquer le Mot de Passe (NOUVEAU CODE)
-togglePassword.addEventListener('click', () => {
-    // 1. Détermine le nouveau type (text si c'est password, et vice-versa)
-    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-    
-    // 2. Applique le nouveau type à l'input
-    passwordInput.setAttribute('type', type);
-    
-    // 3. Change l'icône de l'œil
-    togglePassword.textContent = type === 'text' ? '🙈' : '👁'; 
+togglePassword.addEventListener('click',()=>{
+    const type=passwordInput.getAttribute('type')==='password'?'text':'password';
+    passwordInput.setAttribute('type',type);
+    togglePassword.textContent=type==='text'?'🙈':'👁';
 });
 
-
-// 🔹 Fonction login/signup
-submitBtn.addEventListener('click', async () => {
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value.trim();
-
-    if (!username || !password) {
-        alert("Veuillez remplir tous les champs !");
-        return;
-    }
-
-    const data = { id: username, password };
-    const url = isLoginMode 
-        ? "https://project-3-api-2bgb.onrender.com/login" 
-        : "https://project-3-api-2bgb.onrender.com/signup"; 
-
-    try {
-        document.getElementById('loadingScreen').style.display = 'flex';
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        const result = await response.json();
-        document.getElementById('loadingScreen').style.display = 'none';
-
-        if (result.status === "success") {
-            // Stockage du username dans localStorage
-            localStorage.setItem("username", username);
-            alert(isLoginMode ? "Connexion réussie !" : "Compte créé avec succès !");
-
-            // Redirection vers menu.html
-            window.location.href = "menu.html";
-        } else {
-            alert(result.message || (isLoginMode ? "ID ou mot de passe incorrect" : "Impossible de créer le compte"));
-        }
-    } catch(err) {
-        document.getElementById('loadingScreen').style.display = 'none';
-        alert("Erreur réseau : " + err);
-    }
+submitBtn.addEventListener('click',async()=>{
+    const username=document.getElementById('username').value.trim();
+    const password=document.getElementById('password').value.trim();
+    if(!username||!password){alert("Veuillez remplir tous les champs !");return;}
+    const data={id:username,password};
+    const url=isLoginMode?"https://project-3-api-2bgb.onrender.com/login":"https://project-3-api-2bgb.onrender.com/signup";
+    try{
+        document.getElementById('loadingScreen').style.display='flex';
+        const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+        const result=await response.json();
+        document.getElementById('loadingScreen').style.display='none';
+        if(result.status==="success"){localStorage.setItem("username",username);alert(isLoginMode?"Connexion réussie !":"Compte créé avec succès !");window.location.href="menu.html";}
+        else{alert(result.message||(isLoginMode?"ID ou mot de passe incorrect":"Impossible de créer le compte"));}
+    }catch(err){document.getElementById('loadingScreen').style.display='none';alert("Erreur réseau : "+err);}
 });
+
+// Anime.js: effet d'entrée
+anime({targets:'.container',opacity:[0,1],translateY:[30,0],duration:700,easing:'easeOutQuad'});
 </script>
 
 </body>

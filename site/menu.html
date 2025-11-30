@@ -6,55 +6,45 @@
 <title>Launcher - Glass Cards + Sidebar</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 <style>
-* {box-sizing:border-box;margin:0;padding:0;}
-body {font-family:'Segoe UI',Arial,sans-serif;background:#0f1419;color:#eee;scroll-behavior:smooth;overflow-x:hidden;}
-
-/* ================= HEADER / NAV ================= */
-header {position:sticky;top:0;background:rgba(15,20,25,0.6);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-between;padding:15px 30px;box-shadow:0 4px 20px rgba(0,0,0,0.6);border-radius:0 0 20px 20px;z-index:10;}
-header h1 {font-size:28px;color:#fff;font-weight:700;letter-spacing:1px;transition:0.3s;}
-header h1:hover {color:#00bfff;}
-#main-nav {display:flex;align-items:center;gap:15px;background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);padding:10px 20px;border-radius:20px;}
-#main-nav button {background:transparent;color:#fff;border:none;padding:10px 18px;border-radius:15px;font-weight:600;cursor:pointer;transition:0.3s;font-size:16px;position:relative;overflow:hidden;}
-#main-nav button::after {content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,191,255,0.2);opacity:0;transition:0.3s;border-radius:15px;}
-#main-nav button:hover::after {opacity:1;}
-#main-nav button:hover {transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,191,255,0.3);}
-#search_bar {padding:10px 18px;border-radius:15px;border:none;background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);outline:none;color:#eee;transition:0.3s;min-width:180px;}
-#search_bar:focus {background:rgba(0,191,255,0.1);box-shadow:0 0 10px #00bfff66;}
-#logout-button {background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);color:#ff4d6d;border:2px solid #ff4d6d;padding:10px 18px;border-radius:15px;font-weight:bold;cursor:pointer;transition:0.3s;}
-#logout-button:hover {background:#ff4d6d;color:#fff;box-shadow:0 0 18px #ff4d6d88;transform:translateY(-2px);}
-
-/* ================= SECTION ================= */
-.section-title {font-size:28px;margin:30px 25px 15px 25px;color:#fff;font-weight:700;}
-
-/* ================= GRID / CARDS ================= */
-.game-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;padding:0 30px 50px 30px;}
-.card {position:relative;background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);border-radius:20px;overflow:hidden;cursor:pointer;transition:transform 0.3s,box-shadow 0.3s;box-shadow:0 5px 20px rgba(0,0,0,0.4);}
-.card::before {content:"";position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(120deg,rgba(255,255,255,0.1),rgba(255,255,255,0.3),rgba(255,255,255,0.1));transform:skewX(-20deg);transition:0.5s;}
-.card:hover::before {animation:shimmer 1s forwards;}
-@keyframes shimmer {0%{left:-100%;}100%{left:200%;}}
-.card:hover {transform:translateY(-8px);box-shadow:0 15px 30px rgba(0,191,255,0.3);}
-.card-image {height:180px;display:flex;align-items:center;justify-content:center;font-size:50px;color:#fff;transition:all 0.3s;}
-.card-info {padding:15px;}
-.card-title {font-size:18px;font-weight:600;margin:0;color:#fff;}
-.card-genre {font-size:14px;opacity:0.6;margin-top:6px;margin-bottom:12px;}
-.card button {width:100%;background:#00bfff;border:none;padding:12px;color:#fff;font-size:15px;border-radius:12px;cursor:pointer;transition:0.2s;}
-.card button:hover {background:#009acd;}
-.card button:disabled {background:#555;cursor:not-allowed;}
-
-/* ================= SIDEBAR ================= */
-#sidebar {position:fixed;top:0;right:-320px;width:320px;height:100%;background:rgba(20,20,30,0.9);backdrop-filter:blur(20px);box-shadow:-5px 0 30px rgba(0,0,0,0.7);transition:right 0.4s ease;z-index:50;padding:20px;display:flex;flex-direction:column;}
-#sidebar h2 {color:#00bfff;margin-bottom:20px;}
-#sidebar button.close-sidebar {background:#ff4d6d;color:#fff;border:none;padding:10px 18px;border-radius:12px;cursor:pointer;align-self:flex-end;transition:0.3s;}
-#sidebar button.close-sidebar:hover {background:#ff1a3c;box-shadow:0 0 15px #ff4d6d88;}
-
-/* ================= EFFECT ================= */
-.sidebar-open {right:0 !important;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0f1419;color:#eee;scroll-behavior:smooth;overflow-x:hidden;}
+header{position:sticky;top:0;background:rgba(15,20,25,0.6);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-between;padding:15px 30px;box-shadow:0 4px 20px rgba(0,0,0,0.6);border-radius:0 0 20px 20px;z-index:10;}
+header h1{font-size:28px;color:#fff;font-weight:700;letter-spacing:1px;transition:0.3s;}
+header h1:hover{color:#00bfff;}
+#main-nav{display:flex;align-items:center;gap:15px;background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);padding:10px 20px;border-radius:20px;}
+#main-nav button{background:transparent;color:#fff;border:none;padding:10px 18px;border-radius:15px;font-weight:600;cursor:pointer;transition:0.3s;font-size:16px;position:relative;overflow:hidden;}
+#main-nav button::after{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,191,255,0.2);opacity:0;transition:0.3s;border-radius:15px;}
+#main-nav button:hover::after{opacity:1;}
+#main-nav button:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,191,255,0.3);}
+#search_bar{padding:10px 18px;border-radius:15px;border:none;background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);outline:none;color:#eee;transition:0.3s;min-width:180px;}
+#search_bar:focus{background:rgba(0,191,255,0.1);box-shadow:0 0 10px #00bfff66;}
+#logout-button{background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);color:#ff4d6d;border:2px solid #ff4d6d;padding:10px 18px;border-radius:15px;font-weight:bold;cursor:pointer;transition:0.3s;}
+#logout-button:hover{background:#ff4d6d;color:#fff;box-shadow:0 0 18px #ff4d6d88;transform:translateY(-2px);}
+.section-title{font-size:28px;margin:30px 25px 15px 25px;color:#fff;font-weight:700;}
+.game-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;padding:0 30px 50px 30px;}
+.card{position:relative;background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);border-radius:20px;overflow:hidden;cursor:pointer;transition:transform 0.3s,box-shadow 0.3s;box-shadow:0 5px 20px rgba(0,0,0,0.4);}
+.card::before{content:"";position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(120deg,rgba(255,255,255,0.1),rgba(255,255,255,0.3),rgba(255,255,255,0.1));transform:skewX(-20deg);transition:0.5s;}
+.card:hover::before{animation:shimmer 1s forwards;}
+@keyframes shimmer{0%{left:-100%;}100%{left:200%;}}
+.card:hover{transform:translateY(-8px);box-shadow:0 15px 30px rgba(0,191,255,0.3);}
+.card-image{height:180px;display:flex;align-items:center;justify-content:center;font-size:50px;color:#fff;transition:all 0.3s;}
+.card-info{padding:15px;}
+.card-title{font-size:18px;font-weight:600;margin:0;color:#fff;}
+.card-genre{font-size:14px;opacity:0.6;margin-top:6px;margin-bottom:12px;}
+.card button{width:100%;background:#00bfff;border:none;padding:12px;color:#fff;font-size:15px;border-radius:12px;cursor:pointer;transition:0.2s;}
+.card button:hover{background:#009acd;}
+.card button:disabled{background:#555;cursor:not-allowed;}
+#sidebar{position:fixed;top:0;right:-320px;width:320px;height:100%;background:rgba(20,20,30,0.9);backdrop-filter:blur(20px);box-shadow:-5px 0 30px rgba(0,0,0,0.7);transition:right 0.4s ease;z-index:50;padding:20px;display:flex;flex-direction:column;}
+#sidebar h2{color:#00bfff;margin-bottom:20px;}
+#sidebar button.close-sidebar{background:#ff4d6d;color:#fff;border:none;padding:10px 18px;border-radius:12px;cursor:pointer;align-self:flex-end;transition:0.3s;}
+#sidebar button.close-sidebar:hover{background:#ff1a3c;box-shadow:0 0 15px #ff4d6d88;}
+.sidebar-open{right:0 !important;}
 </style>
 </head>
 <body>
 
 <header>
-<h1>🎮 Accueil</h1>
+<h1 id="welcomeTitle">🎮 Accueil</h1>
 <nav id="main-nav">
 <button>📚 Bibliothèque</button>
 <input id="search_bar" placeholder="🔍 Rechercher un jeu...">
@@ -85,6 +75,9 @@ const games=[
 ];
 
 const username=localStorage.getItem("username");
+const welcomeTitle=document.getElementById("welcomeTitle");
+if(username){welcomeTitle.textContent=`🎮 ${username}`;}
+
 let isLoggingOut=false;
 
 async function handleLogoutAndRedirect(){
@@ -121,7 +114,6 @@ card.innerHTML=`
 </div>`;
 grid.appendChild(card);
 });
-
 anime({targets:'.card',opacity:[0,1],translateY:[30,0],delay:anime.stagger(100),duration:600,easing:'easeOutQuad'});
 }
 
@@ -132,10 +124,9 @@ const text=searchBar.value.toLowerCase();
 displayGames(games.filter(g=>g.title.toLowerCase().startsWith(text)));
 });
 
-/* ================= SIDEBAR ================= */
+/* SIDEBAR */
 const sidebar=document.getElementById("sidebar");
 const friendsButton=document.getElementById("friends-button");
-
 function toggleSidebar(){sidebar.classList.toggle('sidebar-open');}
 friendsButton.addEventListener('click',toggleSidebar);
 </script>

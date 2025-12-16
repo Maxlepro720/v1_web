@@ -113,16 +113,12 @@ h2 { font-size: 32px; color: var(--accent-neon); margin-bottom: 20px; }
     display:flex; justify-content:space-between; align-items:center; padding:12px;
     cursor: pointer;
 }
+/* Amélioration du style de survol pour plus d'effet */
 #shop .up:hover {
-    background: rgba(0, 255, 136, 0.15);
+    background: rgba(0, 255, 136, 0.25); /* Plus intense */
     border-color: var(--accent-neon); 
-    box-shadow: 0 0 15px var(--accent-neon), inset 0 0 8px var(--accent-shop); 
-    transform: scale(1.02); 
-}
-#shop .up span.cost {
-    color: var(--accent-shop);
-    font-size: 20px;
-    font-family: 'Orbitron';
+    box-shadow: 0 0 20px var(--accent-neon), inset 0 0 10px var(--accent-shop); /* Glow plus fort */
+    transform: scale(1.03) translateY(-2px); /* Effet plus visible */
 }
 
 /* HUD */
@@ -177,9 +173,44 @@ h2 { font-size: 32px; color: var(--accent-neon); margin-bottom: 20px; }
 }
 .board-table td {
     font-size: 18px;
+    color: #fff; /* Couleur de base pour les non-classés */
 }
 .board-table tr:last-child td {
     border-bottom: none;
+}
+
+/* NOUVEAUX STYLES TOP 3 LEADERBOARD */
+.board-table tr.gold {
+    background: rgba(255, 215, 0, 0.1); /* Or clair */
+    border-top: 2px solid var(--secondary);
+    border-bottom: 2px solid var(--secondary);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+.board-table tr.gold td {
+    color: var(--secondary) !important;
+    font-size: 20px;
+    font-weight: 800;
+    text-shadow: 0 0 8px var(--secondary);
+}
+.board-table tr.silver {
+    background: rgba(192, 192, 192, 0.1); /* Argent */
+    border-top: 1px solid #c0c0c0;
+    border-bottom: 1px solid #c0c0c0;
+    box-shadow: 0 0 10px rgba(192, 192, 192, 0.3);
+}
+.board-table tr.silver td {
+    color: #c0c0c0 !important;
+    font-weight: 600;
+}
+.board-table tr.bronze {
+    background: rgba(205, 127, 50, 0.1); /* Bronze */
+    border-top: 1px solid #cd7f32;
+    border-bottom: 1px solid #cd7f32;
+    box-shadow: 0 0 8px rgba(205, 127, 50, 0.3);
+}
+.board-table tr.bronze td {
+    color: #cd7f32 !important;
+    font-weight: 600;
 }
 </style>
 </head>
@@ -200,6 +231,9 @@ h2 { font-size: 32px; color: var(--accent-neon); margin-bottom: 20px; }
   <button class="btn" onclick="startGame()">⚔️ Lancer l'Arène</button>
   <button class="btn leaderboard" onclick="openLeaderboard()">🏆 Leaderboard</button>
   <button class="btn secondary" onclick="openShop()">⚙️ Améliorations</button>
+  <a href="site\menu.html" class="btn secondary" style="text-decoration: none; display: flex; justify-content: center; align-items: center;">
+      🔙 Retour Choix Jeu
+  </a>
   <p style="font-size:12px; color:#555; margin-top:15px; font-style:italic;" id="saveStatus">Sauvegarde locale chargée.</p>
  </div>
 </div>
@@ -214,7 +248,7 @@ h2 { font-size: 32px; color: var(--accent-neon); margin-bottom: 20px; }
     <tbody id="leaderboardBody">
       </tbody>
   </table>
-  <button class="btn secondary" style="margin-top:20px" onclick="closeLeaderboard()">Retour au Menu</button>
+  <button class="btn secondary" onclick="closeLeaderboard()">Retour au Menu</button>
  </div>
 </div>
 
@@ -679,6 +713,7 @@ function closeLeaderboard() {
     startMenuMusic();
 }
 
+// FONCTION MODIFIÉE : Ajout des classes gold, silver, bronze
 function renderLeaderboard() {
     const tbody = document.getElementById('leaderboardBody');
     tbody.innerHTML = '';
@@ -690,10 +725,24 @@ function renderLeaderboard() {
         const isPlayer = entry.name.toLowerCase() === username.toLowerCase(); // Vérification insensible à la casse
         
         const row = document.createElement('tr');
+        
+        let rankClass = '';
+        // Attribution des classes Or, Argent, Bronze
+        if (i === 0) rankClass = 'gold';
+        else if (i === 1) rankClass = 'silver';
+        else if (i === 2) rankClass = 'bronze';
+        
+        row.className = rankClass;
+
+        // Si le joueur est dans le top 3, les couleurs CSS prendront le dessus.
+        // Sinon, on applique la couleur du joueur ou la couleur par défaut.
+        const nameColor = isPlayer && !rankClass ? 'var(--primary)' : ''; 
+        const waveColor = isPlayer && !rankClass ? 'var(--accent-shop)' : '';
+        
         row.innerHTML = `
             <td style="font-weight:bold;">${i + 1}</td>
-            <td style="color:${isPlayer?'var(--primary)':''};">${entry.name}</td>
-            <td style="color:${isPlayer?'var(--accent-shop)':''};">${entry.wave}</td>
+            <td style="color:${nameColor};">${entry.name}</td>
+            <td style="color:${waveColor};">${entry.wave}</td>
         `;
         tbody.appendChild(row);
     }

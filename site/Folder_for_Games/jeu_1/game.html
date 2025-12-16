@@ -158,7 +158,29 @@ h2 { font-size: 32px; color: var(--accent-neon); margin-bottom: 20px; }
     color: var(--accent-neon);
     font-weight: bold;
 }
-
+/* Style de tableau Leaderboard */
+.board-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-family: 'Orbitron', Impact, sans-serif;
+}
+.board-table th, .board-table td {
+    padding: 10px 5px;
+    border-bottom: 1px solid #333;
+    text-align: center;
+}
+.board-table th {
+    color: var(--accent-neon);
+    font-size: 16px;
+    text-transform: uppercase;
+}
+.board-table td {
+    font-size: 18px;
+}
+.board-table tr:last-child td {
+    border-bottom: none;
+}
 </style>
 </head>
 <body>
@@ -243,7 +265,7 @@ h2 { font-size: 32px; color: var(--accent-neon); margin-bottom: 20px; }
 
 <script>
 /* --- API Configuration --- */
-// ⚠️ REMPLACEZ CE PLACEHOLDER par l'URL de votre serveur Flask hébergé sur Render
+// ⚠️ L'URL de votre serveur Flask hébergé sur Render
 const API_URL = "https://project-3-api-2bgb.onrender.com"; 
 
 /* --- SETUP / SFX / VIBRATIONS --- */
@@ -400,6 +422,7 @@ let skulls = +localStorage.getItem('skulls_v4')||0;
 let maxWaveRecord = +localStorage.getItem('maxWave_v4')||1;
 let levels = JSON.parse(localStorage.getItem('levels_v4')||'{"damage":1,"range":1,"speed":1,"fire":1}');
 
+// Leaderboard avec des données par défaut qui seront écrasées par l'API
 let leaderboard = JSON.parse(localStorage.getItem('leaderboard_v4') || JSON.stringify([
     { name: "ULTRA_GIGA", wave: 1000 },
     { name: "LeBoss77", wave: 550 },
@@ -555,6 +578,37 @@ async function serverSave() {
     }
 }
 
+/**
+ * NOUVELLE FONCTION: Charge le classement global des 10 meilleures vagues depuis l'API.
+ * Met à jour le tableau 'leaderboard' global.
+ */
+async function serverLoadLeaderboard() {
+    console.log("Tentative de chargement du classement global...");
+    // Nous utilisons 'GET' même si nous pourrions utiliser 'POST' avec un corps vide, mais 'GET' est plus sémantique ici.
+    try {
+        const response = await fetch(`${API_URL}/skull_arena_get_leaderboard`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        const result = await response.json();
+
+        if (result.status === "success" && result.data) {
+            // Remplacer le classement local par les données du serveur
+            // Assurez-vous que le backend renvoie bien {name: '...', wave: X}
+            leaderboard = result.data.map(item => ({
+                name: item.name, 
+                wave: item.wave
+            }));
+            console.log("Classement global chargé avec succès.");
+        } else {
+            console.error("Erreur de chargement du classement serveur:", result.message);
+        }
+    } catch (error) {
+        console.error("Erreur réseau/fetch au chargement du classement:", error);
+    }
+}
+
 let saveInterval = null;
 function startAutoSave() {
     if (saveInterval) clearInterval(saveInterval);
@@ -606,10 +660,15 @@ window.addSkulls = function(amount) {
 };
 
 /* --- LEADERBOARD LOGIC --- */
-function openLeaderboard() {
+// FONCTION MODIFIÉE : Maintenant asynchrone pour attendre le chargement du serveur
+async function openLeaderboard() { 
     playSfx(550, 0.05, 'sine'); 
     document.getElementById('menu').style.display='none';
     document.getElementById('leaderboardMenu').style.display='flex';
+    
+    // ÉTAPE CLÉ: Charger les données du classement global du serveur avant d'afficher
+    await serverLoadLeaderboard();
+
     renderLeaderboard();
 }
 
@@ -626,12 +685,13 @@ function renderLeaderboard() {
     leaderboard.sort((a, b) => b.wave - a.wave);
     
     for (let i = 0; i < 10; i++) {
-        const entry = leaderboard[i] || { name: `Joueur ${i + 1}`, wave: 0 };
-        const isPlayer = entry.name === username; 
+        // Utilise le classement mis à jour par serverLoadLeaderboard() ou le local par défaut
+        const entry = leaderboard[i] || { name: `Joueur ${i + 1}`, wave: 0 }; 
+        const isPlayer = entry.name.toLowerCase() === username.toLowerCase(); // Vérification insensible à la casse
         
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${i + 1}</td>
+            <td style="font-weight:bold;">${i + 1}</td>
             <td style="color:${isPlayer?'var(--primary)':''};">${entry.name}</td>
             <td style="color:${isPlayer?'var(--accent-shop)':''};">${entry.wave}</td>
         `;
@@ -640,6 +700,7 @@ function renderLeaderboard() {
 }
 
 function addScoreToLeaderboard(waveScore) {
+    // Note: Cette fonction agit sur le classement local
     leaderboard = leaderboard.filter(e => e.name !== username);
     leaderboard.push({ name: username, wave: waveScore });
     leaderboard.sort((a, b) => b.wave - a.wave);

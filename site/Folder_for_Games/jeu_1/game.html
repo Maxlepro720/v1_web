@@ -322,7 +322,7 @@ const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = AudioContext ? new AudioContext() : null;
 let bossMusicNode = null;
 let menuMusicNode = null;
-let killFlash = 0; 
+let killFlash = 0; // Cette variable est maintenant utilisée UNIQUEMENT pour le flash de dommage
 
 // Initialisation de l'audio lors de la première interaction (clic)
 function initAudio() {
@@ -857,6 +857,7 @@ class Enemy{
   if(d<this.r+player.r){
       let dmg = this.tier===2 ? 3 : (this.tier===1 ? 1.5 : 0.8);
       player.hp -= dmg;
+      killFlash = 15; // NOUVEAU: Déclenche le flash rouge quand le joueur est touché
       gameContainer.classList.add('shake-effect');
       setTimeout(() => gameContainer.classList.remove('shake-effect'), 200);
       triggerVibration(50); 
@@ -1056,7 +1057,7 @@ function loop(){
     skulls+=e.reward;
     skullsGainedThisRun += e.reward; 
     
-    killFlash = Math.max(killFlash, e.tier === 0 ? 5 : 10); 
+    // killFlash n'est plus géré ici. Il est maintenant géré dans Enemy.update()
     const particleCount = e.tier === 0 ? Math.floor(Math.random() * 6) + 5 : Math.floor(Math.random() * 16) + 15;
     const color = e.tier === 2 ? '#ff00ff' : '#ff0000'; 
     for(let i=0; i<particleCount; i++) {

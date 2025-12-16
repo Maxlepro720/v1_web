@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+<title>💀 Skull Arena</title>
+<style>
+/* --- ANIMATIONS --- */
+@keyframes glowText { 0%,100%{text-shadow:0 0 5px #ff0055,0 0 10px #ff0055} 50%{text-shadow:0 0 10px #ff0055,0 0 20px #ff0055} }
+@keyframes bgScroll { 0%{background-position:0 0} 100%{background-position:40px 40px} }
+
+/* Tremblement de caméra (écran de jeu) */
+@keyframes shake {
+    0%, 100% { transform: translate(0, 0); }
+    20%, 60% { transform: translate(-3px, 0); }
+    40%, 80% { transform: translate(3px, 0); }
+}
+
+/* --- GLOBAL --- */
+html,body{margin:0;padding:0;background:#050505;color:#fff;font-family:'Orbitron', Impact, sans-serif;overflow:hidden;user-select:none}
+canvas{display:block}
+.game-container { position: relative; width: 100%; height: 100%; }
+.shake-effect { animation: shake 0.2s linear 2; }
+.shake-continuous { animation: shake 0.15s linear infinite; } 
+
+/* --- VARIABLES --- */
+:root{
+  --primary: #ff0055; 
+  --secondary: #ffd700; 
+  --accent-neon: #00ffff; 
+  --accent-shop: #00ff88;
+  --dark: #0a0a12;
+  --blood: #ff0000; 
+}
+
+/* --- INTERFACE --- */
+.panel{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:10;backdrop-filter:blur(8px)}
+
+/* STYLE BOX GÉNÉRIQUE */
+.box-style {
+    position: relative;
+    width: 90vw; 
+    max-width: 450px; 
+    padding: 30px;
+    background: var(--dark);
+    border: 3px solid var(--primary);
+    box-shadow: 0 0 30px rgba(255, 0, 85, 0.3), inset 0 0 20px rgba(0,0,0,0.8);
+    text-align: center;
+    clip-path: polygon(0% 10%, 10% 0%, 100% 0%, 100% 90%, 90% 100%, 0% 100%);
+    display: flex; flex-direction: column; gap: 20px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+/* Style spécifique pour le menu principal */
+#menu .box-style {
+    border-image: linear-gradient(45deg, var(--primary), var(--accent-neon), var(--primary)) 1;
+}
+
+/* H1/H2 du Menu */
+h1 { 
+    font-size: 10vw; 
+    color: var(--accent-neon); 
+    animation: glowText 2s infinite; 
+    margin-bottom: 15px; 
+    letter-spacing: 5px;
+    margin:0; text-transform:uppercase; font-style:italic; letter-spacing:1px; font-family:'Orbitron', Impact, sans-serif;
+}
+@media (min-width: 640px) { h1 { font-size: 64px; } }
+h2 { font-size: 32px; color: var(--accent-neon); margin-bottom: 20px; }
+@media (max-width: 600px) { h1 { font-size: 40px; } h2 { font-size: 24px; } .box-style { padding: 20px; } }
+
+/* Affichage du Pseudo */
+.player-name {
+    color: var(--secondary);
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+#currentUsername {
+    color: var(--accent-neon);
+    font-weight: bold;
+    text-shadow: 0 0 5px var(--accent-neon);
+}
+
+/* BOUTONS */
+.btn {
+    width: 100%; padding: 18px;
+    background: var(--dark);
+    border: 2px solid var(--primary);
+    color: #fff; font-size: 20px; font-weight: 800; text-transform: uppercase;
+    cursor: pointer; transition: 0.3s; position: relative; overflow: hidden;
+    letter-spacing: 1px;
+}
+.btn:hover { 
+    background: var(--primary); 
+    color: #000; 
+    box-shadow: 0 0 20px var(--primary), 0 0 30px rgba(255, 0, 85, 0.4); 
+    transform: translateY(-3px); 
+}
+
+.btn.secondary { border-color: #555; color: #ccc; }
+.btn.secondary:hover { background: #ccc; border-color: #ccc; box-shadow: 0 0 15px #ccc; color:#000; transform: translateY(-3px); }
+
+.btn.leaderboard { border-color: var(--accent-neon); color: var(--accent-neon); }
+.btn.leaderboard:hover { background: var(--accent-neon); color:#000; box-shadow: 0 0 15px var(--accent-neon); transform: translateY(-3px); }
+
+
+/* SHOP */
+#shop .up {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--accent-shop);
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+    transition: all 0.3s;
+    display:flex; justify-content:space-between; align-items:center; padding:12px;
+    cursor: pointer;
+}
+#shop .up:hover {
+    background: rgba(0, 255, 136, 0.15);
+    border-color: var(--accent-neon); 
+    box-shadow: 0 0 15px var(--accent-neon), inset 0 0 8px var(--accent-shop); 
+    transform: scale(1.02); 
+}
+#shop .up span.cost {
+    color: var(--accent-shop);
+    font-size: 20px;
+    font-family: 'Orbitron';
+}
+
+/* HUD */
+#hud{position:fixed;top:20px;left:20px;pointer-events:none;z-index:5}
+@media (max-width: 600px) {
+    #hud { top: 10px; left: 10px; }
+    .hud-item { font-size: 14px; padding: 8px 15px; margin-bottom: 5px; }
+    .bar-cont { width: 100px; height: 10px; }
+}
+.hud-item {
+    background: rgba(0,0,0,0.7); padding: 12px 25px;
+    border-left: 5px solid var(--primary); margin-bottom: 8px;
+    color: #fff; font-weight: bold; font-size: 20px;
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Orbitron', Impact, sans-serif;
+}
+.bar-cont { width: 150px; height: 14px; background: #333; position: relative; transform: skewX(-20deg); border: 1px solid #555; }
+#hpBar { height: 100%; background: linear-gradient(90deg, #f00, #ff5555); width: 100%; transition: width 0.2s; box-shadow: 0 0 10px #f00; }
+
+/* Menu de Mort (GAME OVER) */
+#gameOverMenu h2 {
+    color: var(--primary);
+    font-size: 40px;
+    margin-bottom: 10px;
+    text-shadow: 0 0 15px var(--primary);
+}
+#gameOverMenu .final-stats {
+    font-size: 20px;
+    margin-top: 10px;
+    color: #fff;
+}
+#gameOverMenu .final-stats span {
+    color: var(--accent-neon);
+    font-weight: bold;
+}
+
+</style>
+</head>
+<body>
+
+<div class="game-container" id="gameContainer">
+    <canvas id="game"></canvas>
+</div>
+
+<div id="menu" class="panel">
+ <div class="box-style">
+  <div>
+    <h1>Skull<br>Arena</h1>
+    <p class="player-name">Joueur : <span id="currentUsername">ANONYME</span></p> 
+    <p class="skull-count">Crânes : <span id="skullMenu">0</span> 💀</p>
+    <p style="font-size:16px; color:#aaa; margin-top:5px; margin-bottom: 15px;">Meilleure Vague : <span id="maxWaveMenu" style="color:var(--accent-shop); font-weight:bold;">1</span></p>
+  </div>
+  <button class="btn" onclick="startGame()">⚔️ Lancer l'Arène</button>
+  <button class="btn leaderboard" onclick="openLeaderboard()">🏆 Leaderboard</button>
+  <button class="btn secondary" onclick="openShop()">⚙️ Améliorations</button>
+  <p style="font-size:12px; color:#555; margin-top:15px; font-style:italic;" id="saveStatus">Sauvegarde locale chargée.</p>
+ </div>
+</div>
+
+<div id="leaderboardMenu" class="panel" style="display:none">
+ <div class="box-style">
+  <h2>Classement Vague</h2>
+  <table class="board-table">
+    <thead>
+      <tr><th>#</th><th>Joueur</th><th>Vague</th></tr>
+    </thead>
+    <tbody id="leaderboardBody">
+      </tbody>
+  </table>
+  <button class="btn secondary" style="margin-top:20px" onclick="closeLeaderboard()">Retour au Menu</button>
+ </div>
+</div>
+
+<div id="hud" style="display:none">
+ <div class="hud-item"><span>VIE</span><div class="bar-cont"><div id="hpBar"></div></div></div>
+ <div class="hud-item" style="border-color: var(--secondary)">💀 <span id="skullTxt">0</span></div>
+ <div class="hud-item" style="border-color: #fff">🌊 VAGUE <span id="waveTxt">1</span></div>
+</div>
+
+<div id="shop" class="panel" style="display:none">
+ <div class="box-style" style="max-width: 600px;">
+  <h2>Arsenal (Améliorations)</h2>
+  <div class="up" id="up-damage" onclick="buy('damage')">
+   <div style="text-align:left"><span style="font-weight:bold; font-size:18px;">💥 Dégâts</span><br><span style="font-size:12px;color:#888">Niveau <span id="lvl-damage">1</span></span></div><span class="cost" id="cost-damage">10 💀</span>
+  </div>
+  <div class="up" id="up-range" onclick="buy('range')">
+   <div style="text-align:left"><span style="font-weight:bold; font-size:18px;">📏 Portée</span><br><span style="font-size:12px;color:#888">Niveau <span id="lvl-range">1</span></span></div><span class="cost" id="cost-range">8 💀</span>
+  </div>
+  <div class="up" id="up-speed" onclick="buy('speed')">
+   <div style="text-align:left"><span style="font-weight:bold; font-size:18px;">🏃 Vitesse</span><br><span style="font-size:12px;color:#888">Niveau <span id="lvl-speed">1</span></span></div><span class="cost" id="cost-speed">8 💀</span>
+  </div>
+  <div class="up" id="up-fire" onclick="buy('fire')">
+   <div style="text-align:left"><span style="font-weight:bold; font-size:18px;">⚡ Cadence</span><br><span style="font-size:12px;color:#888">Niveau <span id="lvl-fire">1</span></span></div><span class="cost" id="cost-fire">12 💀</span>
+  </div>
+  <button class="btn secondary" style="margin-top:20px" onclick="closeShop()">Retour</button>
+ </div>
+</div>
+
+<div id="pause" class="panel" style="display:none">
+ <div class="box-style" style="max-width: 350px;">
+    <h1 style="font-size: 50px; animation: none; letter-spacing: 0;">PAUSE</h1>
+    <button class="btn" onclick="togglePause()">Reprendre</button>
+    <button class="btn leaderboard" onclick="openShop(true)">⚙️ Améliorations</button> 
+    <button class="btn secondary" onclick="gameOver()">Abandonner</button>
+ </div>
+</div>
+
+<div id="gameOverMenu" class="panel" style="display:none">
+ <div class="box-style">
+    <h2>ARENA TOMBÉE</h2>
+    <p class="final-stats">Joueur : <span id="finalUsername">ANONYME</span></p>
+    <p class="final-stats">Vague Atteinte : <span id="finalWave">1</span></p>
+    <p class="final-stats">Crânes GAGNÉS : <span id="finalSkulls">0</span> 💀</p>
+    <button class="btn" style="margin-top:20px" onclick="closeGameOver()">Retour au Menu</button>
+ </div>
+</div>
+
+
+<script>
+/* --- API Configuration --- */
+// ⚠️ REMPLACEZ CE PLACEHOLDER par l'URL de votre serveur Flask hébergé sur Render
+const API_URL = "https://project-3-api-2bgb.onrender.com"; 
+
+/* --- SETUP / SFX / VIBRATIONS --- */
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const gameContainer = document.getElementById('gameContainer');
+let player; 
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = AudioContext ? new AudioContext() : null;
+let bossMusicNode = null;
+let menuMusicNode = null;
+let killFlash = 0; 
+
+// Initialisation de l'audio lors de la première interaction (clic)
+function initAudio() {
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().then(() => {
+            console.log("AudioContext repris.");
+            startMenuMusic(); // Lance la musique une fois le contexte actif
+        });
+    } else if (audioCtx && !menuMusicNode) {
+        startMenuMusic();
+    }
+}
+// Ajoute un écouteur sur le document entier pour débloquer l'audio au premier clic
+document.addEventListener('click', initAudio, { once: true });
+
+
+const BASE_COSTS = {
+    damage: 10,
+    range: 8,
+    speed: 8,
+    fire: 12
+};
+const COST_MULTIPLIER = 3; 
+
+function triggerVibration(pattern) {
+    if (navigator.vibrate) {
+        navigator.vibrate(pattern);
+    }
+}
+
+function playSfx(freq, duration, type = 'square', gainValue = 1) {
+    if (!audioCtx) return;
+    
+    // Tentative de reprise si suspendu
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gainNode.gain.setValueAtTime(gainValue, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + duration);
+}
+
+/* --- GESTION MUSIQUE AMBIANCE BOSS --- */
+function startBossMusic() {
+    if (!audioCtx || bossMusicNode) return;
+    
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    bossMusicNode = audioCtx.createOscillator();
+    bossMusicNode.type = 'sawtooth';
+    bossMusicNode.frequency.setValueAtTime(100, audioCtx.currentTime); 
+    
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    
+    bossMusicNode.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 3);
+    bossMusicNode.frequency.linearRampToValueAtTime(120, audioCtx.currentTime + 6);
+    
+    bossMusicNode.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    bossMusicNode.start();
+}
+
+function stopBossMusic() {
+    if (bossMusicNode) {
+        bossMusicNode.stop(audioCtx.currentTime + 0.1); 
+        bossMusicNode = null;
+    }
+}
+
+/* --- GESTION MUSIQUE MENU PRINCIPAL --- */
+function startMenuMusic() {
+    if (!audioCtx || menuMusicNode) return;
+
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    menuMusicNode = audioCtx.createOscillator();
+    menuMusicNode.type = 'sine';
+    menuMusicNode.frequency.setValueAtTime(30, audioCtx.currentTime); 
+    
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime); 
+    gainNode.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 10); 
+
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 400; 
+    
+    const lfo = audioCtx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.setValueAtTime(0.15, audioCtx.currentTime); 
+    lfo.gain = 20; 
+    lfo.connect(filter.frequency);
+    lfo.start();
+
+    menuMusicNode.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    menuMusicNode.start();
+}
+
+function stopMenuMusic() {
+    if (menuMusicNode) {
+        menuMusicNode.stop(audioCtx.currentTime + 0.5); 
+        menuMusicNode = null;
+    }
+}
+
+
+function resize(){
+    canvas.width=innerWidth;
+    canvas.height=innerHeight;
+    if (player && (state === 'game' || state === 'pause')) {
+        player.x = canvas.width / 2;
+        player.y = canvas.height / 2;
+    }
+}
+window.addEventListener('resize',resize); 
+resize(); 
+
+let keys={};
+window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key==='Escape'&&state==='game')togglePause()});
+window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+
+/* --- DATA & SAVE (LOCAL & SERVER) --- */
+let username = localStorage.getItem('username') || 'ANONYME'; 
+function updateUsernameDisplay() {
+    const display = document.getElementById('currentUsername');
+    if (display) display.textContent = username;
+}
+
+let skulls = +localStorage.getItem('skulls_v4')||0;
+let maxWaveRecord = +localStorage.getItem('maxWave_v4')||1;
+let levels = JSON.parse(localStorage.getItem('levels_v4')||'{"damage":1,"range":1,"speed":1,"fire":1}');
+
+let leaderboard = JSON.parse(localStorage.getItem('leaderboard_v4') || JSON.stringify([
+    { name: "ULTRA_GIGA", wave: 1000 },
+    { name: "LeBoss77", wave: 550 },
+    { name: "WaveMaster", wave: 320 },
+    { name: "SkullSmasher", wave: 150 },
+    { name: "ProGamer", wave: 100 },
+    { name: "NoobKiller", wave: 50 },
+    { name: "Player1", wave: 30 },
+    { name: "Anon", wave: 20 },
+    { name: "Hardcore", wave: 10 },
+    { name: "Rookie", wave: 5 }
+]));
+
+function saveLocal(){
+    localStorage.setItem('skulls_v4',skulls);
+    localStorage.setItem('levels_v4',JSON.stringify(levels));
+    localStorage.setItem('maxWave_v4',maxWaveRecord);
+    localStorage.setItem('leaderboard_v4',JSON.stringify(leaderboard));
+}
+
+function calculateCost(type) {
+    const currentLevel = levels[type];
+    const base = BASE_COSTS[type];
+    return Math.floor(base * Math.pow(COST_MULTIPLIER, currentLevel - 1));
+}
+
+function updateUI(){
+    updateUsernameDisplay(); 
+    ['skullMenu','skullTxt'].forEach(id => {
+        if(document.getElementById(id)) document.getElementById(id).textContent = Math.floor(skulls).toLocaleString('fr-FR');
+    });
+    document.getElementById('maxWaveMenu').textContent = maxWaveRecord;
+    
+    for(const k in levels) {
+        if(document.getElementById('lvl-'+k)) {
+            document.getElementById('lvl-'+k).textContent = levels[k];
+        }
+        const costElement = document.getElementById('cost-'+k);
+        if(costElement) {
+            costElement.textContent = calculateCost(k).toLocaleString('fr-FR') + ' 💀';
+        }
+    }
+}
+
+/* --- LOGIQUE DE SAUVEGARDE ET CHARGEMENT SERVEUR (SUPABASE/RENDER) --- */
+
+/**
+ * Charge les données du joueur depuis l'API Flask (Supabase).
+ * Appelé au démarrage.
+ */
+async function serverLoad() {
+    if (username === 'ANONYME' || API_URL === "VOTRE_URL_API_FLASK_RENDER") {
+        console.warn("Mode ANONYME ou API non configurée. Chargement local uniquement.");
+        updateSaveStatus('ANONYME. Chargement local.');
+        return; 
+    }
+    
+    console.log(`Tentative de chargement des données pour ${username}...`);
+    updateSaveStatus('Chargement des données en ligne...');
+
+    try {
+        const response = await fetch(`${API_URL}/skull_arena_get_data`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username })
+        });
+
+        const result = await response.json();
+
+        if (result.status === "success" || result.status === "not_found") {
+            const data = result.data;
+            let loaded = false;
+
+            // Chargement des données (même si not_found, data contient les 0)
+            if (data.skulls > skulls) { // Prendre le max entre local et serveur
+                skulls = data.skulls;
+                loaded = true;
+            }
+            if (data.best_wave > maxWaveRecord) {
+                maxWaveRecord = data.best_wave;
+                loaded = true;
+            }
+            // S'assurer de charger les niveaux (ils viennent tous ou tous par défaut)
+            levels = {
+                damage: data.levels.damage,
+                range: data.levels.range,
+                speed: data.levels.speed,
+                fire: data.levels.fire
+            };
+            loaded = true;
+
+            // Mise à jour de la sauvegarde locale avec les données du serveur
+            if (loaded) {
+                saveLocal();
+            }
+
+            console.log(`Chargement réussi. Statut: ${result.status}.`);
+            updateSaveStatus(result.status === "not_found" ? 'Profil Skull Arena créé (valeurs par défaut).' : 'Données en ligne synchronisées.');
+
+        } else {
+            console.error("Erreur serveur au chargement:", result.message);
+            updateSaveStatus('Erreur de chargement en ligne. Chargement local.');
+        }
+
+    } catch (error) {
+        console.error("Erreur réseau/fetch au chargement:", error);
+        updateSaveStatus('Erreur réseau. Chargement local.');
+    }
+    
+    updateUI(); 
+}
+
+/**
+ * Sauvegarde l'état actuel du joueur sur l'API Flask (Supabase).
+ * Appelé régulièrement et à la fin de la partie.
+ */
+async function serverSave() {
+    if (username === 'ANONYME' || API_URL === "VOTRE_URL_API_FLASK_RENDER") {
+        console.warn("Mode ANONYME ou API non configurée. Sauvegarde locale uniquement.");
+        updateSaveStatus('ANONYME. Sauvegarde locale.');
+        return; 
+    }
+    
+    const payload = {
+        username: username,
+        skulls: skulls,
+        best_wave: maxWaveRecord,
+        up_damage: levels.damage,
+        up_range: levels.range,
+        up_speed: levels.speed,
+        up_fire: levels.fire
+    };
+
+    try {
+        const response = await fetch(`${API_URL}/skull_arena_update_data`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.status === "success") {
+            console.log("Sauvegarde serveur réussie:", result.message);
+            updateSaveStatus('Sauvegarde en ligne réussie.');
+        } else {
+            console.error("Erreur serveur à la sauvegarde:", result.message);
+            updateSaveStatus('Erreur de sauvegarde en ligne.');
+        }
+    } catch (error) {
+        console.error("Erreur réseau/fetch à la sauvegarde:", error);
+        updateSaveStatus('Erreur réseau. Sauvegarde locale.');
+    }
+}
+
+let saveInterval = null;
+function startAutoSave() {
+    if (saveInterval) clearInterval(saveInterval);
+    // Sauvegarde toutes les 15 secondes
+    saveInterval = setInterval(async () => {
+        saveLocal();
+        await serverSave();
+    }, 15000); 
+}
+
+function stopAutoSave() {
+    if (saveInterval) {
+        clearInterval(saveInterval);
+        saveInterval = null;
+    }
+}
+
+function updateSaveStatus(message, color = '#555') {
+    const statusElement = document.getElementById('saveStatus');
+    if (statusElement) {
+        statusElement.textContent = message;
+        statusElement.style.color = color;
+    }
+}
+
+
+/* --- GAME CHEATS --- */
+Object.defineProperty(window, 'vagueActuelle', { get: () => wave, enumerable: true, configurable: false });
+Object.defineProperty(window, 'skullsActuels', { get: () => skulls, enumerable: true, configurable: false });
+window.setVague = function(newWave) {
+    newWave = parseInt(newWave);
+    if (state === 'game' || state === 'pause') {
+        if (newWave > 0) {
+            wave = newWave;
+            spawnLeft = 5 + Math.floor(wave * 1.5); 
+            enemies = []; 
+            document.getElementById('waveTxt').textContent = wave;
+        }
+    }
+};
+window.addSkulls = function(amount) {
+    amount = parseInt(amount);
+    if (!isNaN(amount)) {
+        skulls += amount;
+        saveLocal();
+        updateUI();
+        serverSave();
+    }
+};
+
+/* --- LEADERBOARD LOGIC --- */
+function openLeaderboard() {
+    playSfx(550, 0.05, 'sine'); 
+    document.getElementById('menu').style.display='none';
+    document.getElementById('leaderboardMenu').style.display='flex';
+    renderLeaderboard();
+}
+
+function closeLeaderboard() {
+    playSfx(550, 0.05, 'sine'); 
+    document.getElementById('leaderboardMenu').style.display='none';
+    document.getElementById('menu').style.display='flex';
+    startMenuMusic();
+}
+
+function renderLeaderboard() {
+    const tbody = document.getElementById('leaderboardBody');
+    tbody.innerHTML = '';
+    leaderboard.sort((a, b) => b.wave - a.wave);
+    
+    for (let i = 0; i < 10; i++) {
+        const entry = leaderboard[i] || { name: `Joueur ${i + 1}`, wave: 0 };
+        const isPlayer = entry.name === username; 
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${i + 1}</td>
+            <td style="color:${isPlayer?'var(--primary)':''};">${entry.name}</td>
+            <td style="color:${isPlayer?'var(--accent-shop)':''};">${entry.wave}</td>
+        `;
+        tbody.appendChild(row);
+    }
+}
+
+function addScoreToLeaderboard(waveScore) {
+    leaderboard = leaderboard.filter(e => e.name !== username);
+    leaderboard.push({ name: username, wave: waveScore });
+    leaderboard.sort((a, b) => b.wave - a.wave);
+    leaderboard = leaderboard.slice(0, 10);
+    maxWaveRecord = Math.max(maxWaveRecord, waveScore);
+    saveLocal();
+}
+
+/* --- PARTICULE EFFECT --- */
+class Particle {
+    constructor(x, y, color = 'var(--blood)', life = 30) {
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * 5;
+        this.vy = (Math.random() - 0.5) * 5;
+        this.life = life;
+        this.color = color;
+        this.r = 2 + Math.random() * 3;
+        this.gravity = 0.1;
+    }
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += this.gravity; 
+        this.life--;
+    }
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+
+/* --- GAME ENGINE --- */
+let state='menu',enemies=[],slashes=[],particles=[];
+let wave=1,spawnLeft=0,fireCooldown=0;
+let skullsGainedThisRun = 0;
+
+class Player{
+ constructor(){this.x=canvas.width/2;this.y=canvas.height/2;this.r=18;this.hp=this.maxHp=100;}
+ get speed(){return 4*(1+levels.speed*0.1)}
+ get damage(){return 20*(1+levels.damage*0.2)}
+ update(){
+  let dx=(keys['d']||keys['arrowright']?1:0)-(keys['a']||keys['arrowleft']?1:0);
+  let dy=(keys['s']||keys['arrowdown']?1:0)-(keys['w']||keys['arrowup']?1:0);
+  if(dx||dy){const l=Math.hypot(dx,dy);this.x+=dx/l*this.speed;this.y+=dy/l*this.speed}
+  this.x=Math.max(this.r,Math.min(canvas.width-this.r,this.x));
+  this.y=Math.max(this.r,Math.min(canvas.height-this.r,this.y));
+ }
+ draw(){
+  ctx.save();ctx.translate(this.x,this.y);
+  ctx.shadowColor='#ffd700';ctx.shadowBlur=20;
+  ctx.fillStyle='#ffd700';ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.fillStyle='#000';ctx.beginPath();ctx.arc(-6,-5,4,0,Math.PI*2);ctx.arc(6,-5,4,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+ }
+}
+
+class Enemy{
+ constructor(bossTier=0){ 
+  this.tier = bossTier;
+  let s=Math.floor(Math.random()*4);
+  
+  if(s==0){ this.x=-50; this.y=Math.random()*canvas.height;
+  } else if(s==1){ this.x=canvas.width+50; this.y=Math.random()*canvas.height;
+  } else if(s==2){ this.x=Math.random()*canvas.width; this.y=-50;
+  } else { this.x=Math.random()*canvas.width; this.y=canvas.height+50; }
+
+  let baseReward = 1; 
+  if(this.tier === 2) { 
+      this.r = 60; this.maxHp = 3000 + (wave*70); this.speed = 0.8; this.color = '#ff00ff'; this.reward = 80; 
+      startBossMusic();
+  } else if (this.tier === 1) {
+      this.r = 35; this.maxHp = 700 + (wave*30); this.speed = 1.1; this.color = '#ff5500'; this.reward = 15; 
+      startBossMusic();
+  } else {
+      this.r = 16; this.maxHp = 80 + (wave*7); this.speed = 1.8 + (Math.random()*0.8); this.color = '#ff0055'; this.reward = baseReward;
+  }
+  this.hp=this.maxHp; this.flash=0;
+ }
+ update(){
+  let dx=player.x-this.x, dy=player.y-this.y, d=Math.hypot(dx,dy)||1;
+  this.x+=dx/d*this.speed; this.y+=dy/d*this.speed;
+  if(d<this.r+player.r){
+      let dmg = this.tier===2 ? 3 : (this.tier===1 ? 1.5 : 0.8);
+      player.hp -= dmg;
+      gameContainer.classList.add('shake-effect');
+      setTimeout(() => gameContainer.classList.remove('shake-effect'), 200);
+      triggerVibration(50); 
+  }
+ }
+ draw(){
+  ctx.save();ctx.translate(this.x,this.y);
+  if(this.flash>0){ ctx.fillStyle='#fff'; ctx.shadowBlur=30; ctx.shadowColor='#fff'; }
+  else { ctx.fillStyle=this.color; ctx.shadowBlur=15; ctx.shadowColor=this.color; }
+  
+  ctx.beginPath();ctx.arc(0,0,this.r,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.fillStyle='#000';
+  ctx.beginPath(); let eyeOff = this.r/3;
+  ctx.arc(-eyeOff,-eyeOff/1.5,eyeOff/2,0,Math.PI*2); ctx.arc(eyeOff,-eyeOff/1.5,eyeOff/2,0,Math.PI*2); ctx.fill();
+  
+  if(this.tier > 0){
+   ctx.translate(-this.r, -this.r-15);
+   ctx.fillStyle='#333'; ctx.fillRect(0,0,this.r*2,8);
+   ctx.fillStyle=this.tier===2?'#f0f':'#f50'; ctx.fillRect(0,0,(this.hp/this.maxHp)*this.r*2,8);
+  }
+  ctx.restore();
+  this.flash--;
+ }
+}
+
+class Slash{
+ constructor(target){
+  this.x=player.x;this.y=player.y;
+  let dx=target.x-player.x, dy=target.y-player.y, d=Math.hypot(dx,dy)||1;
+  this.vx=(dx/d)*18; this.vy=(dy/d)*18;
+  this.life=20*(1+levels.range*0.2);
+ }
+ update(){
+  this.x+=this.vx;this.y+=this.vy;this.life--;
+  for(const e of enemies){
+   if(Math.hypot(e.x-this.x,e.y-this.y)<e.r+10){
+    e.hp-=player.damage; e.flash=3; this.life=0;
+    playSfx(100 + Math.random() * 100, 0.05, 'triangle'); // Bruit de touche
+    break;
+   }
+  }
+ }
+ draw(){
+  ctx.save();ctx.translate(this.x,this.y);ctx.rotate(Math.atan2(this.vy,this.vx));
+  ctx.fillStyle='#fff';ctx.shadowColor='#ffaa00';ctx.shadowBlur=10;
+  ctx.beginPath();ctx.rect(-10,-3,20,6);ctx.fill();
+  ctx.restore();
+ }
+}
+
+/* --- LOGIQUE GLOBALE --- */
+async function startGame(){
+ state='game';
+ playSfx(550, 0.05, 'sine'); 
+ stopMenuMusic();
+ if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+ }
+
+ document.getElementById('menu').style.display='none';
+ document.getElementById('hud').style.display='block';
+ document.getElementById('gameOverMenu').style.display='none'; 
+ player=new Player(); 
+ enemies=[];slashes=[];particles=[];
+ wave=1;spawnLeft=5;
+ skullsGainedThisRun = 0;
+ stopBossMusic();
+ updateUI();
+ startAutoSave(); // Démarrer la sauvegarde automatique
+}
+
+async function gameOver(){
+    stopAutoSave(); // Arrêter la sauvegarde automatique
+    const finalWave = wave;
+    addScoreToLeaderboard(finalWave); // Met à jour le leaderboard local
+    await serverSave(); // Sauvegarde finale sur le serveur
+    
+    stopBossMusic();
+    playSfx(60, 0.8, 'sawtooth'); 
+    triggerVibration([200, 100, 200]); 
+    document.getElementById('finalUsername').textContent = username;
+    document.getElementById('finalWave').textContent = finalWave;
+    document.getElementById('finalSkulls').textContent = Math.floor(skullsGainedThisRun).toLocaleString('fr-FR');
+    state='menu'; 
+    document.getElementById('pause').style.display='none';
+    document.getElementById('hud').style.display='none';
+    document.getElementById('gameOverMenu').style.display='flex';
+    updateUI();
+}
+
+function closeGameOver() {
+    playSfx(550, 0.05, 'sine');
+    document.getElementById('gameOverMenu').style.display='none';
+    document.getElementById('menu').style.display='flex';
+    serverLoad(); // Recharge les données après la fin pour synchro
+    startMenuMusic(); 
+}
+
+function togglePause(){
+ state=state==='pause'?'game':'pause';
+ document.getElementById('pause').style.display=state==='pause'?'flex':'none';
+ if (state === 'pause') {
+     playSfx(550, 0.05, 'sine'); 
+    stopBossMusic();
+    stopAutoSave(); // Arrêter la sauvegarde pendant la pause
+ } else {
+     playSfx(550, 0.05, 'sine'); 
+    if (enemies.some(e => e.tier > 0)) {
+        startBossMusic();
+    }
+    startAutoSave(); // Reprendre la sauvegarde
+ }
+}
+
+let returnToPause = false;
+function openShop(isFromPause = false){
+    playSfx(550, 0.05, 'sine'); 
+    returnToPause = isFromPause;
+    document.getElementById('menu').style.display='none';
+    document.getElementById('pause').style.display='none';
+    document.getElementById('shop').style.display='flex';
+    updateUI(); 
+}
+
+async function closeShop(){
+    playSfx(550, 0.05, 'sine'); 
+    document.getElementById('shop').style.display='none';
+    if (returnToPause) {
+        document.getElementById('pause').style.display='flex';
+    } else {
+        document.getElementById('menu').style.display='flex';
+        startMenuMusic(); 
+    }
+    saveLocal(); // Sauvegarde locale après l'achat
+    await serverSave(); // Sauvegarde serveur après l'achat
+    updateUI();
+}
+
+function buy(type){
+    const cost = calculateCost(type);
+    if(skulls>=cost){
+        skulls-=cost;
+        levels[type]++;
+        saveLocal();
+        updateUI();
+        playSfx(700, 0.1, 'sine'); 
+        triggerVibration(100);
+        // La sauvegarde serveur est faite au retour du Shop (closeShop) pour ne pas spammer
+    } else {
+        playSfx(100, 0.2, 'square'); 
+    }
+}
+
+function loop(){
+ ctx.fillStyle='#050505';ctx.fillRect(0,0,canvas.width,canvas.height);
+ 
+ if(state==='game'){
+  const isBossPresent = enemies.some(e => e.tier > 0);
+  if (isBossPresent) {
+    gameContainer.classList.add('shake-continuous');
+    if (!bossMusicNode) startBossMusic();
+  } else {
+    gameContainer.classList.remove('shake-continuous');
+    stopBossMusic();
+  }
+  
+  if(spawnLeft>0 && enemies.length < 8){
+      spawnLeft--;
+      let isLast = spawnLeft === 0;
+      let tier = 0;
+      if(isLast && wave%50===0) tier = 2;
+      else if(isLast && wave%10===0) tier = 1;
+      enemies.push(new Enemy(tier));
+  }
+  
+  if(spawnLeft===0 && enemies.length===0){
+      wave++;
+      spawnLeft=5+Math.floor(wave*1.5);
+      document.getElementById('waveTxt').textContent=wave;
+  }
+
+  player.update();player.draw();
+  fireCooldown--;
+  if(fireCooldown<=0 && enemies.length>0){
+   let closest=enemies.reduce((a,b)=>Math.hypot(a.x-player.x,a.y-player.y)<Math.hypot(b.x-player.x,b.y-player.y)?a:b);
+   slashes.push(new Slash(closest));
+   fireCooldown=15/(1+levels.fire*0.2);
+  }
+
+  slashes=slashes.filter(s=>s.life>0); slashes.forEach(s=>{s.update();s.draw()});
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => { p.update(); p.draw(); });
+
+  enemies=enemies.filter(e=>{
+   if(e.hp<=0){
+    skulls+=e.reward;
+    skullsGainedThisRun += e.reward; 
+    
+    killFlash = Math.max(killFlash, e.tier === 0 ? 5 : 10); 
+    const particleCount = e.tier === 0 ? Math.floor(Math.random() * 6) + 5 : Math.floor(Math.random() * 16) + 15;
+    const color = e.tier === 2 ? '#ff00ff' : '#ff0000'; 
+    for(let i=0; i<particleCount; i++) {
+        particles.push(new Particle(e.x, e.y, color, 45)); 
+    }
+    return false;
+   }
+   e.update(); e.draw();
+   return true;
+  });
+
+  if (killFlash > 0) {
+    ctx.fillStyle = `rgba(255, 0, 0, ${killFlash / 80})`; 
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    killFlash--;
+  }
+
+  document.getElementById('hpBar').style.width=(Math.max(0,player.hp)/player.maxHp*100)+'%';
+  document.getElementById('skullTxt').textContent=Math.floor(skulls).toLocaleString('fr-FR');
+  
+  if(player.hp<=0) gameOver();
+ }
+ requestAnimationFrame(loop);
+}
+
+// --- LOGIQUE DE DÉMARRAGE FINAL ---
+updateUI(); 
+loop(); 
+serverLoad(); // Lance le chargement des données du serveur au démarrage
+
+</script>
+</body>
+</html>

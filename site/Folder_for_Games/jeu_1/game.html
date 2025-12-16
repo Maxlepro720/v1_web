@@ -34,6 +34,11 @@ canvas{display:block}
 }
 
 /* --- INTERFACE --- */
+/* Ajout du style pour l'écran de chargement */
+#loadingPanel .box-style {
+    border-color: var(--accent-neon);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0,0,0,0.8);
+}
 .panel{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:10;backdrop-filter:blur(8px)}
 
 /* STYLE BOX GÉNÉRIQUE */
@@ -220,7 +225,14 @@ h2 { font-size: 32px; color: var(--accent-neon); margin-bottom: 20px; }
     <canvas id="game"></canvas>
 </div>
 
-<div id="menu" class="panel">
+<div id="loadingPanel" class="panel">
+    <div class="box-style">
+        <h2 style="color: var(--accent-neon); animation: glowText 1.5s infinite;">SYNCHRONISATION...</h2>
+        <p style="color: #ccc;">Chargement de votre profil depuis l'Arène.</p>
+    </div>
+</div>
+
+<div id="menu" class="panel" style="display:none">
  <div class="box-style">
   <div>
     <h1>Skull<br>Arena</h1>
@@ -317,10 +329,10 @@ function initAudio() {
     if (audioCtx && audioCtx.state === 'suspended') {
         audioCtx.resume().then(() => {
             console.log("AudioContext repris.");
-            startMenuMusic(); // Lance la musique une fois le contexte actif
+            // La musique du menu ne démarre qu'après le chargement serveur
         });
     } else if (audioCtx && !menuMusicNode) {
-        startMenuMusic();
+        // La musique du menu ne démarre qu'après le chargement serveur
     }
 }
 // Ajoute un écouteur sur le document entier pour débloquer l'audio au premier clic
@@ -446,35 +458,26 @@ window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===
 window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 
 /* --- DATA & SAVE (LOCAL & SERVER) --- */
+// SEUL le nom d'utilisateur est chargé localement.
 let username = localStorage.getItem('username') || 'ANONYME'; 
 function updateUsernameDisplay() {
     const display = document.getElementById('currentUsername');
     if (display) display.textContent = username;
 }
 
-let skulls = +localStorage.getItem('skulls_v4')||0;
-let maxWaveRecord = +localStorage.getItem('maxWave_v4')||1;
-let levels = JSON.parse(localStorage.getItem('levels_v4')||'{"damage":1,"range":1,"speed":1,"fire":1}');
+// Le reste des données est initialisé par défaut (le serveur les fournira)
+let skulls = 0; 
+let maxWaveRecord = 1;
+let levels = {"damage":1,"range":1,"speed":1,"fire":1};
 
-// Leaderboard avec des données par défaut qui seront écrasées par l'API
-let leaderboard = JSON.parse(localStorage.getItem('leaderboard_v4') || JSON.stringify([
-    { name: "ULTRA_GIGA", wave: 1000 },
-    { name: "LeBoss77", wave: 550 },
-    { name: "WaveMaster", wave: 320 },
-    { name: "SkullSmasher", wave: 150 },
-    { name: "ProGamer", wave: 100 },
-    { name: "NoobKiller", wave: 50 },
-    { name: "Player1", wave: 30 },
-    { name: "Anon", wave: 20 },
-    { name: "Hardcore", wave: 10 },
-    { name: "Rookie", wave: 5 }
-]));
+// Leaderboard: initialisé vide, sera rempli par le serveur
+let leaderboard = []; 
 
+// MODIFICATION: La sauvegarde locale ne concerne plus que les niveaux (fail-safe)
 function saveLocal(){
-    localStorage.setItem('skulls_v4',skulls);
+    // On sauvegarde aussi le record maxWave, car il est mis à jour localement
     localStorage.setItem('levels_v4',JSON.stringify(levels));
     localStorage.setItem('maxWave_v4',maxWaveRecord);
-    localStorage.setItem('leaderboard_v4',JSON.stringify(leaderboard));
 }
 
 function calculateCost(type) {
@@ -508,9 +511,25 @@ function updateUI(){
  * Appelé au démarrage.
  */
 async function serverLoad() {
+    // 1. Afficher l'écran de chargement
+    document.getElementById('loadingPanel').style.display='flex';
+    document.getElementById('menu').style.display='none';
+
+
     if (username === 'ANONYME' || API_URL === "VOTRE_URL_API_FLASK_RENDER") {
-        console.warn("Mode ANONYME ou API non configurée. Chargement local uniquement.");
-        updateSaveStatus('ANONYME. Chargement local.');
+        console.warn("Mode ANONYME ou API non configurée. Démarrage sans données serveur.");
+        updateSaveStatus('ANONYME. Démarrage sans données en ligne.');
+        // Fallback: Récupération des données du localStorage (fail-safe)
+        skulls = +localStorage.getItem('skulls_v4')||0;
+        maxWaveRecord = +localStorage.getItem('maxWave_v4')||1;
+        levels = JSON.parse(localStorage.getItem('levels_v4')||'{"damage":1,"range":1,"speed":1,"fire":1}');
+        leaderboard = JSON.parse(localStorage.getItem('leaderboard_v4') || []); // Chargement local du leaderboard par défaut
+
+        updateUI(); 
+        // 2. Cacher l'écran de chargement et afficher le menu
+        document.getElementById('loadingPanel').style.display='none';
+        document.getElementById('menu').style.display='flex';
+        startMenuMusic(); 
         return; 
     }
     
@@ -528,45 +547,38 @@ async function serverLoad() {
 
         if (result.status === "success" || result.status === "not_found") {
             const data = result.data;
-            let loaded = false;
 
-            // Chargement des données (même si not_found, data contient les 0)
-            if (data.skulls > skulls) { // Prendre le max entre local et serveur
-                skulls = data.skulls;
-                loaded = true;
-            }
-            if (data.best_wave > maxWaveRecord) {
-                maxWaveRecord = data.best_wave;
-                loaded = true;
-            }
-            // S'assurer de charger les niveaux (ils viennent tous ou tous par défaut)
+            // Chargement des données du serveur (écrasant les valeurs par défaut)
+            skulls = data.skulls;
+            maxWaveRecord = data.best_wave;
             levels = {
                 damage: data.levels.damage,
                 range: data.levels.range,
                 speed: data.levels.speed,
                 fire: data.levels.fire
             };
-            loaded = true;
 
-            // Mise à jour de la sauvegarde locale avec les données du serveur
-            if (loaded) {
-                saveLocal();
-            }
+            // Sauvegarde locale des données du serveur (fail-safe pour la prochaine fois)
+            saveLocal();
 
             console.log(`Chargement réussi. Statut: ${result.status}.`);
-            updateSaveStatus(result.status === "not_found" ? 'Profil Skull Arena créé (valeurs par défaut).' : 'Données en ligne synchronisées.');
+            updateSaveStatus(result.status === "not_found" ? 'Profil Skull Arena créé.' : 'Données en ligne synchronisées.');
 
         } else {
             console.error("Erreur serveur au chargement:", result.message);
-            updateSaveStatus('Erreur de chargement en ligne. Chargement local.');
+            updateSaveStatus('Erreur de chargement en ligne. Valeurs par défaut utilisées.');
         }
 
     } catch (error) {
         console.error("Erreur réseau/fetch au chargement:", error);
-        updateSaveStatus('Erreur réseau. Chargement local.');
+        updateSaveStatus('Erreur réseau. Valeurs par défaut utilisées.');
     }
     
     updateUI(); 
+    // 2. Cacher l'écran de chargement et afficher le menu
+    document.getElementById('loadingPanel').style.display='none';
+    document.getElementById('menu').style.display='flex';
+    startMenuMusic(); 
 }
 
 /**
@@ -635,11 +647,17 @@ async function serverLoadLeaderboard() {
                 wave: item.wave
             }));
             console.log("Classement global chargé avec succès.");
+            // Sauvegarde locale du leaderboard (pour le fail-safe)
+            localStorage.setItem('leaderboard_v4',JSON.stringify(leaderboard));
         } else {
             console.error("Erreur de chargement du classement serveur:", result.message);
+            // Fallback sur l'ancien leaderboard local
+            leaderboard = JSON.parse(localStorage.getItem('leaderboard_v4') || []); 
         }
     } catch (error) {
         console.error("Erreur réseau/fetch au chargement du classement:", error);
+        // Fallback sur l'ancien leaderboard local
+        leaderboard = JSON.parse(localStorage.getItem('leaderboard_v4') || []); 
     }
 }
 

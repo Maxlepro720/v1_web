@@ -61,10 +61,23 @@
             backdrop-filter:blur(15px);
             border-radius:20px;
             overflow:hidden;
-            cursor:pointer;
+            cursor:pointer; /* Ajout du curseur pointer par défaut */
             transition:transform 0.3s,box-shadow 0.3s;
             box-shadow:0 5px 20px rgba(0,0,0,0.4);
         }
+        /* Style spécifique pour les cartes non cliquables (Coming Soon...) */
+        .card.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .card.disabled:hover {
+            transform: none;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+        }
+        .card.disabled:hover::before {
+            animation: none; /* Désactiver l'effet shimmer */
+        }
+
         .card::before{content:"";position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(120deg,rgba(255,255,255,0.1),rgba(255,255,255,0.3),rgba(255,255,255,0.1));transform:skewX(-20deg);transition:0.5s;}
         .card:hover::before{animation:shimmer 1s forwards;}
         @keyframes shimmer{0%{left:-100%;}100%{left:200%;}}
@@ -113,6 +126,7 @@
             width:100%;background:#00bfff;border:none;padding:12px;color:#fff;font-size:15px;border-radius:12px;cursor:pointer;transition:0.2s;
         }
         .card-button:hover{background:#009acd;}
+        /* Correction : pour désactiver le bouton */
         .card-button:disabled{background:#555;cursor:not-allowed;}
 
         /* ----------------------------------- */
@@ -333,6 +347,11 @@
         filteredGames.forEach(game=>{
             const card=document.createElement("div");
             card.className="card";
+            
+            // --- AJOUTER LA CLASSE 'disabled' si pas de lien
+            if (!game.link) {
+                card.classList.add('disabled');
+            }
 
             // --- LOGIQUE POUR L'IMAGE DE FOND ---
             let imageStyle = `background-color: ${game.color};`; 
@@ -345,6 +364,8 @@
             // ------------------------------------------
 
             const link=game.link?game.link:"#";
+            
+            // On retire l'onclick du bouton, on va le gérer sur la carte
             card.innerHTML=`
             <div class="card-image" style="${imageStyle}">
                 ${iconHtml}
@@ -352,8 +373,33 @@
             <div class="card-info">
                 <h3 class="card-title">${game.title}</h3>
                 <p class="card-genre">${game.genre}</p>
-                <button class="card-button" onclick="location.href='${link}'" ${game.link?"":"disabled"}>▶ LANCER</button>
+                <button class="card-button" ${game.link?"":"disabled"}>▶ LANCER</button> 
             </div>`;
+            
+            // --- NOUVEAU : Écouteur d'événement sur la carte ---
+            if (game.link) {
+                card.addEventListener('click', () => {
+                    // On vérifie que la cible du clic n'est PAS le bouton (pour garder l'effet d'origine du bouton)
+                    // Bien que j'ai retiré l'onclick du bouton, le bouton pourrait être désactivé ou avoir un autre comportement futur.
+                    // Ici on applique la redirection pour toute la carte
+                    window.location.href = link;
+                });
+            }
+            // ----------------------------------------------------
+            
+            // Si le bouton est cliquable (il a un lien), on gère quand même la redirection. 
+            // C'est un peu redondant avec le clic sur la carte, mais assure la compatibilité 
+            // si un autre bouton était ajouté ou si l'utilisateur clique spécifiquement sur le bouton.
+            const cardButton = card.querySelector('.card-button');
+             if (game.link) {
+                cardButton.addEventListener('click', (e) => {
+                    // Empêcher l'événement de se propager à la carte après le clic sur le bouton
+                    e.stopPropagation(); 
+                    window.location.href = link;
+                });
+            }
+
+
             grid.appendChild(card);
         });
         anime({targets:'.card',opacity:[0,1],translateY:[30,0],delay:anime.stagger(100),duration:600,easing:'easeOutQuad'});

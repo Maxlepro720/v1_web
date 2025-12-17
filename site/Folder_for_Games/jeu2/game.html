@@ -705,7 +705,7 @@ function draw(){
         ctx.fillText(`Données chargées : ${username}`, 0, 45); 
         ctx.restore();
         
-        // Effet de pulsation lumineux autour du bouton
+        // Effet de pulsation lumineux autour du bouton (maintenant arrondi)
         const pulseIntensity = Math.sin(startButtonAnim.pulse) * 0.3 + 0.7;
         ctx.save();
         ctx.globalAlpha = startButtonAnim.alpha * 0.3 * pulseIntensity;
@@ -713,13 +713,40 @@ function draw(){
         ctx.shadowColor = curCol;
         ctx.strokeStyle = curCol;
         ctx.lineWidth = 3;
-        ctx.strokeRect(110, 480, 200, 50);
+        drawRoundedRect(110, 480, 200, 50, 10, false, true); 
         ctx.restore();
         
         drawBtn("COMMENCER", 210, 480, 200, 50, curCol, startButtonAnim.scale, startButtonAnim.alpha);
     
     } else if(state===STATE.MENU){
-        // Aucune statistique n'est affichée dans le menu principal (conformément à la demande).
+        
+        // --- Hotbar du Menu Principal (Meilleur Score et Crédits) ---
+        const barW = 300, barH = 30, barR = 8;
+        const barX = (GAME_WIDTH - barW) / 2;
+        const barY = 5;
+        const textY = barY + barH/2 + 5; 
+        
+        // 1. Dessin du fond sombre semi-transparent
+        ctx.fillStyle="rgba(0, 0, 0, 0.7)"; 
+        drawRoundedRect(barX, barY, barW, barH, barR, true, false); 
+
+        // 2. Dessin du contour néon (utilise curCol)
+        ctx.strokeStyle = curCol; 
+        ctx.lineWidth = 2;
+        drawRoundedRect(barX, barY, barW, barH, barR, false, true, curCol, 15); 
+        
+        // 3. Dessin des textes
+        ctx.fillStyle="#fff"; ctx.font="bold 14px sans-serif"; 
+        
+        // Meilleur Score (Left)
+        ctx.textAlign="left"; 
+        ctx.fillText(`🏆 ${bestScore}`, barX + 15, textY); 
+        
+        // Crédits (Right)
+        ctx.textAlign="right"; 
+        ctx.fillText(`💰 ${credits}`, barX + barW - 15, textY); 
+        // --- Fin Hotbar Menu ---
+        
         const bounce = Math.sin(time * 0.04) * 8;
         ctx.save(); ctx.translate(210, 150 + bounce); ctx.shadowBlur = 20 + Math.sin(time*0.1)*10; ctx.shadowColor = "#00d9ff"; ctx.fillStyle = "#fff"; ctx.font = "bold 52px sans-serif"; ctx.textAlign = "center"; ctx.fillText("ASTRO DODGE", 0, 0); ctx.font = "bold 12px sans-serif"; ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; ctx.fillText(`Bienvenue, ${username}`, 0, 25); ctx.restore();
         drawBtn("▶ JOUER", 210, 240, 200, 50, curCol);
@@ -732,11 +759,11 @@ function draw(){
         drawBtn("RETOUR", 210, 540, 200, 50, curCol);
     } else if(state===STATE.SHOP){
         
-        // --- Affichage des Crédits dans la Boutique (Hotbar style) ---
-        const barX = GAME_WIDTH - 150 - 10; 
+        // --- Affichage des Crédits dans la Boutique (Hotbar style, repositionné en haut) ---
+        const barX = 130; 
         const barY = 10;
-        const barW = 140;
-        const barH = 30;
+        const barW = 160;
+        const barH = 35;
         const barR = 8;
         const textY = barY + barH/2 + 5;
         
@@ -751,14 +778,14 @@ function draw(){
         
         // 3. Dessin des éléments
         ctx.fillStyle="#ffd700"; 
-        ctx.beginPath(); ctx.arc(barX + 18, barY + barH/2, 9, 0, Math.PI*2); ctx.fill(); 
+        ctx.beginPath(); ctx.arc(barX + 22, barY + barH/2, 10, 0, Math.PI*2); ctx.fill(); 
         ctx.fillStyle="#fff"; 
-        ctx.font="bold 16px sans-serif"; 
+        ctx.font="bold 18px sans-serif"; 
         ctx.textAlign="left"; 
-        ctx.fillText(`${credits}`, barX + 38, textY);
+        ctx.fillText(`${credits}`, barX + 45, textY);
         // --- Fin Affichage Crédits ---
 
-        ctx.fillStyle="#fff"; ctx.font="bold 30px sans-serif"; ctx.textAlign="center"; ctx.fillText("BOUTIQUE", 210, 75);
+        ctx.fillStyle="#fff"; ctx.font="bold 30px sans-serif"; ctx.textAlign="center"; ctx.fillText("BOUTIQUE", 210, 75); 
         ships.forEach((s,i)=>{ const cardY=140+i*160 - shopScroll; if(cardY > GAME_HEIGHT || cardY < -140) return; const hover = mouseInRect(40, cardY, 340, 140); ctx.shadowBlur=hover?25:15; ctx.shadowColor=player.type===i?"#fff":s.color; ctx.fillStyle=hover?"#252545":"#1a1a2e"; ctx.fillRect(40, cardY, 340, 140); ctx.shadowBlur=0; ctx.fillStyle="#fff"; ctx.textAlign="left"; ctx.font="bold 18px sans-serif"; ctx.fillText(s.name, 60, cardY+35); ctx.fillStyle=curCol; ctx.font="14px sans-serif"; ctx.fillText(s.bonus, 60, cardY+55); ctx.fillStyle="#aaa"; wrapText(s.desc, 60, cardY+80, 240, 16); ctx.fillStyle=s.unlocked?(player.type===i?"#00ff88":"#888"):"#ffd700"; ctx.textAlign="right"; ctx.fillText(s.unlocked?(player.type===i?"ÉQUIPÉ":"DÉBLOQUÉ"):s.cost+" 💰", 360, cardY+35); });
         drawBtn("RETOUR", 210, 540, 200, 50, curCol);
     } else if(state===STATE.GAMEOVER){
@@ -850,7 +877,7 @@ function draw(){
     }
 }
 
-function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1){
+function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1, r = 10){ // Ajout du rayon r=10
     const hover = mouseInRect(x-w/2, y, w, h); 
     if(hover) canvas.style.cursor = "pointer";
     
@@ -860,7 +887,10 @@ function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1){
         ctx.save(); ctx.translate(x, y + h/2); ctx.scale(sizeMod, sizeMod);
         ctx.shadowBlur = hover ? 35 : 10; ctx.shadowColor = c;
         ctx.fillStyle = hover ? c : "rgba(255,255,255,0.05)"; ctx.strokeStyle = c; ctx.lineWidth = 2/sizeMod; 
-        ctx.beginPath(); ctx.rect(-w/2, -h/2, w, h); ctx.fill(); ctx.stroke();
+        
+        // Utilisation de drawRoundedRect pour les coins arrondis
+        drawRoundedRect(-w/2, -h/2, w, h, r/sizeMod, true, true); 
+
         ctx.shadowBlur = 0; ctx.fillStyle = hover ? "#000" : "#fff"; ctx.font = "bold 18px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, 0, 0); ctx.restore();
     
     } 
@@ -870,7 +900,10 @@ function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1){
         
         ctx.shadowBlur = hover ? 45 : 20; ctx.shadowColor = c;
         ctx.fillStyle = hover ? c : "rgba(255,255,255,0.1)"; ctx.strokeStyle = c; ctx.lineWidth = 3/scale; 
-        ctx.beginPath(); ctx.rect(-w/2, -h/2, w, h); ctx.fill(); ctx.stroke();
+        
+        // Utilisation de drawRoundedRect pour les coins arrondis
+        drawRoundedRect(-w/2, -h/2, w, h, r/scale, true, true); 
+        
         ctx.shadowBlur = 0; ctx.fillStyle = hover ? "#000" : "#fff"; ctx.font = "bold 22px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, 0, 0); ctx.restore();
     }
 }

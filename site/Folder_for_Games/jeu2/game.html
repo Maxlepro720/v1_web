@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Astro Dodge - Reset Edition 🚀</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { margin:0; background: #0a0e27; display:flex; justify-content:center; align-items:center; height:100vh; color:#fff; font-family:sans-serif; overflow:hidden; }
+canvas { background: #020510; border:3px solid #00d9ff; box-shadow: 0 0 40px rgba(0,217,255,0.8); border-radius: 8px; }
+</style>
+</head>
+<body>
+<canvas id="game" width="420" height="640"></canvas>
+<script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+
+const STATE={MENU:0,PLAY:1,GAMEOVER:2,SHOP:3, TAKEOFF:4, LANDING:5};
+let state=STATE.MENU;
+
+let transition = { active: false, alpha: 0, nextState: null, callback: null };
+
+let score=0, bestScore=Number(localStorage.getItem("astro_best"))||0, credits=Number(localStorage.getItem("astro_credits"))||0;
+let time=0, spawnTimer=0, asteroids=[], stars=[], coins=[], keys={}, explosion=null, flashAlpha=0;
+let coinFlashAlpha = 0; // Nouvel effet de flash pour les pièces
+let floatingTexts = []; // Pour les textes qui montent (+50)
+let player={x:210,y:560,r:18,type:0,life:1, invulnerable:0, trail:[], angle:0};
+let shopScroll=0;
+let mouseX = 0, mouseY = 0, isMouseDown = false;
+
+let nebulas = [];
+function initNebulas() {
+  nebulas = [];
+  const colors = ["rgba(100, 0, 255, 0.08)", "rgba(0, 150, 255, 0.08)", "rgba(255, 0, 150, 0.08)"];
+  for(let i=0; i<3; i++) {
+    nebulas.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: 150 + Math.random() * 150,
+      color: colors[i],
+      speed: 0.15 + Math.random() * 0.1
+    });
+  }
+}
+initNebulas();
+
+let launchProgress = 0, earthY = 0, deathShockwave = { active: false, r: 0, alpha: 0, x: 0, y: 0 }, timeScale = 1, glitchTimer = 0;
+let currentLevel = 1, levelAnimTimer = 0, colorIndex = 0;
+const levelColors = ["#00d9ff", "#ff00ea", "#00ff88", "#ff3300", "#ffcc00", "#9d00ff"];
+
+const ships=[
+{name:"Standard", cost:0, speed:5, unlocked:true, color:"#0288d1", cockpit:"#81d4fa", flame:"#ff7043", bonus:"Aucun", desc:"Stable et équilibré."},
+{name:"Rapide", cost:1000, speed:8, unlocked:false, color:"#d32f2f", cockpit:"#ff8a80", flame:"#ffeb3b", bonus:"Vitesse +2", desc:"Esquives éclairs."},
+{name:"Double Pièces", cost:1500, speed:5, unlocked:false, color:"#388e3c", cockpit:"#a5d6a7", flame:"#ff9800", bonus:"Pièces x2", desc:"Richesse instantanée."},
+{name:"Score Boost", cost:2000, speed:5, unlocked:false, color:"#7b1fa2", cockpit:"#ce93d8", flame:"#f48fb1", bonus:"Score x2", desc:"Progression rapide."},
+{name:"magnet", cost:2500, speed:5, unlocked:false, color:"#ffde21", cockpit:"#ce93d8", flame:"#c2185b", bonus:"Aim Magnétique", desc:"Attire l'or à distance."},
+{name:"Titan", cost:5000, speed:5, unlocked:false, color:"#ff6f00", cockpit:"#ffcc80", flame:"#ff1744", bonus:"Vie Supplémentaire", desc:"Blindage renforcé."}
+];
+
+function changeState(newState, callback = null) {
+  if (transition.active) return;
+  transition.active = true;
+  transition.alpha = 0;
+  transition.nextState = newState;
+  transition.callback = callback;
+}
+
+function updateTransition() {
+  if (!transition.active) return;
+  if (transition.nextState !== null) {
+    transition.alpha += 0.05; 
+    if (transition.alpha >= 1) {
+      state = transition.nextState;
+      transition.nextState = null;
+      if (transition.callback) transition.callback();
+    }
+  } else {
+    transition.alpha -= 0.05; 
+    if (transition.alpha <= 0) { transition.alpha = 0; transition.active = false; }
+  }
+}
+
+const savedShips = localStorage.getItem("astro_unlocked_ships");
+if(savedShips) {
+    const unlockedNames = JSON.parse(savedShips);
+    ships.forEach(s => { if(unlockedNames.includes(s.name)) s.unlocked = true; });
+}
+
+function saveUnlockedShips() {
+    const unlockedNames = ships.filter(s => s.unlocked).map(s => s.name);
+    localStorage.setItem("astro_unlocked_ships", JSON.stringify(unlockedNames));
+}
+
+canvas.addEventListener("mousemove", e => {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+  mouseY = e.clientY - rect.top;
+});
+canvas.addEventListener("mousedown", () => isMouseDown = true);
+canvas.addEventListener("mouseup", () => isMouseDown = false);
+
+document.addEventListener("keydown", e=>{ keys[e.key]=true; if(e.key==="Escape" && state===STATE.PLAY) changeState(STATE.MENU); });
+document.addEventListener("keyup", e=>keys[e.key]=false);
+canvas.addEventListener("wheel", e=>{
+  if(state===STATE.SHOP) shopScroll = Math.max(0, Math.min(shopScroll + e.deltaY, (ships.length-1)*160));
+});
+
+function initStars(){ 
+  stars=[]; 
+  for(let i=0;i<80;i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:Math.random()*2.5+0.5, speed: Math.random()*0.3+0.1, twinkle: Math.random()*Math.PI*2}); 
+}
+initStars();
+
+function startLaunchAnimation() {
+  asteroids=[]; coins=[]; score=0; time=0; spawnTimer=0; explosion=null; flashAlpha=0; floatingTexts=[];
+  deathShockwave.active = false; glitchTimer = 0;
+  timeScale = 1; launchProgress = 0; earthY = 500;
+  currentLevel = 1; colorIndex = 0;
+  player.x = canvas.width/2; player.y = 520;
+  player.trail = []; player.angle = 0;
+  player.life=ships[player.type].bonus==="Vie Supplémentaire" ? 2 : 1; 
+  state = STATE.TAKEOFF;
+}
+
+function startLandingAnimation() {
+    asteroids = [];
+    coins = [];
+    explosion = null;
+    launchProgress = 1;
+    earthY = 800;
+    player.angle = Math.PI;
+    state = STATE.LANDING;
+}
+
+function spawnAsteroid(){ 
+  const r=16+Math.random()*28; 
+  const pts=Array.from({length:7}, ()=>0.6+Math.random()*0.8); 
+  const diffSpeed = 1.8 + Math.random()*1.5 + (score/800);
+  asteroids.push({x:r + Math.random()*(canvas.width-2*r), y:-r-50, r, speed:diffSpeed, rot:Math.random()*Math.PI*2, rotSpeed:(Math.random()-0.5)*0.05, pts}); 
+}
+
+function spawnCoin(){ coins.push({x:25+Math.random()*(canvas.width-50),y:-10,r:8,collected:false}); }
+
+canvas.addEventListener("click", e=>{
+  if (transition.active) return; 
+  if(state===STATE.MENU){
+    if(mouseInRect(110, 270, 200, 50)) changeState(STATE.TAKEOFF, startLaunchAnimation);
+    if(mouseInRect(110, 340, 200, 50)) changeState(STATE.SHOP);
+    // BOUTON QUITTER / RETOUR FICHIER
+    if(mouseInRect(110, 410, 200, 50)) window.location.href = "index.html"; 
+  } else if(state===STATE.SHOP){
+    ships.forEach((s,i)=>{
+      const cardY=140+i*160 - shopScroll;
+      if(mouseInRect(40, cardY, 340, 140)){
+        if(!s.unlocked && credits>=s.cost){ credits-=s.cost; s.unlocked=true; localStorage.setItem("astro_credits",credits); saveUnlockedShips(); }
+        if(s.unlocked) player.type=i;
+      }
+    });
+    if(mouseInRect(110, 540, 200, 50)) changeState(STATE.MENU);
+  } else if(state===STATE.GAMEOVER && flashAlpha <= 0.1) {
+    startLandingAnimation();
+  }
+});
+
+function mouseInRect(x,y,w,h){ return mouseX > x && mouseX < x+w && mouseY > y && mouseY < y+h; }
+
+function update(){
+  updateTransition();
+  canvas.style.cursor = "default"; // Reset cursor
+  if(flashAlpha > 0) flashAlpha -= 0.05;
+  if(coinFlashAlpha > 0) coinFlashAlpha -= 0.1; // Réduction rapide du flash pièce
+  if(glitchTimer > 0) glitchTimer--;
+
+  // Update textes flottants
+  floatingTexts.forEach((t, i) => {
+    t.y -= 2; t.alpha -= 0.02;
+    if(t.alpha <= 0) floatingTexts.splice(i, 1);
+  });
+
+  if(deathShockwave.active) {
+    deathShockwave.r += 10; deathShockwave.alpha -= 0.03;
+    if(deathShockwave.alpha <= 0) deathShockwave.active = false;
+  }
+
+  nebulas.forEach(n => {
+    n.y += n.speed * (state === STATE.GAMEOVER ? timeScale : 1);
+    if(n.y - n.r > canvas.height) { n.y = -n.r; n.x = Math.random() * canvas.width; }
+  });
+
+  if(state === STATE.TAKEOFF) {
+    launchProgress += 0.005;
+    earthY += 4; player.y -= 0.5; player.x += (Math.random()-0.5)*2;
+    if(launchProgress >= 1) state = STATE.PLAY;
+  }
+
+  if(state === STATE.LANDING) {
+      launchProgress -= 0.01;
+      earthY -= 5;
+      player.y += 2;
+      if(earthY <= 500) changeState(STATE.MENU);
+  }
+
+  if(state!==STATE.PLAY && state!==STATE.GAMEOVER && state!==STATE.TAKEOFF && state!==STATE.LANDING) return;
+  
+  let currentSpeed = (state === STATE.GAMEOVER) ? timeScale : 1;
+  if(state === STATE.GAMEOVER && timeScale > 0) timeScale -= 0.02;
+
+  time++; 
+  if(player.invulnerable > 0) player.invulnerable--;
+  const sD=ships[player.type];
+
+  if(state === STATE.PLAY || state === STATE.TAKEOFF || state === STATE.LANDING) {
+      let trailY = state === STATE.LANDING ? player.y - 15 : player.y + 15;
+      if(time % 2 === 0) player.trail.push({x: player.x + (Math.random()-0.5)*10, y: trailY, r: 4 + Math.random()*4, alpha: 0.6});
+  }
+  player.trail.forEach((p, i) => {
+      p.y += (state === STATE.LANDING ? -3 : 3) * currentSpeed; p.alpha -= 0.02; p.r *= 0.98;
+      if(p.alpha <= 0) player.trail.splice(i, 1);
+  });
+
+  if(state === STATE.PLAY) {
+    let nextLvl = Math.floor(score/500) + 1;
+    if(nextLvl > currentLevel) {
+      currentLevel = nextLvl; levelAnimTimer = 100;
+      colorIndex = (currentLevel - 1) % levelColors.length; flashAlpha = 0.3;
+      credits += 50; localStorage.setItem("astro_credits", credits);
+    }
+    if(levelAnimTimer > 0) levelAnimTimer--;
+
+    score += (sD.bonus==="Score x2" ? 1.1 : 0.55);
+    spawnTimer++;
+    const spawnRate = Math.max(10, 40 - Math.floor(score/150));
+    if(spawnTimer>=spawnRate){ spawnAsteroid(); spawnTimer=0; }
+    
+    asteroids.forEach(a=>{
+        a.y+=a.speed; a.rot+=a.rotSpeed;
+        if(Math.hypot(player.x-a.x,player.y-a.y)<player.r+a.r && player.invulnerable===0){
+          if(player.life>1){ 
+              player.life--; player.invulnerable=60; flashAlpha=0.4; asteroids=[]; glitchTimer = 10;
+          } else {
+            state = STATE.GAMEOVER; flashAlpha = 1; timeScale = 1; glitchTimer = 25;
+            deathShockwave = { active: true, r: 0, alpha: 1, x: player.x, y: player.y };
+            explosion={x:player.x,y:player.y,particles:[]};
+            for(let i=0;i<40;i++) explosion.particles.push({
+              x:player.x, y:player.y, vx:(Math.random()-0.5)*12, vy:(Math.random()-0.5)*12, 
+              r:Math.random()*6, alpha:1, color: Math.random() > 0.5 ? sD.color : "#ff5500"
+            });
+            if(Math.floor(score)>bestScore){ bestScore=Math.floor(score); localStorage.setItem("astro_best",bestScore); }
+          }
+        }
+    });
+
+    if(time%350===0) spawnCoin();
+    if(keys.ArrowLeft) player.x-=sD.speed; if(keys.ArrowRight) player.x+=sD.speed;
+    if(keys.ArrowUp) player.y-=sD.speed; if(keys.ArrowDown) player.y+=sD.speed;
+    player.x=Math.max(player.r, Math.min(canvas.width-player.r, player.x));
+    player.y=Math.max(player.r, Math.min(canvas.height-player.r, player.y));
+  }
+
+  asteroids=asteroids.filter(a=>a.y<canvas.height+50);
+  coins.forEach(c=>{
+    c.y+=2.5 * currentSpeed;
+    if(sD.bonus==="Aim Magnétique" && Math.hypot(player.x-c.x,player.y-c.y)<220){ c.x+=(player.x-c.x)*0.07; c.y+=(player.y-c.y)*0.07; }
+    if(Math.hypot(player.x-c.x,player.y-c.y)<player.r+c.r){ 
+        const val = 50*(sD.bonus==="Pièces x2"?2:1);
+        credits+=val; localStorage.setItem("astro_credits",credits); c.collected=true; 
+        coinFlashAlpha = 0.3; // Déclenche le flash
+        floatingTexts.push({x: c.x, y: c.y, text: `+${val} 💰`, alpha: 1}); // Ajoute le texte
+    }
+  });
+  coins=coins.filter(c=>c.y<canvas.height && !c.collected);
+}
+
+function applyGlitch() {
+    if (glitchTimer <= 0) return;
+    for (let i = 0; i < 5; i++) {
+        let y = Math.random() * canvas.height; let h = Math.random() * 20 + 5;
+        let offset = (Math.random() - 0.5) * 40;
+        ctx.drawImage(canvas, 0, y, canvas.width, h, offset, y, canvas.width, h);
+    }
+}
+
+function draw(){
+  const curCol = (state === STATE.MENU || state === STATE.SHOP) ? "#00d9ff" : levelColors[colorIndex];
+  ctx.fillStyle = "#020510"; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  nebulas.forEach(n => {
+    let gradient = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+    gradient.addColorStop(0, n.color); gradient.addColorStop(1, "transparent");
+    ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI*2); ctx.fill();
+  });
+  
+  stars.forEach(s=>{ 
+    ctx.fillStyle=`rgba(255,255,255,${(0.3+Math.sin(time*0.05+s.twinkle)*0.4)})`;
+    ctx.fillRect(s.x,s.y,s.s,s.s); 
+    if(state === STATE.PLAY || state === STATE.GAMEOVER || state === STATE.TAKEOFF || state === STATE.LANDING) { 
+        let starDir = state === STATE.LANDING ? -s.speed : s.speed;
+        s.y+=starDir * (state===STATE.GAMEOVER?timeScale:1); 
+        if(s.y>canvas.height) s.y=0; if(s.y<0) s.y=canvas.height;
+    }
+  });
+
+  if(state === STATE.TAKEOFF || state === STATE.LANDING) {
+    ctx.fillStyle = "#2e7d32"; ctx.beginPath(); ctx.arc(canvas.width/2, earthY + 400, 500, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#1565c0"; ctx.beginPath(); ctx.arc(canvas.width/2, earthY + 420, 480, 0, Math.PI*2); ctx.fill();
+  }
+
+  if(state === STATE.PLAY || state === STATE.GAMEOVER || state === STATE.TAKEOFF || state === STATE.LANDING) {
+      player.trail.forEach(p => { ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill(); });
+      asteroids.forEach(a=>{
+        ctx.save(); ctx.translate(a.x,a.y); ctx.rotate(a.rot); ctx.shadowBlur=12; ctx.shadowColor=curCol;
+        const g=ctx.createRadialGradient(0,0,0,0,0,a.r); g.addColorStop(0,"#fff"); g.addColorStop(0.4, curCol); g.addColorStop(1,"#111");
+        ctx.fillStyle=g; ctx.beginPath(); a.pts.forEach((p,i)=>{ const ang=i/a.pts.length*Math.PI*2; ctx.lineTo(Math.cos(ang)*a.r*p, Math.sin(ang)*a.r*p); });
+        ctx.closePath(); ctx.fill(); ctx.restore();
+      });
+      coins.forEach(c=>{ ctx.shadowBlur=15; ctx.shadowColor="#ffd700"; ctx.fillStyle="#ffd700"; ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; });
+  }
+
+  const sD=ships[player.type];
+  if(state===STATE.PLAY || state===STATE.TAKEOFF || state===STATE.LANDING || (state===STATE.GAMEOVER && timeScale > 0.5)){
+      ctx.save(); ctx.translate(player.x,player.y);
+      ctx.rotate(player.angle);
+      if(player.invulnerable>0 && Math.floor(time/5)%2===0) ctx.globalAlpha=0.3;
+      ctx.fillStyle=sD.flame; ctx.beginPath(); ctx.moveTo(-8,15); ctx.lineTo(0,20+Math.sin(time*0.5)*8); ctx.lineTo(8,15); ctx.fill();
+      ctx.shadowBlur=20; ctx.shadowColor=sD.color; ctx.fillStyle=sD.color;
+      ctx.beginPath(); ctx.moveTo(0,-22); ctx.lineTo(16,18); ctx.lineTo(0,10); ctx.lineTo(-16,18); ctx.fill();
+      ctx.fillStyle=sD.cockpit; ctx.beginPath(); ctx.arc(0,-4,6,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+  }
+
+  // Dessin des textes flottants (+50)
+  floatingTexts.forEach(t => {
+    ctx.save(); ctx.globalAlpha = t.alpha; ctx.fillStyle = "#ffd700"; ctx.font = "bold 16px sans-serif";
+    ctx.textAlign = "center"; ctx.fillText(t.text, t.x, t.y); ctx.restore();
+  });
+
+  if(deathShockwave.active) {
+    ctx.save(); ctx.strokeStyle = `rgba(255,255,255,${deathShockwave.alpha})`;
+    ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(deathShockwave.x, deathShockwave.y, deathShockwave.r, 0, Math.PI*2);
+    ctx.stroke(); ctx.restore();
+  }
+
+  if(explosion) {
+    explosion.particles.forEach((p,i)=>{
+        p.x+=p.vx; p.y+=p.vy; p.alpha-=0.015; ctx.fillStyle=`rgba(${p.color === "#ff5500" ? '255,85,0' : '0,217,255'},${p.alpha})`;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+        if(p.alpha<=0) explosion.particles.splice(i,1);
+    });
+  }
+
+  if(levelAnimTimer > 0 && state === STATE.PLAY) {
+      ctx.save(); ctx.globalAlpha = Math.min(1, levelAnimTimer / 20); ctx.fillStyle = curCol; ctx.font = "bold 50px sans-serif"; ctx.textAlign = "center";
+      ctx.shadowBlur = 20; ctx.shadowColor = curCol; ctx.fillText(`LEVEL ${currentLevel}`, canvas.width/2, 250);
+      ctx.font = "bold 24px sans-serif"; ctx.fillText("+50 💰 BONUS", canvas.width/2, 290); ctx.restore();
+  }
+
+  // UI Top Bar
+  ctx.shadowBlur=0; ctx.fillStyle="rgba(0,0,0,0.8)"; ctx.fillRect(0,0,canvas.width,40);
+  ctx.fillStyle="#fff"; ctx.font="bold 14px sans-serif"; ctx.textAlign="left"; 
+  ctx.fillText(`🎯 ${Math.floor(score)}`, 15, 25);
+  ctx.fillStyle=curCol; ctx.fillText(`LVL ${state === STATE.PLAY ? currentLevel : 1}`, 75, 25);
+  ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.fillText(`🏆 ${bestScore}`, 210, 25);
+  ctx.textAlign="right"; ctx.fillText(`💰 ${credits}`, 405, 25);
+
+  if(state===STATE.MENU){
+    ctx.fillStyle="#fff"; ctx.font="bold 45px sans-serif"; ctx.textAlign="center"; ctx.fillText("ASTRO DODGE", 210, 180);
+    drawBtn("▶ JOUER", 210, 270, 200, 50, curCol);
+    drawBtn("🛒 SHOP", 210, 340, 200, 50, curCol);
+    drawBtn("✖ QUITTER", 210, 410, 200, 50, "#ff3300"); // Bouton de retour
+  } else if(state===STATE.SHOP){
+    ctx.fillStyle="#fff"; ctx.font="bold 30px sans-serif"; ctx.textAlign="center"; ctx.fillText("BOUTIQUE", 210, 75);
+    ships.forEach((s,i)=>{
+      const cardY=140+i*160 - shopScroll; if(cardY > 640 || cardY < -140) return;
+      const hover = mouseInRect(40, cardY, 340, 140);
+      ctx.shadowBlur=hover?25:15; ctx.shadowColor=player.type===i?"#fff":s.color;
+      ctx.fillStyle=hover?"#252545":"#1a1a2e"; ctx.fillRect(40, cardY, 340, 140);
+      ctx.shadowBlur=0; ctx.fillStyle="#fff"; ctx.textAlign="left"; ctx.font="bold 18px sans-serif"; ctx.fillText(s.name, 60, cardY+35);
+      ctx.fillStyle=curCol; ctx.font="14px sans-serif"; ctx.fillText(s.bonus, 60, cardY+55);
+      ctx.fillStyle="#aaa"; wrapText(s.desc, 60, cardY+80, 240, 16);
+      ctx.fillStyle=s.unlocked?(player.type===i?"#00ff88":"#888"):"#ffd700";
+      ctx.textAlign="right"; ctx.fillText(s.unlocked?(player.type===i?"ÉQUIPÉ":"DÉBLOQUÉ"):s.cost+" 💰", 360, cardY+35);
+    });
+    drawBtn("RETOUR", 210, 540, 200, 50, curCol);
+  } else if(state===STATE.GAMEOVER){
+    ctx.fillStyle="#fff"; ctx.font="bold 45px sans-serif"; ctx.textAlign="center"; ctx.fillText("CRASH SYSTÈME", 210, 300);
+    ctx.font="18px sans-serif"; ctx.fillText("Clique pour atterrir", 210, 360);
+  }
+
+  if(flashAlpha > 0) { ctx.fillStyle = `rgba(255,255,255,${flashAlpha})`; ctx.fillRect(0,0,canvas.width,canvas.height); }
+  if(coinFlashAlpha > 0) { ctx.fillStyle = `rgba(255,215,0,${coinFlashAlpha})`; ctx.fillRect(0,0,canvas.width,canvas.height); } // Flash doré
+  if (transition.active) { ctx.globalAlpha = transition.alpha; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1.0; }
+  
+  applyGlitch();
+}
+
+function drawBtn(t, x, y, w, h, c){
+  const hover = mouseInRect(x-w/2, y, w, h);
+  if(hover) canvas.style.cursor = "pointer";
+  const pressShift = (hover && isMouseDown) ? 2 : 0;
+  const sizeMod = hover ? 1.05 : 1.0;
+  ctx.save(); ctx.translate(x, y + h/2 + pressShift); ctx.scale(sizeMod, sizeMod);
+  ctx.shadowBlur = hover ? 30 : 15; ctx.shadowColor = c;
+  ctx.fillStyle = c; ctx.fillRect(-w/2, -h/2, w, h);
+  ctx.shadowBlur = 0; ctx.fillStyle = "#000"; ctx.font = "bold 18px sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, 0, 0); ctx.restore();
+}
+
+function wrapText(t,x,y,mW,lH){
+  let words=t.split(' '), line='';
+  for(let n=0;n<words.length;n++){
+    let test=line+words[n]+' ';
+    if(ctx.measureText(test).width>mW && n>0){ ctx.fillText(line,x,y); line=words[n]+' '; y+=lH; } else line=test;
+  }
+  ctx.fillText(line,x,y);
+}
+
+setInterval(update, 1000/60);
+function loop(){ draw(); requestAnimationFrame(loop); }
+loop();
+</script>
+</body>
+</html>

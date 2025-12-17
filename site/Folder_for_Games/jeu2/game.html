@@ -759,7 +759,32 @@ function draw(){
         drawBtn("RETOUR", 210, 540, 200, 50, curCol);
     } else if(state===STATE.SHOP){
         
-        // --- Affichage des Crédits dans la Boutique (Hotbar style, repositionné en haut) ---
+        ctx.fillStyle="#fff"; ctx.font="bold 30px sans-serif"; ctx.textAlign="center"; ctx.fillText("BOUTIQUE", 210, 75); 
+
+        // Dessin des cartes (avec coins arrondis et ombre)
+        ships.forEach((s,i)=>{ 
+            const cardY=140+i*160 - shopScroll; 
+            if(cardY > GAME_HEIGHT || cardY < -140) return; 
+            const hover = mouseInRect(40, cardY, 340, 140); 
+            
+            // 1. Dessin du fond de carte arrondi avec ombre
+            ctx.shadowBlur=hover?25:15; 
+            ctx.shadowColor=player.type===i?"#fff":s.color; 
+            ctx.fillStyle=hover?"#252545":"#1a1a2e"; 
+            drawRoundedRect(40, cardY, 340, 140, 10, true, false); // Utilisation de drawRoundedRect
+            ctx.shadowBlur=0; 
+            
+            // 2. Dessin du contenu
+            ctx.fillStyle="#fff"; ctx.textAlign="left"; ctx.font="bold 18px sans-serif"; ctx.fillText(s.name, 60, cardY+35); 
+            ctx.fillStyle=curCol; ctx.font="14px sans-serif"; ctx.fillText(s.bonus, 60, cardY+55); 
+            ctx.fillStyle="#aaa"; wrapText(s.desc, 60, cardY+80, 240, 16); 
+            ctx.fillStyle=s.unlocked?(player.type===i?"#00ff88":"#888"):"#ffd700"; 
+            ctx.textAlign="right"; ctx.fillText(s.unlocked?(player.type===i?"ÉQUIPÉ":"DÉBLOQUÉ"):s.cost+" 💰", 360, cardY+35); 
+        });
+
+        drawBtn("RETOUR", 210, 540, 200, 50, curCol);
+        
+        // --- Affichage des Crédits dans la Boutique (Hotbar style, DESSINÉ EN DERNIER pour être au-dessus) ---
         const barX = 130; 
         const barY = 10;
         const barW = 160;
@@ -785,9 +810,6 @@ function draw(){
         ctx.fillText(`${credits}`, barX + 45, textY);
         // --- Fin Affichage Crédits ---
 
-        ctx.fillStyle="#fff"; ctx.font="bold 30px sans-serif"; ctx.textAlign="center"; ctx.fillText("BOUTIQUE", 210, 75); 
-        ships.forEach((s,i)=>{ const cardY=140+i*160 - shopScroll; if(cardY > GAME_HEIGHT || cardY < -140) return; const hover = mouseInRect(40, cardY, 340, 140); ctx.shadowBlur=hover?25:15; ctx.shadowColor=player.type===i?"#fff":s.color; ctx.fillStyle=hover?"#252545":"#1a1a2e"; ctx.fillRect(40, cardY, 340, 140); ctx.shadowBlur=0; ctx.fillStyle="#fff"; ctx.textAlign="left"; ctx.font="bold 18px sans-serif"; ctx.fillText(s.name, 60, cardY+35); ctx.fillStyle=curCol; ctx.font="14px sans-serif"; ctx.fillText(s.bonus, 60, cardY+55); ctx.fillStyle="#aaa"; wrapText(s.desc, 60, cardY+80, 240, 16); ctx.fillStyle=s.unlocked?(player.type===i?"#00ff88":"#888"):"#ffd700"; ctx.textAlign="right"; ctx.fillText(s.unlocked?(player.type===i?"ÉQUIPÉ":"DÉBLOQUÉ"):s.cost+" 💰", 360, cardY+35); });
-        drawBtn("RETOUR", 210, 540, 200, 50, curCol);
     } else if(state===STATE.GAMEOVER){
         ctx.fillStyle="#fff"; ctx.font="bold 45px sans-serif"; ctx.textAlign="center"; ctx.fillText("CRASH SYSTÈME", 210, 300); ctx.font="18px sans-serif"; ctx.fillText("Clique pour atterrir", 210, 360);
     } else if (state===STATE.LOADING) {

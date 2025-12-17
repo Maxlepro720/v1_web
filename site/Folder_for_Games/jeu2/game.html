@@ -5,6 +5,7 @@
 <title>Astro Dodge</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
+/* ... (Style CSS inchangé) ... */
 body { 
     margin:0; 
     background: #0a0e27; 
@@ -283,7 +284,7 @@ let state=STATE.LOADING;
 let transition = { active: false, alpha: 0, nextState: null, callback: null };
 
 let username = localStorage.getItem("username") || "Invité"; 
-let score=0, bestScore=0, credits=0, lastScore=0; 
+let score=0, bestScore=0, credits=0; 
 let time=0, spawnTimer=0, asteroids=[], stars=[], coins=[], keys={}, explosion=null, flashAlpha=0;
 let coinFlashAlpha = 0, floatingTexts = [], shopScroll=0;
 let player={x:210,y:560,r:18,type:0,life:1, invulnerable:0, trail:[], angle:0};
@@ -361,7 +362,6 @@ async function loadGameData() {
             const data = result.data;
             bestScore = Number(data.PR_Score) || 0;
             credits = Number(data.Coins) || 0;
-            lastScore = Number(data.Last_Score) || 0; 
             const unlockedCarsString = data.Voiture || "Standard"; 
             const unlockedCarsArray = unlockedCarsString.split(',');
             let selectedShipName = ships[player.type].name; 
@@ -406,7 +406,6 @@ async function saveGameData(newScore = null) {
     
     if (newScore !== null) {
         dataToSave.PR_Score = Math.floor(newScore);
-        dataToSave.Last_Score = Math.floor(newScore); 
     }
 
     try {
@@ -427,11 +426,10 @@ async function loadLeaderboard() {
         const result = await response.json();
         
         if (result.status === "success") {
-            // Afficher le Top 10
             leaderboardData = result.leaderboard.map(e => ({
                 name: (e.username === username ? "Vous" : e.username), 
                 score: e.PR_Score
-            })).sort((a, b) => b.score - a.score).slice(0, 10); 
+            })).sort((a, b) => b.score - a.score).slice(0, 5); 
             
             if (!leaderboardData.some(e => e.name === "Vous")) {
                 leaderboardData.push({ name: "Vous", score: bestScore });
@@ -628,7 +626,6 @@ function update(){
                     if(Math.floor(score)>bestScore){ 
                         bestScore=Math.floor(score); 
                     }
-                    lastScore = Math.floor(score); 
                     saveGameData(score); 
                 }
             }
@@ -723,56 +720,15 @@ function draw(){
         drawBtn("COMMENCER", 210, 480, 200, 50, curCol, startButtonAnim.scale, startButtonAnim.alpha);
     
     } else if(state===STATE.MENU){
-        // Bandeau de titre avec stats
         const bounce = Math.sin(time * 0.04) * 8;
-        ctx.save(); 
-        ctx.translate(210, 110 + bounce); 
-        ctx.shadowBlur = 20 + Math.sin(time*0.1)*10; 
-        ctx.shadowColor = "#00d9ff"; 
-        ctx.fillStyle = "#fff"; 
-        ctx.font = "bold 52px sans-serif"; 
-        ctx.textAlign = "center"; 
-        ctx.fillText("ASTRO DODGE", 0, 0); 
-        ctx.font = "bold 12px sans-serif"; 
-        ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; 
-        ctx.fillText(`Bienvenue, ${username}`, 0, 25); 
-        ctx.restore();
-        
-        // Affichage des stats dans le menu (style Clash Royale)
-        ctx.fillStyle="rgba(0,0,0,0.8)"; ctx.fillRect(0, 0, GAME_WIDTH, 40);
-        
-        // Crédits
-        ctx.fillStyle="#ffd700"; 
-        ctx.beginPath(); ctx.arc(35, 20, 10, 0, Math.PI*2); ctx.fill(); 
-        ctx.fillStyle="#fff"; ctx.font="bold 16px sans-serif"; ctx.textAlign="left"; ctx.fillText(`${credits}`, 55, 25);
-
-        // Record
-        ctx.fillStyle="#fff"; ctx.font="bold 16px sans-serif"; ctx.textAlign="center"; ctx.fillText(`🏆 Record: ${bestScore}`, 210, 25);
-        
-        // Dernier Score
-        ctx.fillStyle=curCol; ctx.font="bold 16px sans-serif"; ctx.textAlign="right"; ctx.fillText(`⚡ Dernier: ${lastScore}`, 390, 25);
-        
-        // Boutons ajustés en Y
+        ctx.save(); ctx.translate(210, 150 + bounce); ctx.shadowBlur = 20 + Math.sin(time*0.1)*10; ctx.shadowColor = "#00d9ff"; ctx.fillStyle = "#fff"; ctx.font = "bold 52px sans-serif"; ctx.textAlign = "center"; ctx.fillText("ASTRO DODGE", 0, 0); ctx.font = "bold 12px sans-serif"; ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; ctx.fillText(`Bienvenue, ${username}`, 0, 25); ctx.restore();
         drawBtn("▶ JOUER", 210, 240, 200, 50, curCol);
         drawBtn("🛒 SHOP", 210, 310, 200, 50, curCol);
         drawBtn("🏆 CLASSEMENT", 210, 380, 200, 50, curCol);
         drawBtn("✖ QUITTER", 210, 450, 200, 50, "#ff3300");
     } else if(state===STATE.LEADERBOARD){
-        ctx.fillStyle="#fff"; ctx.font="bold 30px sans-serif"; ctx.textAlign="center"; ctx.fillText("CLASSEMENT MONDIAL (TOP 10)", 210, 40); 
-        
-        // Décalage pour le titre
-        leaderboardData.forEach((entry, i) => { 
-            const y = 80 + i * 50; 
-            const isPlayer = entry.name === "Vous"; 
-            ctx.fillStyle = isPlayer ? "rgba(0, 217, 255, 0.2)" : "rgba(255, 255, 255, 0.05)"; 
-            ctx.fillRect(40, y-25, 340, 40); 
-            ctx.fillStyle = isPlayer ? "#00d9ff" : "#fff"; 
-            ctx.textAlign = "left"; 
-            ctx.font = "bold 18px sans-serif"; 
-            ctx.fillText(`${i+1}. ${entry.name}`, 60, y); 
-            ctx.textAlign = "right"; 
-            ctx.fillText(`${entry.score}`, 360, y); 
-        });
+        ctx.fillStyle="#fff"; ctx.font="bold 30px sans-serif"; ctx.textAlign="center"; ctx.fillText("CLASSEMENT MONDIAL", 210, 80);
+        leaderboardData.forEach((entry, i) => { const y = 160 + i * 60; const isPlayer = entry.name === "Vous"; ctx.fillStyle = isPlayer ? "rgba(0, 217, 255, 0.2)" : "rgba(255, 255, 255, 0.05)"; ctx.fillRect(40, y-35, 340, 50); ctx.fillStyle = isPlayer ? "#00d9ff" : "#fff"; ctx.textAlign = "left"; ctx.font = "bold 20px sans-serif"; ctx.fillText(`${i+1}. ${entry.name}`, 60, y); ctx.textAlign = "right"; ctx.fillText(`${entry.score}`, 360, y); });
         drawBtn("RETOUR", 210, 540, 200, 50, curCol);
     } else if(state===STATE.SHOP){
         ctx.fillStyle="#fff"; ctx.font="bold 30px sans-serif"; ctx.textAlign="center"; ctx.fillText("BOUTIQUE", 210, 75);
@@ -836,7 +792,25 @@ function draw(){
         ctx.textAlign = "center"; ctx.fillText(t.text, t.x, t.y); ctx.restore();
     });
 
-    if(state === STATE.PLAY) { ctx.fillStyle="rgba(0,0,0,0.8)"; ctx.fillRect(0,0,GAME_WIDTH,40); ctx.fillStyle="#fff"; ctx.font="bold 14px sans-serif"; ctx.textAlign="left"; ctx.fillText(`🎯 ${Math.floor(score)}`, 15, 25); ctx.fillStyle=curCol; ctx.fillText(`LVL ${currentLevel}`, 75, 25); ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.fillText(`🏆 ${bestScore}`, 210, 25); ctx.textAlign="right"; ctx.fillText(`💰 ${credits}`, 405, 25); }
+    if(state === STATE.PLAY) { 
+        const barX = 5, barY = 5, barW = GAME_WIDTH - 10, barH = 30, barR = 8;
+        const textY = barY + barH/2 + 5; // Position Y ajustée pour le texte
+        
+        // 1. Dessin du fond sombre semi-transparent
+        ctx.fillStyle="rgba(0, 0, 0, 0.7)"; 
+        drawRoundedRect(barX, barY, barW, barH, barR, true, false); 
+
+        // 2. Dessin du contour néon (utilise curCol)
+        ctx.strokeStyle = curCol; 
+        ctx.lineWidth = 2;
+        drawRoundedRect(barX, barY, barW, barH, barR, false, true, curCol, 15); 
+        
+        // 3. Dessin des textes
+        ctx.fillStyle="#fff"; ctx.font="bold 14px sans-serif"; ctx.textAlign="left"; ctx.fillText(`🎯 ${Math.floor(score)}`, 15, textY); 
+        ctx.fillStyle=curCol; ctx.fillText(`LVL ${currentLevel}`, 75, textY); 
+        ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.fillText(`🏆 ${bestScore}`, 210, textY); 
+        ctx.textAlign="right"; ctx.fillText(`💰 ${credits}`, 405, textY); 
+    }
 
     if(flashAlpha > 0) { ctx.fillStyle = `rgba(255,255,255,${flashAlpha})`; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT); }
     if(coinFlashAlpha > 0) { ctx.fillStyle = `rgba(255,215,0,${coinFlashAlpha})`; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT); }
@@ -875,6 +849,39 @@ function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1){
 }
 
 function wrapText(t,x,y,mW,lH){ let words=t.split(' '), line=''; for(let n=0;n<words.length;n++){ let test=line+words[n]+' '; if(ctx.measureText(test).width>mW && n>0){ ctx.fillText(line,x,y); line=words[n]+' '; y+=lH; } else line=test; } ctx.fillText(line,x,y); }
+
+// --- Nouvelle fonction pour dessiner des rectangles arrondis (utilisée pour la hotbar) ---
+function drawRoundedRect(x, y, w, h, r, fill = true, stroke = true, shadowC = null, shadowB = 0){
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+
+    if (shadowC) {
+        ctx.shadowColor = shadowC;
+        ctx.shadowBlur = shadowB;
+    }
+
+    if (fill) {
+        ctx.fill();
+    }
+    
+    if (stroke) {
+        ctx.stroke();
+    }
+    
+    ctx.shadowBlur = 0; 
+    ctx.shadowColor = "#000"; 
+}
+// -----------------------------------------------------------------------------------
+
 
 function loop(){ 
     update(); 

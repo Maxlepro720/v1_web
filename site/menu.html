@@ -61,7 +61,7 @@
             backdrop-filter:blur(15px);
             border-radius:20px;
             overflow:hidden;
-            cursor:pointer; /* Ajout du curseur pointer par défaut */
+            cursor:pointer; 
             transition:transform 0.3s,box-shadow 0.3s;
             box-shadow:0 5px 20px rgba(0,0,0,0.4);
         }
@@ -75,7 +75,7 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.4);
         }
         .card.disabled:hover::before {
-            animation: none; /* Désactiver l'effet shimmer */
+            animation: none; 
         }
 
         .card::before{content:"";position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(120deg,rgba(255,255,255,0.1),rgba(255,255,255,0.3),rgba(255,255,255,0.1));transform:skewX(-20deg);transition:0.5s;}
@@ -110,7 +110,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.0); /* Augmenté l'opacité pour le contraste */
+            background: rgba(0, 0, 0, 0.0); 
             z-index: 1;
         }
 
@@ -122,7 +122,7 @@
         .card-info{padding:15px;}
         .card-title{font-size:18px;font-weight:600;margin:0;color:#fff;}
         .card-genre{font-size:14px;opacity:0.6;margin-top:6px;margin-bottom:12px;}
-        .card-button{ /* Correction de la classe ici pour ne pas avoir 'card button' */
+        .card-button{ 
             width:100%;background:#00bfff;border:none;padding:12px;color:#fff;font-size:15px;border-radius:12px;cursor:pointer;transition:0.2s;
         }
         .card-button:hover{background:#009acd;}
@@ -139,7 +139,7 @@
         .sidebar-open{right:0 !important;}
 
         /* ----------------------------------- */
-        /* POPUP COOKIES (AJOUTÉ) */
+        /* POPUP COOKIES */
         /* ----------------------------------- */
 
         #cookie-modal-overlay {
@@ -179,7 +179,6 @@
         /* Largeur Fixe pour les deux boutons dans la modale */
         #refuse-cookies-button, 
         #accept-cookies-button {
-            /* 165px est calculé pour que les deux boutons rentrent bien dans la modale de 400px de large */
             width: 165px; 
             border: none;
             padding: 12px;
@@ -225,7 +224,7 @@
              width: 165px; /* Largeur CONSTANTE */
         }
 
-        /* Croix : Immobile et presque invisible (CLICABLE) */
+        // Croix : Immobile et presque invisible (CLICABLE) */
         #close-cookie-modal {
             position: absolute; 
             top: 5px; 
@@ -276,11 +275,9 @@
         </div>
     </div>
 </div>
-
 <script>
     const API_URL="https://project-3-api-2bgb.onrender.com";
     
-    // CORRECTION ICI : Ajout de la propriété 'img' dans les objets
     const games=[
         {id:1,title:"Skull Arena",genre:"Survie",link:"Folder_for_Games/jeu_1/game.html",color:"#CF4F5E", img:"Image/Image_Skull_Arena.png"},
         {id:2,title:"MTPlayer Clicker",genre:"Clicker",link:"private_clicker.html",color:"#63D945", img:"Image/Image_MTPClicker.png"}, 
@@ -294,11 +291,10 @@
     const welcomeTitle=document.getElementById("welcomeTitle");
     if(username){welcomeTitle.textContent=`🎮 ${username}`;}
 
-    // --- LOGIQUE MASQUAGE/DÉMASQUAGE HOTBAR (MODIFIÉE) ---
+    // --- LOGIQUE MASQUAGE/DÉMASQUAGE HOTBAR ---
     const mainHeader = document.getElementById('main-header');
-    const DETECTION_ZONE_HEIGHT = 50; // Détection si la souris est dans les 50 premiers pixels
+    const DETECTION_ZONE_HEIGHT = 50; 
 
-    // Au chargement, on affiche la barre une fois puis on la masque après 2 secondes.
     setTimeout(() => {
         mainHeader.classList.add('show');
     }, 100); 
@@ -307,19 +303,14 @@
         mainHeader.classList.remove('show');
     }, 2500); 
 
-    // Écoute le mouvement de la souris sur tout le document
     document.addEventListener('mousemove', (e) => {
-        // e.clientY est la position verticale du curseur par rapport au viewport (haut de l'écran = 0)
         if (e.clientY <= DETECTION_ZONE_HEIGHT) {
-            // Si la souris est dans la zone de détection (50px du haut)
             mainHeader.classList.add('show');
         } else if (e.clientY > mainHeader.offsetHeight) {
-             // Si la souris est clairement sous le header (pour éviter le clignotement)
-             mainHeader.classList.remove('show');
+            mainHeader.classList.remove('show');
         }
     });
-    // ----------------------------------------------------
-
+    // ------------------------------------------
 
     let isLoggingOut=false;
 
@@ -348,12 +339,10 @@
             const card=document.createElement("div");
             card.className="card";
             
-            // --- AJOUTER LA CLASSE 'disabled' si pas de lien
             if (!game.link) {
                 card.classList.add('disabled');
             }
 
-            // --- LOGIQUE POUR L'IMAGE DE FOND ---
             let imageStyle = `background-color: ${game.color};`; 
             let iconHtml = '<div class="game-icon">🎮</div>'; 
 
@@ -361,11 +350,9 @@
                 imageStyle = `background-image: url('${game.img}');`;
                 iconHtml = ''; 
             }
-            // ------------------------------------------
 
             const link=game.link?game.link:"#";
             
-            // On retire l'onclick du bouton, on va le gérer sur la carte
             card.innerHTML=`
             <div class="card-image" style="${imageStyle}">
                 ${iconHtml}
@@ -376,29 +363,19 @@
                 <button class="card-button" ${game.link?"":"disabled"}>▶ LANCER</button> 
             </div>`;
             
-            // --- NOUVEAU : Écouteur d'événement sur la carte ---
             if (game.link) {
                 card.addEventListener('click', () => {
-                    // On vérifie que la cible du clic n'est PAS le bouton (pour garder l'effet d'origine du bouton)
-                    // Bien que j'ai retiré l'onclick du bouton, le bouton pourrait être désactivé ou avoir un autre comportement futur.
-                    // Ici on applique la redirection pour toute la carte
                     window.location.href = link;
                 });
             }
-            // ----------------------------------------------------
             
-            // Si le bouton est cliquable (il a un lien), on gère quand même la redirection. 
-            // C'est un peu redondant avec le clic sur la carte, mais assure la compatibilité 
-            // si un autre bouton était ajouté ou si l'utilisateur clique spécifiquement sur le bouton.
             const cardButton = card.querySelector('.card-button');
-             if (game.link) {
+            if (game.link) {
                 cardButton.addEventListener('click', (e) => {
-                    // Empêcher l'événement de se propager à la carte après le clic sur le bouton
                     e.stopPropagation(); 
                     window.location.href = link;
                 });
             }
-
 
             grid.appendChild(card);
         });
@@ -420,7 +397,7 @@
 
 
     // ----------------------------------------------------
-    // --- GESTION DES COOKIES ---
+    // --- GESTION DES COOKIES (LOGIQUE MISE À JOUR) ---
     // ----------------------------------------------------
     const cookieOverlay = document.getElementById('cookie-modal-overlay');
     const acceptButton = document.getElementById('accept-cookies-button');
@@ -444,20 +421,21 @@
         }});
     }
     
-    // --- NOUVEAU : Fonction pour accepter les cookies et fermer ---
+    // Fonction pour accepter les cookies et fermer
     function acceptCookiesAndClose() {
+        // ENREGISTREMENT DANS LOCALSTORAGE
         localStorage.setItem('cookies_accepted', 'true');
         closeCookieModal();
     }
     
-    // --- NOUVEAU : Vérification au chargement ---
+    // VÉRIFICATION AU CHARGEMENT DE LA PAGE
     const isCookiesAccepted = localStorage.getItem('cookies_accepted') === 'true';
     
     if (isCookiesAccepted) {
         // Si les cookies sont déjà acceptés, on cache immédiatement la modale.
         cookieOverlay.style.display = 'none';
     } else {
-        // Si non accepté, on affiche et on démarre le "jeu"
+        // Si non accepté, on affiche la modale et on démarre le "jeu"
 
         // Fonction de téléportation
         function teleportButton() {
@@ -484,13 +462,9 @@
         
         // Démarre la téléportation répétée
         function startTeleportation() {
-            // Enlève le statut 'stopped' si on le touche à nouveau
             acceptButton.classList.remove('stopped'); 
-
-            // 1. Passage en mode "téléportation" (fixed position + pointer-events: none)
             acceptButton.classList.add('teleporting');
             
-            // 2. Lancer l'intervalle si non démarré
             if (!teleportIntervalId) {
                  teleportIntervalId = setInterval(teleportButton, MOVEMENT_INTERVAL);
                  teleportButton(); // Déplacement immédiat
@@ -504,7 +478,6 @@
                 teleportIntervalId = null;
             }
             
-            // Ajouter la classe 'stopped' pour rendre le bouton à nouveau survolable
             acceptButton.classList.add('stopped');
             acceptButton.classList.remove('teleporting');
         }
@@ -517,8 +490,8 @@
         acceptButton.addEventListener('mouseover', startTeleportation);
         acceptButton.addEventListener('mouseleave', stopTeleportation); 
         
-        // 3. La SEULE issue : le clic sur la croix invisible
-        closeButton.addEventListener('click', acceptCookiesAndClose); // <-- MODIFIÉ ICI
+        // 3. La SEULE issue : le clic sur la croix invisible (qui accepte et ferme)
+        closeButton.addEventListener('click', acceptCookiesAndClose); 
         
         // 4. S'assurer que le clic sur accepter ne fait RIEN.
         acceptButton.addEventListener('click', (e) => e.preventDefault());

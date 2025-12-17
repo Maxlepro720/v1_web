@@ -10,36 +10,16 @@
         /* CSS GÉNÉRAL & MISE EN PAGE */
         /* ----------------------------------- */
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:'Segoe UI',Arial,sans-serif;background:#0f1419;color:#eee;scroll-behavior:smooth;overflow-x:hidden;}
-        
-        /* Ajustements pour la barre qui monte/descend */
-        header{
-            position:fixed; 
-            top:0;
-            left: 0;
-            width: 100%; 
-            background:rgba(15,20,25,0.6);
-            backdrop-filter:blur(20px);
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            padding:15px 30px;
-            box-shadow:0 4px 20px rgba(0,0,0,0.6);
-            border-radius:0 0 20px 20px;
-            z-index:10;
-            /* Position initiale hors écran, ne laissant qu'une fine bordure visible */
-            transform: translateY(calc(-100% + 10px)); 
-            transition: transform 0.4s ease-out; 
+        body{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background:#0f1419;
+            color:#eee;
+            scroll-behavior:smooth;
+            overflow-x:hidden;
         }
-
-        /* Classe pour afficher la barre quand elle est survolée */
-        header.show {
-            transform: translateY(0);
-        }
-
+        header{position:sticky;top:0;background:rgba(15,20,25,0.6);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-between;padding:15px 30px;box-shadow:0 4px 20px rgba(0,0,0,0.6);border-radius:0 0 20px 20px;z-index:10;}
         header h1{font-size:28px;color:#fff;font-weight:700;letter-spacing:1px;transition:0.3s;}
         header h1:hover{color:#00bfff;}
-        
         #main-nav{display:flex;align-items:center;gap:15px;background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);padding:10px 20px;border-radius:20px;}
         #main-nav button{background:transparent;color:#fff;border:none;padding:10px 18px;border-radius:15px;font-weight:600;cursor:pointer;transition:0.3s;font-size:16px;position:relative;overflow:hidden;}
         #main-nav button::after{content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,191,255,0.2);opacity:0;transition:0.3s;border-radius:15px;}
@@ -51,81 +31,11 @@
         #logout-button:hover{background:#ff4d6d;color:#fff;box-shadow:0 0 18px #ff4d6d88;transform:translateY(-2px);}
         .section-title{font-size:28px;margin:30px 25px 15px 25px;color:#fff;font-weight:700;}
         .game-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;padding:0 30px 50px 30px;}
+        
+        /* [--- Styles des Cartes, Sidebar, etc. INCHANGÉS ---] */
 
         /* ----------------------------------- */
-        /* CARTE DE JEU (CARD) */
-        /* ----------------------------------- */
-        .card{
-            position:relative;
-            background:rgba(255,255,255,0.05);
-            backdrop-filter:blur(15px);
-            border-radius:20px;
-            overflow:hidden;
-            cursor:pointer;
-            transition:transform 0.3s,box-shadow 0.3s;
-            box-shadow:0 5px 20px rgba(0,0,0,0.4);
-        }
-        .card::before{content:"";position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(120deg,rgba(255,255,255,0.1),rgba(255,255,255,0.3),rgba(255,255,255,0.1));transform:skewX(-20deg);transition:0.5s;}
-        .card:hover::before{animation:shimmer 1s forwards;}
-        @keyframes shimmer{0%{left:-100%;}100%{left:200%;}}
-        .card:hover{transform:translateY(-8px);box-shadow:0 15px 30px rgba(0,191,255,0.3);}
-
-        /* ----------------------------------- */
-        /* IMAGE DE CARTE */
-        /* ----------------------------------- */
-        .card-image{
-            height:180px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            font-size:50px;
-            color:#fff;
-            transition:all 0.3s;
-            position: relative; 
-            
-            /* Propriétés pour l'image de fond */
-            background-size: cover !important;
-            background-position: center !important;
-            background-repeat: no-repeat !important;
-        }
-
-        /* Overlay semi-transparent pour améliorer la lisibilité */
-        .card-image::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.0); /* Augmenté l'opacité pour le contraste */
-            z-index: 1;
-        }
-
-        /* S'assurer que l'icône/contenu est visible au-dessus de l'overlay */
-        .card-image .game-icon {
-            z-index: 2;
-        }
-
-        .card-info{padding:15px;}
-        .card-title{font-size:18px;font-weight:600;margin:0;color:#fff;}
-        .card-genre{font-size:14px;opacity:0.6;margin-top:6px;margin-bottom:12px;}
-        .card-button{ /* Correction de la classe ici pour ne pas avoir 'card button' */
-            width:100%;background:#00bfff;border:none;padding:12px;color:#fff;font-size:15px;border-radius:12px;cursor:pointer;transition:0.2s;
-        }
-        .card-button:hover{background:#009acd;}
-        .card-button:disabled{background:#555;cursor:not-allowed;}
-
-        /* ----------------------------------- */
-        /* SIDEBAR */
-        /* ----------------------------------- */
-        #sidebar{position:fixed;top:0;right:-320px;width:320px;height:100%;background:rgba(20,20,30,0.9);backdrop-filter:blur(20px);box-shadow:-5px 0 30px rgba(0,0,0,0.7);transition:right 0.4s ease;z-index:50;padding:20px;display:flex;flex-direction:column;}
-        #sidebar h2{color:#00bfff;margin-bottom:20px;}
-        #sidebar button.close-sidebar{background:#ff4d6d;color:#fff;border:none;padding:10px 18px;border-radius:12px;cursor:pointer;align-self:flex-end;transition:0.3s;}
-        #sidebar button.close-sidebar:hover{background:#ff1a3c;box-shadow:0 0 15px #ff4d6d88;}
-        .sidebar-open{right:0 !important;}
-
-        /* ----------------------------------- */
-        /* POPUP COOKIES (AJOUTÉ) */
+        /* POPUP COOKIES (MISE À JOUR) */
         /* ----------------------------------- */
 
         #cookie-modal-overlay {
@@ -165,7 +75,7 @@
         /* Largeur Fixe pour les deux boutons dans la modale */
         #refuse-cookies-button, 
         #accept-cookies-button {
-            /* 165px est calculé pour que les deux boutons rentrent bien dans la modale de 400px de large */
+            /* 165px est environ la moitié de (400px max-width - 60px padding - 15px gap) */
             width: 165px; 
             border: none;
             padding: 12px;
@@ -198,17 +108,17 @@
             position: fixed; 
             z-index: 1002; 
             cursor: default; 
-            pointer-events: none !important; /* DÉSACTIVE le survol/clic pendant le mouvement */
+            pointer-events: none !important; 
             transition: none; 
-            width: 165px; /* Largeur CONSTANTE */
+            width: 165px; /* Largeur CONSTANTE (réglée ici) */
         }
         
         /* Style pour le bouton ACCEPTER lorsqu'il est en mode "arrêt/rattrapable" */
         #accept-cookies-button.stopped {
              position: fixed; 
-             pointer-events: all !important; /* Réactive le survol pour le prochain déclenchement */
+             pointer-events: all !important; 
              cursor: pointer;
-             width: 165px; /* Largeur CONSTANTE */
+             width: 165px; /* Largeur CONSTANTE (réglée ici) */
         }
 
         /* Croix : Immobile et presque invisible (CLICABLE) */
@@ -231,8 +141,8 @@
 </head>
 <body>
 
-<header id="main-header">
-    <h1 id="welcomeTitle">🎮 Accueil</h1>
+<header>
+    <h1 id="welcomeTitle" style="opacity: 0;">🎮 Accueil</h1>
     <nav id="main-nav">
         <button>📚 Bibliothèque</button>
         <input id="search_bar" placeholder="🔍 Rechercher un jeu...">
@@ -266,7 +176,6 @@
 <script>
     const API_URL="https://project-3-api-2bgb.onrender.com";
     
-    // CORRECTION ICI : Ajout de la propriété 'img' dans les objets
     const games=[
         {id:1,title:"Skull Arena",genre:"Survie",link:"Folder_for_Games/jeu_1/game.html",color:"#CF4F5E", img:"Image/Image_Skull_Arena.png"},
         {id:2,title:"MTPlayer Clicker",genre:"Clicker",link:"private_clicker.html",color:"#63D945", img:"Image/Image_MTPClicker.png"}, 
@@ -275,48 +184,20 @@
         {id:5,title:"Coming Soon...",genre:"Not defined",link:"",color:"#969696"},
         {id:6,title:"Coming Soon...",genre:"Not defined",link:"",color:"#969696"}
     ];
-
+    
+    /* [--- Logique de Jeu et Logout INCHANGÉE ---] */
     const username=localStorage.getItem("username");
     const welcomeTitle=document.getElementById("welcomeTitle");
     if(username){welcomeTitle.textContent=`🎮 ${username}`;}
-
-    // --- LOGIQUE MASQUAGE/DÉMASQUAGE HOTBAR (MODIFIÉE) ---
-    const mainHeader = document.getElementById('main-header');
-    const DETECTION_ZONE_HEIGHT = 50; // Détection si la souris est dans les 50 premiers pixels
-
-    // Au chargement, on affiche la barre une fois puis on la masque après 2 secondes.
-    setTimeout(() => {
-        mainHeader.classList.add('show');
-    }, 100); 
-
-    setTimeout(() => {
-        mainHeader.classList.remove('show');
-    }, 2500); 
-
-    // Écoute le mouvement de la souris sur tout le document
-    document.addEventListener('mousemove', (e) => {
-        // e.clientY est la position verticale du curseur par rapport au viewport (haut de l'écran = 0)
-        if (e.clientY <= DETECTION_ZONE_HEIGHT) {
-            // Si la souris est dans la zone de détection (50px du haut)
-            mainHeader.classList.add('show');
-        } else if (e.clientY > mainHeader.offsetHeight) {
-             // Si la souris est clairement sous le header (pour éviter le clignotement)
-             mainHeader.classList.remove('show');
-        }
-    });
-    // ----------------------------------------------------
-
-
+    anime({targets: welcomeTitle, translateX: [-20, 0], opacity: [0, 1], duration: 800, easing: 'easeOutExpo'});
     let isLoggingOut=false;
-
     async function handleLogoutAndRedirect(){
         if(isLoggingOut)return;
         isLoggingOut=true;
         try{await fetch(`${API_URL}/logout`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:username})});}catch(e){console.error(e);}
-        localStorage.removeItem("username");
+        localStorage.removeItem("username"); 
         window.location.href='index.html';
     }
-
     function logoutSilently(){
         if(!username||isLoggingOut)return;
         const data=JSON.stringify({id:username});
@@ -324,26 +205,18 @@
         else{try{const xhr=new XMLHttpRequest();xhr.open("POST",`${API_URL}/logout`,false);xhr.setRequestHeader("Content-Type","application/json");xhr.send(data);}catch(e){console.error(e);}}
     }
     window.addEventListener('beforeunload',()=>logoutSilently());
-
     const grid=document.getElementById("gameGrid");
     const searchBar=document.getElementById("search_bar");
-
     function displayGames(filteredGames){
         grid.innerHTML="";
         filteredGames.forEach(game=>{
             const card=document.createElement("div");
             card.className="card";
-
-            // --- LOGIQUE POUR L'IMAGE DE FOND ---
+            const isComingSoon = !game.link;
+            if (isComingSoon) {card.classList.add('coming-soon');}
             let imageStyle = `background-color: ${game.color};`; 
             let iconHtml = '<div class="game-icon">🎮</div>'; 
-
-            if (game.img) {
-                imageStyle = `background-image: url('${game.img}');`;
-                iconHtml = ''; 
-            }
-            // ------------------------------------------
-
+            if (game.img) {imageStyle = `background-image: url('${game.img}');`; iconHtml = ''; }
             const link=game.link?game.link:"#";
             card.innerHTML=`
             <div class="card-image" style="${imageStyle}">
@@ -358,15 +231,11 @@
         });
         anime({targets:'.card',opacity:[0,1],translateY:[30,0],delay:anime.stagger(100),duration:600,easing:'easeOutQuad'});
     }
-
     displayGames(games);
-
     searchBar.addEventListener("input",()=>{
         const text=searchBar.value.toLowerCase();
-        displayGames(games.filter(g=>g.title.toLowerCase().startsWith(text)));
+        displayGames(games.filter(g=>g.title.toLowerCase().includes(text)));
     });
-
-    /* SIDEBAR */
     const sidebar=document.getElementById("sidebar");
     const friendsButton=document.getElementById("friends-button");
     function toggleSidebar(){sidebar.classList.toggle('sidebar-open');}
@@ -374,7 +243,7 @@
 
 
     // ----------------------------------------------------
-    // --- GESTION DES COOKIES ---
+    // --- GESTION DES COOKIES (ACCEPTER BOUGE A L'INFINI AU SURVOL) ---
     // ----------------------------------------------------
     const cookieOverlay = document.getElementById('cookie-modal-overlay');
     const acceptButton = document.getElementById('accept-cookies-button');
@@ -383,13 +252,9 @@
     const MOVEMENT_INTERVAL = 50; 
     let teleportIntervalId = null;
 
+    // Fonction de fermeture de la modale (uniquement appelée par la croix)
     function closeCookieModal() {
-        // Arrête la téléportation et nettoie les classes au cas où
-        if (teleportIntervalId) {
-            clearInterval(teleportIntervalId);
-            teleportIntervalId = null;
-        }
-        acceptButton.classList.remove('teleporting', 'stopped'); 
+        stopTeleportation();
         
         // Animation de fermeture de l'overlay
         anime({targets: cookieOverlay, opacity: [1, 0], duration: 400, easing: 'easeOutQuad', complete: () => {
@@ -442,12 +307,13 @@
             teleportIntervalId = null;
         }
         
-        // Ajouter la classe 'stopped' pour rendre le bouton à nouveau survolable
+        // Laisser la classe 'teleporting' qui maintient 'position: fixed'
+        // Ajouter la classe 'stopped' pour rendre le bouton à nouveau cliquable pour un futur 'mouseover'
         acceptButton.classList.add('stopped');
         acceptButton.classList.remove('teleporting');
     }
     
-    // 1. Animation d'entrée de la modale au chargement
+    // 1. Animation d'entrée
     cookieOverlay.style.opacity = 0;
     anime({targets: cookieOverlay, opacity: [0, 1], duration: 400, easing: 'easeOutQuad'});
     

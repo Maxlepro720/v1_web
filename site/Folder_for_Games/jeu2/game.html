@@ -59,11 +59,128 @@ let scaleFactor = 1;
 let currentHoverButton = null; 
 
 // =================================================================
-// --- LOGIQUE PLEIN ÉCRAN (AMÉLIORÉE) ---
+// --- LOGIQUE AUDIO (SYNTHÈSE EN LIGNE) ---
+// =================================================================
+
+let audioCtx;
+let engineSound = null; 
+let hoverTimer = 0; // Pour éviter la répétition du son "hover"
+
+function createAudioEngine() {
+    try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+        console.warn("Web Audio API non supportée ou suspendue.");
+    }
+}
+createAudioEngine();
+
+/**
+ * Joue un effet sonore synthétisé.
+ * @param {string} type - 'click', 'hover', 'coin', 'levelUp', 'engine', 'crash'.
+ * @param {number} volume 
+ * @param {number} pitch - Modificateur de fréquence pour les tons ou les filtres du moteur.
+ */
+function playSynthSFX(type, volume = 0.5, pitch = 1.0) {
+    if (!audioCtx || audioCtx.state === 'suspended') {
+        if (audioCtx) audioCtx.resume();
+        return;
+    }
+    
+    let oscillator;
+    let gainNode = audioCtx.createGain();
+    let now = audioCtx.currentTime;
+    
+    // Déconnexion rapide en cas de bug si l'AudioContext est suspendu
+    if (now === 0) now = 0.001; 
+
+    gainNode.gain.setValueAtTime(volume, now);
+    
+    if (type === 'engine' || type === 'crash') {
+        // Son de moteur ou crash (bruit blanc filtré pour un effet de souffle)
+        const duration = type === 'crash' ? 0.3 : 2; // Durée de base pour le buffer
+        const bufferSize = audioCtx.sampleRate * duration;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = buffer.getChannelData(0);
+
+        for (let i = 0; i < bufferSize; i++) {
+            // Générer du bruit blanc
+            output[i] = Math.random() * 2 - 1;
+        }
+
+        oscillator = audioCtx.createBufferSource();
+        oscillator.buffer = buffer;
+        
+        if (type === 'engine') {
+             oscillator.loop = true;
+             let filter = audioCtx.createBiquadFilter();
+             filter.type = 'bandpass'; // Bandpass pour un son de moteur plus "mécanique"
+             filter.frequency.setValueAtTime(pitch * 2000, now); 
+             filter.Q.setValueAtTime(5, now);
+             oscillator.connect(filter);
+             filter.connect(gainNode);
+        } else { // Crash
+            oscillator.connect(gainNode);
+            // Enveloppe rapide pour un bang
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+            oscillator.stop(now + 0.3);
+        }
+    } else {
+        // Sons de bip (click, hover, coin, level up)
+        let frequency = 440;
+        let duration = 0.1;
+        
+        if (type === 'hover') { frequency = 880; duration = 0.05; }
+        if (type === 'coin') { frequency = 900; duration = 0.1; }
+        if (type === 'levelUp') { frequency = 1200; duration = 0.15; }
+        if (type === 'click') { frequency = 550; duration = 0.1; }
+
+        oscillator = audioCtx.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency * pitch, now);
+        oscillator.connect(gainNode);
+        
+        if (type === 'coin') {
+            // Léger glissement de fréquence pour le "ping"
+            oscillator.frequency.exponentialRampToValueAtTime(frequency * 1.5, now + 0.05);
+        } else if (type === 'levelUp') {
+            // Deux tons montants rapides
+            oscillator.frequency.setValueAtTime(frequency, now);
+            oscillator.frequency.exponentialRampToValueAtTime(frequency * 1.5, now + 0.05);
+        }
+        
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+        oscillator.stop(now + duration + 0.05);
+    }
+    
+    gainNode.connect(audioCtx.destination);
+    oscillator.start(now);
+    
+    if (type === 'engine') {
+        engineSound = { source: oscillator, gainNode, pitch };
+    }
+}
+
+function updateEnginePitch(score) {
+    if (!engineSound || !engineSound.source.frequency || engineSound.source.frequency.setValueAtTime === undefined) return;
+    
+    // Le pitch augmente très légèrement avec le score (max 1.5)
+    let newPitch = 1.0 + Math.min(score / 5000, 0.5); 
+    engineSound.source.frequency.linearRampToValueAtTime(newPitch * 2000, audioCtx.currentTime + 0.1); 
+}
+
+function stopEngine() {
+    if (engineSound) {
+        try { engineSound.source.stop(audioCtx.currentTime); } catch (e) {}
+        engineSound = null;
+    }
+}
+
+// =================================================================
+// --- LOGIQUE PLEIN ÉCRAN ---
 // =================================================================
 
 function requestFullScreen(element) {
-    // Cette fonction ne doit être appelée que suite à un clic utilisateur.
     if (element.requestFullscreen) {
         element.requestFullscreen().catch(err => console.error("Plein écran bloqué (Standard):", err));
     } else if (element.mozRequestFullScreen) {
@@ -76,7 +193,6 @@ function requestFullScreen(element) {
 }
 
 window.onload = function() {
-    // L'appel de plein écran au chargement est retiré car il est toujours bloqué par le navigateur.
     resizeCanvas();
 };
 
@@ -144,7 +260,8 @@ let username = localStorage.getItem("username") || "Invité";
 let score=0, bestScore=0, credits=0; 
 let time=0, spawnTimer=0, asteroids=[], stars=[], coins=[], keys={}, explosion=null, flashAlpha=0;
 let coinFlashAlpha = 0, floatingTexts = [], shopScroll=0;
-let player={x:210,y:560,r:18,type:0,life:1, invulnerable:0, trail:[], angle:0};
+// Ajout de targetAngle et rotationSpeed pour la fusée
+let player={x:210,y:560,r:18,type:0,life:1, invulnerable:0, trail:[], angle:0, targetAngle:0, rotationSpeed:0.1}; 
 let leaderboardData = []; 
 let loadingShip = { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2, angle: 0, r: 20 }; 
 let startButtonAnim = { scale: 1, alpha: 0, hover: false }; 
@@ -183,6 +300,7 @@ clearOldLocalStorage();
 function changeState(newState, callback = null) {
     if (transition.active) return;
     transition.active = true; transition.alpha = 0; transition.nextState = newState; transition.callback = callback;
+    playSynthSFX('click', 0.8); 
 }
 
 function updateTransition() {
@@ -231,7 +349,6 @@ async function loadGameData() {
             const savedShipIndex = ships.findIndex(s => s.name === selectedShipName && s.unlocked);
             player.type = savedShipIndex !== -1 ? savedShipIndex : firstUnlockedIndex;
 
-            // Une fois les données chargées, on passe à l'écran de démarrage.
             state = STATE.START_SCREEN; 
             transition.active = false;
             transition.nextState = null;
@@ -304,7 +421,6 @@ canvas.addEventListener("click", e=>{
 
     if(state === STATE.START_SCREEN) {
         if(mouseInRect(110, 480, 200, 50)) {
-            // *** POINT CLÉ : Lancement du plein écran UNIQUEMENT au clic utilisateur ***
             requestFullScreen(document.documentElement); 
             changeState(STATE.MENU);
         }
@@ -322,11 +438,13 @@ canvas.addEventListener("click", e=>{
           const cardY=140+i*160 - shopScroll;
           if(mouseInRect(40, cardY, 340, 140)){
             if(!s.unlocked && credits>=s.cost){ 
+              playSynthSFX('levelUp', 0.9, 1.0); // Son d'achat/déverrouillage
               credits-=s.cost; 
               s.unlocked=true; 
               player.type = i;
               saveGameData(); 
             } else if(s.unlocked) {
+                playSynthSFX('click', 0.8, 1.2); // Son d'équipement (bip plus aigu)
                 player.type=i;
                 saveGameData(); 
             }
@@ -334,7 +452,9 @@ canvas.addEventListener("click", e=>{
         });
       }
     } else if(state===STATE.GAMEOVER && flashAlpha <= 0.1) {
-      asteroids = []; coins = []; explosion = null; launchProgress = 1; earthY = 800; player.angle = Math.PI; state = STATE.LANDING;
+      asteroids = []; coins = []; explosion = null; launchProgress = 1; earthY = 800; player.angle = Math.PI; 
+      state = STATE.LANDING;
+      playSynthSFX('click', 0.7); // Son au clic pour atterrir
     }
 });
 
@@ -353,8 +473,11 @@ initStars();
 function startLaunchAnimation() {
     asteroids=[]; coins=[]; score=0; time=0; spawnTimer=0; explosion=null; flashAlpha=0; floatingTexts=[]; deathShockwave.active = false; glitchTimer = 0;
     timeScale = 1; launchProgress = 0; earthY = 500; currentLevel = 1; colorIndex = 0;
-    player.x = 210; player.y = 520; player.trail = []; player.angle = 0;
+    player.x = 210; player.y = 520; player.trail = []; player.angle = 0; player.targetAngle = 0; // Réinitialisation de l'angle
     player.life=ships[player.type].bonus==="Vie Supplémentaire" ? 2 : 1; state = STATE.TAKEOFF;
+    
+    // Démarrage du son moteur (Volume 0.6, pitch de base 0.5 pour un son lourd)
+    playSynthSFX('engine', 0.6, 0.5); 
 }
 
 // --- FONCTION DE MISE À JOUR (UPDATE) ---
@@ -369,11 +492,11 @@ function update(){
     if(state === STATE.LOADING) {
         loadingShip.angle += 0.08; 
     } else if (state === STATE.START_SCREEN) {
-        // Animation du bouton "COMMENCER"
         const isHovering = mouseInRect(110, 480, 200, 50);
         if (isHovering) {
             startButtonAnim.scale += (1.05 - startButtonAnim.scale) * 0.1;
             if (!startButtonAnim.hover) {
+                 playSynthSFX('hover', 0.3); // Son au survol
                  startButtonAnim.hover = true;
             }
         } else {
@@ -383,6 +506,20 @@ function update(){
         startButtonAnim.alpha += (1.0 - startButtonAnim.alpha) * 0.05;
     }
 
+    if(state === STATE.MENU || state === STATE.SHOP || state === STATE.LEADERBOARD){
+        const menuHovering = mouseInRect(110, 240, 200, 50) || 
+                             mouseInRect(110, 310, 200, 50) ||
+                             mouseInRect(110, 380, 200, 50) ||
+                             mouseInRect(110, 450, 200, 50) || 
+                             mouseInRect(110, 540, 200, 50);
+
+        if (menuHovering && hoverTimer % 15 === 0) { // Joue le son toutes les 15 frames pour éviter le spam
+            playSynthSFX('hover', 0.15); 
+        }
+        hoverTimer++;
+    }
+
+
     if(state === STATE.MENU) {
         menuParticles.forEach(p => { p.y += p.s; if(p.y > GAME_HEIGHT) { p.y = -20; p.x = Math.random()*GAME_WIDTH; } });
     }
@@ -391,8 +528,22 @@ function update(){
 
     nebulas.forEach(n => { n.y += n.speed * (state === STATE.GAMEOVER ? timeScale : 1); if(n.y - n.r > GAME_HEIGHT) { n.y = -n.r; n.x = Math.random() * GAME_WIDTH; } });
 
-    if(state === STATE.TAKEOFF) { launchProgress += 0.005; earthY += 4; player.y -= 0.5; if(launchProgress >= 1) state = STATE.PLAY; }
-    if(state === STATE.LANDING) { launchProgress -= 0.01; earthY -= 5; player.y += 2; if(earthY <= 500) changeState(STATE.MENU); }
+    if(state === STATE.TAKEOFF) { 
+        launchProgress += 0.005; earthY += 4; player.y -= 0.5; 
+        if(engineSound) { 
+             // Augmentation du pitch du moteur pendant le décollage (jusqu'à pitch 1.0)
+            engineSound.source.frequency.linearRampToValueAtTime(500 + launchProgress * 1500, audioCtx.currentTime + 0.1); 
+        }
+        if(launchProgress >= 1) state = STATE.PLAY; 
+    }
+    if(state === STATE.LANDING) { 
+        launchProgress -= 0.01; earthY -= 5; player.y += 2; 
+        if(engineSound) { 
+            // Diminution du pitch du moteur pendant l'atterrissage
+            engineSound.source.frequency.linearRampToValueAtTime(500 + launchProgress * 500, audioCtx.currentTime + 0.1); 
+        }
+        if(earthY <= 500) { stopEngine(); changeState(STATE.MENU); } 
+    }
 
     if(state!==STATE.PLAY && state!==STATE.GAMEOVER && state!==STATE.TAKEOFF && state!==STATE.LANDING) return;
     
@@ -415,6 +566,7 @@ function update(){
             currentLevel = nextLvl; levelAnimTimer = 100; colorIndex = (currentLevel - 1) % levelColors.length; flashAlpha = 0.3; 
             credits += 50; 
             saveGameData(); 
+            playSynthSFX('levelUp', 0.9); // Son de level up
         }
         if(levelAnimTimer > 0) levelAnimTimer--;
 
@@ -422,13 +574,40 @@ function update(){
         spawnTimer++;
         if(spawnTimer>=Math.max(10, 40 - Math.floor(score/150))){ spawnAsteroid(); spawnTimer=0; }
         
+        // --- GESTION DU MOUVEMENT ET DE LA ROTATION ---
+        player.targetAngle = 0; 
+        
+        if(keys.ArrowLeft) {
+            player.x-=sD.speed; 
+            player.targetAngle = -0.15; // Petite inclinaison à gauche
+        } 
+        if(keys.ArrowRight) {
+            player.x+=sD.speed; 
+            player.targetAngle = 0.15; // Petite inclinaison à droite
+        }
+        
+        if(keys.ArrowUp) { player.y-=sD.speed; } 
+        if(keys.ArrowDown) { player.y+=sD.speed; }
+        
+        // Lissage de la rotation
+        player.angle += (player.targetAngle - player.angle) * player.rotationSpeed;
+
+        // Mise à jour du pitch du moteur en fonction du score
+        updateEnginePitch(score);
+        
+        player.x=Math.max(player.r, Math.min(GAME_WIDTH-player.r, player.x));
+        player.y=Math.max(player.r, Math.min(GAME_HEIGHT-player.r, player.y));
+        
         asteroids.forEach(a=>{
             a.y+=a.speed; a.rot+=a.rotSpeed;
             if(Math.hypot(player.x-a.x,player.y-a.y)<player.r+a.r && player.invulnerable===0){
                 if(player.life>1){ 
-                    player.life--; player.invulnerable=60; flashAlpha=0.4; asteroids=[]; } 
+                    player.life--; player.invulnerable=60; flashAlpha=0.4; asteroids=[]; 
+                } 
                 else {
                     state = STATE.GAMEOVER; flashAlpha = 1; timeScale = 1;
+                    stopEngine(); // Arrêt brusque du moteur
+                    playSynthSFX('crash', 1.0); // Son de crash
                     
                     if(Math.floor(score)>bestScore){ 
                         bestScore=Math.floor(score); 
@@ -439,10 +618,6 @@ function update(){
         });
 
         if(time%350===0) spawnCoin();
-        if(keys.ArrowLeft) player.x-=sD.speed; if(keys.ArrowRight) player.x+=sD.speed;
-        if(keys.ArrowUp) player.y-=sD.speed; if(keys.ArrowDown) player.y+=sD.speed;
-        player.x=Math.max(player.r, Math.min(GAME_WIDTH-player.r, player.x));
-        player.y=Math.max(player.r, Math.min(GAME_HEIGHT-player.r, player.y));
     }
 
     asteroids=asteroids.filter(a=>a.y<GAME_HEIGHT+50);
@@ -450,6 +625,7 @@ function update(){
         c.y+=2.5 * currentSpeed;
         if(sD.bonus==="Aim Magnétique" && Math.hypot(player.x-c.x,player.y-c.y)<220){ c.x+=(player.x-c.x)*0.07; c.y+=(player.y-c.y)*0.07; }
         if(Math.hypot(player.x-c.x,player.y-c.y)<player.r+c.r){ 
+            playSynthSFX('coin', 0.6); // Son de pièce
             const val = 50*(sD.bonus==="Pièces x2"?2:1); 
             credits+=val; 
             saveGameData(); 
@@ -571,13 +747,13 @@ function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1){
     const hover = mouseInRect(x-w/2, y, w, h); 
     if(hover) canvas.style.cursor = "pointer";
     
-    // Pour les boutons normaux (MENU/SHOP/ETC)
+    const buttonID = t;
     if (alpha === 1) {
         const sizeMod = hover ? 1.05 : 1.0; 
         
-        const buttonID = t;
         if (hover && currentHoverButton !== buttonID) {
             currentHoverButton = buttonID;
+            // Note: Le son 'hover' est maintenant géré dans la boucle update (plus fiable)
         } else if (!hover && currentHoverButton === buttonID) {
             currentHoverButton = null;
         }
@@ -588,9 +764,7 @@ function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1){
         ctx.beginPath(); ctx.rect(-w/2, -h/2, w, h); ctx.fill(); ctx.stroke();
         ctx.shadowBlur = 0; ctx.fillStyle = hover ? "#000" : "#fff"; ctx.font = "bold 18px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, 0, 0); ctx.restore();
     
-    } 
-    // Pour le bouton COMMENCER (avec animation alpha et scale)
-    else {
+    } else {
         ctx.save(); ctx.globalAlpha = alpha; 
         ctx.translate(x, y + h/2); ctx.scale(scale, scale);
         

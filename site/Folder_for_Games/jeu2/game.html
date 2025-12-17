@@ -27,8 +27,7 @@ canvas {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    /* Ajout du style pour le plein écran pur (pas de bordure en plein écran) */
-    position: absolute; /* Permet de masquer la barre de défilement au lancement */
+    position: absolute; 
 }
 
 /* Style spécifique en mode plein écran (pour la bordure) */
@@ -36,7 +35,6 @@ canvas {
     border: none;
     box-shadow: none;
 }
-/* Pour les autres navigateurs */
 :-webkit-full-screen canvas { border: none; box-shadow: none; }
 :-moz-full-screen canvas { border: none; box-shadow: none; }
 :-ms-fullscreen canvas { border: none; box-shadow: none; }
@@ -58,45 +56,33 @@ const GAME_WIDTH = 420;
 const GAME_HEIGHT = 640;
 
 let scaleFactor = 1;
-
-// =================================================================
-// --- NOUVELLE LOGIQUE: GESTION DU PLEIN ÉCRAN ---
-// =================================================================
-
 let fullscreenAttempted = false;
+let currentHoverButton = null; // Pour gérer le survol (sans son)
+
+// =================================================================
+// --- LOGIQUE PLEIN ÉCRAN ---
+// =================================================================
 
 function requestFullScreen(element) {
     if (fullscreenAttempted) return;
     fullscreenAttempted = true;
     
-    // Tentative de passer en plein écran
     if (element.requestFullscreen) {
         element.requestFullscreen();
-    } else if (element.mozRequestFullScreen) { /* Firefox */
+    } else if (element.mozRequestFullScreen) {
         element.mozRequestFullScreen();
-    } else if (element.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
+    } else if (element.webkitRequestFullscreen) {
         element.webkitRequestFullscreen();
-    } else if (element.msRequestFullscreen) { /* IE/Edge */
+    } else if (element.msRequestFullscreen) {
         element.msRequestFullscreen();
     }
 }
 
-// 1. Tente de passer en plein écran dès le chargement (souvent bloqué par le navigateur)
-// L'appel est fait sur document.documentElement (la page entière)
 window.onload = function() {
-    // Si le jeu est lancé dans un contexte où le plein écran automatique est autorisé (par exemple, Electron ou certaines configurations PWA), cela fonctionnera.
+    // Tentative de plein écran au chargement (souvent bloquée)
     requestFullScreen(document.documentElement);
-    // On peut aussi essayer de forcer le redimensionnement ici, au cas où.
     resizeCanvas();
 };
-
-// 2. Tente de passer en plein écran au premier clic sur le canvas (méthode de secours)
-canvas.addEventListener("click", () => {
-    // Tente de passer en plein écran uniquement si la tentative automatique a échoué.
-    // L'ajout de cette logique sur le "click" rend le plein écran fonctionnel après la première interaction.
-    requestFullScreen(document.documentElement);
-});
-
 
 // --- FONCTION DE REDIMENSIONNEMENT RESPONSIVE ---
 function resizeCanvas() {
@@ -127,6 +113,7 @@ canvas.addEventListener("mousemove", e => {
     const coords = getScaledMouseCoordinates(e);
     mouseX = coords.x;
     mouseY = coords.y;
+    // Animation de survol gérée dans la boucle draw
 });
 canvas.addEventListener("mousedown", e => { 
     isMouseDown = true; 
@@ -153,19 +140,19 @@ canvas.addEventListener("touchend", () => isMouseDown = false);
 function mouseInRect(x,y,w,h){ return mouseX > x && mouseX < x+w && mouseY > y && mouseY < y+h; }
 
 // --- CONSTANTES ET INITIALISATION DU JEU ---
-const STATE={MENU:0,PLAY:1,GAMEOVER:2,SHOP:3, TAKEOFF:4, LANDING:5, LEADERBOARD:6, LOADING: 7};
-let state=STATE.LOADING; // DÉMARRER EN ÉTAT DE CHARGEMENT
+const STATE={MENU:0,PLAY:1,GAMEOVER:2,SHOP:3, TAKEOFF:4, LANDING:5, LEADERBOARD:6, LOADING: 7, START_SCREEN: 8}; 
+let state=STATE.LOADING; 
 
 let transition = { active: false, alpha: 0, nextState: null, callback: null };
 
-let username = localStorage.getItem("username") || "Invité"; // SEUL username est conservé
+let username = localStorage.getItem("username") || "Invité"; 
 let score=0, bestScore=0, credits=0; 
 let time=0, spawnTimer=0, asteroids=[], stars=[], coins=[], keys={}, explosion=null, flashAlpha=0;
 let coinFlashAlpha = 0, floatingTexts = [], shopScroll=0;
-// Note: player.type stocke l'INDEX du vaisseau actuellement sélectionné
 let player={x:210,y:560,r:18,type:0,life:1, invulnerable:0, trail:[], angle:0};
 let leaderboardData = []; 
-let loadingShip = { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2, angle: 0, r: 20 }; // Pour l'animation de chargement
+let loadingShip = { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2, angle: 0, r: 20 }; 
+let startButtonAnim = { scale: 1, alpha: 0, hover: false }; 
 
 let menuParticles = [];
 for(let i=0; i<25; i++) menuParticles.push({x: Math.random()*GAME_WIDTH, y: Math.random()*GAME_HEIGHT, l: Math.random()*30+10, s: Math.random()*8+4});
@@ -191,7 +178,6 @@ const ships=[
 {name:"Titan", cost:5000, speed:5, unlocked:false, color:"#ff6f00", cockpit:"#ffcc80", flame:"#ff1744", bonus:"Vie Supplémentaire", desc:"Blindage renforcé."}
 ];
 
-// Suppression des anciens stockages locaux (pour la transition vers l'API)
 function clearOldLocalStorage() {
     ["astro_best", "astro_credits", "astro_unlocked_ships"].forEach(key => {
         localStorage.removeItem(key);
@@ -202,6 +188,7 @@ clearOldLocalStorage();
 function changeState(newState, callback = null) {
     if (transition.active) return;
     transition.active = true; transition.alpha = 0; transition.nextState = newState; transition.callback = callback;
+    // playSFX('click'); <--- RETIRÉ
 }
 
 function updateTransition() {
@@ -223,85 +210,60 @@ function updateTransition() {
 }
 
 // =================================================================
-// --- PARTIE 1: CORRECTION DE LA LOGIQUE DE CHARGEMENT DE DONNÉES ---
+// --- LOGIQUE API / SAUVEGARDE / CHARGEMENT ---
 // =================================================================
 async function loadGameData() {
-    // L'état est déjà STATE.LOADING au démarrage
     try {
         const response = await fetch(`${API_BASE_URL}/load_data/${username}`);
         const result = await response.json();
 
         if (result.status === "success" || result.status === "not_found") {
             const data = result.data;
-
             bestScore = Number(data.PR_Score) || 0;
             credits = Number(data.Coins) || 0;
-            
-            // 1. Lire la chaîne des voitures débloquées (ex: "Standard,Rapide,Titan")
             const unlockedCarsString = data.Voiture || "Standard"; 
             const unlockedCarsArray = unlockedCarsString.split(',');
-
-            // 2. Mettre à jour l'état `unlocked` de tous les vaisseaux
-            let selectedShipName = ships[player.type].name; // Conserver le nom du vaisseau actuellement sélectionné
+            let selectedShipName = ships[player.type].name; 
             let firstUnlockedIndex = 0;
             
             ships.forEach((ship, i) => {
-                // Débloquer le vaisseau si son nom est dans la liste reçue
                 ship.unlocked = unlockedCarsArray.includes(ship.name);
-                if(i === 0) ship.unlocked = true; // S'assurer que Standard est toujours débloqué
-                
-                // Si le vaisseau actuel n'est plus débloqué, revenir au premier débloqué.
+                if(i === 0) ship.unlocked = true; 
                 if (ship.unlocked && firstUnlockedIndex === 0) {
                     firstUnlockedIndex = i;
                 }
             });
 
-            // 3. Déterminer le vaisseau sélectionné.
-            // On cherche le dernier vaisseau débloqué (pour garder la sélection du client si elle est valide)
             const savedShipIndex = ships.findIndex(s => s.name === selectedShipName && s.unlocked);
             player.type = savedShipIndex !== -1 ? savedShipIndex : firstUnlockedIndex;
 
-            // Correction pour le passage au menu
-            state = STATE.MENU;
+            // Une fois les données chargées, on passe à l'écran de démarrage.
+            state = STATE.START_SCREEN; 
             transition.active = false;
             transition.nextState = null;
-            
-            console.log("Données chargées depuis l'API:", data);
-            console.log("Voitures débloquées:", unlockedCarsArray);
-
         } else {
             console.error("Erreur de chargement des données:", result.message);
-            state = STATE.MENU;
+            state = STATE.START_SCREEN; 
             transition.active = false;
         }
     } catch (e) {
         console.error("Erreur de connexion API au chargement:", e);
-        state = STATE.MENU; 
+        state = STATE.START_SCREEN; 
         transition.active = false;
     }
 }
 
-
-// =================================================================
-// --- PARTIE 2: CORRECTION DE LA LOGIQUE DE SAUVEGARDE DE DONNÉES ---
-// =================================================================
 async function saveGameData(newScore = null) {
     if (username === "Invité") return; 
 
-    // Construire la liste des noms des vaisseaux débloqués (format: "Nom1,Nom2,Nom3")
-    const unlockedCarsNames = ships
-        .filter(s => s.unlocked)
-        .map(s => s.name)
-        .join(',');
+    const unlockedCarsNames = ships.filter(s => s.unlocked).map(s => s.name).join(',');
 
     const dataToSave = {
         username: username,
         Coins: credits, 
-        // Sauvegarder la liste des voitures débloquées (Voiture)
         Voiture: unlockedCarsNames 
     };
     
-    // N'inclure PR_Score que si un nouveau score est fourni (fin de partie)
     if (newScore !== null) {
         dataToSave.PR_Score = Math.floor(newScore);
     }
@@ -313,55 +275,47 @@ async function saveGameData(newScore = null) {
             body: JSON.stringify(dataToSave)
         });
         const result = await response.json();
-        
-        if (result.status !== "success") {
-            console.warn("Erreur de sauvegarde des données:", result.message);
-        } else {
-             console.log("Données sauvegardées avec succès.");
-        }
     } catch (e) {
         console.error("Erreur de connexion API à la sauvegarde:", e);
     }
 }
 
-
-// --- LOGIQUE API: CLASSEMENT ---
 async function loadLeaderboard() {
     try {
         const response = await fetch(`${API_BASE_URL}/leaderboard`);
         const result = await response.json();
         
         if (result.status === "success") {
-            // L'API renvoie maintenant le top 5
-            leaderboardData = result.leaderboard;
-            
-            // Préparer le classement pour l'affichage (max 5 joueurs du top + le joueur si hors top)
-            leaderboardData = leaderboardData.map(e => ({
+            leaderboardData = result.leaderboard.map(e => ({
                 name: (e.username === username ? "Vous" : e.username), 
                 score: e.PR_Score
-            })).sort((a, b) => b.score - a.score).slice(0, 5); // Limité au TOP 5
+            })).sort((a, b) => b.score - a.score).slice(0, 5); 
             
-            // Ajouter le joueur s'il n'est pas dans le top 5
             if (!leaderboardData.some(e => e.name === "Vous")) {
                 leaderboardData.push({ name: "Vous", score: bestScore });
             }
-            
-        } else {
-            console.error("Erreur de chargement du classement:", result.message);
-        }
+        } 
     } catch (e) {
         console.error("Erreur de connexion API au classement:", e);
     }
 }
 
-// --- GESTION DES INPUTS (MISE À JOUR DE LA LOGIQUE D'ACHAT) ---
+// --- GESTION DES INPUTS ---
 canvas.addEventListener("click", e=>{
     const coords = getScaledMouseCoordinates(e);
     mouseX = coords.x;
     mouseY = coords.y;
     
     if (transition.active) return; 
-    if(state===STATE.MENU){
+
+    if(state === STATE.START_SCREEN) {
+        if(mouseInRect(110, 480, 200, 50)) {
+            requestFullScreen(document.documentElement); // Plein écran au clic du bouton de démarrage
+            changeState(STATE.MENU);
+        }
+    }
+    
+    else if(state===STATE.MENU){
       if(mouseInRect(110, 240, 200, 50)) changeState(STATE.TAKEOFF, startLaunchAnimation);
       if(mouseInRect(110, 310, 200, 50)) changeState(STATE.SHOP);
       if(mouseInRect(110, 380, 200, 50)) changeState(STATE.LEADERBOARD, loadLeaderboard); 
@@ -373,13 +327,15 @@ canvas.addEventListener("click", e=>{
           const cardY=140+i*160 - shopScroll;
           if(mouseInRect(40, cardY, 340, 140)){
             if(!s.unlocked && credits>=s.cost){ 
+              // playSFX('click', 1.0); <--- RETIRÉ
               credits-=s.cost; 
               s.unlocked=true; 
-              player.type = i; // Sélectionne immédiatement le nouveau vaisseau
-              saveGameData(); // SAUVEGARDE la nouvelle liste de voitures et les crédits
+              player.type = i;
+              saveGameData(); 
             } else if(s.unlocked) {
+                // playSFX('click', 0.8); <--- RETIRÉ
                 player.type=i;
-                saveGameData(); // Sauvegarde le changement de vaisseau (la liste débloquée reste la même)
+                saveGameData(); 
             }
           }
         });
@@ -389,7 +345,12 @@ canvas.addEventListener("click", e=>{
     }
 });
 
-document.addEventListener("keydown", e=>{ keys[e.key]=true; if(e.key==="Escape" && (state===STATE.PLAY || state===STATE.SHOP || state===STATE.LEADERBOARD)) changeState(STATE.MENU); });
+document.addEventListener("keydown", e=>{ 
+    keys[e.key]=true; 
+    if(e.key==="Escape" && (state===STATE.PLAY || state===STATE.SHOP || state===STATE.LEADERBOARD)) {
+        changeState(STATE.MENU); 
+    }
+});
 document.addEventListener("keyup", e=>keys[e.key]=false);
 canvas.addEventListener("wheel", e=>{ if(state===STATE.SHOP) shopScroll = Math.max(0, Math.min(shopScroll + e.deltaY, (ships.length-1)*160)); });
 
@@ -411,9 +372,23 @@ function update(){
     if(coinFlashAlpha > 0) coinFlashAlpha -= 0.1;
     if(glitchTimer > 0) glitchTimer--;
 
-    // Animation de l'écran de chargement
+    // Animation de l'écran de chargement/démarrage
     if(state === STATE.LOADING) {
         loadingShip.angle += 0.08; 
+    } else if (state === STATE.START_SCREEN) {
+        // Animation du bouton "COMMENCER"
+        const isHovering = mouseInRect(110, 480, 200, 50);
+        if (isHovering) {
+            startButtonAnim.scale += (1.05 - startButtonAnim.scale) * 0.1;
+            if (!startButtonAnim.hover) {
+                 // playSFX('hover', 0.3); <--- RETIRÉ
+                 startButtonAnim.hover = true;
+            }
+        } else {
+            startButtonAnim.scale += (1.0 - startButtonAnim.scale) * 0.1;
+            startButtonAnim.hover = false;
+        }
+        startButtonAnim.alpha += (1.0 - startButtonAnim.alpha) * 0.05;
     }
 
     if(state === STATE.MENU) {
@@ -447,7 +422,7 @@ function update(){
         if(nextLvl > currentLevel) { 
             currentLevel = nextLvl; levelAnimTimer = 100; colorIndex = (currentLevel - 1) % levelColors.length; flashAlpha = 0.3; 
             credits += 50; 
-            saveGameData(); // SAUVEGARDE après gain de niveau (coins)
+            saveGameData(); 
         }
         if(levelAnimTimer > 0) levelAnimTimer--;
 
@@ -458,15 +433,16 @@ function update(){
         asteroids.forEach(a=>{
             a.y+=a.speed; a.rot+=a.rotSpeed;
             if(Math.hypot(player.x-a.x,player.y-a.y)<player.r+a.r && player.invulnerable===0){
-                if(player.life>1){ player.life--; player.invulnerable=60; flashAlpha=0.4; asteroids=[]; } 
+                if(player.life>1){ // playSFX('click', 0.5); <--- RETIRÉ
+                    player.life--; player.invulnerable=60; flashAlpha=0.4; asteroids=[]; } 
                 else {
+                    // playSFX('click', 1.0); <--- RETIRÉ
                     state = STATE.GAMEOVER; flashAlpha = 1; timeScale = 1;
                     
                     if(Math.floor(score)>bestScore){ 
                         bestScore=Math.floor(score); 
                     }
-                    saveGameData(score); // SAUVEGARDE le score ET les coins/voitures débloquées
-
+                    saveGameData(score); 
                 }
             }
         });
@@ -483,9 +459,10 @@ function update(){
         c.y+=2.5 * currentSpeed;
         if(sD.bonus==="Aim Magnétique" && Math.hypot(player.x-c.x,player.y-c.y)<220){ c.x+=(player.x-c.x)*0.07; c.y+=(player.y-c.y)*0.07; }
         if(Math.hypot(player.x-c.x,player.y-c.y)<player.r+c.r){ 
+            // playSFX('click', 0.2); <--- RETIRÉ
             const val = 50*(sD.bonus==="Pièces x2"?2:1); 
             credits+=val; 
-            saveGameData(); // SAUVEGARDE à chaque collecte de pièces
+            saveGameData(); 
             c.collected=true; coinFlashAlpha = 0.3; 
             floatingTexts.push({x: c.x, y: c.y, text: `+${val} 💰`, alpha: 1}); 
         }
@@ -498,12 +475,12 @@ function spawnCoin(){ coins.push({x:25+Math.random()*370,y:-10,r:8,collected:fal
 
 // --- FONCTION DE DESSIN (DRAW) ---
 function draw(){
-    const curCol = (state === STATE.MENU || state === STATE.SHOP || state === STATE.LEADERBOARD || state === STATE.LOADING) ? "#00d9ff" : levelColors[colorIndex];
+    const curCol = (state === STATE.MENU || state === STATE.SHOP || state === STATE.LEADERBOARD || state === STATE.LOADING || state === STATE.START_SCREEN) ? "#00d9ff" : levelColors[colorIndex];
     ctx.fillStyle = "#020510"; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
 
     nebulas.forEach(n => { let g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r); g.addColorStop(0, n.color); g.addColorStop(1, "transparent"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI*2); ctx.fill(); });
 
-    if(state === STATE.MENU) {
+    if(state === STATE.MENU || state === STATE.START_SCREEN){
         ctx.strokeStyle = "rgba(0, 217, 255, 0.15)"; ctx.lineWidth = 2;
         menuParticles.forEach(p => { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, p.y + p.l); ctx.stroke(); });
     }
@@ -535,7 +512,16 @@ function draw(){
         ctx.restore(); 
     }
 
-    if(state===STATE.MENU){
+    if(state === STATE.START_SCREEN) {
+        ctx.save(); ctx.globalAlpha = startButtonAnim.alpha;
+        const bounce = Math.sin(time * 0.04) * 8;
+        ctx.translate(210, 150 + bounce); ctx.shadowBlur = 20 + Math.sin(time*0.1)*10; ctx.shadowColor = "#00d9ff"; ctx.fillStyle = "#fff"; ctx.font = "bold 52px sans-serif"; ctx.textAlign = "center"; ctx.fillText("ASTRO DODGE", 0, 0); ctx.font = "bold 18px sans-serif"; ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; ctx.fillText(`Données chargées : ${username}`, 0, 45); 
+        ctx.restore();
+        
+        // Bouton COMMENCER
+        drawBtn("COMMENCER", 210, 480, 200, 50, curCol, startButtonAnim.scale, startButtonAnim.alpha);
+    
+    } else if(state===STATE.MENU){
         const bounce = Math.sin(time * 0.04) * 8;
         ctx.save(); ctx.translate(210, 150 + bounce); ctx.shadowBlur = 20 + Math.sin(time*0.1)*10; ctx.shadowColor = "#00d9ff"; ctx.fillStyle = "#fff"; ctx.font = "bold 52px sans-serif"; ctx.textAlign = "center"; ctx.fillText("ASTRO DODGE", 0, 0); ctx.font = "bold 12px sans-serif"; ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; ctx.fillText(`Bienvenue, ${username}`, 0, 25); ctx.restore();
         drawBtn("▶ JOUER", 210, 240, 200, 50, curCol);
@@ -555,7 +541,6 @@ function draw(){
     } else if (state===STATE.LOADING) {
         ctx.fillStyle="#fff"; ctx.font="bold 30px sans-serif"; ctx.textAlign="center"; ctx.fillText("CONNEXION AU SYSTÈME...", 210, 320);
         
-        // Dessin du vaisseau/objet en rotation (Animation de chargement)
         ctx.save();
         ctx.translate(loadingShip.x, loadingShip.y - 50);
         ctx.rotate(loadingShip.angle);
@@ -592,35 +577,53 @@ function draw(){
     }
 }
 
-function drawBtn(t, x, y, w, h, c){
-    const hover = mouseInRect(x-w/2, y, w, h); if(hover) canvas.style.cursor = "pointer";
-    const sizeMod = hover ? 1.05 : 1.0; ctx.save(); ctx.translate(x, y + h/2); ctx.scale(sizeMod, sizeMod);
-    ctx.shadowBlur = hover ? 35 : 10; ctx.shadowColor = c;
-    ctx.fillStyle = hover ? c : "rgba(255,255,255,0.05)"; ctx.strokeStyle = c; ctx.lineWidth = 2/sizeMod; 
-    ctx.beginPath(); ctx.rect(-w/2, -h/2, w, h); ctx.fill(); ctx.stroke();
-    ctx.shadowBlur = 0; ctx.fillStyle = hover ? "#000" : "#fff"; ctx.font = "bold 18px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, 0, 0); ctx.restore();
+function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1){
+    const hover = mouseInRect(x-w/2, y, w, h); 
+    if(hover) canvas.style.cursor = "pointer";
+    
+    // Pour les boutons normaux (MENU/SHOP/ETC)
+    if (alpha === 1) {
+        const sizeMod = hover ? 1.05 : 1.0; 
+        
+        // Gestion de survol sans SFX
+        const buttonID = t;
+        if (hover && currentHoverButton !== buttonID) {
+            currentHoverButton = buttonID;
+        } else if (!hover && currentHoverButton === buttonID) {
+            currentHoverButton = null;
+        }
+        
+        ctx.save(); ctx.translate(x, y + h/2); ctx.scale(sizeMod, sizeMod);
+        ctx.shadowBlur = hover ? 35 : 10; ctx.shadowColor = c;
+        ctx.fillStyle = hover ? c : "rgba(255,255,255,0.05)"; ctx.strokeStyle = c; ctx.lineWidth = 2/sizeMod; 
+        ctx.beginPath(); ctx.rect(-w/2, -h/2, w, h); ctx.fill(); ctx.stroke();
+        ctx.shadowBlur = 0; ctx.fillStyle = hover ? "#000" : "#fff"; ctx.font = "bold 18px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, 0, 0); ctx.restore();
+    
+    } 
+    // Pour le bouton COMMENCER (avec animation alpha et scale)
+    else {
+        ctx.save(); ctx.globalAlpha = alpha; 
+        ctx.translate(x, y + h/2); ctx.scale(scale, scale);
+        
+        ctx.shadowBlur = hover ? 45 : 20; ctx.shadowColor = c;
+        ctx.fillStyle = hover ? c : "rgba(255,255,255,0.1)"; ctx.strokeStyle = c; ctx.lineWidth = 3/scale; 
+        ctx.beginPath(); ctx.rect(-w/2, -h/2, w, h); ctx.fill(); ctx.stroke();
+        ctx.shadowBlur = 0; ctx.fillStyle = hover ? "#000" : "#fff"; ctx.font = "bold 22px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, 0, 0); ctx.restore();
+    }
 }
 
 function wrapText(t,x,y,mW,lH){ let words=t.split(' '), line=''; for(let n=0;n<words.length;n++){ let test=line+words[n]+' '; if(ctx.measureText(test).width>mW && n>0){ ctx.fillText(line,x,y); line=words[n]+' '; y+=lH; } else line=test; } ctx.fillText(line,x,y); }
 
-// DÉMARRAGE: Lancer le chargement des données
+// DÉMARRAGE
 function loop(){ 
     update(); 
     draw(); 
     requestAnimationFrame(loop); 
 }
 
-// Lancement initial: 
-// 1. Affiche l'écran de chargement
 resizeCanvas();
 draw(); 
-
-// 2. Lance l'appel API asynchrone (loadGameData)
 loadGameData(); 
-
-// 3. Lance la boucle d'animation IMMÉDIATEMENT. 
-// La boucle update/draw va maintenant s'assurer que le STATE passe de LOADING à MENU
-// dès que loadGameData a terminé (grâce à la correction dans loadGameData).
 loop(); 
 </script>
 </body>

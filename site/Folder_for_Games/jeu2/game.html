@@ -614,23 +614,23 @@ function update(){
         spawnTimer++;
         if(spawnTimer>=Math.max(10, 40 - Math.floor(score/150))){ spawnAsteroid(); spawnTimer=0; }
         
-        // --- LOGIQUE DE ROTATION DU VAISSEAU AJOUTÉE ---
-        let targetAngle = 0; // Angle cible par défaut (droit)
+        // --- LOGIQUE DE ROTATION DU VAISSEAU (MODIFIÉE) ---
+        let targetAngle = 0; 
 
         if(keys.ArrowLeft) { 
             player.x-=sD.speed; 
-            targetAngle = -0.15; // Petite inclinaison à gauche (en radians)
+            targetAngle = -0.8; // Rotation TRÈS augmentée
         }
         if(keys.ArrowRight) { 
             player.x+=sD.speed; 
-            targetAngle = 0.15; // Petite inclinaison à droite (en radians)
+            targetAngle = 0.8; // Rotation TRÈS augmentée
         }
         
         if(keys.ArrowUp) player.y-=sD.speed; 
         if(keys.ArrowDown) player.y+=sD.speed;
 
-        // Lissage de l'angle actuel vers l'angle cible
-        player.angle += (targetAngle - player.angle) * 0.1;
+        // Lissage de l'angle (augmenté à 0.2 pour une rotation plus rapide)
+        player.angle += (targetAngle - player.angle) * 0.2;
         // --- FIN LOGIQUE DE ROTATION ---
         
         player.x=Math.max(player.r, Math.min(GAME_WIDTH-player.r, player.x));
@@ -640,7 +640,7 @@ function update(){
             a.y+=a.speed; a.rot+=a.rotSpeed;
             const dist = Math.hypot(player.x-a.x,player.y-a.y);
             const collisionDist = player.r + a.r;
-            const nearMissDist = collisionDist + 15; // 15 pixels de marge pour le frôlement
+            const nearMissDist = collisionDist + 15; 
 
             // 1. Détection de collision
             if(dist < collisionDist && player.invulnerable===0){
@@ -660,7 +660,6 @@ function update(){
             } 
             // 2. Détection de frôlement (Near Miss)
             else if (dist < nearMissDist && !a.nearMissed) {
-                // Le bonus ne s'applique que si l'astéroïde n'a pas déjà été frôlé et si le joueur n'est pas en invulnérabilité.
                 if (player.invulnerable === 0) {
                     a.nearMissed = true;
                     const bonusScore = 50;
@@ -674,7 +673,6 @@ function update(){
         if(time%350===0) spawnCoin();
     }
 
-    // Ajout de 'nearMissed: false' pour les nouveaux astéroïdes
     asteroids=asteroids.filter(a=>a.y<GAME_HEIGHT+50);
     coins.forEach(c=>{
         c.y+=2.5 * currentSpeed;
@@ -691,7 +689,6 @@ function update(){
     coins=coins.filter(c=>c.y<GAME_HEIGHT && !c.collected);
 }
 
-// Modification de spawnAsteroid pour inclure 'nearMissed'
 function spawnAsteroid(){ 
     const r=16+Math.random()*28; 
     asteroids.push({
@@ -701,7 +698,7 @@ function spawnAsteroid(){
         rot:Math.random()*Math.PI*2, 
         rotSpeed:(Math.random()-0.5)*0.05, 
         pts:Array.from({length:7}, ()=>0.6+Math.random()*0.8),
-        nearMissed: false // Ajout du flag de frôlement
+        nearMissed: false 
     }); 
 }
 function spawnCoin(){ coins.push({x:25+Math.random()*370,y:-10,r:8,collected:false}); }
@@ -731,7 +728,7 @@ function draw(){
     if(state===STATE.PLAY || state===STATE.TAKEOFF || state===STATE.LANDING || (state===STATE.GAMEOVER && timeScale > 0.5)){ 
         ctx.save(); 
         ctx.translate(player.x,player.y); 
-        ctx.rotate(player.angle); // Utilise l'angle mis à jour pour la rotation
+        ctx.rotate(player.angle); 
         if(player.invulnerable>0 && Math.floor(time/5)%2===0) ctx.globalAlpha=0.3; 
         ctx.fillStyle=sD.flame; 
         ctx.beginPath(); ctx.moveTo(-8,15); ctx.lineTo(0,20+Math.sin(time*0.5)*8); ctx.lineTo(8,15); ctx.fill(); 
@@ -821,7 +818,7 @@ function draw(){
             ctx.shadowBlur=hover?25:15; 
             ctx.shadowColor=player.type===i?"#fff":s.color; 
             ctx.fillStyle=hover?"#252545":"#1a1a2e"; 
-            drawRoundedRect(40, cardY, 340, 140, 10, true, false); // Utilisation de drawRoundedRect
+            drawRoundedRect(40, cardY, 340, 140, 10, true, false); 
             ctx.shadowBlur=0; 
             
             // 2. Dessin du contenu
@@ -866,17 +863,16 @@ function draw(){
         ctx.fillStyle="#fff"; 
         ctx.font="bold 45px sans-serif"; 
         ctx.textAlign="center"; 
-        ctx.fillText("CRASH SYSTÈME", 210, 250); // Titre
+        ctx.fillText("CRASH SYSTÈME", 210, 250); 
 
-        // --- AFFICHAGE DU SCORE AJOUTÉ ---
+        // AFFICHAGE DU SCORE
         ctx.font="bold 30px sans-serif"; 
         ctx.fillStyle = curCol;
-        ctx.fillText(`SCORE: ${finalScore}`, 210, 320); // Score Final
+        ctx.fillText(`SCORE: ${finalScore}`, 210, 320); 
         
         ctx.font="20px sans-serif"; 
         ctx.fillStyle = "#aaa";
-        ctx.fillText(`Meilleur: ${bestScore}`, 210, 360); // Meilleur Score
-        // --- FIN AFFICHAGE DU SCORE ---
+        ctx.fillText(`Meilleur: ${bestScore}`, 210, 360); 
         
         ctx.font="18px sans-serif"; 
         ctx.fillStyle = "#fff";
@@ -936,7 +932,7 @@ function draw(){
     floatingTexts.forEach(t => {
         ctx.save(); 
         ctx.globalAlpha = t.alpha; 
-        ctx.fillStyle = t.color || "#fff"; // Utiliser la couleur définie ou blanc par défaut
+        ctx.fillStyle = t.color || "#fff"; 
         ctx.font = "bold 20px sans-serif";
         ctx.textAlign = "center"; 
         ctx.fillText(t.text, t.x, t.y); 
@@ -974,7 +970,7 @@ function draw(){
     }
 }
 
-function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1, r = 10){ // Ajout du rayon r=10
+function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1, r = 10){ 
     const hover = mouseInRect(x-w/2, y, w, h); 
     if(hover) canvas.style.cursor = "pointer";
     
@@ -985,7 +981,6 @@ function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1, r = 10){ // Ajout du ra
         ctx.shadowBlur = hover ? 35 : 10; ctx.shadowColor = c;
         ctx.fillStyle = hover ? c : "rgba(255,255,255,0.05)"; ctx.strokeStyle = c; ctx.lineWidth = 2/sizeMod; 
         
-        // Utilisation de drawRoundedRect pour les coins arrondis
         drawRoundedRect(-w/2, -h/2, w, h, r/sizeMod, true, true); 
 
         ctx.shadowBlur = 0; ctx.fillStyle = hover ? "#000" : "#fff"; ctx.font = "bold 18px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, 0, 0); ctx.restore();
@@ -998,7 +993,6 @@ function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1, r = 10){ // Ajout du ra
         ctx.shadowBlur = hover ? 45 : 20; ctx.shadowColor = c;
         ctx.fillStyle = hover ? c : "rgba(255,255,255,0.1)"; ctx.strokeStyle = c; ctx.lineWidth = 3/scale; 
         
-        // Utilisation de drawRoundedRect pour les coins arrondis
         drawRoundedRect(-w/2, -h/2, w, h, r/scale, true, true); 
         
         ctx.shadowBlur = 0; ctx.fillStyle = hover ? "#000" : "#fff"; ctx.font = "bold 22px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, 0, 0); ctx.restore();

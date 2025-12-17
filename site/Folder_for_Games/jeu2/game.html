@@ -37,7 +37,6 @@ const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
 
 // --- CONFIGURATION API IMPORTANTE ---
-// !!! REMPLACEZ CELA PAR L'ADRESSE RÉELLE DE VOTRE SERVEUR FLASK RENDER !!!
 const API_BASE_URL = "https://project-3-api-2bgb.onrender.com/astro"; 
 // ------------------------------------
 
@@ -178,12 +177,13 @@ async function loadGameData() {
             const shipIndex = ships.findIndex(s => s.name === savedCarName);
             player.type = shipIndex !== -1 ? shipIndex : 0;
             
-            // Logique simplifiée de déverrouillage (à affiner si nécessaire côté serveur)
+            // Logique simplifiée de déverrouillage
             ships.forEach((s, i) => { s.unlocked = (i === 0); }); 
             if (player.type !== 0) {
                  ships[player.type].unlocked = true;
             }
             
+            // Passer à l'état MENU une fois les données prêtes
             changeState(STATE.MENU);
             console.log("Données chargées depuis l'API:", data);
 
@@ -499,7 +499,17 @@ function drawBtn(t, x, y, w, h, c){
 function wrapText(t,x,y,mW,lH){ let words=t.split(' '), line=''; for(let n=0;n<words.length;n++){ let test=line+words[n]+' '; if(ctx.measureText(test).width>mW && n>0){ ctx.fillText(line,x,y); line=words[n]+' '; y+=lH; } else line=test; } ctx.fillText(line,x,y); }
 
 // DÉMARRAGE: Lancer le chargement des données
-function loop(){ update(); draw(); requestAnimationFrame(loop); }
+function loop(){ 
+    update(); 
+    draw(); 
+    requestAnimationFrame(loop); 
+}
+
+// 1. Appel forcé du redimensionnement et du premier dessin
+resizeCanvas();
+draw(); // Affiche l'écran de chargement immédiatement
+
+// 2. Lance le chargement des données, puis démarre la boucle d'animation (update/draw en continu)
 loadGameData().then(() => {
     loop(); 
 });

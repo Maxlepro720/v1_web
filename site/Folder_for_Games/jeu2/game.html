@@ -614,6 +614,28 @@ function update(){
         spawnTimer++;
         if(spawnTimer>=Math.max(10, 40 - Math.floor(score/150))){ spawnAsteroid(); spawnTimer=0; }
         
+        // --- LOGIQUE DE ROTATION DU VAISSEAU AJOUTÉE ---
+        let targetAngle = 0; // Angle cible par défaut (droit)
+
+        if(keys.ArrowLeft) { 
+            player.x-=sD.speed; 
+            targetAngle = -0.15; // Petite inclinaison à gauche (en radians)
+        }
+        if(keys.ArrowRight) { 
+            player.x+=sD.speed; 
+            targetAngle = 0.15; // Petite inclinaison à droite (en radians)
+        }
+        
+        if(keys.ArrowUp) player.y-=sD.speed; 
+        if(keys.ArrowDown) player.y+=sD.speed;
+
+        // Lissage de l'angle actuel vers l'angle cible
+        player.angle += (targetAngle - player.angle) * 0.1;
+        // --- FIN LOGIQUE DE ROTATION ---
+        
+        player.x=Math.max(player.r, Math.min(GAME_WIDTH-player.r, player.x));
+        player.y=Math.max(player.r, Math.min(GAME_HEIGHT-player.r, player.y));
+        
         asteroids.forEach(a=>{
             a.y+=a.speed; a.rot+=a.rotSpeed;
             const dist = Math.hypot(player.x-a.x,player.y-a.y);
@@ -650,10 +672,6 @@ function update(){
         });
 
         if(time%350===0) spawnCoin();
-        if(keys.ArrowLeft) player.x-=sD.speed; if(keys.ArrowRight) player.x+=sD.speed;
-        if(keys.ArrowUp) player.y-=sD.speed; if(keys.ArrowDown) player.y+=sD.speed;
-        player.x=Math.max(player.r, Math.min(GAME_WIDTH-player.r, player.x));
-        player.y=Math.max(player.r, Math.min(GAME_HEIGHT-player.r, player.y));
     }
 
     // Ajout de 'nearMissed: false' pour les nouveaux astéroïdes
@@ -713,7 +731,7 @@ function draw(){
     if(state===STATE.PLAY || state===STATE.TAKEOFF || state===STATE.LANDING || (state===STATE.GAMEOVER && timeScale > 0.5)){ 
         ctx.save(); 
         ctx.translate(player.x,player.y); 
-        ctx.rotate(player.angle); 
+        ctx.rotate(player.angle); // Utilise l'angle mis à jour pour la rotation
         if(player.invulnerable>0 && Math.floor(time/5)%2===0) ctx.globalAlpha=0.3; 
         ctx.fillStyle=sD.flame; 
         ctx.beginPath(); ctx.moveTo(-8,15); ctx.lineTo(0,20+Math.sin(time*0.5)*8); ctx.lineTo(8,15); ctx.fill(); 
@@ -843,7 +861,27 @@ function draw(){
         // --- Fin Affichage Crédits ---
 
     } else if(state===STATE.GAMEOVER){
-        ctx.fillStyle="#fff"; ctx.font="bold 45px sans-serif"; ctx.textAlign="center"; ctx.fillText("CRASH SYSTÈME", 210, 300); ctx.font="18px sans-serif"; ctx.fillText("Clique pour atterrir", 210, 360);
+        const finalScore = Math.floor(score);
+        
+        ctx.fillStyle="#fff"; 
+        ctx.font="bold 45px sans-serif"; 
+        ctx.textAlign="center"; 
+        ctx.fillText("CRASH SYSTÈME", 210, 250); // Titre
+
+        // --- AFFICHAGE DU SCORE AJOUTÉ ---
+        ctx.font="bold 30px sans-serif"; 
+        ctx.fillStyle = curCol;
+        ctx.fillText(`SCORE: ${finalScore}`, 210, 320); // Score Final
+        
+        ctx.font="20px sans-serif"; 
+        ctx.fillStyle = "#aaa";
+        ctx.fillText(`Meilleur: ${bestScore}`, 210, 360); // Meilleur Score
+        // --- FIN AFFICHAGE DU SCORE ---
+        
+        ctx.font="18px sans-serif"; 
+        ctx.fillStyle = "#fff";
+        ctx.fillText("Clique pour atterrir", 210, 420);
+        
     } else if (state===STATE.LOADING) {
         // Barre de progression améliorée
         ctx.fillStyle="rgba(255,255,255,0.1)"; 

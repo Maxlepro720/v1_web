@@ -5,7 +5,6 @@
 <title>Astro Dodge</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-/* CSS pour le Responsive */
 body { 
     margin:0; 
     background: #0a0e27; 
@@ -30,7 +29,6 @@ canvas {
     position: absolute; 
 }
 
-/* Style spécifique en mode plein écran (pour la bordure) */
 :fullscreen canvas {
     border: none;
     box-shadow: none;
@@ -38,7 +36,6 @@ canvas {
 :-webkit-full-screen canvas { border: none; box-shadow: none; }
 :-moz-full-screen canvas { border: none; box-shadow: none; }
 :-ms-fullscreen canvas { border: none; box-shadow: none; }
-
 </style>
 </head>
 <body>
@@ -47,40 +44,187 @@ canvas {
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
 
-// --- CONFIGURATION API IMPORTANTE ---
-const API_BASE_URL = "https://project-3-api-2bgb.onrender.com/astro"; 
-// ------------------------------------
+// =================================================================
+// --- SYSTÈME DE SONS ---
+// =================================================================
+const AudioSystem = {
+    context: null,
+    sounds: {},
+    masterVolume: 0.3,
+    
+    init() {
+        try {
+            this.context = new (window.AudioContext || window.webkitAudioContext)();
+            this.generateSounds();
+        } catch(e) {
+            console.warn("Audio non disponible");
+        }
+    },
+    
+    generateSounds() {
+        // Son de bouton hover
+        this.sounds.buttonHover = this.createTone(800, 0.05, 0.1, 'sine');
+        
+        // Son de clic
+        this.sounds.buttonClick = this.createTone(600, 0.1, 0.15, 'square');
+        
+        // Son de fusée (moteur continu)
+        this.sounds.rocket = this.createNoise(0.3, 'brown');
+        
+        // Son de pièce collectée
+        this.sounds.coin = this.createSequence([
+            {freq: 800, duration: 0.05},
+            {freq: 1000, duration: 0.05},
+            {freq: 1200, duration: 0.1}
+        ]);
+        
+        // Son de crash
+        this.sounds.crash = this.createExplosion();
+        
+        // Son de niveau suivant
+        this.sounds.levelUp = this.createSequence([
+            {freq: 400, duration: 0.1},
+            {freq: 600, duration: 0.1},
+            {freq: 800, duration: 0.15}
+        ]);
+        
+        // Son de dégâts
+        this.sounds.hit = this.createTone(200, 0.2, 0.3, 'sawtooth');
+    },
+    
+    createTone(freq, duration, volume, type = 'sine') {
+        return () => {
+            if (!this.context) return;
+            const osc = this.context.createOscillator();
+            const gain = this.context.createGain();
+            
+            osc.type = type;
+            osc.frequency.value = freq;
+            gain.gain.value = volume * this.masterVolume;
+            
+            osc.connect(gain);
+            gain.connect(this.context.destination);
+            
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + duration);
+            osc.stop(this.context.currentTime + duration);
+        };
+    },
+    
+    createNoise(volume, type = 'white') {
+        return () => {
+            if (!this.context) return;
+            const bufferSize = this.context.sampleRate * 0.5;
+            const buffer = this.context.createBuffer(1, bufferSize, this.context.sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            
+            const source = this.context.createBufferSource();
+            const gain = this.context.createGain();
+            const filter = this.context.createBiquadFilter();
+            
+            filter.type = 'lowpass';
+            filter.frequency.value = 200;
+            
+            source.buffer = buffer;
+            gain.gain.value = volume * this.masterVolume;
+            
+            source.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.context.destination);
+            
+            source.start();
+            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.5);
+            source.stop(this.context.currentTime + 0.5);
+        };
+    },
+    
+    createSequence(notes) {
+        return () => {
+            if (!this.context) return;
+            let time = this.context.currentTime;
+            
+            notes.forEach(note => {
+                const osc = this.context.createOscillator();
+                const gain = this.context.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.value = note.freq;
+                gain.gain.value = 0.2 * this.masterVolume;
+                
+                osc.connect(gain);
+                gain.connect(this.context.destination);
+                
+                osc.start(time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + note.duration);
+                osc.stop(time + note.duration);
+                
+                time += note.duration;
+            });
+        };
+    },
+    
+    createExplosion() {
+        return () => {
+            if (!this.context) return;
+            const osc = this.context.createOscillator();
+            const gain = this.context.createGain();
+            
+            osc.type = 'sawtooth';
+            osc.frequency.value = 100;
+            gain.gain.value = 0.5 * this.masterVolume;
+            
+            osc.connect(gain);
+            gain.connect(this.context.destination);
+            
+            osc.start();
+            osc.frequency.exponentialRampToValueAtTime(20, this.context.currentTime + 0.5);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.5);
+            osc.stop(this.context.currentTime + 0.5);
+        };
+    },
+    
+    play(soundName) {
+        if (this.sounds[soundName]) {
+            this.sounds[soundName]();
+        }
+    }
+};
 
-// Dimensions Virtuelles du Jeu (référence pour tous les dessins)
+// Initialisation du système audio
+AudioSystem.init();
+
+// =================================================================
+// --- CONFIGURATION API ---
+// =================================================================
+const API_BASE_URL = "https://project-3-api-2bgb.onrender.com/astro"; 
+
 const GAME_WIDTH = 420;
 const GAME_HEIGHT = 640;
 
 let scaleFactor = 1;
 let currentHoverButton = null; 
-
-// =================================================================
-// --- LOGIQUE PLEIN ÉCRAN (AMÉLIORÉE) ---
-// =================================================================
+let lastHoveredButton = null;
 
 function requestFullScreen(element) {
-    // Cette fonction ne doit être appelée que suite à un clic utilisateur.
     if (element.requestFullscreen) {
-        element.requestFullscreen().catch(err => console.error("Plein écran bloqué (Standard):", err));
+        element.requestFullscreen().catch(err => console.error("Plein écran bloqué:", err));
     } else if (element.mozRequestFullScreen) {
-        element.mozRequestFullScreen().catch(err => console.error("Plein écran bloqué (Firefox):", err));
+        element.mozRequestFullScreen().catch(err => console.error("Plein écran bloqué:", err));
     } else if (element.webkitRequestFullscreen) {
-        element.webkitRequestFullscreen().catch(err => console.error("Plein écran bloqué (Chrome/Safari):", err));
+        element.webkitRequestFullscreen().catch(err => console.error("Plein écran bloqué:", err));
     } else if (element.msRequestFullscreen) {
-        element.msRequestFullscreen().catch(err => console.error("Plein écran bloqué (Edge):", err));
+        element.msRequestFullscreen().catch(err => console.error("Plein écran bloqué:", err));
     }
 }
 
 window.onload = function() {
-    // L'appel de plein écran au chargement est retiré car il est toujours bloqué par le navigateur.
     resizeCanvas();
 };
 
-// --- FONCTION DE REDIMENSIONNEMENT RESPONSIVE ---
 function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width;
@@ -93,7 +237,6 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas(); 
 
-// --- GESTION DES COORDONNÉES SOURIS/TOUCH MISES À L'ÉCHELLE ---
 let mouseX = 0, mouseY = 0, isMouseDown = false;
 
 function getScaledMouseCoordinates(e) {
@@ -134,7 +277,6 @@ canvas.addEventListener("touchend", () => isMouseDown = false);
 
 function mouseInRect(x,y,w,h){ return mouseX > x && mouseX < x+w && mouseY > y && mouseY < y+h; }
 
-// --- CONSTANTES ET INITIALISATION DU JEU ---
 const STATE={MENU:0,PLAY:1,GAMEOVER:2,SHOP:3, TAKEOFF:4, LANDING:5, LEADERBOARD:6, LOADING: 7, START_SCREEN: 8}; 
 let state=STATE.LOADING; 
 
@@ -146,8 +288,9 @@ let time=0, spawnTimer=0, asteroids=[], stars=[], coins=[], keys={}, explosion=n
 let coinFlashAlpha = 0, floatingTexts = [], shopScroll=0;
 let player={x:210,y:560,r:18,type:0,life:1, invulnerable:0, trail:[], angle:0};
 let leaderboardData = []; 
-let loadingShip = { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2, angle: 0, r: 20 }; 
-let startButtonAnim = { scale: 1, alpha: 0, hover: false }; 
+let loadingShip = { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2, angle: 0, r: 20, particles: [] }; 
+let loadingProgress = 0;
+let startButtonAnim = { scale: 1, alpha: 0, hover: false, pulse: 0 }; 
 
 let menuParticles = [];
 for(let i=0; i<25; i++) menuParticles.push({x: Math.random()*GAME_WIDTH, y: Math.random()*GAME_HEIGHT, l: Math.random()*30+10, s: Math.random()*8+4});
@@ -203,10 +346,13 @@ function updateTransition() {
     }
 }
 
-// =================================================================
-// --- LOGIQUE API / SAUVEGARDE / CHARGEMENT ---
-// =================================================================
 async function loadGameData() {
+    // Simulation de chargement avec progression
+    for (let i = 0; i <= 100; i += 2) {
+        loadingProgress = i;
+        await new Promise(resolve => setTimeout(resolve, 20));
+    }
+    
     try {
         const response = await fetch(`${API_BASE_URL}/load_data/${username}`);
         const result = await response.json();
@@ -231,7 +377,6 @@ async function loadGameData() {
             const savedShipIndex = ships.findIndex(s => s.name === selectedShipName && s.unlocked);
             player.type = savedShipIndex !== -1 ? savedShipIndex : firstUnlockedIndex;
 
-            // Une fois les données chargées, on passe à l'écran de démarrage.
             state = STATE.START_SCREEN; 
             transition.active = false;
             transition.nextState = null;
@@ -294,7 +439,6 @@ async function loadLeaderboard() {
     }
 }
 
-// --- GESTION DES INPUTS ---
 canvas.addEventListener("click", e=>{
     const coords = getScaledMouseCoordinates(e);
     mouseX = coords.x;
@@ -304,29 +448,31 @@ canvas.addEventListener("click", e=>{
 
     if(state === STATE.START_SCREEN) {
         if(mouseInRect(110, 480, 200, 50)) {
-            // *** POINT CLÉ : Lancement du plein écran UNIQUEMENT au clic utilisateur ***
+            AudioSystem.play('buttonClick');
             requestFullScreen(document.documentElement); 
             changeState(STATE.MENU);
         }
     }
     
     else if(state===STATE.MENU){
-      if(mouseInRect(110, 240, 200, 50)) changeState(STATE.TAKEOFF, startLaunchAnimation);
-      if(mouseInRect(110, 310, 200, 50)) changeState(STATE.SHOP);
-      if(mouseInRect(110, 380, 200, 50)) changeState(STATE.LEADERBOARD, loadLeaderboard); 
-      if(mouseInRect(110, 450, 200, 50)) window.location.href = "../../menu.html"; 
+      if(mouseInRect(110, 240, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.TAKEOFF, startLaunchAnimation); }
+      if(mouseInRect(110, 310, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.SHOP); }
+      if(mouseInRect(110, 380, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.LEADERBOARD, loadLeaderboard); }
+      if(mouseInRect(110, 450, 200, 50)) { AudioSystem.play('buttonClick'); window.location.href = "../../menu.html"; }
     } else if(state===STATE.SHOP || state===STATE.LEADERBOARD){
-      if(mouseInRect(110, 540, 200, 50)) changeState(STATE.MENU);
+      if(mouseInRect(110, 540, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.MENU); }
       if(state===STATE.SHOP){
         ships.forEach((s,i)=>{
           const cardY=140+i*160 - shopScroll;
           if(mouseInRect(40, cardY, 340, 140)){
             if(!s.unlocked && credits>=s.cost){ 
+              AudioSystem.play('coin');
               credits-=s.cost; 
               s.unlocked=true; 
               player.type = i;
               saveGameData(); 
             } else if(s.unlocked) {
+                AudioSystem.play('buttonClick');
                 player.type=i;
                 saveGameData(); 
             }
@@ -334,6 +480,7 @@ canvas.addEventListener("click", e=>{
         });
       }
     } else if(state===STATE.GAMEOVER && flashAlpha <= 0.1) {
+      AudioSystem.play('buttonClick');
       asteroids = []; coins = []; explosion = null; launchProgress = 1; earthY = 800; player.angle = Math.PI; state = STATE.LANDING;
     }
 });
@@ -341,6 +488,7 @@ canvas.addEventListener("click", e=>{
 document.addEventListener("keydown", e=>{ 
     keys[e.key]=true; 
     if(e.key==="Escape" && (state===STATE.PLAY || state===STATE.SHOP || state===STATE.LEADERBOARD)) {
+        AudioSystem.play('buttonClick');
         changeState(STATE.MENU); 
     }
 });
@@ -351,13 +499,13 @@ function initStars(){ stars=[]; for(let i=0;i<80;i++) stars.push({x:Math.random(
 initStars();
 
 function startLaunchAnimation() {
+    AudioSystem.play('rocket');
     asteroids=[]; coins=[]; score=0; time=0; spawnTimer=0; explosion=null; flashAlpha=0; floatingTexts=[]; deathShockwave.active = false; glitchTimer = 0;
     timeScale = 1; launchProgress = 0; earthY = 500; currentLevel = 1; colorIndex = 0;
     player.x = 210; player.y = 520; player.trail = []; player.angle = 0;
     player.life=ships[player.type].bonus==="Vie Supplémentaire" ? 2 : 1; state = STATE.TAKEOFF;
 }
 
-// --- FONCTION DE MISE À JOUR (UPDATE) ---
 function update(){
     updateTransition();
     canvas.style.cursor = "default";
@@ -365,33 +513,73 @@ function update(){
     if(coinFlashAlpha > 0) coinFlashAlpha -= 0.1;
     if(glitchTimer > 0) glitchTimer--;
 
-    // Animation de l'écran de chargement/démarrage
     if(state === STATE.LOADING) {
-        loadingShip.angle += 0.08; 
+        loadingShip.angle += 0.08;
+        
+        // Particules du vaisseau en chargement
+        if(time % 3 === 0) {
+            loadingShip.particles.push({
+                x: loadingShip.x + (Math.random()-0.5)*15,
+                y: loadingShip.y + 20,
+                r: 2 + Math.random()*3,
+                alpha: 0.8,
+                speed: 2 + Math.random()*2
+            });
+        }
+        loadingShip.particles.forEach((p, i) => {
+            p.y += p.speed;
+            p.alpha -= 0.02;
+            if(p.alpha <= 0) loadingShip.particles.splice(i, 1);
+        });
+        
     } else if (state === STATE.START_SCREEN) {
-        // Animation du bouton "COMMENCER"
         const isHovering = mouseInRect(110, 480, 200, 50);
+        
         if (isHovering) {
-            startButtonAnim.scale += (1.05 - startButtonAnim.scale) * 0.1;
+            startButtonAnim.scale += (1.08 - startButtonAnim.scale) * 0.15;
             if (!startButtonAnim.hover) {
-                 startButtonAnim.hover = true;
+                AudioSystem.play('buttonHover');
+                startButtonAnim.hover = true;
             }
         } else {
-            startButtonAnim.scale += (1.0 - startButtonAnim.scale) * 0.1;
+            startButtonAnim.scale += (1.0 - startButtonAnim.scale) * 0.15;
             startButtonAnim.hover = false;
         }
         startButtonAnim.alpha += (1.0 - startButtonAnim.alpha) * 0.05;
+        startButtonAnim.pulse += 0.05;
     }
 
     if(state === STATE.MENU) {
         menuParticles.forEach(p => { p.y += p.s; if(p.y > GAME_HEIGHT) { p.y = -20; p.x = Math.random()*GAME_WIDTH; } });
+        
+        // Détection hover pour sons
+        const buttons = [
+            {x: 110, y: 240, w: 200, h: 50, id: 'play'},
+            {x: 110, y: 310, w: 200, h: 50, id: 'shop'},
+            {x: 110, y: 380, w: 200, h: 50, id: 'leader'},
+            {x: 110, y: 450, w: 200, h: 50, id: 'quit'}
+        ];
+        
+        let hovering = null;
+        buttons.forEach(btn => {
+            if(mouseInRect(btn.x, btn.y, btn.w, btn.h)) {
+                hovering = btn.id;
+            }
+        });
+        
+        if(hovering && hovering !== lastHoveredButton) {
+            AudioSystem.play('buttonHover');
+            lastHoveredButton = hovering;
+        } else if(!hovering) {
+            lastHoveredButton = null;
+        }
     }
 
     floatingTexts.forEach((t, i) => { t.y -= 2; t.alpha -= 0.02; if(t.alpha <= 0) floatingTexts.splice(i, 1); });
 
     nebulas.forEach(n => { n.y += n.speed * (state === STATE.GAMEOVER ? timeScale : 1); if(n.y - n.r > GAME_HEIGHT) { n.y = -n.r; n.x = Math.random() * GAME_WIDTH; } });
 
-    if(state === STATE.TAKEOFF) { launchProgress += 0.005; earthY += 4; player.y -= 0.5; if(launchProgress >= 1) state = STATE.PLAY; }
+    if(state === STATE.TAKEOFF) { launchProgress += 0.005; earthY += 4; player.y -= 0.5; if(launchProgress >= 1) { AudioSystem.play('rocket'); state = STATE.PLAY; } }
     if(state === STATE.LANDING) { launchProgress -= 0.01; earthY -= 5; player.y += 2; if(earthY <= 500) changeState(STATE.MENU); }
 
     if(state!==STATE.PLAY && state!==STATE.GAMEOVER && state!==STATE.TAKEOFF && state!==STATE.LANDING) return;
@@ -413,7 +601,8 @@ function update(){
         let nextLvl = Math.floor(score/500) + 1;
         if(nextLvl > currentLevel) { 
             currentLevel = nextLvl; levelAnimTimer = 100; colorIndex = (currentLevel - 1) % levelColors.length; flashAlpha = 0.3; 
-            credits += 50; 
+            credits += 50;
+            AudioSystem.play('levelUp');
             saveGameData(); 
         }
         if(levelAnimTimer > 0) levelAnimTimer--;
@@ -426,9 +615,12 @@ function update(){
             a.y+=a.speed; a.rot+=a.rotSpeed;
             if(Math.hypot(player.x-a.x,player.y-a.y)<player.r+a.r && player.invulnerable===0){
                 if(player.life>1){ 
-                    player.life--; player.invulnerable=60; flashAlpha=0.4; asteroids=[]; } 
+                    player.life--; player.invulnerable=60; flashAlpha=0.4; asteroids=[];
+                    AudioSystem.play('hit');
+                } 
                 else {
                     state = STATE.GAMEOVER; flashAlpha = 1; timeScale = 1;
+                    AudioSystem.play('crash');
                     
                     if(Math.floor(score)>bestScore){ 
                         bestScore=Math.floor(score); 
@@ -451,7 +643,8 @@ function update(){
         if(sD.bonus==="Aim Magnétique" && Math.hypot(player.x-c.x,player.y-c.y)<220){ c.x+=(player.x-c.x)*0.07; c.y+=(player.y-c.y)*0.07; }
         if(Math.hypot(player.x-c.x,player.y-c.y)<player.r+c.r){ 
             const val = 50*(sD.bonus==="Pièces x2"?2:1); 
-            credits+=val; 
+            credits+=val;
+            AudioSystem.play('coin');
             saveGameData(); 
             c.collected=true; coinFlashAlpha = 0.3; 
             floatingTexts.push({x: c.x, y: c.y, text: `+${val} 💰`, alpha: 1}); 
@@ -463,7 +656,6 @@ function update(){
 function spawnAsteroid(){ const r=16+Math.random()*28; asteroids.push({x:r + Math.random()*(GAME_WIDTH-2*r), y:-r-50, r, speed:1.8 + Math.random()*1.5 + (score/800), rot:Math.random()*Math.PI*2, rotSpeed:(Math.random()-0.5)*0.05, pts:Array.from({length:7}, ()=>0.6+Math.random()*0.8)}); }
 function spawnCoin(){ coins.push({x:25+Math.random()*370,y:-10,r:8,collected:false}); }
 
-// --- FONCTION DE DESSIN (DRAW) ---
 function draw(){
     const curCol = (state === STATE.MENU || state === STATE.SHOP || state === STATE.LEADERBOARD || state === STATE.LOADING || state === STATE.START_SCREEN) ? "#00d9ff" : levelColors[colorIndex];
     ctx.fillStyle = "#020510"; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
@@ -505,10 +697,25 @@ function draw(){
     if(state === STATE.START_SCREEN) {
         ctx.save(); ctx.globalAlpha = startButtonAnim.alpha;
         const bounce = Math.sin(time * 0.04) * 8;
-        ctx.translate(210, 150 + bounce); ctx.shadowBlur = 20 + Math.sin(time*0.1)*10; ctx.shadowColor = "#00d9ff"; ctx.fillStyle = "#fff"; ctx.font = "bold 52px sans-serif"; ctx.textAlign = "center"; ctx.fillText("ASTRO DODGE", 0, 0); ctx.font = "bold 18px sans-serif"; ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; ctx.fillText(`Données chargées : ${username}`, 0, 45); 
+        ctx.translate(210, 150 + bounce); 
+        ctx.shadowBlur = 20 + Math.sin(time*0.1)*10; ctx.shadowColor = "#00d9ff"; 
+        ctx.fillStyle = "#fff"; ctx.font = "bold 52px sans-serif"; ctx.textAlign = "center"; 
+        ctx.fillText("ASTRO DODGE", 0, 0); 
+        ctx.font = "bold 18px sans-serif"; ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; 
+        ctx.fillText(`Données chargées : ${username}`, 0, 45); 
         ctx.restore();
         
-        // Bouton COMMENCER
+        // Effet de pulsation lumineux autour du bouton
+        const pulseIntensity = Math.sin(startButtonAnim.pulse) * 0.3 + 0.7;
+        ctx.save();
+        ctx.globalAlpha = startButtonAnim.alpha * 0.3 * pulseIntensity;
+        ctx.shadowBlur = 40;
+        ctx.shadowColor = curCol;
+        ctx.strokeStyle = curCol;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(110, 480, 200, 50);
+        ctx.restore();
+        
         drawBtn("COMMENCER", 210, 480, 200, 50, curCol, startButtonAnim.scale, startButtonAnim.alpha);
     
     } else if(state===STATE.MENU){
@@ -529,25 +736,56 @@ function draw(){
     } else if(state===STATE.GAMEOVER){
         ctx.fillStyle="#fff"; ctx.font="bold 45px sans-serif"; ctx.textAlign="center"; ctx.fillText("CRASH SYSTÈME", 210, 300); ctx.font="18px sans-serif"; ctx.fillText("Clique pour atterrir", 210, 360);
     } else if (state===STATE.LOADING) {
-        ctx.fillStyle="#fff"; ctx.font="bold 30px sans-serif"; ctx.textAlign="center"; ctx.fillText("CONNEXION AU SYSTÈME...", 210, 320);
+        // Barre de progression améliorée
+        ctx.fillStyle="rgba(255,255,255,0.1)"; 
+        ctx.fillRect(110, 400, 200, 20);
         
+        const gradient = ctx.createLinearGradient(110, 400, 110 + (200 * loadingProgress/100), 420);
+        gradient.addColorStop(0, "#00d9ff");
+        gradient.addColorStop(1, "#0066ff");
+        ctx.fillStyle=gradient;
+        ctx.fillRect(110, 400, 200 * loadingProgress/100, 20);
+        
+        ctx.strokeStyle = "#00d9ff";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(110, 400, 200, 20);
+        
+        ctx.fillStyle="#fff"; 
+        ctx.font="bold 16px sans-serif"; 
+        ctx.textAlign="center"; 
+        ctx.fillText(`${Math.floor(loadingProgress)}%`, 210, 415);
+        
+        ctx.font="bold 30px sans-serif"; 
+        ctx.fillText("CONNEXION AU SYSTÈME...", 210, 360);
+        
+        // Vaisseau en rotation avec particules
         ctx.save();
         ctx.translate(loadingShip.x, loadingShip.y - 50);
         ctx.rotate(loadingShip.angle);
         
         const sD_load = ships[0]; 
         ctx.fillStyle=sD_load.flame; 
-        ctx.beginPath(); ctx.moveTo(-8,20); ctx.lineTo(0,25); ctx.lineTo(8,20); ctx.fill(); 
-        ctx.shadowBlur=20; ctx.shadowColor="#00d9ff"; 
+        ctx.beginPath(); ctx.moveTo(-8,20); ctx.lineTo(0,25+Math.sin(time*0.3)*5); ctx.lineTo(8,20); ctx.fill(); 
+        ctx.shadowBlur=25; ctx.shadowColor="#00d9ff"; 
         ctx.fillStyle=sD_load.color; 
         ctx.beginPath(); 
         ctx.moveTo(0,-22); ctx.lineTo(16,18); ctx.lineTo(0,10); ctx.lineTo(-16,18); ctx.fill(); 
         ctx.fillStyle=sD_load.cockpit; 
         ctx.beginPath(); ctx.arc(0,-4,6,0,Math.PI*2); ctx.fill(); 
         ctx.restore();
+        
+        // Particules du vaisseau
+        loadingShip.particles.forEach(p => {
+            ctx.save();
+            ctx.globalAlpha = p.alpha;
+            ctx.fillStyle = "#00d9ff";
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+        });
     }
 
-    // AFFICHAGE DES TEXTES FLOTTANTS (+50 PIECES)
     floatingTexts.forEach(t => {
         ctx.save(); ctx.globalAlpha = t.alpha; ctx.fillStyle = "#ffd700"; ctx.font = "bold 20px sans-serif";
         ctx.textAlign = "center"; ctx.fillText(t.text, t.x, t.y); ctx.restore();
@@ -558,7 +796,6 @@ function draw(){
     if(flashAlpha > 0) { ctx.fillStyle = `rgba(255,255,255,${flashAlpha})`; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT); }
     if(coinFlashAlpha > 0) { ctx.fillStyle = `rgba(255,215,0,${coinFlashAlpha})`; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT); }
     
-    // Dessin de la transition: seulement si elle est active.
     if (transition.active) { 
         ctx.globalAlpha = transition.alpha; 
         ctx.fillStyle = "#000"; 
@@ -571,16 +808,8 @@ function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1){
     const hover = mouseInRect(x-w/2, y, w, h); 
     if(hover) canvas.style.cursor = "pointer";
     
-    // Pour les boutons normaux (MENU/SHOP/ETC)
     if (alpha === 1) {
         const sizeMod = hover ? 1.05 : 1.0; 
-        
-        const buttonID = t;
-        if (hover && currentHoverButton !== buttonID) {
-            currentHoverButton = buttonID;
-        } else if (!hover && currentHoverButton === buttonID) {
-            currentHoverButton = null;
-        }
         
         ctx.save(); ctx.translate(x, y + h/2); ctx.scale(sizeMod, sizeMod);
         ctx.shadowBlur = hover ? 35 : 10; ctx.shadowColor = c;
@@ -589,7 +818,6 @@ function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1){
         ctx.shadowBlur = 0; ctx.fillStyle = hover ? "#000" : "#fff"; ctx.font = "bold 18px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, 0, 0); ctx.restore();
     
     } 
-    // Pour le bouton COMMENCER (avec animation alpha et scale)
     else {
         ctx.save(); ctx.globalAlpha = alpha; 
         ctx.translate(x, y + h/2); ctx.scale(scale, scale);
@@ -603,7 +831,6 @@ function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1){
 
 function wrapText(t,x,y,mW,lH){ let words=t.split(' '), line=''; for(let n=0;n<words.length;n++){ let test=line+words[n]+' '; if(ctx.measureText(test).width>mW && n>0){ ctx.fillText(line,x,y); line=words[n]+' '; y+=lH; } else line=test; } ctx.fillText(line,x,y); }
 
-// DÉMARRAGE
 function loop(){ 
     update(); 
     draw(); 

@@ -313,7 +313,7 @@ canvas.addEventListener("click", e=>{
       if(mouseInRect(110, 240, 200, 50)) changeState(STATE.TAKEOFF, startLaunchAnimation);
       if(mouseInRect(110, 310, 200, 50)) changeState(STATE.SHOP);
       if(mouseInRect(110, 380, 200, 50)) changeState(STATE.LEADERBOARD, loadLeaderboard); 
-      if(mouseInRect(110, 450, 200, 50)) window.location.href = "index.html"; 
+      if(mouseInRect(110, 450, 200, 50)) window.location.href = "../../menu.html"; 
     } else if(state===STATE.SHOP || state===STATE.LEADERBOARD){
       if(mouseInRect(110, 540, 200, 50)) changeState(STATE.MENU);
       if(state===STATE.SHOP){

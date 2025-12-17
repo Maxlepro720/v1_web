@@ -154,15 +154,24 @@ function changeState(newState, callback = null) {
 function updateTransition() {
   if (!transition.active) return;
   if (transition.nextState !== null) {
-    transition.alpha += 0.05; if (transition.alpha >= 1) { state = transition.nextState; transition.nextState = null; if (transition.callback) transition.callback(); }
+    transition.alpha += 0.05; 
+    if (transition.alpha >= 1) { 
+        state = transition.nextState; 
+        transition.nextState = null; 
+        if (transition.callback) transition.callback(); 
+    }
   } else {
-    transition.alpha -= 0.05; if (transition.alpha <= 0) { transition.alpha = 0; transition.active = false; }
+    transition.alpha -= 0.05; 
+    if (transition.alpha <= 0) { 
+        transition.alpha = 0; 
+        transition.active = false; 
+    }
   }
 }
 
 // --- LOGIQUE API: CHARGEMENT DE DONNÉES ---
 async function loadGameData() {
-    changeState(STATE.LOADING); 
+    // L'état est déjà STATE.LOADING au démarrage
     try {
         const response = await fetch(`${API_BASE_URL}/load_data/${username}`);
         const result = await response.json();
@@ -183,17 +192,22 @@ async function loadGameData() {
                  ships[player.type].unlocked = true;
             }
             
-            // Passer à l'état MENU une fois les données prêtes
-            changeState(STATE.MENU);
+            // Correction appliquée ici: Forcer l'état au MENU et désactiver la transition
+            state = STATE.MENU;
+            transition.active = false;
+            transition.nextState = null;
+            
             console.log("Données chargées depuis l'API:", data);
 
         } else {
             console.error("Erreur de chargement des données:", result.message);
-            changeState(STATE.MENU); 
+            state = STATE.MENU; // Passer au menu même en cas d'erreur
+            transition.active = false;
         }
     } catch (e) {
         console.error("Erreur de connexion API au chargement:", e);
-        changeState(STATE.MENU); 
+        state = STATE.MENU; // Passer au menu même en cas d'échec de l'API
+        transition.active = false;
     }
 }
 
@@ -484,7 +498,14 @@ function draw(){
 
   if(flashAlpha > 0) { ctx.fillStyle = `rgba(255,255,255,${flashAlpha})`; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT); }
   if(coinFlashAlpha > 0) { ctx.fillStyle = `rgba(255,215,0,${coinFlashAlpha})`; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT); }
-  if (transition.active) { ctx.globalAlpha = transition.alpha; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT); ctx.globalAlpha = 1.0; }
+  
+  // Dessin de la transition: seulement si elle est active.
+  if (transition.active) { 
+    ctx.globalAlpha = transition.alpha; 
+    ctx.fillStyle = "#000"; 
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT); 
+    ctx.globalAlpha = 1.0; 
+  }
 }
 
 function drawBtn(t, x, y, w, h, c){
@@ -505,14 +526,18 @@ function loop(){
     requestAnimationFrame(loop); 
 }
 
-// 1. Appel forcé du redimensionnement et du premier dessin
+// Lancement initial: 
+// 1. Affiche l'écran de chargement
 resizeCanvas();
-draw(); // Affiche l'écran de chargement immédiatement
+draw(); 
 
-// 2. Lance le chargement des données, puis démarre la boucle d'animation (update/draw en continu)
-loadGameData().then(() => {
-    loop(); 
-});
+// 2. Lance l'appel API asynchrone (loadGameData)
+loadGameData(); 
+
+// 3. Lance la boucle d'animation IMMÉDIATEMENT. 
+// La boucle update/draw va maintenant s'assurer que le STATE passe de LOADING à MENU
+// dès que loadGameData a terminé (grâce à la correction dans loadGameData).
+loop(); 
 </script>
 </body>
 </html>

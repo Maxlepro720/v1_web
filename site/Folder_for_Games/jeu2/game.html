@@ -56,31 +56,27 @@ const GAME_WIDTH = 420;
 const GAME_HEIGHT = 640;
 
 let scaleFactor = 1;
-let fullscreenAttempted = false;
-let currentHoverButton = null; // Pour gérer le survol (sans son)
+let currentHoverButton = null; 
 
 // =================================================================
-// --- LOGIQUE PLEIN ÉCRAN ---
+// --- LOGIQUE PLEIN ÉCRAN (AMÉLIORÉE) ---
 // =================================================================
 
 function requestFullScreen(element) {
-    if (fullscreenAttempted) return;
-    fullscreenAttempted = true;
-    
+    // Cette fonction ne doit être appelée que suite à un clic utilisateur.
     if (element.requestFullscreen) {
-        element.requestFullscreen();
+        element.requestFullscreen().catch(err => console.error("Plein écran bloqué (Standard):", err));
     } else if (element.mozRequestFullScreen) {
-        element.mozRequestFullScreen();
+        element.mozRequestFullScreen().catch(err => console.error("Plein écran bloqué (Firefox):", err));
     } else if (element.webkitRequestFullscreen) {
-        element.webkitRequestFullscreen();
+        element.webkitRequestFullscreen().catch(err => console.error("Plein écran bloqué (Chrome/Safari):", err));
     } else if (element.msRequestFullscreen) {
-        element.msRequestFullscreen();
+        element.msRequestFullscreen().catch(err => console.error("Plein écran bloqué (Edge):", err));
     }
 }
 
 window.onload = function() {
-    // Tentative de plein écran au chargement (souvent bloquée)
-    requestFullScreen(document.documentElement);
+    // L'appel de plein écran au chargement est retiré car il est toujours bloqué par le navigateur.
     resizeCanvas();
 };
 
@@ -113,7 +109,6 @@ canvas.addEventListener("mousemove", e => {
     const coords = getScaledMouseCoordinates(e);
     mouseX = coords.x;
     mouseY = coords.y;
-    // Animation de survol gérée dans la boucle draw
 });
 canvas.addEventListener("mousedown", e => { 
     isMouseDown = true; 
@@ -188,7 +183,6 @@ clearOldLocalStorage();
 function changeState(newState, callback = null) {
     if (transition.active) return;
     transition.active = true; transition.alpha = 0; transition.nextState = newState; transition.callback = callback;
-    // playSFX('click'); <--- RETIRÉ
 }
 
 function updateTransition() {
@@ -310,7 +304,8 @@ canvas.addEventListener("click", e=>{
 
     if(state === STATE.START_SCREEN) {
         if(mouseInRect(110, 480, 200, 50)) {
-            requestFullScreen(document.documentElement); // Plein écran au clic du bouton de démarrage
+            // *** POINT CLÉ : Lancement du plein écran UNIQUEMENT au clic utilisateur ***
+            requestFullScreen(document.documentElement); 
             changeState(STATE.MENU);
         }
     }
@@ -327,13 +322,11 @@ canvas.addEventListener("click", e=>{
           const cardY=140+i*160 - shopScroll;
           if(mouseInRect(40, cardY, 340, 140)){
             if(!s.unlocked && credits>=s.cost){ 
-              // playSFX('click', 1.0); <--- RETIRÉ
               credits-=s.cost; 
               s.unlocked=true; 
               player.type = i;
               saveGameData(); 
             } else if(s.unlocked) {
-                // playSFX('click', 0.8); <--- RETIRÉ
                 player.type=i;
                 saveGameData(); 
             }
@@ -381,7 +374,6 @@ function update(){
         if (isHovering) {
             startButtonAnim.scale += (1.05 - startButtonAnim.scale) * 0.1;
             if (!startButtonAnim.hover) {
-                 // playSFX('hover', 0.3); <--- RETIRÉ
                  startButtonAnim.hover = true;
             }
         } else {
@@ -433,10 +425,9 @@ function update(){
         asteroids.forEach(a=>{
             a.y+=a.speed; a.rot+=a.rotSpeed;
             if(Math.hypot(player.x-a.x,player.y-a.y)<player.r+a.r && player.invulnerable===0){
-                if(player.life>1){ // playSFX('click', 0.5); <--- RETIRÉ
+                if(player.life>1){ 
                     player.life--; player.invulnerable=60; flashAlpha=0.4; asteroids=[]; } 
                 else {
-                    // playSFX('click', 1.0); <--- RETIRÉ
                     state = STATE.GAMEOVER; flashAlpha = 1; timeScale = 1;
                     
                     if(Math.floor(score)>bestScore){ 
@@ -459,7 +450,6 @@ function update(){
         c.y+=2.5 * currentSpeed;
         if(sD.bonus==="Aim Magnétique" && Math.hypot(player.x-c.x,player.y-c.y)<220){ c.x+=(player.x-c.x)*0.07; c.y+=(player.y-c.y)*0.07; }
         if(Math.hypot(player.x-c.x,player.y-c.y)<player.r+c.r){ 
-            // playSFX('click', 0.2); <--- RETIRÉ
             const val = 50*(sD.bonus==="Pièces x2"?2:1); 
             credits+=val; 
             saveGameData(); 
@@ -585,7 +575,6 @@ function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1){
     if (alpha === 1) {
         const sizeMod = hover ? 1.05 : 1.0; 
         
-        // Gestion de survol sans SFX
         const buttonID = t;
         if (hover && currentHoverButton !== buttonID) {
             currentHoverButton = buttonID;

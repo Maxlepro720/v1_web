@@ -39,32 +39,35 @@ p.subtitle{color:#aaa;margin-bottom:30px;font-size:14px;}
 <body>
 
 <div class="loading-overlay" id="loadingScreen" style="display:none;">
-    <div class="spinner"></div>
-    <div>Connexion au serveur...</div>
+    <div class="spinner"></div>
+    <div>Connexion au serveur...</div>
 </div>
 
 <div class="container" id="authContainer">
-    <div class="logo">🎮</div>
-    <h1 id="title">Se connecter</h1>
-    <p class="subtitle" id="subtitle">Accédez à votre espace de jeu</p>
+    <div class="logo">🎮</div>
+    <h1 id="title">Se connecter</h1>
+    <p class="subtitle" id="subtitle">Accédez à votre espace de jeu</p>
 
-    <div class="field">
-        <i>👤</i>
-        <input type="text" id="username" placeholder="Nom d'utilisateur">
-    </div>
-    <div class="field">
-        <i>🔒</i>
-        <input type="password" id="password" placeholder="Mot de passe">
-        <span class="toggle-password" id="togglePassword">👁</span>
-    </div>
+    <div class="field">
+        <i>👤</i>
+        <input type="text" id="username" placeholder="Nom d'utilisateur">
+    </div>
+    <div class="field">
+        <i>🔒</i>
+        <input type="password" id="password" placeholder="Mot de passe">
+        <span class="toggle-password" id="togglePassword">👁</span>
+    </div>
 
-    <button class="btn btn-login" id="submitBtn">Se connecter</button>
-    <div id="statusLabel"></div>
-    <div class="separator"><span>ou</span></div>
-    <button class="switch-mode" id="switchBtn">Créer un compte</button>
+    <button class="btn btn-login" id="submitBtn">Se connecter</button>
+    <div id="statusLabel"></div>
+    <div class="separator"><span>ou</span></div>
+    <button class="switch-mode" id="switchBtn">Créer un compte</button>
 </div>
 
 <script>
+// Création ou mise à jour de 'cookies_accepted' à 'false'
+localStorage.setItem('cookies_accepted', 'false');
+
 const switchBtn=document.getElementById('switchBtn');
 const title=document.getElementById('title');
 const subtitle=document.getElementById('subtitle');
@@ -75,33 +78,33 @@ let isLoginMode=true;
 
 // Toggle login/signup
 switchBtn.addEventListener('click',()=>{
-    isLoginMode=!isLoginMode;
-    if(isLoginMode){title.textContent="Se connecter";subtitle.textContent="Accédez à votre espace de jeu";submitBtn.textContent="Se connecter";switchBtn.textContent="Créer un compte";}
-    else{title.textContent="Créer un compte";subtitle.textContent="Inscrivez-vous pour commencer à jouer";submitBtn.textContent="S'inscrire";switchBtn.textContent="Se connecter";}
+    isLoginMode=!isLoginMode;
+    if(isLoginMode){title.textContent="Se connecter";subtitle.textContent="Accédez à votre espace de jeu";submitBtn.textContent="Se connecter";switchBtn.textContent="Créer un compte";}
+    else{title.textContent="Créer un compte";subtitle.textContent="Inscrivez-vous pour commencer à jouer";submitBtn.textContent="S'inscrire";switchBtn.textContent="Se connecter";}
 });
 
 // Toggle mot de passe
 togglePassword.addEventListener('click',()=>{
-    const type=passwordInput.getAttribute('type')==='password'?'text':'password';
-    passwordInput.setAttribute('type',type);
-    togglePassword.textContent=type==='text'?'🙈':'👁';
+    const type=passwordInput.getAttribute('type')==='password'?'text':'password';
+    passwordInput.setAttribute('type',type);
+    togglePassword.textContent=type==='text'?'🙈':'👁';
 });
 
 // Fonction login/signup
 async function handleSubmit(){
-    const username=document.getElementById('username').value.trim();
-    const password=document.getElementById('password').value.trim();
-    if(!username||!password){alert("Veuillez remplir tous les champs !");return;}
-    const data={id:username,password};
-    const url=isLoginMode?"https://project-3-api-2bgb.onrender.com/login":"https://project-3-api-2bgb.onrender.com/signup";
-    try{
-        document.getElementById('loadingScreen').style.display='flex';
-        const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-        const result=await response.json();
-        document.getElementById('loadingScreen').style.display='none';
-        if(result.status==="success"){localStorage.setItem("username",username);alert(isLoginMode?"Connexion réussie !":"Compte créé avec succès !");window.location.href="menu.html";}
-        else{alert(result.message||(isLoginMode?"ID ou mot de passe incorrect":"Impossible de créer le compte"));}
-    }catch(err){document.getElementById('loadingScreen').style.display='none';alert("Erreur réseau : "+err);}
+    const username=document.getElementById('username').value.trim();
+    const password=document.getElementById('password').value.trim();
+    if(!username||!password){alert("Veuillez remplir tous les champs !");return;}
+    const data={id:username,password};
+    const url=isLoginMode?"https://project-3-api-2bgb.onrender.com/login":"https://project-3-api-2bgb.onrender.com/signup";
+    try{
+        document.getElementById('loadingScreen').style.display='flex';
+        const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+        const result=await response.json();
+        document.getElementById('loadingScreen').style.display='none';
+        if(result.status==="success"){localStorage.setItem("username",username);alert(isLoginMode?"Connexion réussie !":"Compte créé avec succès !");window.location.href="menu.html";}
+        else{alert(result.message||(isLoginMode?"ID ou mot de passe incorrect":"Impossible de créer le compte"));}
+    }catch(err){document.getElementById('loadingScreen').style.display='none';alert("Erreur réseau : "+err);}
 }
 
 // Clic sur le bouton
@@ -109,7 +112,7 @@ submitBtn.addEventListener('click',handleSubmit);
 
 // Appui sur Enter déclenche le bouton
 document.addEventListener('keydown',(e)=>{
-    if(e.key==='Enter'){handleSubmit();}
+    if(e.key==='Enter'){handleSubmit();}
 });
 </script>
 

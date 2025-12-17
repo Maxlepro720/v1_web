@@ -110,6 +110,7 @@ let username = localStorage.getItem("username") || "Invité"; // SEUL username e
 let score=0, bestScore=0, credits=0; 
 let time=0, spawnTimer=0, asteroids=[], stars=[], coins=[], keys={}, explosion=null, flashAlpha=0;
 let coinFlashAlpha = 0, floatingTexts = [], shopScroll=0;
+// Note: player.type stocke l'INDEX du vaisseau actuellement sélectionné
 let player={x:210,y:560,r:18,type:0,life:1, invulnerable:0, trail:[], angle:0};
 let leaderboardData = []; 
 let loadingShip = { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2, angle: 0, r: 20 }; // Pour l'animation de chargement
@@ -169,7 +170,9 @@ function updateTransition() {
   }
 }
 
-// --- LOGIQUE API: CHARGEMENT DE DONNÉES ---
+// =================================================================
+// --- PARTIE 1: CORRECTION DE LA LOGIQUE DE CHARGEMENT DE DONNÉES ---
+// =================================================================
 async function loadGameData() {
     // L'état est déjà STATE.LOADING au démarrage
     try {
@@ -182,45 +185,71 @@ async function loadGameData() {
             bestScore = Number(data.PR_Score) || 0;
             credits = Number(data.Coins) || 0;
             
-            const savedCarName = data.Voiture || ships[0].name;
-            const shipIndex = ships.findIndex(s => s.name === savedCarName);
-            player.type = shipIndex !== -1 ? shipIndex : 0;
+            // 1. Lire la chaîne des voitures débloquées (ex: "Standard,Rapide,Titan")
+            const unlockedCarsString = data.Voiture || "Standard"; 
+            const unlockedCarsArray = unlockedCarsString.split(',');
+
+            // 2. Mettre à jour l'état `unlocked` de tous les vaisseaux
+            let selectedShipName = ships[player.type].name; // Conserver le nom du vaisseau actuellement sélectionné
+            let firstUnlockedIndex = 0;
             
-            // Logique simplifiée de déverrouillage
-            ships.forEach((s, i) => { s.unlocked = (i === 0); }); 
-            if (player.type !== 0) {
-                 ships[player.type].unlocked = true;
-            }
-            
-            // Correction appliquée ici: Forcer l'état au MENU et désactiver la transition
+            ships.forEach((ship, i) => {
+                // Débloquer le vaisseau si son nom est dans la liste reçue
+                ship.unlocked = unlockedCarsArray.includes(ship.name);
+                if(i === 0) ship.unlocked = true; // S'assurer que Standard est toujours débloqué
+                
+                // Si le vaisseau actuel n'est plus débloqué, revenir au premier débloqué.
+                if (ship.unlocked && firstUnlockedIndex === 0) {
+                    firstUnlockedIndex = i;
+                }
+            });
+
+            // 3. Déterminer le vaisseau sélectionné.
+            // On cherche le dernier vaisseau débloqué (pour garder la sélection du client si elle est valide)
+            const savedShipIndex = ships.findIndex(s => s.name === selectedShipName && s.unlocked);
+            player.type = savedShipIndex !== -1 ? savedShipIndex : firstUnlockedIndex;
+
+            // Correction pour le passage au menu
             state = STATE.MENU;
             transition.active = false;
             transition.nextState = null;
             
             console.log("Données chargées depuis l'API:", data);
+            console.log("Voitures débloquées:", unlockedCarsArray);
 
         } else {
             console.error("Erreur de chargement des données:", result.message);
-            state = STATE.MENU; // Passer au menu même en cas d'erreur
+            state = STATE.MENU;
             transition.active = false;
         }
     } catch (e) {
         console.error("Erreur de connexion API au chargement:", e);
-        state = STATE.MENU; // Passer au menu même en cas d'échec de l'API
+        state = STATE.MENU; 
         transition.active = false;
     }
 }
 
-// --- LOGIQUE API: SAUVEGARDE DE DONNÉES ---
+
+// =================================================================
+// --- PARTIE 2: CORRECTION DE LA LOGIQUE DE SAUVEGARDE DE DONNÉES ---
+// =================================================================
 async function saveGameData(newScore = null) {
     if (username === "Invité") return; 
+
+    // Construire la liste des noms des vaisseaux débloqués (format: "Nom1,Nom2,Nom3")
+    const unlockedCarsNames = ships
+        .filter(s => s.unlocked)
+        .map(s => s.name)
+        .join(',');
 
     const dataToSave = {
         username: username,
         Coins: credits, 
-        Voiture: ships[player.type].name 
+        // Sauvegarder la liste des voitures débloquées (Voiture)
+        Voiture: unlockedCarsNames 
     };
     
+    // N'inclure PR_Score que si un nouveau score est fourni (fin de partie)
     if (newScore !== null) {
         dataToSave.PR_Score = Math.floor(newScore);
     }
@@ -243,6 +272,7 @@ async function saveGameData(newScore = null) {
     }
 }
 
+
 // --- LOGIQUE API: CLASSEMENT ---
 async function loadLeaderboard() {
     try {
@@ -250,14 +280,16 @@ async function loadLeaderboard() {
         const result = await response.json();
         
         if (result.status === "success") {
+            // L'API renvoie maintenant le top 5
             leaderboardData = result.leaderboard;
-            // Préparer le classement pour l'affichage
+            
+            // Préparer le classement pour l'affichage (max 5 joueurs du top + le joueur si hors top)
             leaderboardData = leaderboardData.map(e => ({
                 name: (e.username === username ? "Vous" : e.username), 
                 score: e.PR_Score
-            })).sort((a, b) => b.score - a.score).slice(0, 10);
+            })).sort((a, b) => b.score - a.score).slice(0, 5); // Limité au TOP 5
             
-            // Ajouter le joueur s'il n'est pas dans le top 10
+            // Ajouter le joueur s'il n'est pas dans le top 5
             if (!leaderboardData.some(e => e.name === "Vous")) {
                 leaderboardData.push({ name: "Vous", score: bestScore });
             }
@@ -270,7 +302,7 @@ async function loadLeaderboard() {
     }
 }
 
-// --- GESTION DES INPUTS ---
+// --- GESTION DES INPUTS (MISE À JOUR DE LA LOGIQUE D'ACHAT) ---
 canvas.addEventListener("click", e=>{
     const coords = getScaledMouseCoordinates(e);
     mouseX = coords.x;
@@ -292,10 +324,10 @@ canvas.addEventListener("click", e=>{
               credits-=s.cost; 
               s.unlocked=true; 
               player.type = i; // Sélectionne immédiatement le nouveau vaisseau
-              saveGameData(); 
+              saveGameData(); // SAUVEGARDE la nouvelle liste de voitures et les crédits
             } else if(s.unlocked) {
                 player.type=i;
-                saveGameData(); // Sauvegarde le changement de vaisseau
+                saveGameData(); // Sauvegarde le changement de vaisseau (la liste débloquée reste la même)
             }
           }
         });
@@ -381,7 +413,7 @@ function update(){
             if(Math.floor(score)>bestScore){ 
                 bestScore=Math.floor(score); 
             }
-            saveGameData(score); // SAUVEGARDE le score ET les coins/voiture
+            saveGameData(score); // SAUVEGARDE le score ET les coins/voitures débloquées
 
           }
         }

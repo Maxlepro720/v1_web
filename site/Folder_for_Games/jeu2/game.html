@@ -45,6 +45,9 @@ canvas {
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
 
+// --- DÉTECTION MOBILE/TACTILE ---
+const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0);
+
 // Nouvelle constante pour la police d'écriture
 const FONT_FAMILY = 'Orbitron';
 
@@ -465,14 +468,23 @@ canvas.addEventListener("click", e=>{
     }
     
     else if(state===STATE.MENU){
-      if(mouseInRect(110, 240, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.TAKEOFF, startLaunchAnimation); }
-      if(mouseInRect(110, 310, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.SHOP); }
-      // --- NOUVEAU BOUTON OPTIONS ---
-      if(mouseInRect(110, 380, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.OPTIONS); }
-      // --- Fin Nouveau Bouton ---
-      if(mouseInRect(110, 450, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.LEADERBOARD, loadLeaderboard); }
-      if(mouseInRect(110, 520, 200, 50)) { AudioSystem.play('buttonClick'); window.location.href = "../../menu.html"; } // Décalé de 70px
-    } else if(state===STATE.OPTIONS) {
+        // Décalage des boutons si on est sur mobile (OPTIONS caché)
+        const yLeaderboard = isMobile ? 380 : 450;
+        const yQuit = isMobile ? 450 : 520;
+
+        if(mouseInRect(110, 240, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.TAKEOFF, startLaunchAnimation); }
+        if(mouseInRect(110, 310, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.SHOP); }
+        
+        // --- BOUTON OPTIONS (Actif uniquement sur Desktop) ---
+        if(!isMobile && mouseInRect(110, 380, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.OPTIONS); }
+        
+        // BOUTON CLASSEMENT
+        if(mouseInRect(110, yLeaderboard, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.LEADERBOARD, loadLeaderboard); }
+        
+        // BOUTON QUITTER
+        if(mouseInRect(110, yQuit, 200, 50)) { AudioSystem.play('buttonClick'); window.location.href = "../../menu.html"; } 
+        
+    } else if(state===STATE.OPTIONS && !isMobile) { // OPTIONS visible uniquement sur Desktop
         // Bouton pour basculer le mode de contrôle
         if(mouseInRect(110, 240, 200, 50)) { 
             AudioSystem.play('buttonClick');
@@ -512,7 +524,8 @@ canvas.addEventListener("click", e=>{
 
 document.addEventListener("keydown", e=>{ 
     keys[e.key]=true; 
-    if(e.key==="Escape" && (state===STATE.PLAY || state===STATE.SHOP || state===STATE.LEADERBOARD || state===STATE.OPTIONS)) {
+    // OPTIONS n'est pas accessible via ESC sur mobile (forcé à MENU)
+    if(e.key==="Escape" && (state===STATE.PLAY || state===STATE.SHOP || state===STATE.LEADERBOARD || (state===STATE.OPTIONS && !isMobile))) {
         AudioSystem.play('buttonClick');
         changeState(STATE.MENU); 
     }
@@ -581,10 +594,16 @@ function update(){
         const buttons = [
             {x: 110, y: 240, w: 200, h: 50, id: 'play'},
             {x: 110, y: 310, w: 200, h: 50, id: 'shop'},
-            {x: 110, y: 380, w: 200, h: 50, id: 'options'}, // Nouveau bouton
-            {x: 110, y: 450, w: 200, h: 50, id: 'leader'},
-            {x: 110, y: 520, w: 200, h: 50, id: 'quit'}
         ];
+        
+        const yLeaderboard = isMobile ? 380 : 450;
+        const yQuit = isMobile ? 450 : 520;
+        
+        if (!isMobile) {
+            buttons.push({x: 110, y: 380, w: 200, h: 50, id: 'options'});
+        }
+        buttons.push({x: 110, y: yLeaderboard, w: 200, h: 50, id: 'leader'});
+        buttons.push({x: 110, y: yQuit, w: 200, h: 50, id: 'quit'});
         
         let hovering = null;
         buttons.forEach(btn => {
@@ -640,8 +659,11 @@ function update(){
         let targetAngle = 0; 
 
         // --- LOGIQUE DE CONTRÔLE MISE À JOUR ---
-        if (controlMode === 'Fleche') {
-            // Contrôle par flèches
+        // Force 'Souris' control mode if on mobile
+        const effectiveControlMode = isMobile ? 'Souris' : controlMode;
+
+        if (effectiveControlMode === 'Fleche') {
+            // Contrôle par flèches (Desktop)
             if(keys.ArrowLeft) { 
                 player.x-=sD.speed; 
                 targetAngle = -0.8; 
@@ -654,22 +676,22 @@ function update(){
             if(keys.ArrowUp) player.y-=sD.speed; 
             if(keys.ArrowDown) player.y+=sD.speed;
         } else {
-            // Contrôle par souris (vaisseau suit la souris)
+            // Contrôle par souris/doigt (Souris/Mobile)
             const dx = mouseX - player.x;
             const dy = mouseY - player.y;
             const distance = Math.hypot(dx, dy);
-            const moveSpeed = sD.speed * 0.5; // Vitesse de suivi réduite pour un meilleur contrôle
+            const moveSpeed = sD.speed * 0.5;
             
-            if (distance > 5) { // Seuil de mouvement
+            if (distance > 5) {
                 player.x += (dx / distance) * moveSpeed;
                 player.y += (dy / distance) * moveSpeed;
-                targetAngle = Math.max(-1.0, Math.min(1.0, dx / 80)); // Petite inclinaison basée sur le déplacement horizontal
+                targetAngle = Math.max(-1.0, Math.min(1.0, dx / 80));
             } else {
                 targetAngle = 0;
             }
         }
         
-        // Lissage de l'angle (0.2 pour une rotation rapide)
+        // Lissage de l'angle
         player.angle += (targetAngle - player.angle) * 0.2;
         // --- FIN LOGIQUE DE CONTRÔLE MISE À JOUR ---
         
@@ -698,7 +720,7 @@ function update(){
                     saveGameData(score); 
                 }
             } 
-            // 2. Détection de frôlement (Near Miss) - TEXTE AMÉLIORÉ
+            // 2. Détection de frôlement (Near Miss)
             else if (dist < nearMissDist && !a.nearMissed) {
                 if (player.invulnerable === 0) {
                     a.nearMissed = true;
@@ -852,7 +874,7 @@ function draw(){
     
     } else if(state===STATE.MENU){
         
-        // --- Hotbar du Menu Principal (Meilleur Score) --- // MODIFIÉ
+        // --- Hotbar du Menu Principal (Meilleur Score) ---
         const barW = 300, barH = 30, barR = 8;
         const barX = (GAME_WIDTH - barW) / 2;
         const barY = 5;
@@ -874,21 +896,27 @@ function draw(){
         ctx.textAlign="center"; 
         ctx.fillText(`🏆 ${bestScore}`, barX + barW / 2, textY); 
         
-        // Crédits (Right) - RETIRÉ
-        // --- Fin Hotbar Menu ---
         
+        const yLeaderboard = isMobile ? 380 : 450;
+        const yQuit = isMobile ? 450 : 520;
+
         const bounce = Math.sin(time * 0.04) * 8;
         ctx.save(); ctx.translate(210, 150 + bounce); ctx.shadowBlur = 20 + Math.sin(time*0.1)*10; ctx.shadowColor = "#00d9ff"; ctx.fillStyle = "#fff"; ctx.font = `bold 52px ${FONT_FAMILY}`; ctx.textAlign = "center"; ctx.fillText("ASTRO DODGE", 0, 0); ctx.font = `bold 12px ${FONT_FAMILY}`; ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; ctx.fillText(`Bienvenue, ${username}`, 0, 25); ctx.restore();
         
         drawBtn("▶ JOUER", 210, 240, 200, 50, curCol);
         drawBtn("🛒 SHOP", 210, 310, 200, 50, curCol);
-        drawBtn("⚙️ OPTIONS", 210, 380, 200, 50, curCol); // Ajout du bouton OPTIONS
-        drawBtn("🏆 CLASSEMENT", 210, 450, 200, 50, curCol);
-        drawBtn("✖ QUITTER", 210, 520, 200, 50, "#ff3300"); // Décalé de 70px
-    } else if(state===STATE.OPTIONS){
+        
+        if (!isMobile) {
+             drawBtn("⚙️ OPTIONS", 210, 380, 200, 50, curCol); 
+        }
+       
+        drawBtn("🏆 CLASSEMENT", 210, yLeaderboard, 200, 50, curCol);
+        drawBtn("✖ QUITTER", 210, yQuit, 200, 50, "#ff3300"); 
+        
+    } else if(state===STATE.OPTIONS && !isMobile){ // Affichage OPTIONS uniquement sur Desktop
         ctx.fillStyle="#fff"; ctx.font=`bold 30px ${FONT_FAMILY}`; ctx.textAlign="center"; ctx.fillText("OPTIONS", 210, 150);
         
-        const controlBtnText = `CONTRÔLE: ${controlMode === 'Fleche' ? 'FLÈCHE' : 'SOURIS'}`;
+        const controlBtnText = `CONTRÔLE: ${controlMode === 'Fleche' ? 'FLÈCHE (WASD/ARROWS)' : 'SOURIS (MOUSE)'}`;
         drawBtn(controlBtnText, 210, 240, 300, 50, controlMode === 'Fleche' ? curCol : "#ffcc00");
 
         drawBtn("RETOUR", 210, 540, 200, 50, curCol);
@@ -1032,7 +1060,7 @@ function draw(){
         ctx.fillText(`${Math.floor(loadingProgress)}%`, 210, 415);
         
         ctx.font=`bold 30px ${FONT_FAMILY}`; 
-        ctx.fillText("CONNEXION", 210, 360);
+        ctx.fillText("CONNEXION AU SYSTÈME...", 210, 360);
         
         // Vaisseau en rotation avec particules
         ctx.save();

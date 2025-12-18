@@ -755,14 +755,50 @@ function draw(){
     }
 
     if(state === STATE.START_SCREEN) {
+        
+        // --- NOUVEL AFFICHAGE DES CRÉDITS (Hotbar style, Top Center) ---
+        const barX_C = 130; 
+        const barY_C = 10;
+        const barW_C = 160;
+        const barH_C = 35;
+        const barR_C = 8;
+        const textY_C = barY_C + barH_C/2 + 5;
+        
+        // 1. Dessin du fond sombre semi-transparent
+        ctx.fillStyle="rgba(0, 0, 0, 0.7)"; 
+        drawRoundedRect(barX_C, barY_C, barW_C, barH_C, barR_C, true, false); 
+
+        // 2. Dessin du contour néon
+        ctx.strokeStyle = curCol; 
+        ctx.lineWidth = 2;
+        drawRoundedRect(barX_C, barY_C, barW_C, barH_C, barR_C, false, true, curCol, 15); 
+        
+        // 3. Dessin des éléments
+        ctx.fillStyle="#ffd700"; // Pièce en jaune doré
+        ctx.beginPath(); ctx.arc(barX_C + 22, barY_C + barH_C/2, 10, 0, Math.PI*2); ctx.fill(); 
+        ctx.fillStyle="#fff"; 
+        ctx.font=`bold 18px ${FONT_FAMILY}`; 
+        ctx.textAlign="left"; 
+        ctx.fillText(`${credits}`, barX_C + 45, textY_C);
+        // --- FIN NOUVEL AFFICHAGE CRÉDITS ---
+        
         ctx.save(); ctx.globalAlpha = startButtonAnim.alpha;
         const bounce = Math.sin(time * 0.04) * 8;
         ctx.translate(210, 150 + bounce); 
         ctx.shadowBlur = 20 + Math.sin(time*0.1)*10; ctx.shadowColor = "#00d9ff"; 
         ctx.fillStyle = "#fff"; ctx.font = `bold 52px ${FONT_FAMILY}`; ctx.textAlign = "center"; 
         ctx.fillText("ASTRO DODGE", 0, 0); 
-        ctx.font = `bold 18px ${FONT_FAMILY}`; ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; 
-        ctx.fillText(`Données chargées : ${username}`, 0, 45); 
+        
+        // --- NOUVEAU: AJOUT YENI ET MAXENCE ---
+        ctx.font = `bold 18px ${FONT_FAMILY}`; 
+        ctx.fillStyle = "rgba(255, 215, 0, 0.9)"; 
+        ctx.fillText("CRÉÉ PAR YENI & MAXENCE", 0, 45); 
+        // ----------------------------------------
+        
+        // Texte des données déplacé
+        ctx.font = `bold 14px ${FONT_FAMILY}`; 
+        ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; 
+        ctx.fillText(`Données chargées : ${username}`, 0, 80); 
         ctx.restore();
         
         // Effet de pulsation lumineux autour du bouton (maintenant arrondi)
@@ -780,7 +816,7 @@ function draw(){
     
     } else if(state===STATE.MENU){
         
-        // --- Hotbar du Menu Principal (Meilleur Score et Crédits) ---
+        // --- Hotbar du Menu Principal (Meilleur Score) --- // MODIFIÉ
         const barW = 300, barH = 30, barR = 8;
         const barX = (GAME_WIDTH - barW) / 2;
         const barY = 5;
@@ -798,13 +834,11 @@ function draw(){
         // 3. Dessin des textes
         ctx.fillStyle="#fff"; ctx.font=`bold 14px ${FONT_FAMILY}`; 
         
-        // Meilleur Score (Left)
-        ctx.textAlign="left"; 
-        ctx.fillText(`🏆 ${bestScore}`, barX + 15, textY); 
+        // Meilleur Score (Centré)
+        ctx.textAlign="center"; 
+        ctx.fillText(`🏆 ${bestScore}`, barX + barW / 2, textY); 
         
-        // Crédits (Right)
-        ctx.textAlign="right"; 
-        ctx.fillText(`💰 ${credits}`, barX + barW - 15, textY); 
+        // Crédits (Right) - RETIRÉ
         // --- Fin Hotbar Menu ---
         
         const bounce = Math.sin(time * 0.04) * 8;

@@ -284,7 +284,7 @@ canvas.addEventListener("touchend", () => isMouseDown = false);
 
 function mouseInRect(x,y,w,h){ return mouseX > x && mouseX < x+w && mouseY > y && mouseY < y+h; }
 
-const STATE={MENU:0,PLAY:1,GAMEOVER:2,SHOP:3, TAKEOFF:4, LANDING:5, LEADERBOARD:6, LOADING: 7, START_SCREEN: 8}; 
+const STATE={MENU:0,PLAY:1,GAMEOVER:2,SHOP:3, TAKEOFF:4, LANDING:5, LEADERBOARD:6, LOADING: 7, START_SCREEN: 8, OPTIONS: 9}; 
 let state=STATE.LOADING; 
 
 let transition = { active: false, alpha: 0, nextState: null, callback: null };
@@ -322,6 +322,9 @@ const ships=[
 {name:"magnet", cost:2500, speed:5, unlocked:false, color:"#ffde21", cockpit:"#ce93d8", flame:"#c2185b", bonus:"Aim Magnétique", desc:"Attire l'or à distance."},
 {name:"Titan", cost:5000, speed:5, unlocked:false, color:"#ff6f00", cockpit:"#ffcc80", flame:"#ff1744", bonus:"Vie Supplémentaire", desc:"Blindage renforcé."}
 ];
+
+// --- NOUVELLE VARIABLE DE CONTRÔLE ---
+let controlMode = localStorage.getItem("controlMode") || "Fleche"; // 'Fleche' ou 'Souris'
 
 function clearOldLocalStorage() {
     ["astro_best", "astro_credits", "astro_unlocked_ships"].forEach(key => {
@@ -464,8 +467,23 @@ canvas.addEventListener("click", e=>{
     else if(state===STATE.MENU){
       if(mouseInRect(110, 240, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.TAKEOFF, startLaunchAnimation); }
       if(mouseInRect(110, 310, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.SHOP); }
-      if(mouseInRect(110, 380, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.LEADERBOARD, loadLeaderboard); }
-      if(mouseInRect(110, 450, 200, 50)) { AudioSystem.play('buttonClick'); window.location.href = "../../menu.html"; }
+      // --- NOUVEAU BOUTON OPTIONS ---
+      if(mouseInRect(110, 380, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.OPTIONS); }
+      // --- Fin Nouveau Bouton ---
+      if(mouseInRect(110, 450, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.LEADERBOARD, loadLeaderboard); }
+      if(mouseInRect(110, 520, 200, 50)) { AudioSystem.play('buttonClick'); window.location.href = "../../menu.html"; } // Décalé de 70px
+    } else if(state===STATE.OPTIONS) {
+        // Bouton pour basculer le mode de contrôle
+        if(mouseInRect(110, 240, 200, 50)) { 
+            AudioSystem.play('buttonClick');
+            controlMode = (controlMode === 'Fleche') ? 'Souris' : 'Fleche';
+            localStorage.setItem("controlMode", controlMode);
+        }
+        // Bouton de retour
+        if(mouseInRect(110, 540, 200, 50)) { 
+            AudioSystem.play('buttonClick'); 
+            changeState(STATE.MENU); 
+        }
     } else if(state===STATE.SHOP || state===STATE.LEADERBOARD){
       if(mouseInRect(110, 540, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.MENU); }
       if(state===STATE.SHOP){
@@ -494,7 +512,7 @@ canvas.addEventListener("click", e=>{
 
 document.addEventListener("keydown", e=>{ 
     keys[e.key]=true; 
-    if(e.key==="Escape" && (state===STATE.PLAY || state===STATE.SHOP || state===STATE.LEADERBOARD)) {
+    if(e.key==="Escape" && (state===STATE.PLAY || state===STATE.SHOP || state===STATE.LEADERBOARD || state===STATE.OPTIONS)) {
         AudioSystem.play('buttonClick');
         changeState(STATE.MENU); 
     }
@@ -563,8 +581,9 @@ function update(){
         const buttons = [
             {x: 110, y: 240, w: 200, h: 50, id: 'play'},
             {x: 110, y: 310, w: 200, h: 50, id: 'shop'},
-            {x: 110, y: 380, w: 200, h: 50, id: 'leader'},
-            {x: 110, y: 450, w: 200, h: 50, id: 'quit'}
+            {x: 110, y: 380, w: 200, h: 50, id: 'options'}, // Nouveau bouton
+            {x: 110, y: 450, w: 200, h: 50, id: 'leader'},
+            {x: 110, y: 520, w: 200, h: 50, id: 'quit'}
         ];
         
         let hovering = null;
@@ -618,24 +637,41 @@ function update(){
         spawnTimer++;
         if(spawnTimer>=Math.max(10, 40 - Math.floor(score/150))){ spawnAsteroid(); spawnTimer=0; }
         
-        // --- LOGIQUE DE ROTATION DU VAISSEAU (TRÈS AUGMENTÉE) ---
         let targetAngle = 0; 
 
-        if(keys.ArrowLeft) { 
-            player.x-=sD.speed; 
-            targetAngle = -0.8; 
-        }
-        if(keys.ArrowRight) { 
-            player.x+=sD.speed; 
-            targetAngle = 0.8; 
+        // --- LOGIQUE DE CONTRÔLE MISE À JOUR ---
+        if (controlMode === 'Fleche') {
+            // Contrôle par flèches
+            if(keys.ArrowLeft) { 
+                player.x-=sD.speed; 
+                targetAngle = -0.8; 
+            }
+            if(keys.ArrowRight) { 
+                player.x+=sD.speed; 
+                targetAngle = 0.8; 
+            }
+            
+            if(keys.ArrowUp) player.y-=sD.speed; 
+            if(keys.ArrowDown) player.y+=sD.speed;
+        } else {
+            // Contrôle par souris (vaisseau suit la souris)
+            const dx = mouseX - player.x;
+            const dy = mouseY - player.y;
+            const distance = Math.hypot(dx, dy);
+            const moveSpeed = sD.speed * 0.5; // Vitesse de suivi réduite pour un meilleur contrôle
+            
+            if (distance > 5) { // Seuil de mouvement
+                player.x += (dx / distance) * moveSpeed;
+                player.y += (dy / distance) * moveSpeed;
+                targetAngle = Math.max(-1.0, Math.min(1.0, dx / 80)); // Petite inclinaison basée sur le déplacement horizontal
+            } else {
+                targetAngle = 0;
+            }
         }
         
-        if(keys.ArrowUp) player.y-=sD.speed; 
-        if(keys.ArrowDown) player.y+=sD.speed;
-
         // Lissage de l'angle (0.2 pour une rotation rapide)
         player.angle += (targetAngle - player.angle) * 0.2;
-        // --- FIN LOGIQUE DE ROTATION ---
+        // --- FIN LOGIQUE DE CONTRÔLE MISE À JOUR ---
         
         player.x=Math.max(player.r, Math.min(GAME_WIDTH-player.r, player.x));
         player.y=Math.max(player.r, Math.min(GAME_HEIGHT-player.r, player.y));
@@ -717,12 +753,12 @@ function spawnAsteroid(){
 function spawnCoin(){ coins.push({x:25+Math.random()*370,y:-10,r:8,collected:false}); }
 
 function draw(){
-    const curCol = (state === STATE.MENU || state === STATE.SHOP || state === STATE.LEADERBOARD || state === STATE.LOADING || state === STATE.START_SCREEN) ? "#00d9ff" : levelColors[colorIndex];
+    const curCol = (state === STATE.MENU || state === STATE.SHOP || state === STATE.LEADERBOARD || state === STATE.LOADING || state === STATE.START_SCREEN || state === STATE.OPTIONS) ? "#00d9ff" : levelColors[colorIndex];
     ctx.fillStyle = "#020510"; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
 
     nebulas.forEach(n => { let g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r); g.addColorStop(0, n.color); g.addColorStop(1, "transparent"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI*2); ctx.fill(); });
 
-    if(state === STATE.MENU || state === STATE.START_SCREEN){
+    if(state === STATE.MENU || state === STATE.START_SCREEN || state === STATE.OPTIONS){
         ctx.strokeStyle = "rgba(0, 217, 255, 0.15)"; ctx.lineWidth = 2;
         menuParticles.forEach(p => { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, p.y + p.l); ctx.stroke(); });
     }
@@ -843,10 +879,46 @@ function draw(){
         
         const bounce = Math.sin(time * 0.04) * 8;
         ctx.save(); ctx.translate(210, 150 + bounce); ctx.shadowBlur = 20 + Math.sin(time*0.1)*10; ctx.shadowColor = "#00d9ff"; ctx.fillStyle = "#fff"; ctx.font = `bold 52px ${FONT_FAMILY}`; ctx.textAlign = "center"; ctx.fillText("ASTRO DODGE", 0, 0); ctx.font = `bold 12px ${FONT_FAMILY}`; ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; ctx.fillText(`Bienvenue, ${username}`, 0, 25); ctx.restore();
+        
         drawBtn("▶ JOUER", 210, 240, 200, 50, curCol);
         drawBtn("🛒 SHOP", 210, 310, 200, 50, curCol);
-        drawBtn("🏆 CLASSEMENT", 210, 380, 200, 50, curCol);
-        drawBtn("✖ QUITTER", 210, 450, 200, 50, "#ff3300");
+        drawBtn("⚙️ OPTIONS", 210, 380, 200, 50, curCol); // Ajout du bouton OPTIONS
+        drawBtn("🏆 CLASSEMENT", 210, 450, 200, 50, curCol);
+        drawBtn("✖ QUITTER", 210, 520, 200, 50, "#ff3300"); // Décalé de 70px
+    } else if(state===STATE.OPTIONS){
+        ctx.fillStyle="#fff"; ctx.font=`bold 30px ${FONT_FAMILY}`; ctx.textAlign="center"; ctx.fillText("OPTIONS", 210, 150);
+        
+        const controlBtnText = `CONTRÔLE: ${controlMode === 'Fleche' ? 'FLÈCHE' : 'SOURIS'}`;
+        drawBtn(controlBtnText, 210, 240, 300, 50, controlMode === 'Fleche' ? curCol : "#ffcc00");
+
+        drawBtn("RETOUR", 210, 540, 200, 50, curCol);
+        
+        // Affichage des crédits (Hotbar style, Top Center)
+        const barX = 130; 
+        const barY = 10;
+        const barW = 160;
+        const barH = 35;
+        const barR = 8;
+        const textY = barY + barH/2 + 5;
+        
+        // 1. Dessin du fond sombre semi-transparent
+        ctx.fillStyle="rgba(0, 0, 0, 0.7)"; 
+        drawRoundedRect(barX, barY, barW, barH, barR, true, false); 
+
+        // 2. Dessin du contour néon
+        ctx.strokeStyle = curCol; 
+        ctx.lineWidth = 2;
+        drawRoundedRect(barX, barY, barW, barH, barR, false, true, curCol, 15); 
+        
+        // 3. Dessin des éléments
+        ctx.fillStyle="#ffd700"; // Pièce en jaune doré
+        ctx.beginPath(); ctx.arc(barX + 22, barY + barH/2, 10, 0, Math.PI*2); ctx.fill(); 
+        ctx.fillStyle="#fff"; 
+        ctx.font=`bold 18px ${FONT_FAMILY}`; 
+        ctx.textAlign="left"; 
+        ctx.fillText(`${credits}`, barX + 45, textY);
+        // --- Fin Affichage Crédits ---
+
     } else if(state===STATE.LEADERBOARD){
         ctx.fillStyle="#fff"; ctx.font=`bold 30px ${FONT_FAMILY}`; ctx.textAlign="center"; ctx.fillText("CLASSEMENT MONDIAL", 210, 80);
         leaderboardData.forEach((entry, i) => { 
@@ -960,7 +1032,7 @@ function draw(){
         ctx.fillText(`${Math.floor(loadingProgress)}%`, 210, 415);
         
         ctx.font=`bold 30px ${FONT_FAMILY}`; 
-        ctx.fillText("CONNEXION AU SYSTÈME...", 210, 360);
+        ctx.fillText("CONNEXION", 210, 360);
         
         // Vaisseau en rotation avec particules
         ctx.save();

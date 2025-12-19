@@ -222,11 +222,11 @@
 </head>
 <body>
     <div id="gameWrapper">
-        <div id="usernameScreen">
+        <div id="usernameScreen" style="display: none;">
             <h1>Bienvenue</h1>
             <p>Veuillez entrer votre nom d'utilisateur pour charger votre progression.</p>
             <input type="text" id="usernameInput" placeholder="Votre nom d'utilisateur">
-            <button class="menu-button" id="submitUsernameButton">COMMENCER</button>
+            <button class="menu-button" id="submitUsernameButton">CHARGER / CRÉER</button>
         </div>
 
         <div id="loadingScreen" style="display: none;">
@@ -269,7 +269,7 @@
             <h2>PAUSE</h2>
             <p id="pauseCurrentScore" style="font-size: 1.5em; color: #FF6B6B; margin-bottom: 20px;">Score: 0</p> 
             <button class="menu-button" id="continueButton">CONTINUER</button>
-            <button class="menu-button" id="quitButton">MENU PRINCIPAL (Sauvegarder)</button>
+            <button class="menu-button" id="quitButton">QUITTER</button> 
         </div>
 
         <div id="gameOverScreen" style="display: none;">
@@ -320,8 +320,8 @@
 
     <script>
         // --- CONFIGURATION DU SERVEUR ---
-        // ⚠️ REMPLACEZ CETTE URL PAR VOTRE VÉRITABLE URL DE SERVEUR
-        const SERVER_URL = 'http://127.0.0.1:5000'; 
+        // L'URL de votre serveur Render (MISE À JOUR)
+        const SERVER_URL = 'https://project-3-api-2bgb.onrender.com'; 
         const API_BASE = '/stickman_runner';
 
         // --- CONFIGURATION DU JEU (TAILLES DE RÉFÉRENCE) ---
@@ -404,8 +404,9 @@
         const currentScoreHotbarItem = document.getElementById('currentScoreHotbarItem');
         const scoreDisplayElement = document.getElementById('scoreDisplay');
 
-        const GAME_STATE = { USERNAME: -2, LOADING: -1, MENU: 0, PLAYING: 1, GRADES: 2, GAMEOVER: 3, PAUSED: 4, RANKING: 5 };
-        let currentState = GAME_STATE.USERNAME;
+        // Suppression de GAME_STATE.USERNAME pour le démarrage
+        const GAME_STATE = { LOADING: -1, MENU: 0, PLAYING: 1, GRADES: 2, GAMEOVER: 3, PAUSED: 4, RANKING: 5, USERNAME: 6 };
+        let currentState = GAME_STATE.LOADING; // Démarrage direct au chargement
 
         // Vitesse initiale
         let initialPlayerColor = '#00FFC0'; 
@@ -436,21 +437,22 @@
         let ignoreNextSpaceUp = false; 
         
         // --- DONNÉES DU JOUEUR ---
-        let username = localStorage.getItem('username') || ""; 
+        // Initialisation avec localStorage ou pseudo par défaut
+        let username = localStorage.getItem('username') || "JoueurAnonyme"; 
         let currentGradeName = "Poussière"; 
         
         // --- SYSTÈME DE GRADES ---
         const GRADES = [
-            { id: 1, name: "Poussière", cost: 0, symbol: "⚪", speedBonus: 0 }, 
-            { id: 2, name: "N. Sélénium", cost: 50, symbol: "🟢", speedBonus: 0 }, 
-            { id: 3, name: "N. Mercure", cost: 150, symbol: "🔵", speedBonus: 0 }, 
-            { id: 4, name: "N. Vénus", cost: 300, symbol: "🟣", speedBonus: 0 }, 
-            { id: 5, name: "N. Terre", cost: 500, symbol: "✨", speedBonus: 0 }, 
-            { id: 6, name: "N. Mars", cost: 800, symbol: "⚡", speedBonus: 0 }, 
-            { id: 7, name: "N. Jupiter", cost: 1200, symbol: "🪐", speedBonus: 0 },
-            { id: 8, name: "N. Saturne", cost: 1800, symbol: "🚀", speedBonus: 0 },
-            { id: 9, name: "N. Uranus", cost: 2600, symbol: "🌌", speedBonus: 0 },
-            { id: 10, name: "MAX", cost: 5000, symbol: "🔥", speedBonus: 0 } 
+            { id: 1, name: "Poussière", cost: 0, symbol: "⚪", speedBonus: 0, color: '#E0E0E0' }, 
+            { id: 2, name: "N. Sélénium", cost: 50, symbol: "🟢", speedBonus: 0, color: '#00FFC0' }, 
+            { id: 3, name: "N. Mercure", cost: 150, symbol: "🔵", speedBonus: 0, color: '#00BFFF' }, 
+            { id: 4, name: "N. Vénus", cost: 300, symbol: "🟣", speedBonus: 0, color: '#FF00FF' }, 
+            { id: 5, name: "N. Terre", cost: 500, symbol: "✨", speedBonus: 0, color: '#FFD700' }, 
+            { id: 6, name: "N. Mars", cost: 800, symbol: "⚡", speedBonus: 0, color: '#FF6B6B' }, 
+            { id: 7, name: "N. Jupiter", cost: 1200, symbol: "🪐", speedBonus: 0, color: '#FFA500' },
+            { id: 8, name: "N. Saturne", cost: 1800, symbol: "🚀", speedBonus: 0, color: '#00FA9A' },
+            { id: 9, name: "N. Uranus", cost: 2600, symbol: "🌌", speedBonus: 0, color: '#9932CC' },
+            { id: 10, name: "MAX", cost: 5000, symbol: "🔥", speedBonus: 0, color: '#FF4500' } 
         ];
         
         let currentGradeId = 1;
@@ -554,7 +556,8 @@
                 console.log("Réponse du serveur (Sauvegarde):", result);
 
                 if (result.status === "error") {
-                     alert("Erreur de sauvegarde: " + result.message);
+                     // Utiliser console.error car l'alerte est trop intrusive
+                     console.error("Erreur de sauvegarde: " + result.message);
                 }
 
             } catch (error) {
@@ -567,11 +570,8 @@
         }
 
         async function loadGameData() {
-            if (!username) {
-                 showUsernameScreen();
-                 return;
-            }
-
+            // Pas besoin de vérifier le username ici, car il a déjà été défini par défaut ou localStorage
+            
             hideAllScreens();
             currentState = GAME_STATE.LOADING;
             loadingScreenElement.style.display = 'flex';
@@ -603,13 +603,13 @@
 
                     showMenu(); 
                 } else {
-                     alert("Erreur de chargement: " + result.message);
-                     showUsernameScreen();
+                     console.error("Erreur de chargement: " + result.message);
+                     // Si le chargement échoue, on affiche le menu avec les valeurs par défaut
+                     showMenu(); 
                 }
 
             } catch (error) {
                 console.error("Erreur de communication avec le serveur (Chargement):", error);
-                alert("Impossible de communiquer avec le serveur. Chargement du profil par défaut.");
                 
                 // Fallback en cas d'erreur serveur
                 highScore = 0;
@@ -1230,12 +1230,8 @@
         // --- Initialisation du jeu
         resizeCanvas(); 
         
-        // Vérifie si un nom d'utilisateur est déjà dans le localStorage pour démarrer
-        if (username) {
-             loadGameData();
-        } else {
-             showUsernameScreen();
-        }
+        // Démarrage automatique du chargement avec le pseudo trouvé ou par défaut
+        loadGameData();
         
         gameLoop(); 
         

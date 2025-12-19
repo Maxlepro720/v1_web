@@ -160,7 +160,7 @@
         .sidebar-open {right:0 !important;}
 
         /* ----------------------------------- */
-        /* POPUP COOKIES (AJOUTÉ) */
+        /* POPUP COOKIES */
         /* ----------------------------------- */
         #cookie-modal-overlay {
             display: none; 
@@ -256,6 +256,130 @@
         #close-cookie-modal:hover {
             opacity: 0.15; 
         }
+
+        /* ----------------------------------- */
+        /* POPUP FORMULAIRE D'ENVOI (Formspree) */
+        /* ----------------------------------- */
+        #submit-modal-overlay {
+            display: none; 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        #submit-modal {
+            position: relative;
+            background: rgba(15, 20, 25, 0.95);
+            border: 2px solid #63D945; 
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%; 
+            max-width: 500px; 
+            box-shadow: 0 10px 40px rgba(99, 217, 69, 0.4);
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh; 
+            overflow-y: auto; 
+        }
+
+        #submit-modal h3 {color: #63D945;font-size: 24px;margin-bottom: 15px;}
+        #submit-modal p {color: #ccc;font-size: 14px;margin-bottom: 20px;}
+
+        #game-submission-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #submit-modal input[type="text"],
+        #submit-modal input[type="email"],
+        #submit-modal textarea {
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #eee;
+            outline: none;
+            transition: 0.3s;
+            font-family: inherit;
+            font-size: 16px;
+        }
+        
+        #submit-modal input:focus,
+        #submit-modal textarea:focus {
+            border-color: #63D945;
+            box-shadow: 0 0 8px rgba(99, 217, 69, 0.5);
+        }
+
+        #submit-modal textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        #send-submission-button {
+            background: #63D945;
+            border: none;
+            padding: 12px;
+            color: #0f1419; 
+            font-size: 16px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        #send-submission-button:hover {
+            background: #46b32b;
+            box-shadow: 0 4px 15px rgba(99, 217, 69, 0.5);
+        }
+
+        #close-submit-modal {
+            position: absolute; 
+            top: 10px; 
+            right: 15px;
+            background: transparent;
+            color: #eee;
+            border: none;
+            font-size: 28px; 
+            cursor: pointer; 
+            transition: color 0.3s;
+        }
+        #close-submit-modal:hover {
+            color: #ff4d6d;
+        }
+
+        /* Conditions d'Utilisation */
+        #terms-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        #terms-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        #terms-container label {
+            font-size: 14px;
+            color: #ccc;
+            cursor: pointer;
+        }
+        #terms-container a {
+            color: #63D945; 
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        #terms-container a:hover {
+            color: #46b32b;
+        }
     </style>
 </head>
 <body>
@@ -264,6 +388,7 @@
     <h1 id="welcomeTitle">🎮 Accueil</h1>
     <nav id="main-nav">
         <button>📚 Bibliothèque</button>
+        <button id="submit-game-button">📧 Soumettre un jeu</button> 
         <input id="search_bar" placeholder="🔍 Rechercher un jeu...">
         <button id="friends-button">👥 Amis</button>
     </nav>
@@ -281,6 +406,31 @@
 
 <div id="quote-ad-slot" class="ad-card-container" style="display:none;">
     <div id="quote-display"></div>
+</div>
+
+
+<div id="submit-modal-overlay" style="opacity: 0;">
+    <div id="submit-modal">
+        <button id="close-submit-modal" title="Fermer">&times;</button>
+        <h3>📧 Soumettre votre jeu</h3>
+        <p>Ce formulaire enverra directement les données à notre équipe. Veuillez inclure le lien de téléchargement de votre jeu (Drive, Dropbox, etc.) dans la zone de description.</p>
+        
+        <form id="game-submission-form" action="https://formspree.io/f/xrezbzle" method="POST">
+            <input type="text" name="Nom" id="submitter-lastname-input" placeholder="Nom" required>
+            <input type="text" name="Prenom" id="submitter-firstname-input" placeholder="Prénom" required>
+            <input type="email" name="_replyto" id="submitter-email-input" placeholder="Email" required>
+            <input type="text" name="Sujet" id="game-title-input" placeholder="Sujet du jeu" required>
+            
+            <textarea name="Description_Lien" id="game-description-input" placeholder="Description détaillée + Lien de téléchargement du jeu" required></textarea>
+            
+            <div id="terms-container">
+                <input type="checkbox" name="Conditions_Acceptees" id="terms-checkbox" required>
+                <label for="terms-checkbox">J'accepte les <a href="#" id="view-terms-link">Conditions d'Utilisation</a></label>
+            </div>
+            
+            <button type="submit" id="send-submission-button">Envoyer la soumission</button>
+        </form>
+    </div>
 </div>
 
 
@@ -363,14 +513,12 @@
     // --- LOGIQUE AFFICHAGE DES JEUX ET INSERTION DE LA CITATION ---
     const grid=document.getElementById("gameGrid");
     const searchBar=document.getElementById("search_bar");
-    const quoteAdSlot = document.getElementById('quote-ad-slot'); // L'emplacement de la carte de citation
+    const quoteAdSlot = document.getElementById('quote-ad-slot'); 
     
-    // Nouvelle fonction pour mettre à jour le contenu de la citation avec une animation
     function updateQuote() {
         const quoteDisplay = document.getElementById('quote-display');
         if (!quoteDisplay) return;
 
-        // Animation de disparition
         anime({
             targets: quoteDisplay,
             opacity: 0,
@@ -378,12 +526,10 @@
             easing: 'easeOutQuad',
             complete: () => {
                 const quote = getRandomQuote();
-                // Mise à jour du contenu
                 quoteDisplay.innerHTML = `
                     <p style="font-size: 1.5em; font-style: italic; color: #fff;">"${quote.quote}"</p>
                     <p style="margin-top: 10px; font-size: 1.1em; color: #00bfff;">— ${quote.author}</p>
                 `;
-                // Animation d'apparition
                 anime({
                     targets: quoteDisplay,
                     opacity: 1,
@@ -398,8 +544,6 @@
         grid.innerHTML="";
         
         const gamesPerAdRow = 4;
-        
-        // On insère la citation si le critère est rempli
         let quoteInserted = false;
         
         filteredGames.forEach((game, index) => {
@@ -446,15 +590,13 @@
 
             grid.appendChild(card);
             
-            // Insertion de la carte de citation après le 4ème jeu
             if (index + 1 === gamesPerAdRow && filteredGames.length >= 5) {
                 grid.appendChild(quoteAdSlot);
-                quoteAdSlot.style.display = 'flex'; // Afficher la carte
+                quoteAdSlot.style.display = 'flex'; 
                 quoteInserted = true;
             }
         });
         
-        // Si la recherche fait que la citation ne doit plus apparaître (moins de 5 jeux), on la masque/retire.
         if (!quoteInserted && quoteAdSlot.parentNode === grid) {
              quoteAdSlot.remove();
         }
@@ -462,17 +604,14 @@
         anime({targets:'.card, .ad-card-container',opacity:[0,1],translateY:[30,0],delay:anime.stagger(100),duration:600,easing:'easeOutQuad'});
     }
     
-    // Initialisation du système de citation
     function initQuoteSystem() {
-        updateQuote(); // Afficher la première citation immédiatement
-
-        // Changement de la citation toutes les 10 secondes (10000ms)
+        updateQuote(); 
         setInterval(updateQuote, 10000); 
     }
 
 
     displayGames(games);
-    initQuoteSystem(); // Démarre le carrousel de citations
+    initQuoteSystem(); 
 
     searchBar.addEventListener("input",()=>{
         const text=searchBar.value.toLowerCase();
@@ -484,6 +623,79 @@
     const friendsButton=document.getElementById("friends-button");
     function toggleSidebar(){sidebar.classList.toggle('sidebar-open');}
     friendsButton.addEventListener('click',toggleSidebar);
+
+
+    // ----------------------------------------------------
+    // --- GESTION DU FORMULAIRE DE SOUMISSION DE JEU ---
+    // ----------------------------------------------------
+    const submitGameButton = document.getElementById('submit-game-button');
+    const submitModalOverlay = document.getElementById('submit-modal-overlay');
+    const closeSubmitModalButton = document.getElementById('close-submit-modal');
+    const submissionForm = document.getElementById('game-submission-form');
+    const termsLink = document.getElementById('view-terms-link');
+    
+    // 1. VARIABLE MODIFIABLE FACILEMENT pour les Conditions d'Utilisation
+    const termsAndConditions = `
+        Conditions d'Utilisation pour la soumission de jeu :
+
+        1. Propriété intellectuelle : En soumettant votre jeu, vous confirmez être le créateur et détenir tous les droits sur le contenu.
+        2. Modification : Vous accepter la modification et la perte de détention de ce jeu.
+        3. Licence : Vous accordez une licence non exclusive et gratuite pour tester et évaluer votre jeu.
+        4. Fichiers : Le lien de téléchargement fourni doit mener à un fichier exempt de virus et de logiciels malveillants.
+        5. Contact : Nous vous recontacterons via l'email fourni.
+
+        Merci d'avoir lu.
+    `;
+
+
+    function openSubmitModal() {
+        submitModalOverlay.style.display = 'flex';
+        anime({targets: submitModalOverlay, opacity: [0, 1], duration: 300, easing: 'easeOutQuad'});
+    }
+
+    function closeSubmitModal() {
+        anime({
+            targets: submitModalOverlay, 
+            opacity: [1, 0], 
+            duration: 300, 
+            easing: 'easeOutQuad', 
+            complete: () => {
+                submitModalOverlay.style.display = 'none';
+                submissionForm.reset(); 
+            }
+        });
+    }
+
+    submitGameButton.addEventListener('click', openSubmitModal);
+    closeSubmitModalButton.addEventListener('click', closeSubmitModal);
+    submitModalOverlay.addEventListener('click', (e) => {
+        if (e.target === submitModalOverlay) {
+            closeSubmitModal();
+        }
+    });
+
+    // Afficher les conditions d'utilisation
+    termsLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        alert(termsAndConditions);
+    });
+
+    // --- LOGIQUE DE SOUMISSION AVEC FORMSPREE ---
+    submissionForm.addEventListener('submit', async function(e) {
+        
+        // Validation des Conditions d'Utilisation
+        const termsAccepted = document.getElementById('terms-checkbox').checked;
+        if (!termsAccepted) {
+            alert("Veuillez accepter les Conditions d'Utilisation avant d'envoyer.");
+            e.preventDefault(); // Empêche l'envoi si non coché
+            return;
+        }
+
+        // Le navigateur soumet le formulaire à l'URL Formspree (via l'attribut action)
+        // L'utilisateur sera redirigé vers la page de confirmation Formspree.
+        // La soumission native du formulaire est la plus simple et fiable sans serveur.
+    });
+    // ----------------------------------------------------
 
 
     // ----------------------------------------------------
@@ -502,26 +714,23 @@
         let teleportIntervalId = null;
 
         function closeCookieModal(accept = false) {
-            // 1. Si on a accepté (via la croix), on enregistre le statut
             if (accept) {
                 localStorage.setItem('cookies_accepted', 'true');
             }
             
-            // 2. Arrête la téléportation et nettoie les classes au cas où
             if (teleportIntervalId) {
                 clearInterval(teleportIntervalId);
                 teleportIntervalId = null;
             }
             acceptButton.classList.remove('teleporting', 'stopped'); 
             
-            // 3. Animation de fermeture de l'overlay et suppression
             anime({
                 targets: cookieOverlay, 
                 opacity: [1, 0], 
                 duration: 400, 
                 easing: 'easeOutQuad', 
                 complete: () => {
-                    cookieOverlay.style.display = 'none'; // Masquer proprement
+                    cookieOverlay.style.display = 'none'; 
                 }
             });
         }
@@ -571,7 +780,7 @@
         // --- INITIALISATION DES ÉVÉNEMENTS ---
 
         // 1. Affichage de la modale
-        cookieOverlay.style.display = 'flex'; // Rendre visible
+        cookieOverlay.style.display = 'flex'; 
         cookieOverlay.style.opacity = 0;
         anime({targets: cookieOverlay, opacity: [0, 1], duration: 400, easing: 'easeOutQuad'});
         
@@ -582,15 +791,13 @@
         // 3. La SEULE issue : le clic sur la croix invisible (qui enregistre l'acceptation)
         closeButton.addEventListener('click', () => closeCookieModal(true));
         
-        // 4. S'assurer que le clic sur le bouton ACCEPTER ne fait RIEN, pour forcer la croix.
+        // 4. S'assurer que le clic sur le bouton ACCEPTER ne fait RIEN.
         acceptButton.addEventListener('click', (e) => e.preventDefault());
         
         // 5. S'assurer que le clic sur le bouton REFUSER ne fait RIEN.
         const refuseButton = document.getElementById('refuse-cookies-button');
         refuseButton.addEventListener('click', (e) => e.preventDefault());
     } 
-    // Si isCookiesAccepted est VRAI, la modale n'est jamais affichée (display: none par défaut dans le CSS)
-    // et tout le code de la modale est ignoré.
 
     // ----------------------------------------------------
 </script>

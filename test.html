@@ -1,1190 +1,806 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Astro Dodge</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-<style>
-body { 
-    margin:0; 
-    background: #0a0e27; 
-    display:flex; 
-    justify-content:center; 
-    align-items:center; 
-    height:100vh; 
-    color:#fff; 
-    font-family: 'Orbitron', sans-serif; 
-    overflow:hidden; 
-}
-canvas { 
-    background: #020510; 
-    border:3px solid #00d9ff; 
-    box-shadow: 0 0 40px rgba(0,217,255,0.8); 
-    border-radius: 8px; 
-    max-width: calc((100vh - 6px) * 420 / 640);
-    max-height: calc((100vw - 6px) * 640 / 420);
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    position: absolute; 
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Launcher</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <style>
+        /* ----------------------------------- */
+        /* CSS GÉNÉRAL & MISE EN PAGE */
+        /* ----------------------------------- */
+        * {box-sizing:border-box;margin:0;padding:0}
+        body {font-family:'Segoe UI',Arial,sans-serif;background:#0f1419;color:#eee;scroll-behavior:smooth;overflow-x:hidden;}
+        
+        /* Ajustements pour la barre qui monte/descend */
+        header {
+            position:fixed; 
+            top:0;
+            left: 0;
+            width: 100%; 
+            background:rgba(15,20,25,0.6);
+            backdrop-filter:blur(20px);
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding:15px 30px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.6);
+            border-radius:0 0 20px 20px;
+            z-index:10;
+            /* Position initiale hors écran, ne laissant qu'une fine bordure visible */
+            transform: translateY(calc(-100% + 10px)); 
+            transition: transform 0.4s ease-out; 
+        }
 
-:fullscreen canvas {
-    border: none;
-    box-shadow: none;
-}
-:-webkit-full-screen canvas { border: none; box-shadow: none; }
-:-moz-full-screen canvas { border: none; box-shadow: none; }
-:-ms-fullscreen canvas { border: none; box-shadow: none; }
-</style>
+        /* Classe pour afficher la barre quand elle est survolée */
+        header.show {
+            transform: translateY(0);
+        }
+
+        header h1 {font-size:28px;color:#fff;font-weight:700;letter-spacing:1px;transition:0.3s;}
+        header h1:hover {color:#00bfff;}
+        
+        #main-nav {display:flex;align-items:center;gap:15px;background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);padding:10px 20px;border-radius:20px;}
+        #main-nav button {background:transparent;color:#fff;border:none;padding:10px 18px;border-radius:15px;font-weight:600;cursor:pointer;transition:0.3s;font-size:16px;position:relative;overflow:hidden;}
+        #main-nav button::after {content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,191,255,0.2);opacity:0;transition:0.3s;border-radius:15px;}
+        #main-nav button:hover::after {opacity:1;}
+        #main-nav button:hover {transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,191,255,0.3);}
+        #search_bar {padding:10px 18px;border-radius:15px;border:none;background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);outline:none;color:#eee;transition:0.3s;min-width:180px;}
+        #search_bar:focus {background:rgba(0,191,255,0.1);box-shadow:0 0 10px #00bfff66;}
+        #logout-button {background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);color:#ff4d6d;border:2px solid #ff4d6d;padding:10px 18px;border-radius:15px;font-weight:bold;cursor:pointer;transition:0.3s;}
+        #logout-button:hover {background:#ff4d6d;color:#fff;box-shadow:0 0 18px #ff4d6d88;transform:translateY(-2px);}
+        .section-title {font-size:28px;margin:30px 25px 15px 25px;color:#fff;font-weight:700;}
+        .game-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;padding:0 30px 50px 30px;}
+
+        /* ----------------------------------- */
+        /* CARTE DE JEU (CARD) */
+        /* ----------------------------------- */
+        .card {
+            position:relative;
+            background:rgba(255,255,255,0.05);
+            backdrop-filter:blur(15px);
+            border-radius:20px;
+            overflow:hidden;
+            cursor:pointer; 
+            transition:transform 0.3s,box-shadow 0.3s;
+            box-shadow:0 5px 20px rgba(0,0,0,0.4);
+        }
+        .card.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .card.disabled:hover {
+            transform: none;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            animation: none; 
+        }
+        .card.disabled:hover::before {
+            animation: none;
+        }
+
+        .card::before {content:"";position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(120deg,rgba(255,255,255,0.1),rgba(255,255,255,0.3),rgba(255,255,255,0.1));transform:skewX(-20deg);transition:0.5s;}
+        .card:hover::before {animation:shimmer 1s forwards;}
+        @keyframes shimmer {0%{left:-100%;}100%{left:200%;}}
+        .card:hover {transform:translateY(-8px);box-shadow:0 15px 30px rgba(0,191,255,0.3);}
+
+        /* ----------------------------------- */
+        /* CARTE DE CITATION */
+        /* ----------------------------------- */
+        .ad-card-container {
+            grid-column: 1 / -1; 
+            min-height: 150px; 
+            display: flex; 
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(90deg, #1f2730, #0f1419); 
+            border: 2px solid #00bfff;
+            overflow: hidden;
+            border-radius: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            transition: transform 0.3s, box-shadow 0.3s, opacity 0.5s; 
+            padding: 10px;
+        }
+
+        .ad-card-container:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 191, 255, 0.4); 
+        }
+        
+        #quote-display {
+            padding: 20px; 
+            text-align: center;
+            transition: opacity 0.5s;
+        }
+
+        /* ----------------------------------- */
+        /* IMAGE DE CARTE */
+        /* ----------------------------------- */
+        .card-image {
+            height:180px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:50px;
+            color:#fff;
+            transition:all 0.3s;
+            position: relative; 
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+        }
+
+        .card-image::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.0);
+            z-index: 1;
+        }
+
+        .card-image .game-icon {z-index: 2;}
+        .card-info {padding:15px;}
+        .card-title {font-size:18px;font-weight:600;margin:0;color:#fff;}
+        .card-genre {font-size:14px;opacity:0.6;margin-top:6px;margin-bottom:12px;}
+        .card-button {
+            width:100%;background:#00bfff;border:none;padding:12px;color:#fff;font-size:15px;border-radius:12px;cursor:pointer;transition:0.2s;
+        }
+        .card-button:hover {background:#009acd;}
+        .card-button:disabled {background:#555;cursor:not-allowed;}
+
+        /* ----------------------------------- */
+        /* SIDEBAR */
+        /* ----------------------------------- */
+        #sidebar {position:fixed;top:0;right:-320px;width:320px;height:100%;background:rgba(20,20,30,0.9);backdrop-filter:blur(20px);box-shadow:-5px 0 30px rgba(0,0,0,0.7);transition:right 0.4s ease;z-index:50;padding:20px;display:flex;flex-direction:column;}
+        #sidebar h2 {color:#00bfff;margin-bottom:20px;}
+        #sidebar button.close-sidebar {background:#ff4d6d;color:#fff;border:none;padding:10px 18px;border-radius:12px;cursor:pointer;align-self:flex-end;transition:0.3s;}
+        #sidebar button.close-sidebar:hover {background:#ff1a3c;box-shadow:0 0 15px #ff4d6d88;}
+        .sidebar-open {right:0 !important;}
+
+        /* ----------------------------------- */
+        /* POPUP COOKIES */
+        /* ----------------------------------- */
+        #cookie-modal-overlay {
+            display: none; 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        #cookie-modal {
+            position: relative;
+            background: rgba(15, 20, 25, 0.95);
+            border: 2px solid #00bfff;
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 191, 255, 0.4);
+        }
+        #cookie-modal h3 {color: #fff;font-size: 20px;margin-bottom: 15px;}
+        #cookie-modal p {color: #ccc;font-size: 14px;margin-bottom: 25px;}
+        
+        #button-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        #refuse-cookies-button, 
+        #accept-cookies-button {
+            width: 165px; 
+            border: none;
+            padding: 12px;
+            color: #fff;
+            font-size: 15px;
+            border-radius: 12px;
+            font-weight: bold;
+            transition: opacity 0.3s;
+            position: static; 
+            transform: none; 
+        }
+        
+        #refuse-cookies-button {
+            background: #ff4d6d;
+            cursor: not-allowed; 
+            opacity: 0.6; 
+            pointer-events: none; 
+        }
+        
+        #accept-cookies-button {
+            background: #00bfff;
+            cursor: pointer; 
+            pointer-events: all !important; 
+        }
+
+        /* Style pour le bouton ACCEPTER lorsqu'il est en mode "téléportation" */
+        #accept-cookies-button.teleporting {
+            position: fixed; 
+            z-index: 1002; 
+            cursor: default; 
+            pointer-events: none !important;
+            transition: none; 
+            width: 165px; 
+        }
+        
+        /* Style pour le bouton ACCEPTER lorsqu'il est en mode "arrêt/rattrapable" */
+        #accept-cookies-button.stopped {
+            position: fixed; 
+            pointer-events: all !important; 
+            cursor: pointer;
+            width: 165px; 
+        }
+
+        /* Croix : Immobile et presque invisible (CLICABLE) */
+        #close-cookie-modal {
+            position: absolute; 
+            top: 5px; 
+            right: 10px;
+            background: transparent;
+            color: #eee;
+            border: none;
+            font-size: 20px; 
+            opacity: 0.05; 
+            cursor: pointer; 
+            z-index: 10;
+        }
+        #close-cookie-modal:hover {
+            opacity: 0.15; 
+        }
+
+        /* ----------------------------------- */
+        /* POPUP FORMULAIRE D'ENVOI (Formspree) */
+        /* ----------------------------------- */
+        #submit-modal-overlay {
+            display: none; 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        #submit-modal {
+            position: relative;
+            background: rgba(15, 20, 25, 0.95);
+            border: 2px solid #63D945; 
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%; 
+            max-width: 500px; 
+            box-shadow: 0 10px 40px rgba(99, 217, 69, 0.4);
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh; 
+            overflow-y: auto; 
+        }
+
+        #submit-modal h3 {color: #63D945;font-size: 24px;margin-bottom: 15px;}
+        #submit-modal p {color: #ccc;font-size: 14px;margin-bottom: 20px;}
+
+        #game-submission-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #submit-modal input[type="text"],
+        #submit-modal input[type="email"],
+        #submit-modal textarea {
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #eee;
+            outline: none;
+            transition: 0.3s;
+            font-family: inherit;
+            font-size: 16px;
+        }
+        
+        #submit-modal input:focus,
+        #submit-modal textarea:focus {
+            border-color: #63D945;
+            box-shadow: 0 0 8px rgba(99, 217, 69, 0.5);
+        }
+
+        #submit-modal textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        #send-submission-button {
+            background: #63D945;
+            border: none;
+            padding: 12px;
+            color: #0f1419; 
+            font-size: 16px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        #send-submission-button:hover {
+            background: #46b32b;
+            box-shadow: 0 4px 15px rgba(99, 217, 69, 0.5);
+        }
+
+        #close-submit-modal {
+            position: absolute; 
+            top: 10px; 
+            right: 15px;
+            background: transparent;
+            color: #eee;
+            border: none;
+            font-size: 28px; 
+            cursor: pointer; 
+            transition: color 0.3s;
+        }
+        #close-submit-modal:hover {
+            color: #ff4d6d;
+        }
+
+        /* Conditions d'Utilisation */
+        #terms-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        #terms-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        #terms-container label {
+            font-size: 14px;
+            color: #ccc;
+            cursor: pointer;
+        }
+        #terms-container a {
+            color: #63D945; 
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        #terms-container a:hover {
+            color: #46b32b;
+        }
+    </style>
 </head>
 <body>
-<canvas id="game"></canvas> 
+
+<header id="main-header">
+    <h1 id="welcomeTitle">🎮 Accueil</h1>
+    <nav id="main-nav">
+        <button>📚 Bibliothèque</button>
+        <button id="submit-game-button">📧 Soumettre un jeu</button> 
+        <input id="search_bar" placeholder="🔍 Rechercher un jeu...">
+        <button id="friends-button">👥 Amis</button>
+    </nav>
+    <button id="logout-button" onclick="handleLogoutAndRedirect()">log out</button>
+</header>
+
+<h2 class="section-title">Ma Bibliothèque</h2>
+<div class="game-grid" id="gameGrid"></div>
+
+<div id="sidebar">
+    <button class="close-sidebar" onclick="toggleSidebar()">✖</button>
+    <h2>Amis</h2>
+    <p>Coming soon...</p>
+</div>
+
+<div id="quote-ad-slot" class="ad-card-container" style="display:none;">
+    <div id="quote-display"></div>
+</div>
+
+
+<div id="submit-modal-overlay" style="opacity: 0;">
+    <div id="submit-modal">
+        <button id="close-submit-modal" title="Fermer">&times;</button>
+        <h3>📧 Soumettre votre jeu</h3>
+        <p>Ce formulaire enverra directement les données à notre équipe. Veuillez inclure le lien de téléchargement de votre jeu (Drive, Dropbox, etc.) dans la zone de description.</p>
+        
+        <form id="game-submission-form" action="https://formspree.io/f/xrezbzle" method="POST">
+            <input type="text" name="Nom" id="submitter-lastname-input" placeholder="Nom" required>
+            <input type="text" name="Prenom" id="submitter-firstname-input" placeholder="Prénom" required>
+            <input type="email" name="_replyto" id="submitter-email-input" placeholder="Email" required>
+            <input type="text" name="Sujet" id="game-title-input" placeholder="Sujet du jeu" required>
+            
+            <textarea name="Description_Lien" id="game-description-input" placeholder="Description détaillée + Lien de téléchargement du jeu" required></textarea>
+            
+            <div id="terms-container">
+                <input type="checkbox" name="Conditions_Acceptees" id="terms-checkbox" required>
+                <label for="terms-checkbox">J'accepte les <a href="#" id="view-terms-link">Conditions d'Utilisation</a></label>
+            </div>
+            
+            <button type="submit" id="send-submission-button">Envoyer la soumission</button>
+        </form>
+    </div>
+</div>
+
+
+<div id="cookie-modal-overlay">
+    <div id="cookie-modal">
+        <button id="close-cookie-modal" title="Fermer">&times;</button>
+        <h3>🍪 Ce site utilise des cookies...</h3>
+        <p>Afin d'améliorer votre expérience et sauvegarder vos préférences de jeu, nous devons utiliser des cookies. </p>
+        
+        <div id="button-group">
+            <button id="refuse-cookies-button">REFUSER</button>
+            <button id="accept-cookies-button">ACCEPTER</button>
+        </div>
+    </div>
+</div>
+
 <script>
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
-
-// Nouvelle constante pour la police d'écriture
-const FONT_FAMILY = 'Orbitron';
-
-// =================================================================
-// --- SYSTÈME DE SONS ---
-// =================================================================
-const AudioSystem = {
-    context: null,
-    sounds: {},
-    masterVolume: 0.3,
+    const API_URL="https://project-3-api-2bgb.onrender.com";
     
-    init() {
-        try {
-            this.context = new (window.AudioContext || window.webkitAudioContext)();
-            this.generateSounds();
-        } catch(e) {
-            console.warn("Audio non disponible");
-        }
-    },
-    
-    generateSounds() {
-        // Son de bouton hover
-        this.sounds.buttonHover = this.createTone(800, 0.05, 0.1, 'sine');
-        
-        // Son de clic
-        this.sounds.buttonClick = this.createTone(600, 0.1, 0.15, 'square');
-        
-        // Son de fusée (moteur continu)
-        this.sounds.rocket = this.createNoise(0.3, 'brown');
-        
-        // Son de pièce collectée
-        this.sounds.coin = this.createSequence([
-            {freq: 800, duration: 0.05},
-            {freq: 1000, duration: 0.05},
-            {freq: 1200, duration: 0.1}
-        ]);
-        
-        // Son de crash
-        this.sounds.crash = this.createExplosion();
-        
-        // Son de niveau suivant
-        this.sounds.levelUp = this.createSequence([
-            {freq: 400, duration: 0.1},
-            {freq: 600, duration: 0.1},
-            {freq: 800, duration: 0.15}
-        ]);
-        
-        // Son de dégâts
-        this.sounds.hit = this.createTone(200, 0.2, 0.3, 'sawtooth');
-        
-        // Son de frôlement (ajouté)
-        this.sounds.nearMiss = this.createTone(1500, 0.03, 0.08, 'triangle');
-    },
-    
-    createTone(freq, duration, volume, type = 'sine') {
-        return () => {
-            if (!this.context) return;
-            const osc = this.context.createOscillator();
-            const gain = this.context.createGain();
-            
-            osc.type = type;
-            osc.frequency.value = freq;
-            gain.gain.value = volume * this.masterVolume;
-            
-            osc.connect(gain);
-            gain.connect(this.context.destination);
-            
-            osc.start();
-            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + duration);
-            osc.stop(this.context.currentTime + duration);
-        };
-    },
-    
-    createNoise(volume, type = 'white') {
-        return () => {
-            if (!this.context) return;
-            const bufferSize = this.context.sampleRate * 0.5;
-            const buffer = this.context.createBuffer(1, bufferSize, this.context.sampleRate);
-            const data = buffer.getChannelData(0);
-            
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = Math.random() * 2 - 1;
-            }
-            
-            const source = this.context.createBufferSource();
-            const gain = this.context.createGain();
-            const filter = this.context.createBiquadFilter();
-            
-            filter.type = 'lowpass';
-            filter.frequency.value = 200;
-            
-            source.buffer = buffer;
-            gain.gain.value = volume * this.masterVolume;
-            
-            source.connect(filter);
-            filter.connect(gain);
-            gain.connect(this.context.destination);
-            
-            source.start();
-            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.5);
-            source.stop(this.context.currentTime + 0.5);
-        };
-    },
-    
-    createSequence(notes) {
-        return () => {
-            if (!this.context) return;
-            let time = this.context.currentTime;
-            
-            notes.forEach(note => {
-                const osc = this.context.createOscillator();
-                const gain = this.context.createGain();
-                
-                osc.type = 'sine';
-                osc.frequency.value = note.freq;
-                gain.gain.value = 0.2 * this.masterVolume;
-                
-                osc.connect(gain);
-                gain.connect(this.context.destination);
-                
-                osc.start(time);
-                gain.gain.exponentialRampToValueAtTime(0.01, time + note.duration);
-                osc.stop(time + note.duration);
-                
-                time += note.duration;
-            });
-        };
-    },
-    
-    createExplosion() {
-        return () => {
-            if (!this.context) return;
-            const osc = this.context.createOscillator();
-            const gain = this.context.createGain();
-            
-            osc.type = 'sawtooth';
-            osc.frequency.value = 100;
-            gain.gain.value = 0.5 * this.masterVolume;
-            
-            osc.connect(gain);
-            gain.connect(this.context.destination);
-            
-            osc.start();
-            osc.frequency.exponentialRampToValueAtTime(20, this.context.currentTime + 0.5);
-            gain.gain.exponentialRampToValueAtTime(0.01, this.context.currentTime + 0.5);
-            osc.stop(this.context.currentTime + 0.5);
-        };
-    },
-    
-    play(soundName) {
-        if (this.sounds[soundName]) {
-            this.sounds[soundName]();
-        }
-    }
-};
+    // Dictionnaire de citations
+    const quoteDictionary = [
+        { quote: "Un grand poète a dit qui pète plus chie moins", author: "Peter Drucker" },  
+    ];
 
-// Initialisation du système audio
-AudioSystem.init();
-
-// =================================================================
-// --- CONFIGURATION API ---
-// =================================================================
-const API_BASE_URL = "https://project-3-api-2bgb.onrender.com/astro"; 
-
-const GAME_WIDTH = 420;
-const GAME_HEIGHT = 640;
-
-let scaleFactor = 1;
-let currentHoverButton = null; 
-let lastHoveredButton = null;
-
-function requestFullScreen(element) {
-    if (element.requestFullscreen) {
-        element.requestFullscreen().catch(err => console.error("Plein écran bloqué:", err));
-    } else if (element.mozRequestFullScreen) {
-        element.mozRequestFullScreen().catch(err => console.error("Plein écran bloqué:", err));
-    } else if (element.webkitRequestFullscreen) {
-        element.webkitRequestFullscreen().catch(err => console.error("Plein écran bloqué:", err));
-    } else if (element.msRequestFullscreen) {
-        element.msRequestFullscreen().catch(err => console.error("Plein écran bloqué:", err));
-    }
-}
-
-window.onload = function() {
-    resizeCanvas();
-};
-
-function resizeCanvas() {
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-    scaleFactor = canvas.width / GAME_WIDTH;
-    ctx.setTransform(1, 0, 0, 1, 0, 0); 
-    ctx.scale(scaleFactor, scaleFactor);
-}
-
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas(); 
-
-let mouseX = 0, mouseY = 0, isMouseDown = false;
-
-function getScaledMouseCoordinates(e) {
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.clientX || e.touches[0].clientX;
-    const clientY = e.clientY || e.touches[0].clientY;
-    const virtualX = (clientX - rect.left) / scaleFactor;
-    const virtualY = (clientY - rect.top) / scaleFactor;
-    return { x: virtualX, y: virtualY };
-}
-
-canvas.addEventListener("mousemove", e => { 
-    const coords = getScaledMouseCoordinates(e);
-    mouseX = coords.x;
-    mouseY = coords.y;
-});
-canvas.addEventListener("mousedown", e => { 
-    isMouseDown = true; 
-    const coords = getScaledMouseCoordinates(e);
-    mouseX = coords.x;
-    mouseY = coords.y;
-});
-canvas.addEventListener("mouseup", () => isMouseDown = false);
-canvas.addEventListener("touchstart", e => {
-    isMouseDown = true;
-    const coords = getScaledMouseCoordinates(e);
-    mouseX = coords.x;
-    mouseY = coords.y;
-    e.preventDefault(); 
-}, { passive: false });
-canvas.addEventListener("touchmove", e => {
-    const coords = getScaledMouseCoordinates(e);
-    mouseX = coords.x;
-    mouseY = coords.y;
-    e.preventDefault(); 
-}, { passive: false });
-canvas.addEventListener("touchend", () => isMouseDown = false);
-
-function mouseInRect(x,y,w,h){ return mouseX > x && mouseX < x+w && mouseY > y && mouseY < y+h; }
-
-const STATE={MENU:0,PLAY:1,GAMEOVER:2,SHOP:3, TAKEOFF:4, LANDING:5, LEADERBOARD:6, LOADING: 7, START_SCREEN: 8, OPTIONS: 9}; 
-let state=STATE.LOADING; 
-
-let transition = { active: false, alpha: 0, nextState: null, callback: null };
-
-let username = localStorage.getItem("username") || "Invité"; 
-let score=0, bestScore=0, credits=0; 
-let time=0, spawnTimer=0, asteroids=[], stars=[], coins=[], keys={}, explosion=null, flashAlpha=0;
-let coinFlashAlpha = 0, floatingTexts = [], shopScroll=0;
-let player={x:210,y:560,r:18,type:0,life:1, invulnerable:0, trail:[], angle:0};
-let leaderboardData = []; 
-let loadingShip = { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2, angle: 0, r: 20, particles: [] }; 
-let loadingProgress = 0;
-let startButtonAnim = { scale: 1, alpha: 0, hover: false, pulse: 0 }; 
-
-let menuParticles = [];
-for(let i=0; i<25; i++) menuParticles.push({x: Math.random()*GAME_WIDTH, y: Math.random()*GAME_HEIGHT, l: Math.random()*30+10, s: Math.random()*8+4});
-
-let nebulas = [];
-function initNebulas() {
-    nebulas = [];
-    const colors = ["rgba(100, 0, 255, 0.08)", "rgba(0, 150, 255, 0.08)", "rgba(255, 0, 150, 0.08)"];
-    for(let i=0; i<3; i++) nebulas.push({x: Math.random()*GAME_WIDTH, y: Math.random()*GAME_HEIGHT, r: 150+Math.random()*150, color: colors[i], speed: 0.15+Math.random()*0.1});
-}
-initNebulas();
-
-let launchProgress = 0, earthY = 0, deathShockwave = { active: false, r: 0, alpha: 0, x: 0, y: 0 }, timeScale = 1, glitchTimer = 0;
-let currentLevel = 1, levelAnimTimer = 0, colorIndex = 0;
-const levelColors = ["#00d9ff", "#ff00ea", "#00ff88", "#ff3300", "#ffcc00", "#9d00ff"];
-
-const ships=[
-{name:"Standard", cost:0, speed:5, unlocked:true, color:"#0288d1", cockpit:"#81d4fa", flame:"#ff7043", bonus:"Aucun", desc:"Stable et équilibré."},
-{name:"Rapide", cost:1000, speed:8, unlocked:false, color:"#d32f2f", cockpit:"#ff8a80", flame:"#ffeb3b", bonus:"Vitesse +2", desc:"Esquives éclairs."},
-{name:"Double Pièces", cost:1500, speed:5, unlocked:false, color:"#388e3c", cockpit:"#a5d6a7", flame:"#ff9800", bonus:"Pièces x2", desc:"Richesse instantanée."},
-{name:"Score Boost", cost:2000, speed:5, unlocked:false, color:"#7b1fa2", cockpit:"#ce93d8", flame:"#f48fb1", bonus:"Score x2", desc:"Progression rapide."},
-{name:"magnet", cost:2500, speed:5, unlocked:false, color:"#ffde21", cockpit:"#ce93d8", flame:"#c2185b", bonus:"Aim Magnétique", desc:"Attire l'or à distance."},
-{name:"Titan", cost:5000, speed:5, unlocked:false, color:"#ff6f00", cockpit:"#ffcc80", flame:"#ff1744", bonus:"Vie Supplémentaire", desc:"Blindage renforcé."}
-];
-
-// --- NOUVELLE VARIABLE DE CONTRÔLE ---
-let controlMode = localStorage.getItem("controlMode") || "Fleche"; // 'Fleche' ou 'Souris'
-
-function clearOldLocalStorage() {
-    ["astro_best", "astro_credits", "astro_unlocked_ships"].forEach(key => {
-        localStorage.removeItem(key);
-    });
-}
-clearOldLocalStorage(); 
-
-function changeState(newState, callback = null) {
-    if (transition.active) return;
-    transition.active = true; transition.alpha = 0; transition.nextState = newState; transition.callback = callback;
-}
-
-function updateTransition() {
-    if (!transition.active) return;
-    if (transition.nextState !== null) {
-        transition.alpha += 0.05; 
-        if (transition.alpha >= 1) { 
-            state = transition.nextState; 
-            transition.nextState = null; 
-            if (transition.callback) transition.callback(); 
-        }
-    } else {
-        transition.alpha -= 0.05; 
-        if (transition.alpha <= 0) { 
-            transition.alpha = 0; 
-            transition.active = false; 
-        }
-    }
-}
-
-async function loadGameData() {
-    // Simulation de chargement avec progression
-    for (let i = 0; i <= 100; i += 2) {
-        loadingProgress = i;
-        await new Promise(resolve => setTimeout(resolve, 20));
+    // Fonction pour obtenir une citation aléatoire
+    function getRandomQuote() {
+        const randomIndex = Math.floor(Math.random() * quoteDictionary.length);
+        return quoteDictionary[randomIndex];
     }
     
-    try {
-        const response = await fetch(`${API_BASE_URL}/load_data/${username}`);
-        const result = await response.json();
+    const games=[
+        {id:1,title:"Skull Arena",genre:"Survie",link:"Folder_for_Games/jeu_1/game.html",color:"#CF4F5E", img:"Image/Image_Skull_Arena.png"},
+        {id:2,title:"MTPlayer Clicker",genre:"Clicker",link:"private_clicker.html",color:"#63D945", img:"Image/Image_MTPClicker.png"}, 
+        {id:3,title:"Astro Dodge",genre:"Infinite",link:"Folder_for_Games/jeu2/game.html",color:"#07a7b3", img:"Image/Image_Astro_Dodge.png"},
+        {id:4,title:"Coming Soon...",genre:"Not defined",link:"",color:"#969696"},
+        {id:5,title:"Coming Soon...",genre:"Not defined",link:"",color:"#969696"},
+        {id:6,title:"Coming Soon...",genre:"Not defined",link:"",color:"#969696"}
+    ];
 
-        if (result.status === "success" || result.status === "not_found") {
-            const data = result.data;
-            bestScore = Number(data.PR_Score) || 0;
-            credits = Number(data.Coins) || 0;
-            const unlockedCarsString = data.Voiture || "Standard"; 
-            const unlockedCarsArray = unlockedCarsString.split(',');
-            let selectedShipName = ships[player.type].name; 
-            let firstUnlockedIndex = 0;
-            
-            ships.forEach((ship, i) => {
-                ship.unlocked = unlockedCarsArray.includes(ship.name);
-                if(i === 0) ship.unlocked = true; 
-                if (ship.unlocked && firstUnlockedIndex === 0) {
-                    firstUnlockedIndex = i;
-                }
-            });
+    const username=localStorage.getItem("username");
+    const welcomeTitle=document.getElementById("welcomeTitle");
+    if(username){welcomeTitle.textContent=`🎮 ${username}`;}
 
-            const savedShipIndex = ships.findIndex(s => s.name === selectedShipName && s.unlocked);
-            player.type = savedShipIndex !== -1 ? savedShipIndex : firstUnlockedIndex;
+    // --- LOGIQUE MASQUAGE/DÉMASQUAGE HOTBAR ---
+    const mainHeader = document.getElementById('main-header');
+    const DETECTION_ZONE_HEIGHT = 50; 
 
-            state = STATE.START_SCREEN; 
-            transition.active = false;
-            transition.nextState = null;
-        } else {
-            console.error("erreur de chargement des données:", result.message);
-            state = STATE.START_SCREEN; 
-            transition.active = false;
-        }
-    } catch (e) {
-        console.error("erreur de connexion API au chargement:", e);
-        state = STATE.START_SCREEN; 
-        transition.active = false;
-    }
-}
+    setTimeout(() => { mainHeader.classList.add('show'); }, 100); 
+    setTimeout(() => { mainHeader.classList.remove('show'); }, 2500); 
 
-async function saveGameData(newScore = null) {
-    if (username === "Invité") return; 
-
-    const unlockedCarsNames = ships.filter(s => s.unlocked).map(s => s.name).join(',');
-
-    const dataToSave = {
-        username: username,
-        Coins: credits, 
-        Voiture: unlockedCarsNames 
-    };
-    
-    if (newScore !== null) {
-        dataToSave.PR_Score = Math.floor(newScore);
-    }
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/save_data`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dataToSave)
-        });
-        const result = await response.json();
-    } catch (e) {
-        console.error("erreur de connexion API à la sauvegarde:", e);
-    }
-}
-
-async function loadLeaderboard() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/leaderboard`);
-        const result = await response.json();
-        
-        if (result.status === "success") {
-            leaderboardData = result.leaderboard.map(e => ({
-                name: (e.username === username ? "Vous" : e.username), 
-                score: e.PR_Score
-            })).sort((a, b) => b.score - a.score).slice(0, 5); 
-            
-            if (!leaderboardData.some(e => e.name === "Vous")) {
-                leaderboardData.push({ name: "Vous", score: bestScore });
-            }
-        } 
-    } catch (e) {
-        console.error("erreur de connexion API au classement:", e);
-    }
-}
-
-canvas.addEventListener("click", e=>{
-    const coords = getScaledMouseCoordinates(e);
-    mouseX = coords.x;
-    mouseY = coords.y;
-    
-    if (transition.active) return; 
-
-    if(state === STATE.START_SCREEN) {
-        if(mouseInRect(110, 480, 200, 50)) {
-            AudioSystem.play('buttonClick');
-            requestFullScreen(document.documentElement); 
-            changeState(STATE.MENU);
-        }
-    }
-    
-    else if(state===STATE.MENU){
-      if(mouseInRect(110, 240, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.TAKEOFF, startLaunchAnimation); }
-      if(mouseInRect(110, 310, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.SHOP); }
-      // --- NOUVEAU BOUTON OPTIONS ---
-      if(mouseInRect(110, 380, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.OPTIONS); }
-      // --- Fin Nouveau Bouton ---
-      if(mouseInRect(110, 450, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.LEADERBOARD, loadLeaderboard); }
-      if(mouseInRect(110, 520, 200, 50)) { AudioSystem.play('buttonClick'); window.location.href = "../../menu.html"; } // Décalé de 70px
-    } else if(state===STATE.OPTIONS) {
-        // Bouton pour basculer le mode de contrôle
-        if(mouseInRect(110, 240, 200, 50)) { 
-            AudioSystem.play('buttonClick');
-            controlMode = (controlMode === 'Fleche') ? 'Souris' : 'Fleche';
-            localStorage.setItem("controlMode", controlMode);
-        }
-        // Bouton de retour
-        if(mouseInRect(110, 540, 200, 50)) { 
-            AudioSystem.play('buttonClick'); 
-            changeState(STATE.MENU); 
-        }
-    } else if(state===STATE.SHOP || state===STATE.LEADERBOARD){
-      if(mouseInRect(110, 540, 200, 50)) { AudioSystem.play('buttonClick'); changeState(STATE.MENU); }
-      if(state===STATE.SHOP){
-        ships.forEach((s,i)=>{
-          const cardY=140+i*160 - shopScroll;
-          if(mouseInRect(40, cardY, 340, 140)){
-            if(!s.unlocked && credits>=s.cost){ 
-              AudioSystem.play('coin');
-              credits-=s.cost; 
-              s.unlocked=true; 
-              player.type = i;
-              saveGameData(); 
-            } else if(s.unlocked) {
-                AudioSystem.play('buttonClick');
-                player.type=i;
-                saveGameData(); 
-            }
-          }
-        });
-      }
-    } else if(state===STATE.GAMEOVER && flashAlpha <= 0.1) {
-      AudioSystem.play('buttonClick');
-      asteroids = []; coins = []; explosion = null; launchProgress = 1; earthY = 800; player.angle = Math.PI; state = STATE.LANDING;
-    }
-});
-
-document.addEventListener("keydown", e=>{ 
-    keys[e.key]=true; 
-    if(e.key==="Escape" && (state===STATE.PLAY || state===STATE.SHOP || state===STATE.LEADERBOARD || state===STATE.OPTIONS)) {
-        AudioSystem.play('buttonClick');
-        changeState(STATE.MENU); 
-    }
-});
-document.addEventListener("keyup", e=>keys[e.key]=false);
-canvas.addEventListener("wheel", e=>{ if(state===STATE.SHOP) shopScroll = Math.max(0, Math.min(shopScroll + e.deltaY, (ships.length-1)*160)); });
-
-function initStars(){ stars=[]; for(let i=0;i<80;i++) stars.push({x:Math.random()*GAME_WIDTH, y:Math.random()*GAME_HEIGHT, s:Math.random()*2.5+0.5, speed: Math.random()*0.3+0.1, twinkle: Math.random()*Math.PI*2}); }
-initStars();
-
-function startLaunchAnimation() {
-    AudioSystem.play('rocket');
-    asteroids=[]; coins=[]; score=0; time=0; spawnTimer=0; explosion=null; flashAlpha=0; floatingTexts=[]; deathShockwave.active = false; glitchTimer = 0;
-    timeScale = 1; launchProgress = 0; earthY = 500; currentLevel = 1; colorIndex = 0;
-    player.x = 210; player.y = 520; player.trail = []; player.angle = 0;
-    player.life=ships[player.type].bonus==="Vie Supplémentaire" ? 2 : 1; state = STATE.TAKEOFF;
-}
-
-function update(){
-    updateTransition();
-    canvas.style.cursor = "default";
-    if(flashAlpha > 0) flashAlpha -= 0.05;
-    if(coinFlashAlpha > 0) coinFlashAlpha -= 0.1;
-    if(glitchTimer > 0) glitchTimer--;
-
-    if(state === STATE.LOADING) {
-        loadingShip.angle += 0.08;
-        
-        // Particules du vaisseau en chargement
-        if(time % 3 === 0) {
-            loadingShip.particles.push({
-                x: loadingShip.x + (Math.random()-0.5)*15,
-                y: loadingShip.y + 20,
-                r: 2 + Math.random()*3,
-                alpha: 0.8,
-                speed: 2 + Math.random()*2
-            });
-        }
-        loadingShip.particles.forEach((p, i) => {
-            p.y += p.speed;
-            p.alpha -= 0.02;
-            if(p.alpha <= 0) loadingShip.particles.splice(i, 1);
-        });
-        
-    } else if (state === STATE.START_SCREEN) {
-        const isHovering = mouseInRect(110, 480, 200, 50);
-        
-        if (isHovering) {
-            startButtonAnim.scale += (1.08 - startButtonAnim.scale) * 0.15;
-            if (!startButtonAnim.hover) {
-                AudioSystem.play('buttonHover');
-                startButtonAnim.hover = true;
-            }
-        } else {
-            startButtonAnim.scale += (1.0 - startButtonAnim.scale) * 0.15;
-            startButtonAnim.hover = false;
-        }
-        startButtonAnim.alpha += (1.0 - startButtonAnim.alpha) * 0.05;
-        startButtonAnim.pulse += 0.05;
-    }
-
-    if(state === STATE.MENU) {
-        menuParticles.forEach(p => { p.y += p.s; if(p.y > GAME_HEIGHT) { p.y = -20; p.x = Math.random()*GAME_WIDTH; } });
-        
-        // Détection hover pour sons
-        const buttons = [
-            {x: 110, y: 240, w: 200, h: 50, id: 'play'},
-            {x: 110, y: 310, w: 200, h: 50, id: 'shop'},
-            {x: 110, y: 380, w: 200, h: 50, id: 'options'}, // Nouveau bouton
-            {x: 110, y: 450, w: 200, h: 50, id: 'leader'},
-            {x: 110, y: 520, w: 200, h: 50, id: 'quit'}
-        ];
-        
-        let hovering = null;
-        buttons.forEach(btn => {
-            if(mouseInRect(btn.x, btn.y, btn.w, btn.h)) {
-                hovering = btn.id;
-            }
-        });
-        
-        if(hovering && hovering !== lastHoveredButton) {
-            AudioSystem.play('buttonHover');
-            lastHoveredButton = hovering;
-        } else if(!hovering) {
-            lastHoveredButton = null;
-        }
-    }
-
-    floatingTexts.forEach((t, i) => { t.y -= 2; t.alpha -= 0.02; if(t.alpha <= 0) floatingTexts.splice(i, 1); });
-
-    nebulas.forEach(n => { n.y += n.speed * (state === STATE.GAMEOVER ? timeScale : 1); if(n.y - n.r > GAME_HEIGHT) { n.y = -n.r; n.x = Math.random() * GAME_WIDTH; } });
-
-    if(state === STATE.TAKEOFF) { launchProgress += 0.005; earthY += 4; player.y -= 0.5; if(launchProgress >= 1) { AudioSystem.play('rocket'); state = STATE.PLAY; } }
-    if(state === STATE.LANDING) { launchProgress -= 0.01; earthY -= 5; player.y += 2; if(earthY <= 500) changeState(STATE.MENU); }
-
-    if(state!==STATE.PLAY && state!==STATE.GAMEOVER && state!==STATE.TAKEOFF && state!==STATE.LANDING) return;
-    
-    let currentSpeed = (state === STATE.GAMEOVER) ? timeScale : 1;
-    if(state === STATE.GAMEOVER && timeScale > 0) timeScale -= 0.02;
-
-    time++; 
-    if(player.invulnerable > 0) player.invulnerable--;
-    const sD=ships[player.type];
-
-    if(state === STATE.PLAY || state === STATE.TAKEOFF || state === STATE.LANDING) {
-        let trailY = state === STATE.LANDING ? player.y - 15 : player.y + 15;
-        if(time % 2 === 0) player.trail.push({x: player.x + (Math.random()-0.5)*10, y: trailY, r: 4 + Math.random()*4, alpha: 0.6});
-    }
-    player.trail.forEach((p, i) => { p.y += (state === STATE.LANDING ? -3 : 3) * currentSpeed; p.alpha -= 0.02; p.r *= 0.98; if(p.alpha <= 0) player.trail.splice(i, 1); });
-
-    if(state === STATE.PLAY) {
-        let nextLvl = Math.floor(score/500) + 1;
-        if(nextLvl > currentLevel) { 
-            currentLevel = nextLvl; levelAnimTimer = 100; colorIndex = (currentLevel - 1) % levelColors.length; flashAlpha = 0.3; 
-            credits += 50;
-            AudioSystem.play('levelUp');
-            saveGameData(); 
-        }
-        if(levelAnimTimer > 0) levelAnimTimer--;
-
-        score += (sD.bonus==="Score x2" ? 1.1 : 0.55);
-        spawnTimer++;
-        if(spawnTimer>=Math.max(10, 40 - Math.floor(score/150))){ spawnAsteroid(); spawnTimer=0; }
-        
-        let targetAngle = 0; 
-
-        // --- LOGIQUE DE CONTRÔLE MISE À JOUR ---
-        if (controlMode === 'Fleche') {
-            // Contrôle par flèches
-            if(keys.ArrowLeft) { 
-                player.x-=sD.speed; 
-                targetAngle = -0.8; 
-            }
-            if(keys.ArrowRight) { 
-                player.x+=sD.speed; 
-                targetAngle = 0.8; 
-            }
-            
-            if(keys.ArrowUp) player.y-=sD.speed; 
-            if(keys.ArrowDown) player.y+=sD.speed;
-        } else {
-            // Contrôle par souris (vaisseau suit la souris)
-            const dx = mouseX - player.x;
-            const dy = mouseY - player.y;
-            const distance = Math.hypot(dx, dy);
-            const moveSpeed = sD.speed * 0.5; // Vitesse de suivi réduite pour un meilleur contrôle
-            
-            if (distance > 5) { // Seuil de mouvement
-                player.x += (dx / distance) * moveSpeed;
-                player.y += (dy / distance) * moveSpeed;
-                targetAngle = Math.max(-1.0, Math.min(1.0, dx / 80)); // Petite inclinaison basée sur le déplacement horizontal
-            } else {
-                targetAngle = 0;
-            }
-        }
-        
-        // Lissage de l'angle (0.2 pour une rotation rapide)
-        player.angle += (targetAngle - player.angle) * 0.2;
-        // --- FIN LOGIQUE DE CONTRÔLE MISE À JOUR ---
-        
-        player.x=Math.max(player.r, Math.min(GAME_WIDTH-player.r, player.x));
-        player.y=Math.max(player.r, Math.min(GAME_HEIGHT-player.r, player.y));
-        
-        asteroids.forEach(a=>{
-            a.y+=a.speed; a.rot+=a.rotSpeed;
-            const dist = Math.hypot(player.x-a.x,player.y-a.y);
-            const collisionDist = player.r + a.r;
-            const nearMissDist = collisionDist + 15; 
-
-            // 1. Détection de collision
-            if(dist < collisionDist && player.invulnerable===0){
-                if(player.life>1){ 
-                    player.life--; player.invulnerable=60; flashAlpha=0.4; asteroids=[];
-                    AudioSystem.play('hit');
-                } 
-                else {
-                    state = STATE.GAMEOVER; flashAlpha = 1; timeScale = 1;
-                    AudioSystem.play('crash');
-                    
-                    if(Math.floor(score)>bestScore){ 
-                        bestScore=Math.floor(score); 
-                    }
-                    saveGameData(score); 
-                }
-            } 
-            // 2. Détection de frôlement (Near Miss) - TEXTE AMÉLIORÉ
-            else if (dist < nearMissDist && !a.nearMissed) {
-                if (player.invulnerable === 0) {
-                    a.nearMissed = true;
-                    const bonusScore = 50;
-                    score += bonusScore;
-                    AudioSystem.play('nearMiss');
-                    // NOUVEAU STYLE POUR LE TEXTE DE FRÔLEMENT
-                    floatingTexts.push({
-                        x: player.x, 
-                        y: player.y - player.r - 10, 
-                        text: `+${bonusScore} FRÔLEMENT!`, 
-                        alpha: 1, 
-                        color: "#ffd700", // Jaune doré
-                        size: 24, // Grande taille
-                        glow: true // Activer la lueur
-                    }); 
-                }
-            }
-        });
-
-        if(time%350===0) spawnCoin();
-    }
-
-    asteroids=asteroids.filter(a=>a.y<GAME_HEIGHT+50);
-    coins.forEach(c=>{
-        c.y+=2.5 * currentSpeed;
-        if(sD.bonus==="Aim Magnétique" && Math.hypot(player.x-c.x,player.y-c.y)<220){ c.x+=(player.x-c.x)*0.07; c.y+=(player.y-c.y)*0.07; }
-        if(Math.hypot(player.x-c.x,player.y-c.y)<player.r+c.r){ 
-            const val = 50*(sD.bonus==="Pièces x2"?2:1); 
-            credits+=val;
-            AudioSystem.play('coin');
-            saveGameData(); 
-            c.collected=true; coinFlashAlpha = 0.3; 
-            floatingTexts.push({x: c.x, y: c.y, text: `+${val} 💰`, alpha: 1, color: "#ffd700"}); 
+    document.addEventListener('mousemove', (e) => {
+        if (e.clientY <= DETECTION_ZONE_HEIGHT) {
+            mainHeader.classList.add('show');
+        } else if (e.clientY > mainHeader.offsetHeight) {
+            mainHeader.classList.remove('show');
         }
     });
-    coins=coins.filter(c=>c.y<GAME_HEIGHT && !c.collected);
-}
+    // ------------------------------------------
 
-function spawnAsteroid(){ 
-    const r=16+Math.random()*28; 
-    asteroids.push({
-        x:r + Math.random()*(GAME_WIDTH-2*r), 
-        y:-r-50, r, 
-        speed:1.8 + Math.random()*1.5 + (score/800), 
-        rot:Math.random()*Math.PI*2, 
-        rotSpeed:(Math.random()-0.5)*0.05, 
-        pts:Array.from({length:7}, ()=>0.6+Math.random()*0.8),
-        nearMissed: false 
-    }); 
-}
-function spawnCoin(){ coins.push({x:25+Math.random()*370,y:-10,r:8,collected:false}); }
+    // --- LOGIQUE LOGOUT ---
+    let isLoggingOut=false;
 
-function draw(){
-    const curCol = (state === STATE.MENU || state === STATE.SHOP || state === STATE.LEADERBOARD || state === STATE.LOADING || state === STATE.START_SCREEN || state === STATE.OPTIONS) ? "#00d9ff" : levelColors[colorIndex];
-    ctx.fillStyle = "#020510"; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
-
-    nebulas.forEach(n => { let g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r); g.addColorStop(0, n.color); g.addColorStop(1, "transparent"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI*2); ctx.fill(); });
-
-    if(state === STATE.MENU || state === STATE.START_SCREEN || state === STATE.OPTIONS){
-        ctx.strokeStyle = "rgba(0, 217, 255, 0.15)"; ctx.lineWidth = 2;
-        menuParticles.forEach(p => { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, p.y + p.l); ctx.stroke(); });
+    async function handleLogoutAndRedirect(){
+        if(isLoggingOut)return;
+        isLoggingOut=true;
+        try{await fetch(`${API_URL}/logout`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:username})});}catch(e){console.error(e);}
+        localStorage.removeItem("username");
+        localStorage.removeItem("cookies_accepted"); 
+        window.location.href='index.html';
     }
 
-    stars.forEach(s=>{ ctx.fillStyle=`rgba(255,255,255,${(0.3+Math.sin(time*0.05+s.twinkle)*0.4)})`; ctx.fillRect(s.x,s.y,s.s,s.s); if(state === STATE.PLAY || state === STATE.GAMEOVER || state === STATE.TAKEOFF || state === STATE.LANDING) { let starDir = state === STATE.LANDING ? -s.speed : s.speed; s.y+=starDir * (state===STATE.GAMEOVER?timeScale:1); if(s.y>GAME_HEIGHT) s.y=0; if(s.y<0) s.y=GAME_HEIGHT; } });
-
-    if(state === STATE.TAKEOFF || state === STATE.LANDING) { ctx.fillStyle = "#2e7d32"; ctx.beginPath(); ctx.arc(210, earthY + 400, 500, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = "#1565c0"; ctx.beginPath(); ctx.arc(210, earthY + 420, 480, 0, Math.PI*2); ctx.fill(); }
-
-    if(state === STATE.PLAY || state === STATE.GAMEOVER || state === STATE.TAKEOFF || state === STATE.LANDING) {
-        player.trail.forEach(p => { ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill(); });
-        asteroids.forEach(a=>{ ctx.save(); ctx.translate(a.x,a.y); ctx.rotate(a.rot); ctx.shadowBlur=12; ctx.shadowColor=curCol; const g=ctx.createRadialGradient(0,0,0,0,0,a.r); g.addColorStop(0,"#fff"); g.addColorStop(0.4, curCol); g.addColorStop(1,"#111"); ctx.fillStyle=g; ctx.beginPath(); a.pts.forEach((p,i)=>{ const ang=i/a.pts.length*Math.PI*2; ctx.lineTo(Math.cos(ang)*a.r*p, Math.sin(ang)*a.r*p); }); ctx.closePath(); ctx.fill(); ctx.restore(); });
-        coins.forEach(c=>{ ctx.shadowBlur=15; ctx.shadowColor="#ffd700"; ctx.fillStyle="#ffd700"; ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; });
+    function logoutSilently(){
+        if(!username||isLoggingOut)return;
+        const data=JSON.stringify({id:username});
+        if(navigator.sendBeacon){navigator.sendBeacon(`${API_URL}/logout`,new Blob([data],{type:'application/json'}));}
+        else{try{const xhr=new XMLHttpRequest();xhr.open("POST",`${API_URL}/logout`,false);xhr.setRequestHeader("Content-Type","application/json");xhr.send(data);}catch(e){console.error(e);}}
     }
+    window.addEventListener('beforeunload',()=>logoutSilently());
 
-    const sD=ships[player.type];
-    if(state===STATE.PLAY || state===STATE.TAKEOFF || state===STATE.LANDING || (state===STATE.GAMEOVER && timeScale > 0.5)){ 
-        ctx.save(); 
-        ctx.translate(player.x,player.y); 
-        ctx.rotate(player.angle); 
-        if(player.invulnerable>0 && Math.floor(time/5)%2===0) ctx.globalAlpha=0.3; 
-        ctx.fillStyle=sD.flame; 
-        ctx.beginPath(); ctx.moveTo(-8,15); ctx.lineTo(0,20+Math.sin(time*0.5)*8); ctx.lineTo(8,15); ctx.fill(); 
-        ctx.shadowBlur=20; ctx.shadowColor=sD.color; 
-        ctx.fillStyle=sD.color; 
-        ctx.beginPath(); 
-        ctx.moveTo(0,-22); ctx.lineTo(16,18); ctx.lineTo(0,10); ctx.lineTo(-16,18); ctx.fill(); 
-        ctx.fillStyle=sD.cockpit; 
-        ctx.beginPath(); ctx.arc(0,-4,6,0,Math.PI*2); ctx.fill(); 
-        ctx.restore(); 
-    }
-
-    if(state === STATE.START_SCREEN) {
-        
-        // --- NOUVEL AFFICHAGE DES CRÉDITS (Hotbar style, Top Center) ---
-        const barX_C = 130; 
-        const barY_C = 10;
-        const barW_C = 160;
-        const barH_C = 35;
-        const barR_C = 8;
-        const textY_C = barY_C + barH_C/2 + 5;
-        
-        // 1. Dessin du fond sombre semi-transparent
-        ctx.fillStyle="rgba(0, 0, 0, 0.7)"; 
-        drawRoundedRect(barX_C, barY_C, barW_C, barH_C, barR_C, true, false); 
-
-        // 2. Dessin du contour néon
-        ctx.strokeStyle = curCol; 
-        ctx.lineWidth = 2;
-        drawRoundedRect(barX_C, barY_C, barW_C, barH_C, barR_C, false, true, curCol, 15); 
-        
-        // 3. Dessin des éléments
-        ctx.fillStyle="#ffd700"; // Pièce en jaune doré
-        ctx.beginPath(); ctx.arc(barX_C + 22, barY_C + barH_C/2, 10, 0, Math.PI*2); ctx.fill(); 
-        ctx.fillStyle="#fff"; 
-        ctx.font=`bold 18px ${FONT_FAMILY}`; 
-        ctx.textAlign="left"; 
-        ctx.fillText(`${credits}`, barX_C + 45, textY_C);
-        // --- FIN NOUVEL AFFICHAGE CRÉDITS ---
-        
-        ctx.save(); ctx.globalAlpha = startButtonAnim.alpha;
-        const bounce = Math.sin(time * 0.04) * 8;
-        ctx.translate(210, 150 + bounce); 
-        ctx.shadowBlur = 20 + Math.sin(time*0.1)*10; ctx.shadowColor = "#00d9ff"; 
-        ctx.fillStyle = "#fff"; ctx.font = `bold 52px ${FONT_FAMILY}`; ctx.textAlign = "center"; 
-        ctx.fillText("ASTRO DODGE", 0, 0); 
-        
-        // --- NOUVEAU: AJOUT YENI ET MAXENCE ---
-        ctx.font = `bold 18px ${FONT_FAMILY}`; 
-        ctx.fillStyle = "rgba(255, 215, 0, 0.9)"; 
-        ctx.fillText("CRÉÉ PAR YENOU & MAXENCE", 0, 45); 
-        // ----------------------------------------
-        
-        // Texte des données déplacé
-        ctx.font = `bold 14px ${FONT_FAMILY}`; 
-        ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; 
-        ctx.fillText(`Données chargées : ${username}`, 0, 80); 
-        ctx.restore();
-        
-        // Effet de pulsation lumineux autour du bouton (maintenant arrondi)
-        const pulseIntensity = Math.sin(startButtonAnim.pulse) * 0.3 + 0.7;
-        ctx.save();
-        ctx.globalAlpha = startButtonAnim.alpha * 0.3 * pulseIntensity;
-        ctx.shadowBlur = 40;
-        ctx.shadowColor = curCol;
-        ctx.strokeStyle = curCol;
-        ctx.lineWidth = 3;
-        drawRoundedRect(110, 480, 200, 50, 10, false, true); 
-        ctx.restore();
-        
-        drawBtn("COMMENCER", 210, 480, 200, 50, curCol, startButtonAnim.scale, startButtonAnim.alpha);
+    // --- LOGIQUE AFFICHAGE DES JEUX ET INSERTION DE LA CITATION ---
+    const grid=document.getElementById("gameGrid");
+    const searchBar=document.getElementById("search_bar");
+    const quoteAdSlot = document.getElementById('quote-ad-slot'); 
     
-    } else if(state===STATE.MENU){
-        
-        // --- Hotbar du Menu Principal (Meilleur Score) --- // MODIFIÉ
-        const barW = 300, barH = 30, barR = 8;
-        const barX = (GAME_WIDTH - barW) / 2;
-        const barY = 5;
-        const textY = barY + barH/2 + 5; 
-        
-        // 1. Dessin du fond sombre semi-transparent
-        ctx.fillStyle="rgba(0, 0, 0, 0.7)"; 
-        drawRoundedRect(barX, barY, barW, barH, barR, true, false); 
+    function updateQuote() {
+        const quoteDisplay = document.getElementById('quote-display');
+        if (!quoteDisplay) return;
 
-        // 2. Dessin du contour néon (utilise curCol)
-        ctx.strokeStyle = curCol; 
-        ctx.lineWidth = 2;
-        drawRoundedRect(barX, barY, barW, barH, barR, false, true, curCol, 15); 
-        
-        // 3. Dessin des textes
-        ctx.fillStyle="#fff"; ctx.font=`bold 14px ${FONT_FAMILY}`; 
-        
-        // Meilleur Score (Centré)
-        ctx.textAlign="center"; 
-        ctx.fillText(`🏆 ${bestScore}`, barX + barW / 2, textY); 
-        
-        // Crédits (Right) - RETIRÉ
-        // --- Fin Hotbar Menu ---
-        
-        const bounce = Math.sin(time * 0.04) * 8;
-        ctx.save(); ctx.translate(210, 150 + bounce); ctx.shadowBlur = 20 + Math.sin(time*0.1)*10; ctx.shadowColor = "#00d9ff"; ctx.fillStyle = "#fff"; ctx.font = `bold 52px ${FONT_FAMILY}`; ctx.textAlign = "center"; ctx.fillText("ASTRO DODGE", 0, 0); ctx.font = `bold 12px ${FONT_FAMILY}`; ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; ctx.fillText(`Bienvenue, ${username}`, 0, 25); ctx.restore();
-        
-        drawBtn("▶ JOUER", 210, 240, 200, 50, curCol);
-        drawBtn("🛒 SHOP", 210, 310, 200, 50, curCol);
-        drawBtn("⚙️ OPTIONS", 210, 380, 200, 50, curCol); // Ajout du bouton OPTIONS
-        drawBtn("🏆 CLASSEMENT", 210, 450, 200, 50, curCol);
-        drawBtn("✖ QUITTER", 210, 520, 200, 50, "#ff3300"); // Décalé de 70px
-    } else if(state===STATE.OPTIONS){
-        ctx.fillStyle="#fff"; ctx.font=`bold 30px ${FONT_FAMILY}`; ctx.textAlign="center"; ctx.fillText("OPTIONS", 210, 150);
-        
-        const controlBtnText = `CONTRÔLE: ${controlMode === 'Fleche' ? 'FLÈCHE' : 'SOURIS'}`;
-        drawBtn(controlBtnText, 210, 240, 300, 50, controlMode === 'Fleche' ? curCol : "#ffcc00");
-
-        drawBtn("RETOUR", 210, 540, 200, 50, curCol);
-        
-        // Affichage des crédits (Hotbar style, Top Center)
-        const barX = 130; 
-        const barY = 10;
-        const barW = 160;
-        const barH = 35;
-        const barR = 8;
-        const textY = barY + barH/2 + 5;
-        
-        // 1. Dessin du fond sombre semi-transparent
-        ctx.fillStyle="rgba(0, 0, 0, 0.7)"; 
-        drawRoundedRect(barX, barY, barW, barH, barR, true, false); 
-
-        // 2. Dessin du contour néon
-        ctx.strokeStyle = curCol; 
-        ctx.lineWidth = 2;
-        drawRoundedRect(barX, barY, barW, barH, barR, false, true, curCol, 15); 
-        
-        // 3. Dessin des éléments
-        ctx.fillStyle="#ffd700"; // Pièce en jaune doré
-        ctx.beginPath(); ctx.arc(barX + 22, barY + barH/2, 10, 0, Math.PI*2); ctx.fill(); 
-        ctx.fillStyle="#fff"; 
-        ctx.font=`bold 18px ${FONT_FAMILY}`; 
-        ctx.textAlign="left"; 
-        ctx.fillText(`${credits}`, barX + 45, textY);
-        // --- Fin Affichage Crédits ---
-
-    } else if(state===STATE.LEADERBOARD){
-        ctx.fillStyle="#fff"; ctx.font=`bold 30px ${FONT_FAMILY}`; ctx.textAlign="center"; ctx.fillText("CLASSEMENT MONDIAL", 210, 80);
-        leaderboardData.forEach((entry, i) => { 
-            const y = 160 + i * 60; 
-            const isPlayer = entry.name === "Vous"; 
-            
-            // Fond et texte en jaune doré pour le joueur
-            ctx.fillStyle = isPlayer ? "rgba(255, 215, 0, 0.2)" : "rgba(255, 255, 255, 0.05)"; 
-            ctx.fillRect(40, y-35, 340, 50); 
-            
-            ctx.fillStyle = isPlayer ? "#ffd700" : "#fff"; // Jaune doré pour le texte du joueur
-            ctx.textAlign = "left"; 
-            ctx.font = `bold 20px ${FONT_FAMILY}`; 
-            ctx.fillText(`${i+1}. ${entry.name}`, 60, y); 
-            ctx.textAlign = "right"; 
-            ctx.fillText(`${entry.score}`, 360, y); 
-        });
-        drawBtn("RETOUR", 210, 540, 200, 50, curCol);
-    } else if(state===STATE.SHOP){
-        
-        ctx.fillStyle="#fff"; ctx.font=`bold 30px ${FONT_FAMILY}`; ctx.textAlign="center"; ctx.fillText("BOUTIQUE", 210, 75); 
-
-        // Dessin des cartes (avec coins arrondis et ombre)
-        ships.forEach((s,i)=>{ 
-            const cardY=140+i*160 - shopScroll; 
-            if(cardY > GAME_HEIGHT || cardY < -140) return; 
-            const hover = mouseInRect(40, cardY, 340, 140); 
-            
-            // 1. Dessin du fond de carte arrondi avec ombre
-            ctx.shadowBlur=hover?25:15; 
-            ctx.shadowColor=player.type===i?"#fff":s.color; 
-            ctx.fillStyle=hover?"#252545":"#1a1a2e"; 
-            drawRoundedRect(40, cardY, 340, 140, 10, true, false); 
-            ctx.shadowBlur=0; 
-            
-            // 2. Dessin du contenu
-            ctx.fillStyle="#fff"; ctx.textAlign="left"; ctx.font=`bold 18px ${FONT_FAMILY}`; ctx.fillText(s.name, 60, cardY+35); 
-            ctx.fillStyle=curCol; ctx.font=`14px ${FONT_FAMILY}`; ctx.fillText(s.bonus, 60, cardY+55); 
-            ctx.fillStyle="#aaa"; wrapText(s.desc, 60, cardY+80, 240, 16); 
-            ctx.fillStyle=s.unlocked?(player.type===i?"#00ff88":"#888"):"#ffd700"; 
-            ctx.textAlign="right"; ctx.fillText(s.unlocked?(player.type===i?"ÉQUIPÉ":"DÉBLOQUÉ"):s.cost+" 💰", 360, cardY+35); 
-        });
-
-        drawBtn("RETOUR", 210, 540, 200, 50, curCol);
-        
-        // --- Affichage des Crédits dans la Boutique (Hotbar style, DESSINÉ EN DERNIER pour être au-dessus) ---
-        const barX = 130; 
-        const barY = 10;
-        const barW = 160;
-        const barH = 35;
-        const barR = 8;
-        const textY = barY + barH/2 + 5;
-        
-        // 1. Dessin du fond sombre semi-transparent
-        ctx.fillStyle="rgba(0, 0, 0, 0.7)"; 
-        drawRoundedRect(barX, barY, barW, barH, barR, true, false); 
-
-        // 2. Dessin du contour néon
-        ctx.strokeStyle = curCol; 
-        ctx.lineWidth = 2;
-        drawRoundedRect(barX, barY, barW, barH, barR, false, true, curCol, 15); 
-        
-        // 3. Dessin des éléments
-        ctx.fillStyle="#ffd700"; // Pièce en jaune doré
-        ctx.beginPath(); ctx.arc(barX + 22, barY + barH/2, 10, 0, Math.PI*2); ctx.fill(); 
-        ctx.fillStyle="#fff"; 
-        ctx.font=`bold 18px ${FONT_FAMILY}`; 
-        ctx.textAlign="left"; 
-        ctx.fillText(`${credits}`, barX + 45, textY);
-        // --- Fin Affichage Crédits ---
-
-    } else if(state===STATE.GAMEOVER){
-        const finalScore = Math.floor(score);
-        
-        ctx.fillStyle="#fff"; 
-        ctx.font=`bold 45px ${FONT_FAMILY}`; 
-        ctx.textAlign="center"; 
-        ctx.fillText("CRASH SYSTÈME", 210, 250); 
-
-        // AFFICHAGE DU SCORE
-        ctx.font=`bold 30px ${FONT_FAMILY}`; 
-        ctx.fillStyle = curCol;
-        ctx.fillText(`SCORE: ${finalScore}`, 210, 320); 
-        
-        ctx.font=`20px ${FONT_FAMILY}`; 
-        ctx.fillStyle = "#aaa";
-        ctx.fillText(`Meilleur: ${bestScore}`, 210, 360); 
-        
-        ctx.font=`18px ${FONT_FAMILY}`; 
-        ctx.fillStyle = "#fff";
-        ctx.fillText("Clique pour atterrir", 210, 420);
-        
-    } else if (state===STATE.LOADING) {
-        // Barre de progression améliorée
-        ctx.fillStyle="rgba(255,255,255,0.1)"; 
-        ctx.fillRect(110, 400, 200, 20);
-        
-        const gradient = ctx.createLinearGradient(110, 400, 110 + (200 * loadingProgress/100), 420);
-        gradient.addColorStop(0, "#00d9ff");
-        gradient.addColorStop(1, "#0066ff");
-        ctx.fillStyle=gradient;
-        ctx.fillRect(110, 400, 200 * loadingProgress/100, 20);
-        
-        ctx.strokeStyle = "#00d9ff";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(110, 400, 200, 20);
-        
-        ctx.fillStyle="#fff"; 
-        ctx.font=`bold 16px ${FONT_FAMILY}`; 
-        ctx.textAlign="center"; 
-        ctx.fillText(`${Math.floor(loadingProgress)}%`, 210, 415);
-        
-        ctx.font=`bold 30px ${FONT_FAMILY}`; 
-        ctx.fillText("CONNEXION", 210, 360);
-        
-        // Vaisseau en rotation avec particules
-        ctx.save();
-        ctx.translate(loadingShip.x, loadingShip.y - 50);
-        ctx.rotate(loadingShip.angle);
-        
-        const sD_load = ships[0]; 
-        ctx.fillStyle=sD_load.flame; 
-        ctx.beginPath(); ctx.moveTo(-8,20); ctx.lineTo(0,25+Math.sin(time*0.3)*5); ctx.lineTo(8,20); ctx.fill(); 
-        ctx.shadowBlur=25; ctx.shadowColor="#00d9ff"; 
-        ctx.fillStyle=sD_load.color; 
-        ctx.beginPath(); 
-        ctx.moveTo(0,-22); ctx.lineTo(16,18); ctx.lineTo(0,10); ctx.lineTo(-16,18); ctx.fill(); 
-        ctx.fillStyle=sD_load.cockpit; 
-        ctx.beginPath(); ctx.arc(0,-4,6,0,Math.PI*2); ctx.fill(); 
-        ctx.restore();
-        
-        // Particules du vaisseau
-        loadingShip.particles.forEach(p => {
-            ctx.save();
-            ctx.globalAlpha = p.alpha;
-            ctx.fillStyle = "#00d9ff";
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-            ctx.fill();
-            ctx.restore();
+        anime({
+            targets: quoteDisplay,
+            opacity: 0,
+            duration: 500,
+            easing: 'easeOutQuad',
+            complete: () => {
+                const quote = getRandomQuote();
+                quoteDisplay.innerHTML = `
+                    <p style="font-size: 1.5em; font-style: italic; color: #fff;">"${quote.quote}"</p>
+                    <p style="margin-top: 10px; font-size: 1.1em; color: #00bfff;">— ${quote.author}</p>
+                `;
+                anime({
+                    targets: quoteDisplay,
+                    opacity: 1,
+                    duration: 500,
+                    easing: 'easeInQuad'
+                });
+            }
         });
     }
 
-    // DESSIN DES TEXTES FLOTTANTS (AMÉLIORÉ)
-    floatingTexts.forEach(t => {
-        ctx.save(); 
-        ctx.globalAlpha = t.alpha; 
-        ctx.fillStyle = t.color || "#fff"; 
-        ctx.font = `bold ${t.size || 20}px ${FONT_FAMILY}`; 
-        ctx.textAlign = "center"; 
+    function displayGames(filteredGames){
+        grid.innerHTML="";
         
-        if (t.glow) { // Ajout de la lueur pour le texte de Frôlement
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = "#fff";
+        const gamesPerAdRow = 4;
+        let quoteInserted = false;
+        
+        filteredGames.forEach((game, index) => {
+            const card=document.createElement("div");
+            card.className="card";
+            
+            if (!game.link) {
+                card.classList.add('disabled');
+            }
+
+            let imageStyle = `background-color: ${game.color};`; 
+            let iconHtml = '<div class="game-icon">🎮</div>'; 
+
+            if (game.img) {
+                imageStyle = `background-image: url('${game.img}');`;
+                iconHtml = ''; 
+            }
+
+            const link=game.link?game.link:"#";
+            
+            card.innerHTML=`
+            <div class="card-image" style="${imageStyle}">
+                ${iconHtml}
+            </div>
+            <div class="card-info">
+                <h3 class="card-title">${game.title}</h3>
+                <p class="card-genre">${game.genre}</p>
+                <button class="card-button" ${game.link?"":"disabled"}>▶ LANCER</button> 
+            </div>`;
+            
+            if (game.link) {
+                card.addEventListener('click', () => {
+                    window.location.href = link;
+                });
+            }
+            
+            const cardButton = card.querySelector('.card-button');
+             if (game.link) {
+                cardButton.addEventListener('click', (e) => {
+                    e.stopPropagation(); 
+                    window.location.href = link;
+                });
+            }
+
+            grid.appendChild(card);
+            
+            if (index + 1 === gamesPerAdRow && filteredGames.length >= 5) {
+                grid.appendChild(quoteAdSlot);
+                quoteAdSlot.style.display = 'flex'; 
+                quoteInserted = true;
+            }
+        });
+        
+        if (!quoteInserted && quoteAdSlot.parentNode === grid) {
+             quoteAdSlot.remove();
         }
         
-        ctx.fillText(t.text, t.x, t.y); 
-        
-        ctx.shadowBlur = 0; // Réinitialiser l'ombre
-        ctx.shadowColor = "#000"; 
-        ctx.restore();
+        anime({targets:'.card, .ad-card-container',opacity:[0,1],translateY:[30,0],delay:anime.stagger(100),duration:600,easing:'easeOutQuad'});
+    }
+    
+    function initQuoteSystem() {
+        updateQuote(); 
+        setInterval(updateQuote, 10000); 
+    }
+
+
+    displayGames(games);
+    initQuoteSystem(); 
+
+    searchBar.addEventListener("input",()=>{
+        const text=searchBar.value.toLowerCase();
+        displayGames(games.filter(g=>g.title.toLowerCase().startsWith(text))); 
     });
 
-    if(state === STATE.PLAY) { 
-        const barX = 5, barY = 5, barW = GAME_WIDTH - 10, barH = 30, barR = 8;
-        const textY = barY + barH/2 + 5; 
-        
-        // 1. Dessin du fond sombre semi-transparent
-        ctx.fillStyle="rgba(0, 0, 0, 0.7)"; 
-        drawRoundedRect(barX, barY, barW, barH, barR, true, false); 
+    /* SIDEBAR */
+    const sidebar=document.getElementById("sidebar");
+    const friendsButton=document.getElementById("friends-button");
+    function toggleSidebar(){sidebar.classList.toggle('sidebar-open');}
+    friendsButton.addEventListener('click',toggleSidebar);
 
-        // 2. Dessin du contour néon (utilise curCol)
-        ctx.strokeStyle = curCol; 
-        ctx.lineWidth = 2;
-        drawRoundedRect(barX, barY, barW, barH, barR, false, true, curCol, 15); 
-        
-        // 3. Dessin des textes
-        ctx.fillStyle="#fff"; ctx.font=`bold 14px ${FONT_FAMILY}`; ctx.textAlign="left"; ctx.fillText(`🎯 ${Math.floor(score)}`, 15, textY); 
-        ctx.fillStyle=curCol; ctx.fillText(`LVL ${currentLevel}`, 75, textY); 
-        ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.fillText(`🏆 ${bestScore}`, 210, textY); 
-        ctx.textAlign="right"; ctx.fillText(`💰 ${credits}`, 405, textY); 
+
+    // ----------------------------------------------------
+    // --- GESTION DU FORMULAIRE DE SOUMISSION DE JEU ---
+    // ----------------------------------------------------
+    const submitGameButton = document.getElementById('submit-game-button');
+    const submitModalOverlay = document.getElementById('submit-modal-overlay');
+    const closeSubmitModalButton = document.getElementById('close-submit-modal');
+    const submissionForm = document.getElementById('game-submission-form');
+    const termsLink = document.getElementById('view-terms-link');
+    
+    // 1. VARIABLE MODIFIABLE FACILEMENT pour les Conditions d'Utilisation
+    const termsAndConditions = `
+        Conditions d'Utilisation pour la soumission de jeu :
+
+        1. Propriété intellectuelle : En soumettant votre jeu, vous confirmez être le créateur et détenir tous les droits sur le contenu.
+        2. Modification : Vous accepter la modification et la perte de détention de ce jeu.
+        3. Licence : Vous accordez une licence non exclusive et gratuite pour tester et évaluer votre jeu.
+        4. Fichiers : Le lien de téléchargement fourni doit mener à un fichier exempt de virus et de logiciels malveillants.
+        5. Contact : Nous vous recontacterons via l'email fourni.
+
+        Merci d'avoir lu.
+    `;
+
+
+    function openSubmitModal() {
+        submitModalOverlay.style.display = 'flex';
+        anime({targets: submitModalOverlay, opacity: [0, 1], duration: 300, easing: 'easeOutQuad'});
     }
 
-    if(flashAlpha > 0) { ctx.fillStyle = `rgba(255,255,255,${flashAlpha})`; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT); }
-    if(coinFlashAlpha > 0) { ctx.fillStyle = `rgba(255,215,0,${coinFlashAlpha})`; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT); }
-    
-    if (transition.active) { 
-        ctx.globalAlpha = transition.alpha; 
-        ctx.fillStyle = "#000"; 
-        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT); 
-        ctx.globalAlpha = 1.0; 
+    function closeSubmitModal() {
+        anime({
+            targets: submitModalOverlay, 
+            opacity: [1, 0], 
+            duration: 300, 
+            easing: 'easeOutQuad', 
+            complete: () => {
+                submitModalOverlay.style.display = 'none';
+                submissionForm.reset(); 
+            }
+        });
     }
-}
 
-function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1, r = 10){ 
-    const hover = mouseInRect(x-w/2, y, w, h); 
-    if(hover) canvas.style.cursor = "pointer";
-    
-    if (alpha === 1) {
-        const sizeMod = hover ? 1.05 : 1.0; 
-        
-        ctx.save(); ctx.translate(x, y + h/2); ctx.scale(sizeMod, sizeMod);
-        ctx.shadowBlur = hover ? 35 : 10; ctx.shadowColor = c;
-        ctx.fillStyle = hover ? c : "rgba(255,255,255,0.05)"; ctx.strokeStyle = c; ctx.lineWidth = 2/sizeMod; 
-        
-        drawRoundedRect(-w/2, -h/2, w, h, r/sizeMod, true, true); 
+    submitGameButton.addEventListener('click', openSubmitModal);
+    closeSubmitModalButton.addEventListener('click', closeSubmitModal);
+    submitModalOverlay.addEventListener('click', (e) => {
+        if (e.target === submitModalOverlay) {
+            closeSubmitModal();
+        }
+    });
 
-        ctx.shadowBlur = 0; ctx.fillStyle = hover ? "#000" : "#fff"; ctx.font = `bold 18px ${FONT_FAMILY}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, 0, 0); ctx.restore();
-    
+    // Afficher les conditions d'utilisation
+    termsLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        alert(termsAndConditions);
+    });
+
+    // --- LOGIQUE DE SOUMISSION AVEC FORMSPREE ---
+    submissionForm.addEventListener('submit', async function(e) {
+        
+        // Validation des Conditions d'Utilisation
+        const termsAccepted = document.getElementById('terms-checkbox').checked;
+        if (!termsAccepted) {
+            alert("Veuillez accepter les Conditions d'Utilisation avant d'envoyer.");
+            e.preventDefault(); // Empêche l'envoi si non coché
+            return;
+        }
+
+        // Le navigateur soumet le formulaire à l'URL Formspree (via l'attribut action)
+        // L'utilisateur sera redirigé vers la page de confirmation Formspree.
+        // La soumission native du formulaire est la plus simple et fiable sans serveur.
+    });
+    // ----------------------------------------------------
+
+
+    // ----------------------------------------------------
+    // --- GESTION DES COOKIES (AVEC VÉRIFICATION) ---
+    // ----------------------------------------------------
+    const isCookiesAccepted = localStorage.getItem('cookies_accepted') === 'true';
+
+    if (!isCookiesAccepted) {
+        // --- SEUL CE BLOC S'EXÉCUTE SI LES COOKIES NE SONT PAS ACCEPTÉS ---
+
+        const cookieOverlay = document.getElementById('cookie-modal-overlay');
+        const acceptButton = document.getElementById('accept-cookies-button');
+        const closeButton = document.getElementById('close-cookie-modal');
+        
+        const MOVEMENT_INTERVAL = 50; 
+        let teleportIntervalId = null;
+
+        function closeCookieModal(accept = false) {
+            if (accept) {
+                localStorage.setItem('cookies_accepted', 'true');
+            }
+            
+            if (teleportIntervalId) {
+                clearInterval(teleportIntervalId);
+                teleportIntervalId = null;
+            }
+            acceptButton.classList.remove('teleporting', 'stopped'); 
+            
+            anime({
+                targets: cookieOverlay, 
+                opacity: [1, 0], 
+                duration: 400, 
+                easing: 'easeOutQuad', 
+                complete: () => {
+                    cookieOverlay.style.display = 'none'; 
+                }
+            });
+        }
+
+        function teleportButton() {
+            if (!acceptButton.classList.contains('teleporting')) {
+                return;
+            }
+
+            const buttonWidth = acceptButton.offsetWidth;
+            const buttonHeight = acceptButton.offsetHeight;
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            const xMax = Math.max(0, viewportWidth - buttonWidth);
+            const yMax = Math.max(0, viewportHeight - buttonHeight);
+
+            const newX = Math.random() * xMax;
+            const newY = Math.random() * yMax;
+
+            acceptButton.style.left = `${newX}px`;
+            acceptButton.style.top = `${newY}px`;
+            acceptButton.style.transform = 'none';
+        }
+        
+        function startTeleportation() {
+            acceptButton.classList.remove('stopped'); 
+            acceptButton.classList.add('teleporting');
+            
+            if (!teleportIntervalId) {
+                teleportIntervalId = setInterval(teleportButton, MOVEMENT_INTERVAL);
+                teleportButton(); 
+            }
+        }
+        
+        function stopTeleportation() {
+            if (teleportIntervalId) {
+                clearInterval(teleportIntervalId);
+                teleportIntervalId = null;
+            }
+            
+            acceptButton.classList.add('stopped');
+            acceptButton.classList.remove('teleporting');
+        }
+        
+        // --- INITIALISATION DES ÉVÉNEMENTS ---
+
+        // 1. Affichage de la modale
+        cookieOverlay.style.display = 'flex'; 
+        cookieOverlay.style.opacity = 0;
+        anime({targets: cookieOverlay, opacity: [0, 1], duration: 400, easing: 'easeOutQuad'});
+        
+        // 2. Contrôle du mouvement via survol
+        acceptButton.addEventListener('mouseover', startTeleportation);
+        acceptButton.addEventListener('mouseleave', stopTeleportation); 
+        
+        // 3. La SEULE issue : le clic sur la croix invisible (qui enregistre l'acceptation)
+        closeButton.addEventListener('click', () => closeCookieModal(true));
+        
+        // 4. S'assurer que le clic sur le bouton ACCEPTER ne fait RIEN.
+        acceptButton.addEventListener('click', (e) => e.preventDefault());
+        
+        // 5. S'assurer que le clic sur le bouton REFUSER ne fait RIEN.
+        const refuseButton = document.getElementById('refuse-cookies-button');
+        refuseButton.addEventListener('click', (e) => e.preventDefault());
     } 
-    else {
-        ctx.save(); ctx.globalAlpha = alpha; 
-        ctx.translate(x, y + h/2); ctx.scale(scale, scale);
-        
-        ctx.shadowBlur = hover ? 45 : 20; ctx.shadowColor = c;
-        ctx.fillStyle = hover ? c : "rgba(255,255,255,0.1)"; ctx.strokeStyle = c; ctx.lineWidth = 3/scale; 
-        
-        drawRoundedRect(-w/2, -h/2, w, h, r/scale, true, true); 
-        
-        ctx.shadowBlur = 0; ctx.fillStyle = hover ? "#000" : "#fff"; ctx.font = `bold 22px ${FONT_FAMILY}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, 0, 0); ctx.restore();
-    }
-}
 
-function wrapText(t,x,y,mW,lH){ let words=t.split(' '), line=''; for(let n=0;n<words.length;n++){ let test=line+words[n]+' '; if(ctx.measureText(test).width>mW && n>0){ ctx.fillText(line,x,y); line=words[n]+' '; y+=lH; } else line=test; } ctx.fillText(line,x,y); }
-
-function drawRoundedRect(x, y, w, h, r, fill = true, stroke = true, shadowC = null, shadowB = 0){
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.arcTo(x + w, y, x + w, y + r, r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-    ctx.lineTo(x + r, y + h);
-    ctx.arcTo(x, y + h, x, y + h - r, r);
-    ctx.lineTo(x, y + r);
-    ctx.arcTo(x, y, x + r, y, r);
-    ctx.closePath();
-
-    if (shadowC) {
-        ctx.shadowColor = shadowC;
-        ctx.shadowBlur = shadowB;
-    }
-
-    if (fill) {
-        ctx.fill();
-    }
-    
-    if (stroke) {
-        ctx.stroke();
-    }
-    
-    ctx.shadowBlur = 0; 
-    ctx.shadowColor = "#000"; 
-}
-
-
-function loop(){ 
-    update(); 
-    draw(); 
-    requestAnimationFrame(loop); 
-}
-
-resizeCanvas();
-draw(); 
-loadGameData(); 
-loop(); 
+    // ----------------------------------------------------
 </script>
+
 </body>
 </html>

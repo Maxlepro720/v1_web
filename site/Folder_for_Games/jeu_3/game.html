@@ -437,8 +437,9 @@
         let ignoreNextSpaceUp = false; 
         
         // --- DONNÉES DU JOUEUR ---
-        // Initialisation avec localStorage ou pseudo par défaut
-        let username = localStorage.getItem('username') || "JoueurAnonyme"; 
+        // Initialisation avec localStorage. Le mode invité ("JoueurAnonyme") est retiré, 
+        // l'utilisateur est forcé à passer par l'écran de saisie s'il n'est pas stocké.
+        let username = localStorage.getItem('username'); // Peut être null si non trouvé
         let currentGradeName = "Poussière"; 
         
         // --- SYSTÈME DE GRADES ---
@@ -570,7 +571,12 @@
         }
 
         async function loadGameData() {
-            // Pas besoin de vérifier le username ici, car il a déjà été défini par défaut ou localStorage
+            // Vérification de sécurité supplémentaire
+            if (!username || username.length < 3) {
+                console.error("Tentative de chargement avec un nom d'utilisateur invalide.");
+                showUsernameScreen();
+                return;
+            }
             
             hideAllScreens();
             currentState = GAME_STATE.LOADING;
@@ -580,6 +586,12 @@
 
             try {
                 const response = await fetch(`${SERVER_URL}${API_BASE}/load_data/${username}`);
+
+                if (!response.ok) {
+                    // Si la requête échoue (ex: 405 Method Not Allowed), lance une erreur personnalisée
+                    throw new Error(`Erreur HTTP: ${response.status} (${response.statusText})`);
+                }
+                
                 const result = await response.json();
                 console.log("Réponse du serveur (Chargement):", result);
                 
@@ -603,22 +615,26 @@
 
                     showMenu(); 
                 } else {
-                     console.error("Erreur de chargement: " + result.message);
-                     // Si le chargement échoue, on affiche le menu avec les valeurs par défaut
-                     showMenu(); 
+                    // Si le serveur répond en JSON mais indique une erreur logique
+                    console.error("Erreur de chargement: " + result.message);
+                    document.querySelector('#loadingScreen p').textContent = `Erreur de chargement: ${result.message}`;
+                    setTimeout(showUsernameScreen, 3000); // Retour à la saisie après un délai
                 }
 
             } catch (error) {
                 console.error("Erreur de communication avec le serveur (Chargement):", error);
                 
-                // Fallback en cas d'erreur serveur
+                // Afficher un message d'erreur clair et forcer le retour à l'écran de saisie
+                document.querySelector('#loadingScreen p').textContent = `Erreur FATALE de communication. (${error.message || error}). Vérifiez le statut du serveur et réessayez.`;
+
+                // Fallback temporaire des stats (mais on n'affiche pas le menu, on retourne à la saisie)
                 highScore = 0;
                 money = 0;
                 currentGradeId = 1;
                 applyGradeStats();
                 updateHotbarDisplay();
-                localStorage.setItem('username', username);
-                showMenu(); 
+                
+                setTimeout(showUsernameScreen, 3000); // Retour à la saisie après un délai
             }
         }
 
@@ -1230,8 +1246,17 @@
         // --- Initialisation du jeu
         resizeCanvas(); 
         
-        // Démarrage automatique du chargement avec le pseudo trouvé ou par défaut
-        loadGameData();
+        // Nouvelle logique de démarrage : force l'écran de saisie si l'utilisateur n'est pas trouvé
+        const storedUsername = localStorage.getItem('username');
+
+        if (storedUsername && storedUsername.length > 2) {
+            username = storedUsername;
+            // Si l'utilisateur est trouvé, charger les données
+            loadGameData();
+        } else {
+            // Sinon, afficher l'écran de saisie
+            showUsernameScreen();
+        }
         
         gameLoop(); 
         

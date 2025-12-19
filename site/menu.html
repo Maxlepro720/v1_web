@@ -2,1243 +2,805 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Stickman Runner - Cyber Neon</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Launcher</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
     <style>
-        /* --- STYLES GLOBALES & RESPONSIVE --- */
-        body {
-            margin: 0;
-            background-color: #0d1b2a; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            width: 100vw; 
-            overflow: hidden;
-            font-family: 'Orbitron', sans-serif; 
-            color: #E0E0E0; 
-            position: relative; 
-        }
+        /* ----------------------------------- */
+        /* CSS GÉNÉRAL & MISE EN PAGE */
+        /* ----------------------------------- */
+        * {box-sizing:border-box;margin:0;padding:0}
+        body {font-family:'Segoe UI',Arial,sans-serif;background:#0f1419;color:#eee;scroll-behavior:smooth;overflow-x:hidden;}
         
-        /* Conteneur principal pour le jeu et les menus */
-        #gameWrapper {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            max-width: 800px; 
-            max-height: 600px;
-            box-sizing: border-box;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        /* Ajustements pour la barre qui monte/descend */
+        header {
+            position:fixed; 
+            top:0;
+            left: 0;
+            width: 100%; 
+            background:rgba(15,20,25,0.6);
+            backdrop-filter:blur(20px);
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding:15px 30px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.6);
+            border-radius:0 0 20px 20px;
+            z-index:10;
+            /* Position initiale hors écran, ne laissant qu'une fine bordure visible */
+            transform: translateY(calc(-100% + 10px)); 
+            transition: transform 0.4s ease-out; 
         }
 
-        /* --- CANVAS (maintenant responsive) --- */
-        canvas {
-            width: 100%;
-            height: 100%;
-            border: 4px solid #FF6B6B; 
-            background-color: #1a2a3a; 
-            box-shadow: 0 0 30px rgba(255, 107, 107, 0.5); 
-            display: none;
+        /* Classe pour afficher la barre quand elle est survolée */
+        header.show {
+            transform: translateY(0);
+        }
+
+        header h1 {font-size:28px;color:#fff;font-weight:700;letter-spacing:1px;transition:0.3s;}
+        header h1:hover {color:#00bfff;}
+        
+        #main-nav {display:flex;align-items:center;gap:15px;background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);padding:10px 20px;border-radius:20px;}
+        #main-nav button {background:transparent;color:#fff;border:none;padding:10px 18px;border-radius:15px;font-weight:600;cursor:pointer;transition:0.3s;font-size:16px;position:relative;overflow:hidden;}
+        #main-nav button::after {content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,191,255,0.2);opacity:0;transition:0.3s;border-radius:15px;}
+        #main-nav button:hover::after {opacity:1;}
+        #main-nav button:hover {transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,191,255,0.3);}
+        #search_bar {padding:10px 18px;border-radius:15px;border:none;background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);outline:none;color:#eee;transition:0.3s;min-width:180px;}
+        #search_bar:focus {background:rgba(0,191,255,0.1);box-shadow:0 0 10px #00bfff66;}
+        #logout-button {background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);color:#ff4d6d;border:2px solid #ff4d6d;padding:10px 18px;border-radius:15px;font-weight:bold;cursor:pointer;transition:0.3s;}
+        #logout-button:hover {background:#ff4d6d;color:#fff;box-shadow:0 0 18px #ff4d6d88;transform:translateY(-2px);}
+        .section-title {font-size:28px;margin:30px 25px 15px 25px;color:#fff;font-weight:700;}
+        .game-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;padding:0 30px 50px 30px;}
+
+        /* ----------------------------------- */
+        /* CARTE DE JEU (CARD) */
+        /* ----------------------------------- */
+        .card {
+            position:relative;
+            background:rgba(255,255,255,0.05);
+            backdrop-filter:blur(15px);
+            border-radius:20px;
+            overflow:hidden;
+            cursor:pointer; 
+            transition:transform 0.3s,box-shadow 0.3s;
+            box-shadow:0 5px 20px rgba(0,0,0,0.4);
+        }
+        .card.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .card.disabled:hover {
+            transform: none;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            animation: none; 
+        }
+        .card.disabled:hover::before {
+            animation: none;
+        }
+
+        .card::before {content:"";position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(120deg,rgba(255,255,255,0.1),rgba(255,255,255,0.3),rgba(255,255,255,0.1));transform:skewX(-20deg);transition:0.5s;}
+        .card:hover::before {animation:shimmer 1s forwards;}
+        @keyframes shimmer {0%{left:-100%;}100%{left:200%;}}
+        .card:hover {transform:translateY(-8px);box-shadow:0 15px 30px rgba(0,191,255,0.3);}
+
+        /* ----------------------------------- */
+        /* CARTE DE CITATION */
+        /* ----------------------------------- */
+        .ad-card-container {
+            grid-column: 1 / -1; 
+            min-height: 150px; 
+            display: flex; 
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(90deg, #1f2730, #0f1419); 
+            border: 2px solid #00bfff;
+            overflow: hidden;
+            border-radius: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            transition: transform 0.3s, box-shadow 0.3s, opacity 0.5s; 
+            padding: 10px;
+        }
+
+        .ad-card-container:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 191, 255, 0.4); 
+        }
+        
+        #quote-display {
+            padding: 20px; 
+            text-align: center;
+            transition: opacity 0.5s;
+        }
+
+        /* ----------------------------------- */
+        /* IMAGE DE CARTE */
+        /* ----------------------------------- */
+        .card-image {
+            height:180px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:50px;
+            color:#fff;
+            transition:all 0.3s;
+            position: relative; 
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+        }
+
+        .card-image::after {
+            content: "";
             position: absolute;
             top: 0;
             left: 0;
-            aspect-ratio: 4 / 3; 
-            margin: auto;
-            transition: border-color 0.1s, box-shadow 0.1s;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.0);
+            z-index: 1;
         }
-        
-        /* --- HOTBAR (Barre du haut) --- */
-        #topHotbar {
+
+        .card-image .game-icon {z-index: 2;}
+        .card-info {padding:15px;}
+        .card-title {font-size:18px;font-weight:600;margin:0;color:#fff;}
+        .card-genre {font-size:14px;opacity:0.6;margin-top:6px;margin-bottom:12px;}
+        .card-button {
+            width:100%;background:#00bfff;border:none;padding:12px;color:#fff;font-size:15px;border-radius:12px;cursor:pointer;transition:0.2s;
+        }
+        .card-button:hover {background:#009acd;}
+        .card-button:disabled {background:#555;cursor:not-allowed;}
+
+        /* ----------------------------------- */
+        /* SIDEBAR */
+        /* ----------------------------------- */
+        #sidebar {position:fixed;top:0;right:-320px;width:320px;height:100%;background:rgba(20,20,30,0.9);backdrop-filter:blur(20px);box-shadow:-5px 0 30px rgba(0,0,0,0.7);transition:right 0.4s ease;z-index:50;padding:20px;display:flex;flex-direction:column;}
+        #sidebar h2 {color:#00bfff;margin-bottom:20px;}
+        #sidebar button.close-sidebar {background:#ff4d6d;color:#fff;border:none;padding:10px 18px;border-radius:12px;cursor:pointer;align-self:flex-end;transition:0.3s;}
+        #sidebar button.close-sidebar:hover {background:#ff1a3c;box-shadow:0 0 15px #ff4d6d88;}
+        .sidebar-open {right:0 !important;}
+
+        /* ----------------------------------- */
+        /* POPUP COOKIES */
+        /* ----------------------------------- */
+        #cookie-modal-overlay {
+            display: none; 
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%; 
-            background-color: #0d1b2a;
-            padding: 10px 0;
-            display: flex;
-            justify-content: space-around;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
             align-items: center;
-            border-bottom: 2px solid #FF6B6B; 
-            z-index: 100; 
-            font-size: 0.8em; 
-            transition: border-color 0.1s;
-        }
-        .hotbar-item {
-            display: block; 
-            text-align: center;
-        }
-        .hotbar-label {
-            display: block;
-            font-size: 1em;
-            color: #aaa;
-        }
-        .hotbar-value {
-            font-weight: bold;
-            color: #00FFC0; 
-            display: block;
-            margin-top: 2px;
-            font-size: 1.2em;
-            transition: color 0.1s;
-        }
-
-        /* --- SCORE EN JEU (Numéro uniquement, très gros, centré) --- */
-        #scoreDisplay {
-            position: absolute; 
-            top: 25%; 
-            left: 50%;
-            transform: translate(-50%, 0) scaleY(1.3); 
-            
-            font-size: 5.5vw; 
-            
-            color: #2c3e50; 
-            z-index: 90; 
-            text-shadow: 0 0 10px rgba(44, 62, 80, 0.9); 
-            display: none;
-            font-family: 'Orbitron', sans-serif; 
-            line-height: 1; 
-            font-weight: 900;
-        }
-
-        /* --- ÉCRANS GLOBAUX --- */
-        #menuContainer, #pauseMenu, #gameOverScreen, #loadingScreen, #rankingScreen, #usernameScreen {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 50; 
-            max-width: 90%; 
-            width: 350px; 
-        }
-        
-        /* STYLES COMMUNS DES ÉCRANS DE MENU */
-        #loadingScreen, #menuScreen, #gradeShop, #rankingScreen, #gameOverScreen, #pauseMenu, #usernameScreen {
-            background-color: #1a2a3a; 
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.9), 0 0 10px #FF6B6B; 
-            border: 2px solid #FF6B6B; 
-            display: flex;
-            flex-direction: column; 
             justify-content: center;
-            align-items: center;
-        }
-        
-        /* --- STYLES DES BOUTONS D'ACTION --- */
-        .menu-button {
-            display: block;
-            width: 80%; 
-            padding: 12px;
-            margin: 10px auto;
-            background-color: #00FFC0; 
-            color: black; 
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1em;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
-            font-family: 'Orbitron', sans-serif;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-        }
-        .menu-button:hover {
-            background-color: #33ffcc; 
-            box-shadow: 0 0 10px #00FFC0; 
-        }
-        
-        /* Champ de saisie d'utilisateur */
-        #usernameInput {
-            padding: 10px;
-            margin: 20px 0;
-            width: 80%;
-            border: 2px solid #FF6B6B;
-            background-color: #0d1b2a;
-            color: #E0E0E0;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1em;
-            text-align: center;
-            border-radius: 5px;
+            z-index: 1000;
         }
 
-        /* --- STYLES SPÉCIFIQUES DU SHOP/AMÉLIORATION --- */
-        #upgradeButton {
-            background-color: #00BFFF; 
+        #cookie-modal {
+            position: relative;
+            background: rgba(15, 20, 25, 0.95);
+            border: 2px solid #00bfff;
+            border-radius: 20px;
+            padding: 30px;
             width: 90%;
-            font-size: 1.2em;
-            padding: 15px;
-            margin-top: 20px;
-            white-space: normal; 
-            height: auto;
-            color: white; 
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 191, 255, 0.4);
         }
-        #upgradeButton:hover {
-            background-color: #19cfff;
-            box-shadow: 0 0 15px #00BFFF;
-        }
-        #upgradeButton:disabled {
-            background-color: #4a4a6e;
-            cursor: not-allowed;
-            box-shadow: none;
+        #cookie-modal h3 {color: #fff;font-size: 20px;margin-bottom: 15px;}
+        #cookie-modal p {color: #ccc;font-size: 14px;margin-bottom: 25px;}
+        
+        #button-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
         }
 
-        /* NOUVEAU STYLE: Liste des grades dans le shop */
-        #gradesList {
-            text-align: left;
-            width: 100%;
-            padding: 10px;
-            margin-top: 15px;
-            border: 1px dashed #FF6B6B50; 
-            border-radius: 5px;
-            max-height: 250px; 
-            overflow-y: auto;
+        #refuse-cookies-button, 
+        #accept-cookies-button {
+            width: 165px; 
+            border: none;
+            padding: 12px;
+            color: #fff;
+            font-size: 15px;
+            border-radius: 12px;
+            font-weight: bold;
+            transition: opacity 0.3s;
+            position: static; 
+            transform: none; 
         }
         
-        /* --- CLASSEMENT --- */
-        #rankingTable {
-            width: 100%;
-            margin: 20px 0;
-            border-collapse: collapse;
+        #refuse-cookies-button {
+            background: #ff4d6d;
+            cursor: not-allowed; 
+            opacity: 0.6; 
+            pointer-events: none; 
         }
-        #rankingTable th, #rankingTable td {
-            padding: 8px;
-            border: 1px solid #FF6B6B30;
-            text-align: left;
-            font-size: 0.9em;
-        }
-        #rankingTable th {
-            background-color: #FF6B6B20;
-            color: #FF6B6B;
-            font-weight: bold;
-        }
-        #rankingTable tbody tr:nth-child(1) { background-color: #FFD70030; font-weight: bold; color: gold; }
-        #rankingTable tbody tr:nth-child(2) { background-color: #C0C0C030; }
-        #rankingTable tbody tr:nth-child(3) { background-color: #CD7F3230; }
-        .rank-grade {
-            font-size: 1.2em;
+        
+        #accept-cookies-button {
+            background: #00bfff;
+            cursor: pointer; 
+            pointer-events: all !important; 
         }
 
+        /* Style pour le bouton ACCEPTER lorsqu'il est en mode "téléportation" */
+        #accept-cookies-button.teleporting {
+            position: fixed; 
+            z-index: 1002; 
+            cursor: default; 
+            pointer-events: none !important;
+            transition: none; 
+            width: 165px; 
+        }
+        
+        /* Style pour le bouton ACCEPTER lorsqu'il est en mode "arrêt/rattrapable" */
+        #accept-cookies-button.stopped {
+            position: fixed; 
+            pointer-events: all !important; 
+            cursor: pointer;
+            width: 165px; 
+        }
+
+        /* Croix : Immobile et presque invisible (CLICABLE) */
+        #close-cookie-modal {
+            position: absolute; 
+            top: 5px; 
+            right: 10px;
+            background: transparent;
+            color: #eee;
+            border: none;
+            font-size: 20px; 
+            opacity: 0.05; 
+            cursor: pointer; 
+            z-index: 10;
+        }
+        #close-cookie-modal:hover {
+            opacity: 0.15; 
+        }
+
+        /* ----------------------------------- */
+        /* POPUP FORMULAIRE D'ENVOI (Formspree) */
+        /* ----------------------------------- */
+        #submit-modal-overlay {
+            display: none; 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        #submit-modal {
+            position: relative;
+            background: rgba(15, 20, 25, 0.95);
+            border: 2px solid #63D945; 
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%; 
+            max-width: 500px; 
+            box-shadow: 0 10px 40px rgba(99, 217, 69, 0.4);
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh; 
+            overflow-y: auto; 
+        }
+
+        #submit-modal h3 {color: #63D945;font-size: 24px;margin-bottom: 15px;}
+        #submit-modal p {color: #ccc;font-size: 14px;margin-bottom: 20px;}
+
+        #game-submission-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #submit-modal input[type="text"],
+        #submit-modal input[type="email"],
+        #submit-modal textarea {
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #eee;
+            outline: none;
+            transition: 0.3s;
+            font-family: inherit;
+            font-size: 16px;
+        }
+        
+        #submit-modal input:focus,
+        #submit-modal textarea:focus {
+            border-color: #63D945;
+            box-shadow: 0 0 8px rgba(99, 217, 69, 0.5);
+        }
+
+        #submit-modal textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        #send-submission-button {
+            background: #63D945;
+            border: none;
+            padding: 12px;
+            color: #0f1419; 
+            font-size: 16px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        #send-submission-button:hover {
+            background: #46b32b;
+            box-shadow: 0 4px 15px rgba(99, 217, 69, 0.5);
+        }
+
+        #close-submit-modal {
+            position: absolute; 
+            top: 10px; 
+            right: 15px;
+            background: transparent;
+            color: #eee;
+            border: none;
+            font-size: 28px; 
+            cursor: pointer; 
+            transition: color 0.3s;
+        }
+        #close-submit-modal:hover {
+            color: #ff4d6d;
+        }
+
+        /* Conditions d'Utilisation */
+        #terms-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        #terms-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        #terms-container label {
+            font-size: 14px;
+            color: #ccc;
+            cursor: pointer;
+        }
+        #terms-container a {
+            color: #63D945; 
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        #terms-container a:hover {
+            color: #46b32b;
+        }
     </style>
 </head>
 <body>
-    <div id="gameWrapper">
-        <div id="usernameScreen">
-            <h1>Bienvenue</h1>
-            <p>Veuillez entrer votre nom d'utilisateur pour charger votre progression.</p>
-            <input type="text" id="usernameInput" placeholder="Votre nom d'utilisateur">
-            <button class="menu-button" id="submitUsernameButton">COMMENCER</button>
-        </div>
 
-        <div id="loadingScreen" style="display: none;">
-            <h1>STICKMAN RUNNER</h1>
-            <p>Chargement des données...</p>
-            <span style="color: #00FFC0;">INITIALISATION DU JEU...</span>
-        </div>
+<header id="main-header">
+    <h1 id="welcomeTitle">🎮 Accueil</h1>
+    <nav id="main-nav">
+        <button>📚 Bibliothèque</button>
+        <button id="submit-game-button">📧 Soumettre un jeu</button> 
+        <input id="search_bar" placeholder="🔍 Rechercher un jeu...">
+        <button id="friends-button">👥 Amis</button>
+    </nav>
+    <button id="logout-button" onclick="handleLogoutAndRedirect()">log out</button>
+</header>
 
-        <div id="scoreDisplay">0</div>
+<h2 class="section-title">Ma Bibliothèque</h2>
+<div class="game-grid" id="gameGrid"></div>
 
-        <div id="menuContainer" style="display: none;">
-            <div id="menuScreen">
-                <h1>Stickman Runner</h1>
-                <p>Bienvenue, <span id="currentUsernameDisplay" style="color:#00FFC0;"></span></p>
-                <button class="menu-button" id="playButton">JOUER</button>
-                <button class="menu-button" id="gradesButton">AMÉLIORATION (GRADES)</button>
-                <button class="menu-button" id="rankingButton">CLASSEMENT</button>
-                <button class="menu-button" id="changeUserButton" style="background-color: #4a4a6e;">CHANGER D'UTILISATEUR</button> 
-            </div>
+<div id="sidebar">
+    <button class="close-sidebar" onclick="toggleSidebar()">✖</button>
+    <h2>Amis</h2>
+    <p>Coming soon...</p>
+</div>
 
-            <div id="gradeShop" style="display: none;">
-                <h2>Amélioration de Grade</h2>
-                <p style="font-size: 1.2em;">Argent : <span id="moneyInShop" style="color: gold; font-weight: bold;">0</span> <span style="color: gold; font-weight: bold;">$</span></p>
-                
-                <hr style="width: 80%; border-color: #FF6B6B; margin: 15px 0;"> 
-                
-                <p style="font-size: 1.1em; color: #E0E0E0;">Grade Actuel : <span id="currentGradeDisplay" style="font-weight: bold; color: #00FFC0;">Poussière (⚪)</span></p> 
-                <p style="font-size: 0.9em; color: #00BFFF;">Bonus Vitesse Max : <span id="speedCapDisplay" style="font-weight: bold;">15.0</span></p>
-                
-                <div id="gradesList">
-                    </div>
+<div id="quote-ad-slot" class="ad-card-container" style="display:none;">
+    <div id="quote-display"></div>
+</div>
 
-                <button class="menu-button" id="upgradeButton">ACHETER : [Grade Suivant] - 50 $</button>
-                
-                <button class="menu-button" id="backButton" style="margin-top: 15px;">RETOUR</button>
-            </div>
-        </div>
+
+<div id="submit-modal-overlay" style="opacity: 0;">
+    <div id="submit-modal">
+        <button id="close-submit-modal" title="Fermer">&times;</button>
+        <h3>📧 Soumettre votre jeu</h3>
+        <p>Ce formulaire enverra directement les données à notre équipe. Veuillez inclure le lien de téléchargement de votre jeu (Drive, Dropbox, etc.) dans la zone de description.</p>
         
-        <div id="pauseMenu" style="display: none;">
-            <h2>PAUSE</h2>
-            <p id="pauseCurrentScore" style="font-size: 1.5em; color: #FF6B6B; margin-bottom: 20px;">Score: 0</p> 
-            <button class="menu-button" id="continueButton">CONTINUER</button>
-            <button class="menu-button" id="quitButton">MENU PRINCIPAL (Sauvegarder)</button>
-        </div>
-
-        <div id="gameOverScreen" style="display: none;">
-            <h2>GAME OVER</h2>
-            <p style="color: yellow; font-size: 1.2em;">Sauvegarde des données...</p>
-            <p>Meilleur Score: <span id="finalHighScore" class="final-stat">0</span></p>
-            <p>Score Final: <span id="finalCurrentScore" class="final-stat">0</span></p>
-            <p>Argent Total: <span id="finalTotalMoney" class="final-stat">0</span> <span style="color: gold;">$</span></p>
-            <button class="menu-button" id="restartButton">REJOUER</button>
-            <button class="menu-button" id="goToMenuButton" style="background-color: #4a4a6e;">MENU PRINCIPAL</button>
-        </div>
-
-        <div id="rankingScreen" style="display: none;">
-            <h2>CLASSEMENT TOP 3</h2>
-            <table id="rankingTable">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Grade</th>
-                        <th>Joueur</th>
-                        <th>Score</th>
-                    </tr>
-                </thead>
-                <tbody id="rankingTableBody">
-                    <tr><td colspan="4">Chargement...</td></tr>
-                </tbody>
-            </table>
-            <button class="menu-button" id="backToMenuFromRanking">RETOUR</button>
-        </div>
-
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <form id="game-submission-form" action="https://formspree.io/f/xrezbzle" method="POST">
+            <input type="text" name="Nom" id="submitter-lastname-input" placeholder="Nom" required>
+            <input type="text" name="Prenom" id="submitter-firstname-input" placeholder="Prénom" required>
+            <input type="email" name="_replyto" id="submitter-email-input" placeholder="Email" required>
+            <input type="text" name="Sujet" id="game-title-input" placeholder="Sujet du jeu" required>
+            
+            <textarea name="Description_Lien" id="game-description-input" placeholder="Description détaillée + Lien de téléchargement du jeu" required></textarea>
+            
+            <div id="terms-container">
+                <input type="checkbox" name="Conditions_Acceptees" id="terms-checkbox" required>
+                <label for="terms-checkbox">J'accepte les <a href="#" id="view-terms-link">Conditions d'Utilisation</a></label>
+            </div>
+            
+            <button type="submit" id="send-submission-button">Envoyer la soumission</button>
+        </form>
     </div>
+</div>
 
-    <div id="topHotbar" style="display: none;">
-        <div class="hotbar-item">
-            <span id="label1" class="hotbar-label">Meilleur Score:</span>
-            <span id="value1" class="hotbar-value">0</span>
-        </div>
-        <div class="hotbar-item" id="currentScoreHotbarItem"> 
-            <span id="label2" class="hotbar-label">Score Précédent:</span>
-            <span id="value2" class="hotbar-value">0</span>
-        </div>
-        <div class="hotbar-item">
-            <span id="label3" class="hotbar-label">Argent Total:</span>
-            <span id="value3" class="hotbar-value">0</span> <span style="color: gold; font-weight: bold;">$</span>
+
+<div id="cookie-modal-overlay">
+    <div id="cookie-modal">
+        <button id="close-cookie-modal" title="Fermer">&times;</button>
+        <h3>🍪 Ce site utilise des cookies...</h3>
+        <p>Afin d'améliorer votre expérience et sauvegarder vos préférences de jeu, nous devons utiliser des cookies. </p>
+        
+        <div id="button-group">
+            <button id="refuse-cookies-button">REFUSER</button>
+            <button id="accept-cookies-button">ACCEPTER</button>
         </div>
     </div>
+</div>
 
-    <script>
-        // --- CONFIGURATION DU SERVEUR ---
-        // L'URL de votre serveur Render
-        const SERVER_URL = 'https://project-3-api-2bgb.onrender.com'; 
-        const API_BASE = '/stickman_runner';
+<script>
+    const API_URL="https://project-3-api-2bgb.onrender.com";
+    
+    // Dictionnaire de citations
+    const quoteDictionary = [
+        { quote: "Un grand poète a dit qui pète plus chie moins", author: "Peter Drucker" },  
+    ];
 
-        // --- CONFIGURATION DU JEU (TAILLES DE RÉFÉRENCE) ---
-        const BASE_WIDTH = 800;
-        const BASE_HEIGHT = 600;
+    // Fonction pour obtenir une citation aléatoire
+    function getRandomQuote() {
+        const randomIndex = Math.floor(Math.random() * quoteDictionary.length);
+        return quoteDictionary[randomIndex];
+    }
+    
+    const games=[
+        {id:1,title:"Skull Arena",genre:"Survie",link:"Folder_for_Games/jeu_1/game.html",color:"#CF4F5E", img:"Image/Image_Skull_Arena.png"},
+        {id:2,title:"MTPlayer Clicker",genre:"Clicker",link:"private_clicker.html",color:"#63D945", img:"Image/Image_MTPClicker.png"}, 
+        {id:3,title:"Astro Dodge",genre:"Infinite",link:"Folder_for_Games/jeu2/game.html",color:"#07a7b3", img:"Image/Image_Astro_Dodge.png"},
+        {id:4,title:"Coming Soon...",genre:"Not defined",link:"",color:"#969696"},
+        {id:5,title:"Coming Soon...",genre:"Not defined",link:"",color:"#969696"},
+        {id:6,title:"Coming Soon...",genre:"Not defined",link:"",color:"#969696"}
+    ];
 
-        function scaleX(x) { return (x / BASE_WIDTH) * canvas.width; }
-        function scaleY(y) { return (y / BASE_HEIGHT) * canvas.height; }
-        function scaleSize(s) { return (s / BASE_WIDTH) * canvas.width; }
+    const username=localStorage.getItem("username");
+    const welcomeTitle=document.getElementById("welcomeTitle");
+    if(username){welcomeTitle.textContent=`🎮 ${username}`;}
 
-        // --- CONFIGURATION AUDIO ---
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
-        let audioInitialized = false;
+    // --- LOGIQUE MASQUAGE/DÉMASQUAGE HOTBAR ---
+    const mainHeader = document.getElementById('main-header');
+    const DETECTION_ZONE_HEIGHT = 50; 
 
-        function initializeAudio() {
-            if (!audioInitialized) {
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume().then(() => {
-                        audioInitialized = true;
-                    }).catch(e => console.error("Could not resume audio context:", e));
-                } else {
-                     audioInitialized = true;
-                }
-            }
+    setTimeout(() => { mainHeader.classList.add('show'); }, 100); 
+    setTimeout(() => { mainHeader.classList.remove('show'); }, 2500); 
+
+    document.addEventListener('mousemove', (e) => {
+        if (e.clientY <= DETECTION_ZONE_HEIGHT) {
+            mainHeader.classList.add('show');
+        } else if (e.clientY > mainHeader.offsetHeight) {
+            mainHeader.classList.remove('show');
         }
-        document.addEventListener('click', initializeAudio, { once: true });
-        document.addEventListener('keydown', initializeAudio, { once: true });
+    });
+    // ------------------------------------------
 
-        function createTone(freq, duration, type, volume = 0.5) {
-            if (!audioInitialized) return;
-            // ... (logique de création de son)
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
+    // --- LOGIQUE LOGOUT ---
+    let isLoggingOut=false;
 
-            oscillator.type = type;
-            oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    async function handleLogoutAndRedirect(){
+        if(isLoggingOut)return;
+        isLoggingOut=true;
+        try{await fetch(`${API_URL}/logout`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:username})});}catch(e){console.error(e);}
+        localStorage.removeItem("username");
+        localStorage.removeItem("cookies_accepted"); 
+        window.location.href='index.html';
+    }
 
-            gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    function logoutSilently(){
+        if(!username||isLoggingOut)return;
+        const data=JSON.stringify({id:username});
+        if(navigator.sendBeacon){navigator.sendBeacon(`${API_URL}/logout`,new Blob([data],{type:'application/json'}));}
+        else{try{const xhr=new XMLHttpRequest();xhr.open("POST",`${API_URL}/logout`,false);xhr.setRequestHeader("Content-Type","application/json");xhr.send(data);}catch(e){console.error(e);}}
+    }
+    window.addEventListener('beforeunload',()=>logoutSilently());
 
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + duration);
-        }
+    // --- LOGIQUE AFFICHAGE DES JEUX ET INSERTION DE LA CITATION ---
+    const grid=document.getElementById("gameGrid");
+    const searchBar=document.getElementById("search_bar");
+    const quoteAdSlot = document.getElementById('quote-ad-slot'); 
+    
+    function updateQuote() {
+        const quoteDisplay = document.getElementById('quote-display');
+        if (!quoteDisplay) return;
 
-        const sfx = {
-            jump: () => createTone(500, 0.1, 'square'),
-            fastFall: () => createTone(200, 0.05, 'triangle'),
-            land: () => createTone(350, 0.08, 'sine', 0.4), 
-            death: () => {
-                createTone(150, 0.5, 'sawtooth', 0.8);
-                createTone(100, 0.5, 'square', 0.8);
-            },
-            money: () => {
-                createTone(600, 0.05, 'sine', 0.3);
-                setTimeout(() => createTone(800, 0.05, 'sine', 0.3), 50);
-            },
-            restart: () => createTone(300, 0.1, 'square'),
-            upgrade: () => { 
-                createTone(1000, 0.05, 'sine'); 
-                setTimeout(() => createTone(1200, 0.05, 'sine'), 50); 
-            }
-        };
-        
-        // --- CONFIGURATION DU JEU ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Éléments du DOM (mis en cache pour la performance)
-        const menuContainer = document.getElementById('menuContainer');
-        const canvasElement = document.getElementById('gameCanvas');
-        const pauseMenuElement = document.getElementById('pauseMenu');
-        const gameOverScreenElement = document.getElementById('gameOverScreen');
-        const topHotbarElement = document.getElementById('topHotbar');
-        const loadingScreenElement = document.getElementById('loadingScreen');
-        const rankingScreenElement = document.getElementById('rankingScreen'); 
-        const usernameScreenElement = document.getElementById('usernameScreen');
-        const currentScoreHotbarItem = document.getElementById('currentScoreHotbarItem');
-        const scoreDisplayElement = document.getElementById('scoreDisplay');
-
-        const GAME_STATE = { USERNAME: -2, LOADING: -1, MENU: 0, PLAYING: 1, GRADES: 2, GAMEOVER: 3, PAUSED: 4, RANKING: 5 };
-        let currentState = GAME_STATE.USERNAME;
-
-        // Vitesse initiale
-        let initialPlayerColor = '#00FFC0'; 
-        let currentMaxSpeed = 8; 
-        
-        let MAX_SPEED_CAP_BASE = 15; 
-        let MAX_SPEED_CAP = MAX_SPEED_CAP_BASE; 
-        
-        const SPEED_INCREASE_RATE = 0.01; 
-        
-        const GRAVITY = 0.35;         
-        const JUMP_VELOCITY = -10.5;  
-        const FAST_FALL_VELOCITY = 10; 
-        const COYOTE_TIME_MAX = 6; 
-        const COLLISION_BUFFER_V = 5;  
-        const COLLISION_BUFFER_H = 10; 
-        const JUMP_ROTATION = Math.PI / 4; 
-
-        let lastMoneyScoreThreshold = 0; 
-        const MONEY_GAIN_PER_THRESHOLD = 20; 
-
-        // Constantes basées sur les valeurs de référence
-        const START_PLATFORM_REF = { x: 0, y: BASE_HEIGHT - 50, width: BASE_WIDTH, height: 50 }; 
-        const GROUND_LEVEL_REF = BASE_HEIGHT - 20; 
-        const CAMERA_CENTER_X_REF = BASE_WIDTH / 3; 
-        
-        let isSpacePressed = false;
-        let ignoreNextSpaceUp = false; 
-        
-        // --- DONNÉES DU JOUEUR ---
-        let username = localStorage.getItem('username') || ""; 
-        let currentGradeName = "Poussière"; 
-        
-        // --- SYSTÈME DE GRADES ---
-        const GRADES = [
-            { id: 1, name: "Poussière", cost: 0, symbol: "⚪", speedBonus: 0, color: '#E0E0E0' }, 
-            { id: 2, name: "N. Sélénium", cost: 50, symbol: "🟢", speedBonus: 0, color: '#00FFC0' }, 
-            { id: 3, name: "N. Mercure", cost: 150, symbol: "🔵", speedBonus: 0, color: '#00BFFF' }, 
-            { id: 4, name: "N. Vénus", cost: 300, symbol: "🟣", speedBonus: 0, color: '#FF00FF' }, 
-            { id: 5, name: "N. Terre", cost: 500, symbol: "✨", speedBonus: 0, color: '#FFD700' }, 
-            { id: 6, name: "N. Mars", cost: 800, symbol: "⚡", speedBonus: 0, color: '#FF6B6B' }, 
-            { id: 7, name: "N. Jupiter", cost: 1200, symbol: "🪐", speedBonus: 0, color: '#FFA500' },
-            { id: 8, name: "N. Saturne", cost: 1800, symbol: "🚀", speedBonus: 0, color: '#00FA9A' },
-            { id: 9, name: "N. Uranus", cost: 2600, symbol: "🌌", speedBonus: 0, color: '#9932CC' },
-            { id: 10, name: "MAX", cost: 5000, symbol: "🔥", speedBonus: 0, color: '#FF4500' } 
-        ];
-        
-        let currentGradeId = 1;
-        let money = 0;
-
-        function getGrade(id) {
-            return GRADES.find(g => g.id === id) || GRADES[0];
-        }
-
-        function getGradeByName(name) {
-             return GRADES.find(g => g.name === name) || GRADES[0];
-        }
-
-        function getNextGrade() {
-            return getGrade(currentGradeId + 1);
-        }
-        
-        function applyGradeStats() {
-            // Logique de vitesse retirée pour l'instant
-            MAX_SPEED_CAP = MAX_SPEED_CAP_BASE; 
-            currentGradeName = getGrade(currentGradeId).name;
-        }
-
-        // --- GESTION DU SCORE ET DU STOCKAGE LOCAL (pour l'affichage en attente de serveur) ---
-        let currentScore = 0;
-        let highScore = 0; 
-        let previousScore = 0;
-        let lastDisplayedScore = 0; 
-        
-        function updateScore(amount) {
-            currentScore += amount;
-            
-            const floorScore = Math.floor(currentScore);
-
-            if (floorScore !== lastDisplayedScore) {
-                scoreDisplayElement.textContent = `${floorScore}`;
-                lastDisplayedScore = floorScore;
-            }
-            
-            const currentMoneyThreshold = Math.floor(currentScore / 1000) * 1000;
-            if (currentMoneyThreshold > lastMoneyScoreThreshold) {
-                lastMoneyScoreThreshold = currentMoneyThreshold;
-                money += MONEY_GAIN_PER_THRESHOLD; 
-                sfx.money();
-            }
-        }
-        
-        function updateHighScoreAndMoney() {
-            const roundedCurrentScore = Math.floor(currentScore);
-            previousScore = roundedCurrentScore;
-
-            if (roundedCurrentScore > highScore) {
-                highScore = roundedCurrentScore;
-            }
-            
-            // On sauvegarde dès qu'un match est terminé
-            saveGameData(); 
-            updateHotbarDisplay(); 
-        }
-        
-        function updateHotbarDisplay() {
-            document.getElementById('value1').textContent = Math.floor(highScore);
-            document.getElementById('value3').textContent = Math.floor(money);
-            document.getElementById('currentUsernameDisplay').textContent = username;
-            
-            if (currentState === GAME_STATE.PLAYING || currentState === GAME_STATE.PAUSED) {
-                currentScoreHotbarItem.style.display = 'none'; 
-            } else { 
-                currentScoreHotbarItem.style.display = 'block'; 
-                document.getElementById('value2').textContent = Math.floor(previousScore);
-                updateUpgradeShopDisplay(); 
-            }
-        }
-
-        // --- API & COMMUNICATION SERVEUR ---
-
-        async function saveGameData() {
-            if (!username) return;
-
-            const gradeName = getGrade(currentGradeId).name;
-
-            const dataToSave = {
-                username: username,
-                best_score: Math.floor(highScore),
-                credit: Math.floor(money),
-                grade: gradeName
-            };
-
-            console.log("Sauvegarde des données:", dataToSave);
-
-            try {
-                const response = await fetch(`${SERVER_URL}${API_BASE}/save_data`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(dataToSave),
-                });
-
-                const result = await response.json();
-                console.log("Réponse du serveur (Sauvegarde):", result);
-
-                if (result.status === "error") {
-                     alert("Erreur de sauvegarde: " + result.message);
-                }
-
-            } catch (error) {
-                console.error("Erreur de communication avec le serveur (Sauvegarde):", error);
-                // Si le serveur est injoignable, on met à jour le localStorage en fallback
-                localStorage.setItem('highScore', highScore);
-                localStorage.setItem('money', money);
-                localStorage.setItem('currentGradeId', currentGradeId);
-            }
-        }
-
-        async function loadGameData() {
-            if (!username) {
-                 showUsernameScreen();
-                 return;
-            }
-
-            hideAllScreens();
-            currentState = GAME_STATE.LOADING;
-            loadingScreenElement.style.display = 'flex';
-            document.querySelector('#loadingScreen p').textContent = `Chargement des données de ${username}...`;
-
-
-            try {
-                const response = await fetch(`${SERVER_URL}${API_BASE}/load_data/${username}`);
-                const result = await response.json();
-                console.log("Réponse du serveur (Chargement):", result);
-                
-                let loadedData;
-
-                if (result.status === "success" || result.status === "not_found") {
-                    loadedData = result.data;
-                    
-                    // Appliquer les données
-                    highScore = loadedData.best_score || 0;
-                    money = loadedData.credit || 0;
-                    
-                    const loadedGrade = getGradeByName(loadedData.grade) || GRADES[0];
-                    currentGradeId = loadedGrade.id;
-
-                    applyGradeStats();
-                    updateHotbarDisplay(); 
-
-                    // Sauvegarder l'utilisateur dans le local pour le prochain démarrage
-                    localStorage.setItem('username', username);
-
-                    showMenu(); 
-                } else {
-                     alert("Erreur de chargement: " + result.message);
-                     showUsernameScreen();
-                }
-
-            } catch (error) {
-                console.error("Erreur de communication avec le serveur (Chargement):", error);
-                alert("Impossible de communiquer avec le serveur. Chargement du profil par défaut.");
-                
-                // Fallback en cas d'erreur serveur
-                highScore = 0;
-                money = 0;
-                currentGradeId = 1;
-                applyGradeStats();
-                updateHotbarDisplay();
-                localStorage.setItem('username', username);
-                showMenu(); 
-            }
-        }
-
-        async function fetchLeaderboard() {
-            const body = document.getElementById('rankingTableBody');
-            body.innerHTML = '<tr><td colspan="4">Connexion au serveur...</td></tr>';
-
-            try {
-                const response = await fetch(`${SERVER_URL}${API_BASE}/leaderboard`);
-                const result = await response.json();
-                console.log("Réponse du serveur (Leaderboard):", result);
-
-                if (result.status === "success") {
-                    const leaderboard = result.leaderboard;
-                    
-                    body.innerHTML = '';
-                    if (leaderboard.length === 0) {
-                        body.innerHTML = '<tr><td colspan="4">Aucun score disponible.</td></tr>';
-                        return;
-                    }
-
-                    leaderboard.forEach((rank, index) => {
-                        const grade = getGradeByName(rank.grade) || GRADES[0];
-                        const isPlayer = rank.username === username;
-                        
-                        const row = body.insertRow();
-                        
-                        // Styles de classement
-                        if (index === 0) { row.style.backgroundColor = 'rgba(255, 215, 0, 0.2)'; } 
-                        else if (index === 1) { row.style.backgroundColor = 'rgba(192, 192, 192, 0.2)'; } 
-                        else if (index === 2) { row.style.backgroundColor = 'rgba(205, 127, 50, 0.2)'; }
-
-                        if (isPlayer && index > 2) { 
-                            row.style.backgroundColor = 'rgba(255, 107, 107, 0.2)'; // S'il n'est pas dans le top 3
-                        }
-                        
-                        row.insertCell().textContent = index + 1;
-                        row.insertCell().innerHTML = `<span class="rank-grade" style="color:${grade.color || '#E0E0E0'};">${grade.symbol}</span>`; 
-                        row.insertCell().textContent = rank.username;
-                        row.insertCell().textContent = rank.best_score;
-                    });
-                } else {
-                    body.innerHTML = `<tr><td colspan="4">Erreur de récupération du classement: ${result.message}</td></tr>`;
-                }
-
-            } catch (error) {
-                console.error("Erreur de communication avec le serveur (Leaderboard):", error);
-                body.innerHTML = '<tr><td colspan="4">Impossible de contacter le serveur de classement.</td></tr>';
-            }
-        }
-
-
-        // --- LOGIQUE DE JEU RESTANTE ---
-
-        function updateUpgradeShopDisplay() {
-            document.getElementById('moneyInShop').textContent = Math.floor(money); 
-            
-            const currentGrade = getGrade(currentGradeId);
-            const nextGrade = getNextGrade();
-            const gradesListElement = document.getElementById('gradesList');
-            gradesListElement.innerHTML = '';
-
-            document.getElementById('currentGradeDisplay').innerHTML = `${currentGrade.name} (${currentGrade.symbol})`; 
-            document.getElementById('speedCapDisplay').textContent = MAX_SPEED_CAP.toFixed(1); 
-            
-            GRADES.forEach(grade => {
-                const item = document.createElement('p');
-                item.className = 'grade-item';
-
-                let statusText = `(Vitesse Max: ${MAX_SPEED_CAP.toFixed(1)})`; 
-                let statusClass = 'grade-locked';
-
-                if (grade.id < currentGradeId) {
-                    statusClass = 'grade-unlocked'; 
-                } else if (grade.id === currentGradeId) {
-                    statusClass = 'grade-unlocked'; 
-                    statusText = `(ACTUEL)`;
-                } else if (grade.id === currentGradeId + 1) {
-                    statusClass = 'grade-next'; 
-                    statusText = `(Coût: ${grade.cost} $)`;
-                } else {
-                    statusText = `(Coût: ${grade.cost} $) - Verrouillé`;
-                }
-
-                item.classList.add(statusClass);
-                item.innerHTML = `**${grade.symbol} ${grade.name}** ${statusText}`;
-                gradesListElement.appendChild(item);
-            });
-
-            if (nextGrade) {
-                document.getElementById('upgradeButton').textContent = `ACHETER : ${nextGrade.name} - ${nextGrade.cost} $`;
-                document.getElementById('upgradeButton').disabled = money < nextGrade.cost;
-            } else {
-                document.getElementById('upgradeButton').textContent = "GRADE MAX ATTEINT";
-                document.getElementById('upgradeButton').disabled = true;
-            }
-        }
-
-        function handleUpgrade() {
-            const nextGrade = getNextGrade();
-
-            if (nextGrade) {
-                const cost = nextGrade.cost;
-
-                if (money >= cost) {
-                    money -= cost;
-                    currentGradeId = nextGrade.id;
-                    applyGradeStats(); 
-                    saveGameData(); // Sauvegarde après achat
-                    sfx.upgrade();
-                    updateHotbarDisplay(); 
-                    updateUpgradeShopDisplay();
-                    alert(`Félicitations ! Vous avez atteint le grade ${nextGrade.name}.`);
-                } else {
-                    alert(`Argent insuffisant ! Il vous manque ${cost - money} $ pour atteindre le grade ${nextGrade.name}.`);
-                }
-            }
-        }
-
-
-        // --- OBJET JOUEUR ---
-        const player = {
-            x: START_PLATFORM_REF.x + START_PLATFORM_REF.width / 2, 
-            y: START_PLATFORM_REF.y - 10,
-            oldY: START_PLATFORM_REF.y - 10, 
-            width: 20,
-            height: 20,
-            velX: 0,
-            velY: 0,
-            isGrounded: true, 
-            coyoteTime: 0, 
-            color: initialPlayerColor, 
-            rotation: 0 
-        };
-        
-        // --- MISE À JOUR DE LA COULEUR DU JOUEUR/BORDURE ---
-        function updatePlayerAndBorderColor(newColor) {
-            player.color = newColor; 
-            canvasElement.style.borderColor = newColor;
-            canvasElement.style.boxShadow = `0 0 30px ${newColor}80`; 
-            topHotbarElement.style.borderBottomColor = newColor;
-            document.getElementById('value1').style.color = newColor;
-            document.getElementById('value2').style.color = newColor;
-        }
-
-
-        // --- PLATEFORMES, DESSIN & PHYSIQUE ---
-        let particles = [];
-        
-        function createLandingParticles(x, y, color) {
-            const num = 10;
-            for (let i = 0; i < num; i++) {
-                particles.push({
-                    x: x, y: y,
-                    vx: (Math.random() - 0.5) * 4,    
-                    vy: -Math.random() * 3 - 1,       
-                    radius: Math.random() * 3 + 1,    
-                    color: color, alpha: 1, life: 30 
+        anime({
+            targets: quoteDisplay,
+            opacity: 0,
+            duration: 500,
+            easing: 'easeOutQuad',
+            complete: () => {
+                const quote = getRandomQuote();
+                quoteDisplay.innerHTML = `
+                    <p style="font-size: 1.5em; font-style: italic; color: #fff;">"${quote.quote}"</p>
+                    <p style="margin-top: 10px; font-size: 1.1em; color: #00bfff;">— ${quote.author}</p>
+                `;
+                anime({
+                    targets: quoteDisplay,
+                    opacity: 1,
+                    duration: 500,
+                    easing: 'easeInQuad'
                 });
             }
-        }
+        });
+    }
 
-        function updateParticles() {
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += GRAVITY * 0.5; 
-                p.alpha -= 1 / p.life;
-                p.life--;
-
-                if (p.life <= 0 || p.alpha <= 0) {
-                    particles.splice(i, 1);
-                }
-            }
-        }
+    function displayGames(filteredGames){
+        grid.innerHTML="";
         
-        function drawParticles() {
-            particles.forEach(p => {
-                ctx.save();
-                ctx.globalAlpha = p.alpha; 
-                ctx.fillStyle = p.color;   
-                ctx.beginPath();
-                ctx.arc(scaleX(p.x) - scaleX(cameraX), scaleY(p.y), scaleSize(p.radius), 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            });
-        }
-         
-        let currentPlatforms = [];
-        let nextPlatformX = 150; 
-        const MIN_GAP = 100;
-        const MAX_GAP = 250; 
-        const MIN_WIDTH = 80;
-        const MAX_WIDTH = 200;
-
-        function getRandomNeonColor() {
-            const NEON_COLORS = ['#FF6B6B', '#00FFC0', '#00BFFF', '#FFD700', '#FF00FF']; 
-            return NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
-        }
+        const gamesPerAdRow = 4;
+        let quoteInserted = false;
         
-        function generateNewPlatform() {
-            const lastPlatform = currentPlatforms[currentPlatforms.length - 1] || { x: START_PLATFORM_REF.x + START_PLATFORM_REF.width, y: START_PLATFORM_REF.y, width: START_PLATFORM_REF.width };
+        filteredGames.forEach((game, index) => {
+            const card=document.createElement("div");
+            card.className="card";
             
-            const gap = MIN_GAP + Math.random() * (MAX_GAP - MIN_GAP);
-            const newX = lastPlatform.x + lastPlatform.width + gap;
-            
-            const newWidth = MIN_WIDTH + Math.random() * (MAX_WIDTH - MIN_WIDTH);
-            const newY = GROUND_LEVEL_REF - (50 + Math.random() * 50); 
-
-            currentPlatforms.push({ 
-                x: newX, 
-                y: newY, 
-                width: newWidth, 
-                height: 20, 
-                color: getRandomNeonColor(), 
-                isSolid: false 
-            }); 
-            nextPlatformX = newX;
-        }
-        
-        function prunePlatforms() {
-            currentPlatforms = currentPlatforms.filter(platform => platform.x + platform.width > player.x - BASE_WIDTH);
-        }
-
-        function drawRoundedRect(x, y, width, height, radius, color, isSolid = true) {
-            ctx.beginPath();
-            ctx.moveTo(x + radius, y);
-            ctx.lineTo(x + width - radius, y);
-            ctx.arcTo(x + width, y, x + width, y + radius, radius);
-            ctx.lineTo(x + width, y + height - radius);
-            ctx.arcTo(x + width, y + height, x + width - radius, y + height, radius);
-            ctx.lineTo(x + radius, y + height);
-            ctx.arcTo(x, y + height, x, y + height - radius, radius);
-            ctx.lineTo(x, y + radius);
-            ctx.arcTo(x, y, x + radius, y, radius);
-
-            ctx.closePath();
-            
-            ctx.shadowColor = color; 
-            ctx.strokeStyle = color;
-            ctx.lineWidth = scaleSize(2); 
-
-            if (isSolid) {
-                ctx.fillStyle = color;
-                ctx.shadowBlur = scaleSize(10); 
-                ctx.fill();
-            } else {
-                ctx.shadowBlur = scaleSize(5); 
-                ctx.stroke();
-            }
-            ctx.shadowBlur = 0; 
-        }
-
-        function drawPlayer() {
-            const playerScaledX = scaleX(player.x - cameraX); 
-            const playerScaledY = scaleY(player.y);
-            const playerScaledW = scaleSize(player.width);
-            const playerScaledH = scaleSize(player.height);
-            const centerX = playerScaledX;
-            const centerY = playerScaledY;
-            
-            ctx.save();
-            
-            ctx.translate(centerX, centerY);
-            ctx.rotate(player.rotation); 
-            
-            drawRoundedRect(-playerScaledW / 2, 
-                            -playerScaledH / 2, 
-                            playerScaledW, 
-                            playerScaledH, 
-                            scaleSize(5), 
-                            player.color,
-                            true); 
-            
-            ctx.restore();
-        }
-
-        function drawPlatforms() {
-            const scaledGroundLevel = scaleY(GROUND_LEVEL_REF);
-            ctx.fillStyle = '#0a1520'; 
-            ctx.fillRect(0, scaledGroundLevel, canvas.width, canvas.height - scaledGroundLevel);
-
-            ctx.strokeStyle = '#FF6B6B'; 
-            ctx.lineWidth = scaleSize(2);
-            ctx.beginPath();
-            ctx.moveTo(0, scaledGroundLevel);
-            ctx.lineTo(canvas.width, scaledGroundLevel);
-            ctx.stroke();
-
-            currentPlatforms.forEach(platform => {
-                drawRoundedRect(
-                    scaleX(platform.x - cameraX), 
-                    scaleY(platform.y), 
-                    scaleSize(platform.width), 
-                    scaleSize(platform.height), 
-                    scaleSize(8), 
-                    platform.color, 
-                    platform.isSolid 
-                );
-            });
-        }
-        
-        let cameraX = 0;
-        let isDead = false;
-
-        function updateCamera() {
-            const targetX = player.x - CAMERA_CENTER_X_REF;
-            cameraX = (player.x > START_PLATFORM_REF.width / 2) ? targetX : 0;
-        }
-
-        function checkCollisionWithPlatforms() {
-            let wasGrounded = player.isGrounded;
-            player.isGrounded = false;
-            
-            if (player.y + player.height / 2 >= GROUND_LEVEL_REF) {
-                 if (!isDead) { isDead = true; gameOver(); }
-                 return; 
-            }
-            
-            currentPlatforms.forEach(platform => {
-                const horizontalOverlap = player.x + player.width / 2 > (platform.x - COLLISION_BUFFER_H) && player.x - player.width / 2 < (platform.x + platform.width + COLLISION_BUFFER_H);
-                const wasAboveOrInVerticalBuffer = player.oldY + player.height / 2 <= (platform.y + COLLISION_BUFFER_V); 
-                const isNowBelowPlatformLine = player.y + player.height / 2 > platform.y;
-
-                if (horizontalOverlap && wasAboveOrInVerticalBuffer && isNowBelowPlatformLine && player.velY > 0) { 
-                    player.y = platform.y - player.height / 2; 
-                    player.velY = 0; 
-                    player.isGrounded = true; 
-                    player.coyoteTime = COYOTE_TIME_MAX; 
-                    player.rotation = 0; 
-                    
-                    if (!wasGrounded) {
-                         updateScore(5); 
-                         sfx.land();
-                         updatePlayerAndBorderColor(platform.color);
-                         createLandingParticles(player.x, platform.y, platform.color);
-                         platform.isSolid = true; 
-                    }
-                }
-            });
-            
-            if (player.isGrounded) { player.velX = currentMaxSpeed; }
-        }
-
-        function updatePlayer() {
-            if (currentState !== GAME_STATE.PLAYING || isDead) return;
-            
-            player.oldY = player.y; 
-            
-            if (currentMaxSpeed < MAX_SPEED_CAP) {
-                currentMaxSpeed += SPEED_INCREASE_RATE; 
+            if (!game.link) {
+                card.classList.add('disabled');
             }
 
-            player.velX = currentMaxSpeed; 
-            player.velY += GRAVITY;
+            let imageStyle = `background-color: ${game.color};`; 
+            let iconHtml = '<div class="game-icon">🎮</div>'; 
+
+            if (game.img) {
+                imageStyle = `background-image: url('${game.img}');`;
+                iconHtml = ''; 
+            }
+
+            const link=game.link?game.link:"#";
             
-            player.x += player.velX;
-            player.y += player.velY;
+            card.innerHTML=`
+            <div class="card-image" style="${imageStyle}">
+                ${iconHtml}
+            </div>
+            <div class="card-info">
+                <h3 class="card-title">${game.title}</h3>
+                <p class="card-genre">${game.genre}</p>
+                <button class="card-button" ${game.link?"":"disabled"}>▶ LANCER</button> 
+            </div>`;
             
-            if (!player.isGrounded) {
-                 player.coyoteTime = Math.max(0, player.coyoteTime - 1);
-                 player.rotation += 0.05; 
+            if (game.link) {
+                card.addEventListener('click', () => {
+                    window.location.href = link;
+                });
             }
             
-            checkCollisionWithPlatforms();
-            updateScore(currentMaxSpeed * 0.1); 
-            
-            if (player.x > nextPlatformX - BASE_WIDTH / 2) {
-                generateNewPlatform();
-                prunePlatforms();
+            const cardButton = card.querySelector('.card-button');
+             if (game.link) {
+                cardButton.addEventListener('click', (e) => {
+                    e.stopPropagation(); 
+                    window.location.href = link;
+                });
             }
+
+            grid.appendChild(card);
             
-            updateCamera();
-        }
-        
-        function gameOver() {
-            sfx.death();
-            isDead = true; 
-            player.velX = 0; player.velY = 0; player.rotation = 0;
-            currentState = GAME_STATE.GAMEOVER;
-            
-            updateHighScoreAndMoney(); // Déclenche la sauvegarde
-
-            document.getElementById('finalHighScore').textContent = Math.floor(highScore);
-            document.getElementById('finalCurrentScore').textContent = Math.floor(currentScore);
-            document.getElementById('finalTotalMoney').textContent = Math.floor(money);
-
-            showGameOverScreen();
-        }
-        
-        function jump() {
-            if (currentState !== GAME_STATE.PLAYING) return;
-
-            if (player.isGrounded || player.coyoteTime > 0) {
-                sfx.jump(); 
-                player.velY = JUMP_VELOCITY;
-                player.isGrounded = false;
-                player.coyoteTime = 0; 
-                player.rotation = JUMP_ROTATION; 
-                updateScore(1); 
+            if (index + 1 === gamesPerAdRow && filteredGames.length >= 5) {
+                grid.appendChild(quoteAdSlot);
+                quoteAdSlot.style.display = 'flex'; 
+                quoteInserted = true;
             }
-        }
-        
-        function fastFall() {
-            if (currentState !== GAME_STATE.PLAYING) return;
-
-            if (player.velY < FAST_FALL_VELOCITY) { 
-                 sfx.fastFall(); 
-                 player.velY = FAST_FALL_VELOCITY;
-                 updateScore(2); 
-            }
-        }
-        
-        function resizeCanvas() {
-            const wrapper = document.getElementById('gameWrapper');
-            canvas.width = wrapper.clientWidth;
-            canvas.height = wrapper.clientHeight;
-        }
-
-        window.addEventListener('resize', resizeCanvas);
-        
-
-        // *** GESTION DES ÉVÉNEMENTS CLAVIER ***
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                 e.preventDefault(); 
-                if (currentState === GAME_STATE.MENU || currentState === GAME_STATE.GAMEOVER || currentState === GAME_STATE.LOADING) {
-                    if (currentState !== GAME_STATE.MENU) startGame(); else return;
-                    return; 
-                }
-                if (currentState === GAME_STATE.PLAYING && !isSpacePressed) {
-                    jump();
-                    isSpacePressed = true;
-                }
-            }
-            
-            if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); }
         });
         
-        document.addEventListener('keyup', (e) => {
-            if (e.code === 'Space') {
-                if (ignoreNextSpaceUp) { ignoreNextSpaceUp = false; return; }
-                if (currentState === GAME_STATE.PLAYING) {
-                    isSpacePressed = false;
-                    fastFall();
-                }
+        if (!quoteInserted && quoteAdSlot.parentNode === grid) {
+             quoteAdSlot.remove();
+        }
+        
+        anime({targets:'.card, .ad-card-container',opacity:[0,1],translateY:[30,0],delay:anime.stagger(100),duration:600,easing:'easeOutQuad'});
+    }
+    
+    function initQuoteSystem() {
+        updateQuote(); 
+        setInterval(updateQuote, 10000); 
+    }
+
+
+    displayGames(games);
+    initQuoteSystem(); 
+
+    searchBar.addEventListener("input",()=>{
+        const text=searchBar.value.toLowerCase();
+        displayGames(games.filter(g=>g.title.toLowerCase().startsWith(text))); 
+    });
+
+    /* SIDEBAR */
+    const sidebar=document.getElementById("sidebar");
+    const friendsButton=document.getElementById("friends-button");
+    function toggleSidebar(){sidebar.classList.toggle('sidebar-open');}
+    friendsButton.addEventListener('click',toggleSidebar);
+
+
+    // ----------------------------------------------------
+    // --- GESTION DU FORMULAIRE DE SOUMISSION DE JEU ---
+    // ----------------------------------------------------
+    const submitGameButton = document.getElementById('submit-game-button');
+    const submitModalOverlay = document.getElementById('submit-modal-overlay');
+    const closeSubmitModalButton = document.getElementById('close-submit-modal');
+    const submissionForm = document.getElementById('game-submission-form');
+    const termsLink = document.getElementById('view-terms-link');
+    
+    // 1. VARIABLE MODIFIABLE FACILEMENT pour les Conditions d'Utilisation
+    const termsAndConditions = `
+        Conditions d'Utilisation pour la soumission de jeu :
+
+        1. Propriété intellectuelle : En soumettant votre jeu, vous confirmez être le créateur et détenir tous les droits sur le contenu.
+        2. Modification : Vous accepter la modification et la perte de détention de ce jeu.
+        3. Licence : Vous accordez une licence non exclusive et gratuite pour tester et évaluer votre jeu.
+        4. Fichiers : Le lien de téléchargement fourni doit mener à un fichier exempt de virus et de logiciels malveillants.
+        5. Contact : Nous vous recontacterons via l'email fourni.
+
+        Merci d'avoir lu.
+    `;
+
+
+    function openSubmitModal() {
+        submitModalOverlay.style.display = 'flex';
+        anime({targets: submitModalOverlay, opacity: [0, 1], duration: 300, easing: 'easeOutQuad'});
+    }
+
+    function closeSubmitModal() {
+        anime({
+            targets: submitModalOverlay, 
+            opacity: [1, 0], 
+            duration: 300, 
+            easing: 'easeOutQuad', 
+            complete: () => {
+                submitModalOverlay.style.display = 'none';
+                submissionForm.reset(); 
             }
         });
+    }
+
+    submitGameButton.addEventListener('click', openSubmitModal);
+    closeSubmitModalButton.addEventListener('click', closeSubmitModal);
+    submitModalOverlay.addEventListener('click', (e) => {
+        if (e.target === submitModalOverlay) {
+            closeSubmitModal();
+        }
+    });
+
+    // Afficher les conditions d'utilisation
+    termsLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        alert(termsAndConditions);
+    });
+
+    // --- LOGIQUE DE SOUMISSION AVEC FORMSPREE ---
+    submissionForm.addEventListener('submit', async function(e) {
+        
+        // Validation des Conditions d'Utilisation
+        const termsAccepted = document.getElementById('terms-checkbox').checked;
+        if (!termsAccepted) {
+            alert("Veuillez accepter les Conditions d'Utilisation avant d'envoyer.");
+            e.preventDefault(); // Empêche l'envoi si non coché
+            return;
+        }
+
+        // Le navigateur soumet le formulaire à l'URL Formspree (via l'attribut action)
+        // L'utilisateur sera redirigé vers la page de confirmation Formspree.
+        // La soumission native du formulaire est la plus simple et fiable sans serveur.
+    });
+    // ----------------------------------------------------
 
 
-        // --- BOUCLE PRINCIPALE DU JEU ---
+    // ----------------------------------------------------
+    // --- GESTION DES COOKIES (AVEC VÉRIFICATION) ---
+    // ----------------------------------------------------
+    const isCookiesAccepted = localStorage.getItem('cookies_accepted') === 'true';
 
-        function gameLoop() {
-            if (currentState === GAME_STATE.PLAYING) { updatePlayer(); }
-            updateParticles(); 
+    if (!isCookiesAccepted) {
+        // --- SEUL CE BLOC S'EXÉCUTE SI LES COOKIES NE SONT PAS ACCEPTÉS ---
 
-            if (currentState === GAME_STATE.PLAYING || currentState === GAME_STATE.PAUSED) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const cookieOverlay = document.getElementById('cookie-modal-overlay');
+        const acceptButton = document.getElementById('accept-cookies-button');
+        const closeButton = document.getElementById('close-cookie-modal');
+        
+        const MOVEMENT_INTERVAL = 50; 
+        let teleportIntervalId = null;
 
-                ctx.save();
-                ctx.translate(0, 0); 
-                drawPlatforms(); 
-                drawPlayer();
-                drawParticles(); 
-                ctx.restore();
+        function closeCookieModal(accept = false) {
+            if (accept) {
+                localStorage.setItem('cookies_accepted', 'true');
+            }
+            
+            if (teleportIntervalId) {
+                clearInterval(teleportIntervalId);
+                teleportIntervalId = null;
+            }
+            acceptButton.classList.remove('teleporting', 'stopped'); 
+            
+            anime({
+                targets: cookieOverlay, 
+                opacity: [1, 0], 
+                duration: 400, 
+                easing: 'easeOutQuad', 
+                complete: () => {
+                    cookieOverlay.style.display = 'none'; 
+                }
+            });
+        }
 
-                if (currentState === GAME_STATE.PLAYING) { updateHotbarDisplay(); }
+        function teleportButton() {
+            if (!acceptButton.classList.contains('teleporting')) {
+                return;
             }
 
-            requestAnimationFrame(gameLoop);
-        }
-
-        // --- GESTION DES VUES ---
-        
-        function hideAllScreens() {
-            menuContainer.style.display = 'none';
-            canvasElement.style.display = 'none';
-            document.getElementById('scoreDisplay').style.display = 'none';
-            pauseMenuElement.style.display = 'none';
-            gameOverScreenElement.style.display = 'none';
-            topHotbarElement.style.display = 'none';
-            loadingScreenElement.style.display = 'none';
-            rankingScreenElement.style.display = 'none';
-            usernameScreenElement.style.display = 'none';
-        }
-
-        function showUsernameScreen() {
-             hideAllScreens();
-             currentState = GAME_STATE.USERNAME;
-             usernameScreenElement.style.display = 'flex';
-             document.getElementById('usernameInput').value = localStorage.getItem('username') || '';
-        }
-
-        function showMenu() {
-            hideAllScreens();
-            currentState = GAME_STATE.MENU;
-            menuContainer.style.display = 'block';
-            document.getElementById('menuScreen').style.display = 'flex'; 
-            document.getElementById('gradeShop').style.display = 'none';
-            rankingScreenElement.style.display = 'none';
-            topHotbarElement.style.display = 'flex'; 
-            updateHotbarDisplay(); 
-        }
-
-        function startGame() {
-            sfx.restart();
-            hideAllScreens();
-            currentState = GAME_STATE.PLAYING;
-            canvasElement.style.display = 'block';
-            document.getElementById('scoreDisplay').style.display = 'block';
-            topHotbarElement.style.display = 'flex'; 
-
-            ignoreNextSpaceUp = true; 
-
-            // Réinitialisation du jeu
-            player.x = START_PLATFORM_REF.x + START_PLATFORM_REF.width / 2;
-            player.y = START_PLATFORM_REF.y - player.height / 2;
-            player.oldY = player.y; 
-            player.velY = 0; 
-            player.isGrounded = true; 
-            isDead = false; 
-            currentMaxSpeed = 8; 
-            currentScore = 0; 
-            lastMoneyScoreThreshold = 0; 
-            lastDisplayedScore = 0; 
-            scoreDisplayElement.textContent = `0`;
-            particles = []; 
-            player.rotation = 0; 
+            const buttonWidth = acceptButton.offsetWidth;
+            const buttonHeight = acceptButton.offsetHeight;
             
-            // Réinitialise la couleur du joueur et des bordures
-            const initialPlatformColor = getRandomNeonColor(); 
-            currentPlatforms = [];
-            currentPlatforms.push({ x: START_PLATFORM_REF.x, y: START_PLATFORM_REF.y, width: START_PLATFORM_REF.width, height: START_PLATFORM_REF.height, color: initialPlatformColor, isSolid: true });
-            updatePlayerAndBorderColor(initialPlatformColor); 
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            const xMax = Math.max(0, viewportWidth - buttonWidth);
+            const yMax = Math.max(0, viewportHeight - buttonHeight);
+
+            const newX = Math.random() * xMax;
+            const newY = Math.random() * yMax;
+
+            acceptButton.style.left = `${newX}px`;
+            acceptButton.style.top = `${newY}px`;
+            acceptButton.style.transform = 'none';
+        }
+        
+        function startTeleportation() {
+            acceptButton.classList.remove('stopped'); 
+            acceptButton.classList.add('teleporting');
             
-            for (let i = 0; i < 5; i++) { generateNewPlatform(); }
-
-            updateHotbarDisplay(); 
-        }
-        
-        function showUpgradeShop() {
-            hideAllScreens();
-            currentState = GAME_STATE.GRADES;
-            menuContainer.style.display = 'block';
-            document.getElementById('menuScreen').style.display = 'none';
-            document.getElementById('gradeShop').style.display = 'flex'; 
-            topHotbarElement.style.display = 'flex';
-            updateUpgradeShopDisplay(); 
-            updateHotbarDisplay(); 
-        }
-
-        function showGameOverScreen() {
-            hideAllScreens();
-            topHotbarElement.style.display = 'flex';
-            gameOverScreenElement.style.display = 'flex'; 
-        }
-        
-        function showRankingScreen() {
-            hideAllScreens();
-            currentState = GAME_STATE.RANKING;
-            rankingScreenElement.style.display = 'flex';
-            topHotbarElement.style.display = 'flex'; 
-            fetchLeaderboard();
-        }
-
-        function togglePause() {
-            if (currentState === GAME_STATE.PLAYING) {
-                currentState = GAME_STATE.PAUSED;
-                document.getElementById('pauseCurrentScore').textContent = `Score: ${Math.floor(currentScore)}`; 
-                pauseMenuElement.style.display = 'flex'; 
-            } else if (currentState === GAME_STATE.PAUSED) {
-                currentState = GAME_STATE.PLAYING;
-                pauseMenuElement.style.display = 'none';
+            if (!teleportIntervalId) {
+                teleportIntervalId = setInterval(teleportButton, MOVEMENT_INTERVAL);
+                teleportButton(); 
             }
         }
-
-        function quitGame() {
-             currentState = GAME_STATE.MENU; 
-             pauseMenuElement.style.display = 'none';
-             saveGameData(); // Sauvegarde lors du retour au menu
-             showMenu();
-        }
-
-        // --- DÉMARRAGE ET ÉVÉNEMENTS ---
         
-        document.getElementById('submitUsernameButton').onclick = () => {
-             const inputUsername = document.getElementById('usernameInput').value.trim();
-             if (inputUsername.length > 2 && inputUsername.length < 16) {
-                 username = inputUsername;
-                 loadGameData();
-             } else {
-                 alert("Le nom d'utilisateur doit contenir entre 3 et 15 caractères.");
-             }
-        };
-
-        document.getElementById('changeUserButton').onclick = showUsernameScreen;
-        document.getElementById('playButton').onclick = startGame;
-        document.getElementById('gradesButton').onclick = showUpgradeShop; 
-        document.getElementById('upgradeButton').onclick = handleUpgrade; 
-        document.getElementById('backButton').onclick = showMenu;
-        document.getElementById('continueButton').onclick = togglePause;
-        document.getElementById('quitButton').onclick = quitGame; 
-        document.getElementById('restartButton').onclick = startGame;
-        document.getElementById('goToMenuButton').onclick = showMenu;
-        document.getElementById('rankingButton').onclick = showRankingScreen; 
-        document.getElementById('backToMenuFromRanking').onclick = showMenu; 
-        
-        // --- Initialisation du jeu
-        resizeCanvas(); 
-        
-        // Vérifie si un nom d'utilisateur est déjà dans le localStorage pour démarrer
-        if (username) {
-             loadGameData();
-        } else {
-             showUsernameScreen();
+        function stopTeleportation() {
+            if (teleportIntervalId) {
+                clearInterval(teleportIntervalId);
+                teleportIntervalId = null;
+            }
+            
+            acceptButton.classList.add('stopped');
+            acceptButton.classList.remove('teleporting');
         }
         
-        gameLoop(); 
+        // --- INITIALISATION DES ÉVÉNEMENTS ---
+
+        // 1. Affichage de la modale
+        cookieOverlay.style.display = 'flex'; 
+        cookieOverlay.style.opacity = 0;
+        anime({targets: cookieOverlay, opacity: [0, 1], duration: 400, easing: 'easeOutQuad'});
         
-    </script>
+        // 2. Contrôle du mouvement via survol
+        acceptButton.addEventListener('mouseover', startTeleportation);
+        acceptButton.addEventListener('mouseleave', stopTeleportation); 
+        
+        // 3. La SEULE issue : le clic sur la croix invisible (qui enregistre l'acceptation)
+        closeButton.addEventListener('click', () => closeCookieModal(true));
+        
+        // 4. S'assurer que le clic sur le bouton ACCEPTER ne fait RIEN.
+        acceptButton.addEventListener('click', (e) => e.preventDefault());
+        
+        // 5. S'assurer que le clic sur le bouton REFUSER ne fait RIEN.
+        const refuseButton = document.getElementById('refuse-cookies-button');
+        refuseButton.addEventListener('click', (e) => e.preventDefault());
+    } 
+
+    // ----------------------------------------------------
+</script>
+
 </body>
 </html>

@@ -320,8 +320,8 @@
 
     <script>
         // --- CONFIGURATION DU SERVEUR ---
-        // L'URL de votre serveur Render
-        const SERVER_URL = 'https://project-3-api-2bgb.onrender.com'; 
+        // ⚠️ REMPLACEZ CETTE URL PAR VOTRE VÉRITABLE URL DE SERVEUR
+        const SERVER_URL = 'http://127.0.0.1:5000'; 
         const API_BASE = '/stickman_runner';
 
         // --- CONFIGURATION DU JEU (TAILLES DE RÉFÉRENCE) ---
@@ -441,16 +441,16 @@
         
         // --- SYSTÈME DE GRADES ---
         const GRADES = [
-            { id: 1, name: "Poussière", cost: 0, symbol: "⚪", speedBonus: 0, color: '#E0E0E0' }, 
-            { id: 2, name: "N. Sélénium", cost: 50, symbol: "🟢", speedBonus: 0, color: '#00FFC0' }, 
-            { id: 3, name: "N. Mercure", cost: 150, symbol: "🔵", speedBonus: 0, color: '#00BFFF' }, 
-            { id: 4, name: "N. Vénus", cost: 300, symbol: "🟣", speedBonus: 0, color: '#FF00FF' }, 
-            { id: 5, name: "N. Terre", cost: 500, symbol: "✨", speedBonus: 0, color: '#FFD700' }, 
-            { id: 6, name: "N. Mars", cost: 800, symbol: "⚡", speedBonus: 0, color: '#FF6B6B' }, 
-            { id: 7, name: "N. Jupiter", cost: 1200, symbol: "🪐", speedBonus: 0, color: '#FFA500' },
-            { id: 8, name: "N. Saturne", cost: 1800, symbol: "🚀", speedBonus: 0, color: '#00FA9A' },
-            { id: 9, name: "N. Uranus", cost: 2600, symbol: "🌌", speedBonus: 0, color: '#9932CC' },
-            { id: 10, name: "MAX", cost: 5000, symbol: "🔥", speedBonus: 0, color: '#FF4500' } 
+            { id: 1, name: "Poussière", cost: 0, symbol: "⚪", speedBonus: 0 }, 
+            { id: 2, name: "N. Sélénium", cost: 50, symbol: "🟢", speedBonus: 0 }, 
+            { id: 3, name: "N. Mercure", cost: 150, symbol: "🔵", speedBonus: 0 }, 
+            { id: 4, name: "N. Vénus", cost: 300, symbol: "🟣", speedBonus: 0 }, 
+            { id: 5, name: "N. Terre", cost: 500, symbol: "✨", speedBonus: 0 }, 
+            { id: 6, name: "N. Mars", cost: 800, symbol: "⚡", speedBonus: 0 }, 
+            { id: 7, name: "N. Jupiter", cost: 1200, symbol: "🪐", speedBonus: 0 },
+            { id: 8, name: "N. Saturne", cost: 1800, symbol: "🚀", speedBonus: 0 },
+            { id: 9, name: "N. Uranus", cost: 2600, symbol: "🌌", speedBonus: 0 },
+            { id: 10, name: "MAX", cost: 5000, symbol: "🔥", speedBonus: 0 } 
         ];
         
         let currentGradeId = 1;

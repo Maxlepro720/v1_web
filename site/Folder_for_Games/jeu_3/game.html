@@ -102,7 +102,8 @@
         }
 
         /* --- ÉCRANS GLOBAUX --- */
-        #menuContainer, #pauseMenu, #gameOverScreen, #loadingScreen, #rankingScreen, #usernameScreen {
+        /* Suppression de #usernameScreen dans la liste */
+        #menuContainer, #pauseMenu, #gameOverScreen, #loadingScreen, #rankingScreen {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -113,7 +114,8 @@
         }
         
         /* STYLES COMMUNS DES ÉCRANS DE MENU */
-        #loadingScreen, #menuScreen, #gradeShop, #rankingScreen, #gameOverScreen, #pauseMenu, #usernameScreen {
+        /* Suppression de #usernameScreen dans la liste */
+        #loadingScreen, #menuScreen, #gradeShop, #rankingScreen, #gameOverScreen, #pauseMenu {
             background-color: #1a2a3a; 
             padding: 30px;
             border-radius: 15px;
@@ -147,19 +149,7 @@
             box-shadow: 0 0 10px #00FFC0; 
         }
         
-        /* Champ de saisie d'utilisateur */
-        #usernameInput {
-            padding: 10px;
-            margin: 20px 0;
-            width: 80%;
-            border: 2px solid #FF6B6B;
-            background-color: #0d1b2a;
-            color: #E0E0E0;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1em;
-            text-align: center;
-            border-radius: 5px;
-        }
+        /* Suppression du style pour #usernameInput car l'élément est supprimé */
 
         /* --- STYLES SPÉCIFIQUES DU SHOP/AMÉLIORATION --- */
         #upgradeButton {
@@ -222,14 +212,7 @@
 </head>
 <body>
     <div id="gameWrapper">
-        <div id="usernameScreen" style="display: none;">
-            <h1>Bienvenue</h1>
-            <p>Veuillez entrer votre nom d'utilisateur pour charger votre progression.</p>
-            <input type="text" id="usernameInput" placeholder="Votre nom d'utilisateur">
-            <button class="menu-button" id="submitUsernameButton">CHARGER / CRÉER</button>
-        </div>
-
-        <div id="loadingScreen" style="display: none;">
+        <div id="loadingScreen">
             <h1>STICKMAN RUNNER</h1>
             <p>Chargement des données...</p>
             <span style="color: #00FFC0;">INITIALISATION DU JEU...</span>
@@ -244,8 +227,7 @@
                 <button class="menu-button" id="playButton">JOUER</button>
                 <button class="menu-button" id="gradesButton">AMÉLIORATION (GRADES)</button>
                 <button class="menu-button" id="rankingButton">CLASSEMENT</button>
-                <button class="menu-button" id="changeUserButton" style="background-color: #4a4a6e;">CHANGER D'UTILISATEUR</button> 
-            </div>
+                </div>
 
             <div id="gradeShop" style="display: none;">
                 <h2>Amélioration de Grade</h2>
@@ -320,7 +302,6 @@
 
     <script>
         // --- CONFIGURATION DU SERVEUR ---
-        // L'URL de votre serveur Render (MISE À JOUR)
         const SERVER_URL = 'https://project-3-api-2bgb.onrender.com'; 
         const API_BASE = '/stickman_runner';
 
@@ -400,12 +381,11 @@
         const topHotbarElement = document.getElementById('topHotbar');
         const loadingScreenElement = document.getElementById('loadingScreen');
         const rankingScreenElement = document.getElementById('rankingScreen'); 
-        const usernameScreenElement = document.getElementById('usernameScreen');
+        // SUPPRESSION: const usernameScreenElement = document.getElementById('usernameScreen');
         const currentScoreHotbarItem = document.getElementById('currentScoreHotbarItem');
         const scoreDisplayElement = document.getElementById('scoreDisplay');
 
-        // Suppression de GAME_STATE.USERNAME pour le démarrage
-        const GAME_STATE = { LOADING: -1, MENU: 0, PLAYING: 1, GRADES: 2, GAMEOVER: 3, PAUSED: 4, RANKING: 5, USERNAME: 6 };
+        const GAME_STATE = { LOADING: -1, MENU: 0, PLAYING: 1, GRADES: 2, GAMEOVER: 3, PAUSED: 4, RANKING: 5 /*, USERNAME: 6 (Supprimé)*/ };
         let currentState = GAME_STATE.LOADING; // Démarrage direct au chargement
 
         // Vitesse initiale
@@ -437,9 +417,8 @@
         let ignoreNextSpaceUp = false; 
         
         // --- DONNÉES DU JOUEUR ---
-        // Initialisation avec localStorage. Le mode invité ("JoueurAnonyme") est retiré, 
-        // l'utilisateur est forcé à passer par l'écran de saisie s'il n'est pas stocké.
-        let username = localStorage.getItem('username'); // Peut être null si non trouvé
+        // Utilisateur par défaut/stocké. Utilisation de 'admin' comme vu dans l'erreur 405.
+        let username = localStorage.getItem('username') || 'admin'; 
         let currentGradeName = "Poussière"; 
         
         // --- SYSTÈME DE GRADES ---
@@ -472,7 +451,6 @@
         }
         
         function applyGradeStats() {
-            // Logique de vitesse retirée pour l'instant
             MAX_SPEED_CAP = MAX_SPEED_CAP_BASE; 
             currentGradeName = getGrade(currentGradeId).name;
         }
@@ -557,7 +535,6 @@
                 console.log("Réponse du serveur (Sauvegarde):", result);
 
                 if (result.status === "error") {
-                     // Utiliser console.error car l'alerte est trop intrusive
                      console.error("Erreur de sauvegarde: " + result.message);
                 }
 
@@ -571,11 +548,10 @@
         }
 
         async function loadGameData() {
-            // Vérification de sécurité supplémentaire
-            if (!username || username.length < 3) {
-                console.error("Tentative de chargement avec un nom d'utilisateur invalide.");
-                showUsernameScreen();
-                return;
+            // Pas de vérification de longueur, on utilise le pseudo stocké ou le par défaut ('admin')
+            if (!username) { 
+                document.querySelector('#loadingScreen p').textContent = `Erreur: Nom d'utilisateur non défini. Impossible de charger.`;
+                return; 
             }
             
             hideAllScreens();
@@ -588,8 +564,8 @@
                 const response = await fetch(`${SERVER_URL}${API_BASE}/load_data/${username}`);
 
                 if (!response.ok) {
-                    // Si la requête échoue (ex: 405 Method Not Allowed), lance une erreur personnalisée
-                    throw new Error(`Erreur HTTP: ${response.status} (${response.statusText})`);
+                    // C'est ici que votre erreur 405 se produit et est attrapée
+                    throw new Error(`Erreur HTTP: ${response.status} (${response.statusText || 'Méthode non autorisée (405)'})`);
                 }
                 
                 const result = await response.json();
@@ -617,24 +593,24 @@
                 } else {
                     // Si le serveur répond en JSON mais indique une erreur logique
                     console.error("Erreur de chargement: " + result.message);
-                    document.querySelector('#loadingScreen p').textContent = `Erreur de chargement: ${result.message}`;
-                    setTimeout(showUsernameScreen, 3000); // Retour à la saisie après un délai
+                    // On reste sur l'écran de chargement avec le message d'erreur
+                    document.querySelector('#loadingScreen p').textContent = `Erreur de chargement: ${result.message}.`;
                 }
 
             } catch (error) {
                 console.error("Erreur de communication avec le serveur (Chargement):", error);
                 
-                // Afficher un message d'erreur clair et forcer le retour à l'écran de saisie
-                document.querySelector('#loadingScreen p').textContent = `Erreur FATALE de communication. (${error.message || error}). Vérifiez le statut du serveur et réessayez.`;
+                // NOUVEL OBJECTIF CLIENT: RESTER EN ÉCRAN DE CHARGEMENT EN CAS D'ERREUR
+                document.querySelector('#loadingScreen p').textContent = `Erreur FATALE de communication: ${error.message}. Le serveur pourrait ne pas être disponible ou la méthode GET est rejetée. Vérifiez le statut du serveur (${SERVER_URL}) et réessayez.`;
 
-                // Fallback temporaire des stats (mais on n'affiche pas le menu, on retourne à la saisie)
+                // Fallback des stats (pour ne pas crasher le reste du code)
                 highScore = 0;
                 money = 0;
                 currentGradeId = 1;
                 applyGradeStats();
                 updateHotbarDisplay();
                 
-                setTimeout(showUsernameScreen, 3000); // Retour à la saisie après un délai
+                // Le loading screen reste affiché (currentState = GAME_STATE.LOADING)
             }
         }
 
@@ -645,8 +621,7 @@
             try {
                 const response = await fetch(`${SERVER_URL}${API_BASE}/leaderboard`);
                 const result = await response.json();
-                console.log("Réponse du serveur (Leaderboard):", result);
-
+                // ... (reste du code fetchLeaderboard)
                 if (result.status === "success") {
                     const leaderboard = result.leaderboard;
                     
@@ -680,6 +655,7 @@
                     body.innerHTML = `<tr><td colspan="4">Erreur de récupération du classement: ${result.message}</td></tr>`;
                 }
 
+
             } catch (error) {
                 console.error("Erreur de communication avec le serveur (Leaderboard):", error);
                 body.innerHTML = '<tr><td colspan="4">Impossible de contacter le serveur de classement.</td></tr>';
@@ -687,7 +663,7 @@
         }
 
 
-        // --- LOGIQUE DE JEU RESTANTE ---
+        // --- LOGIQUE DE JEU RESTANTE (non modifiée) ---
 
         function updateUpgradeShopDisplay() {
             document.getElementById('moneyInShop').textContent = Math.floor(money); 
@@ -1062,8 +1038,8 @@
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                  e.preventDefault(); 
-                if (currentState === GAME_STATE.MENU || currentState === GAME_STATE.GAMEOVER || currentState === GAME_STATE.LOADING) {
-                    if (currentState !== GAME_STATE.MENU) startGame(); else return;
+                if (currentState === GAME_STATE.MENU || currentState === GAME_STATE.GAMEOVER) { // Retiré GAME_STATE.LOADING de la condition pour éviter de démarrer si le chargement a échoué
+                    startGame();
                     return; 
                 }
                 if (currentState === GAME_STATE.PLAYING && !isSpacePressed) {
@@ -1119,15 +1095,10 @@
             topHotbarElement.style.display = 'none';
             loadingScreenElement.style.display = 'none';
             rankingScreenElement.style.display = 'none';
-            usernameScreenElement.style.display = 'none';
+            // SUPPRESSION: usernameScreenElement.style.display = 'none';
         }
 
-        function showUsernameScreen() {
-             hideAllScreens();
-             currentState = GAME_STATE.USERNAME;
-             usernameScreenElement.style.display = 'flex';
-             document.getElementById('usernameInput').value = localStorage.getItem('username') || '';
-        }
+        // SUPPRESSION: showUsernameScreen()
 
         function showMenu() {
             hideAllScreens();
@@ -1141,6 +1112,9 @@
         }
 
         function startGame() {
+            // Vérification simple au cas où un utilisateur tente de démarrer sans données chargées après une erreur
+            if (currentState === GAME_STATE.LOADING) return; 
+
             sfx.restart();
             hideAllScreens();
             currentState = GAME_STATE.PLAYING;
@@ -1221,17 +1195,8 @@
 
         // --- DÉMARRAGE ET ÉVÉNEMENTS ---
         
-        document.getElementById('submitUsernameButton').onclick = () => {
-             const inputUsername = document.getElementById('usernameInput').value.trim();
-             if (inputUsername.length > 2 && inputUsername.length < 16) {
-                 username = inputUsername;
-                 loadGameData();
-             } else {
-                 alert("Le nom d'utilisateur doit contenir entre 3 et 15 caractères.");
-             }
-        };
-
-        document.getElementById('changeUserButton').onclick = showUsernameScreen;
+        // SUPPRESSION: document.getElementById('submitUsernameButton').onclick = ...
+        // SUPPRESSION: document.getElementById('changeUserButton').onclick = showUsernameScreen;
         document.getElementById('playButton').onclick = startGame;
         document.getElementById('gradesButton').onclick = showUpgradeShop; 
         document.getElementById('upgradeButton').onclick = handleUpgrade; 
@@ -1246,17 +1211,8 @@
         // --- Initialisation du jeu
         resizeCanvas(); 
         
-        // Nouvelle logique de démarrage : force l'écran de saisie si l'utilisateur n'est pas trouvé
-        const storedUsername = localStorage.getItem('username');
-
-        if (storedUsername && storedUsername.length > 2) {
-            username = storedUsername;
-            // Si l'utilisateur est trouvé, charger les données
-            loadGameData();
-        } else {
-            // Sinon, afficher l'écran de saisie
-            showUsernameScreen();
-        }
+        // Démarrage automatique du chargement avec le pseudo trouvé ou par défaut
+        loadGameData(); 
         
         gameLoop(); 
         

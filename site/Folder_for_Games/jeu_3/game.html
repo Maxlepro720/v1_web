@@ -102,7 +102,6 @@
         }
 
         /* --- ÉCRANS GLOBAUX --- */
-        /* Suppression de #usernameScreen dans la liste */
         #menuContainer, #pauseMenu, #gameOverScreen, #loadingScreen, #rankingScreen {
             position: absolute;
             top: 50%;
@@ -114,7 +113,6 @@
         }
         
         /* STYLES COMMUNS DES ÉCRANS DE MENU */
-        /* Suppression de #usernameScreen dans la liste */
         #loadingScreen, #menuScreen, #gradeShop, #rankingScreen, #gameOverScreen, #pauseMenu {
             background-color: #1a2a3a; 
             padding: 30px;
@@ -149,8 +147,6 @@
             box-shadow: 0 0 10px #00FFC0; 
         }
         
-        /* Suppression du style pour #usernameInput car l'élément est supprimé */
-
         /* --- STYLES SPÉCIFIQUES DU SHOP/AMÉLIORATION --- */
         #upgradeButton {
             background-color: #00BFFF; 
@@ -207,6 +203,21 @@
         .rank-grade {
             font-size: 1.2em;
         }
+        
+        /* --- NOUVEAU: SPINNER DE CHARGEMENT --- */
+        .spinner {
+            border: 4px solid rgba(0, 255, 192, 0.1); 
+            border-top: 4px solid #00FFC0; 
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
     </style>
 </head>
@@ -214,7 +225,8 @@
     <div id="gameWrapper">
         <div id="loadingScreen">
             <h1>STICKMAN RUNNER</h1>
-            <p>Chargement des données...</p>
+            <div class="spinner"></div> 
+            <p id="loadingMessage">Chargement des données...</p>
             <span style="color: #00FFC0;">INITIALISATION DU JEU...</span>
         </div>
 
@@ -227,6 +239,7 @@
                 <button class="menu-button" id="playButton">JOUER</button>
                 <button class="menu-button" id="gradesButton">AMÉLIORATION (GRADES)</button>
                 <button class="menu-button" id="rankingButton">CLASSEMENT</button>
+                <button class="menu-button" id="quitGameButton" style="background-color: #FF6B6B;">QUITTER LE JEU</button>
                 </div>
 
             <div id="gradeShop" style="display: none;">
@@ -304,6 +317,7 @@
         // --- CONFIGURATION DU SERVEUR ---
         const SERVER_URL = 'https://project-3-api-2bgb.onrender.com'; 
         const API_BASE = '/stickman_runner';
+        const RELOAD_INTERVAL_MS = 5000; // 5 secondes
 
         // --- CONFIGURATION DU JEU (TAILLES DE RÉFÉRENCE) ---
         const BASE_WIDTH = 800;
@@ -381,11 +395,11 @@
         const topHotbarElement = document.getElementById('topHotbar');
         const loadingScreenElement = document.getElementById('loadingScreen');
         const rankingScreenElement = document.getElementById('rankingScreen'); 
-        // SUPPRESSION: const usernameScreenElement = document.getElementById('usernameScreen');
+        const loadingMessageElement = document.getElementById('loadingMessage');
         const currentScoreHotbarItem = document.getElementById('currentScoreHotbarItem');
         const scoreDisplayElement = document.getElementById('scoreDisplay');
 
-        const GAME_STATE = { LOADING: -1, MENU: 0, PLAYING: 1, GRADES: 2, GAMEOVER: 3, PAUSED: 4, RANKING: 5 /*, USERNAME: 6 (Supprimé)*/ };
+        const GAME_STATE = { LOADING: -1, MENU: 0, PLAYING: 1, GRADES: 2, GAMEOVER: 3, PAUSED: 4, RANKING: 5 };
         let currentState = GAME_STATE.LOADING; // Démarrage direct au chargement
 
         // Vitesse initiale
@@ -393,7 +407,7 @@
         let currentMaxSpeed = 8; 
         
         let MAX_SPEED_CAP_BASE = 15; 
-        let MAX_SPEED_CAP = MAX_SPEED_CAP_BASE; 
+        let MAX_SPEED_CAP = 15; // Initialisé avec la base pour l'affichage
         
         const SPEED_INCREASE_RATE = 0.01; 
         
@@ -416,9 +430,8 @@
         let isSpacePressed = false;
         let ignoreNextSpaceUp = false; 
         
-        // --- DONNÉES DU JOUEUR ---
-        // Utilisateur par défaut/stocké. Utilisation de 'admin' comme vu dans l'erreur 405.
-        let username = localStorage.getItem('username') || 'admin'; 
+        // --- DONNÉES DU JOUEUR (Username fixe) ---
+        let username = 'admin'; // Utilisateur par défaut
         let currentGradeName = "Poussière"; 
         
         // --- SYSTÈME DE GRADES ---
@@ -509,8 +522,6 @@
         // --- API & COMMUNICATION SERVEUR ---
 
         async function saveGameData() {
-            if (!username) return;
-
             const gradeName = getGrade(currentGradeId).name;
 
             const dataToSave = {
@@ -540,31 +551,20 @@
 
             } catch (error) {
                 console.error("Erreur de communication avec le serveur (Sauvegarde):", error);
-                // Si le serveur est injoignable, on met à jour le localStorage en fallback
-                localStorage.setItem('highScore', highScore);
-                localStorage.setItem('money', money);
-                localStorage.setItem('currentGradeId', currentGradeId);
             }
         }
 
         async function loadGameData() {
             // Pas de vérification de longueur, on utilise le pseudo stocké ou le par défaut ('admin')
-            if (!username) { 
-                document.querySelector('#loadingScreen p').textContent = `Erreur: Nom d'utilisateur non défini. Impossible de charger.`;
-                return; 
-            }
-            
             hideAllScreens();
             currentState = GAME_STATE.LOADING;
             loadingScreenElement.style.display = 'flex';
-            document.querySelector('#loadingScreen p').textContent = `Chargement des données de ${username}...`;
-
+            loadingMessageElement.textContent = `Connexion au serveur et chargement des données de ${username}...`;
 
             try {
                 const response = await fetch(`${SERVER_URL}${API_BASE}/load_data/${username}`);
 
                 if (!response.ok) {
-                    // C'est ici que votre erreur 405 se produit et est attrapée
                     throw new Error(`Erreur HTTP: ${response.status} (${response.statusText || 'Méthode non autorisée (405)'})`);
                 }
                 
@@ -586,31 +586,29 @@
                     applyGradeStats();
                     updateHotbarDisplay(); 
 
-                    // Sauvegarder l'utilisateur dans le local pour le prochain démarrage
-                    localStorage.setItem('username', username);
-
                     showMenu(); 
                 } else {
                     // Si le serveur répond en JSON mais indique une erreur logique
                     console.error("Erreur de chargement: " + result.message);
-                    // On reste sur l'écran de chargement avec le message d'erreur
-                    document.querySelector('#loadingScreen p').textContent = `Erreur de chargement: ${result.message}.`;
+                    loadingMessageElement.textContent = `Erreur de chargement des données: ${result.message}. Nouvelle tentative dans ${RELOAD_INTERVAL_MS / 1000} secondes.`;
+                    setTimeout(loadGameData, RELOAD_INTERVAL_MS);
                 }
 
             } catch (error) {
                 console.error("Erreur de communication avec le serveur (Chargement):", error);
                 
                 // NOUVEL OBJECTIF CLIENT: RESTER EN ÉCRAN DE CHARGEMENT EN CAS D'ERREUR
-                document.querySelector('#loadingScreen p').textContent = `Erreur FATALE de communication: ${error.message}. Le serveur pourrait ne pas être disponible ou la méthode GET est rejetée. Vérifiez le statut du serveur (${SERVER_URL}) et réessayez.`;
-
-                // Fallback des stats (pour ne pas crasher le reste du code)
+                loadingMessageElement.textContent = `Serveur injoignable ou erreur de connexion. Nouvelle tentative dans ${RELOAD_INTERVAL_MS / 1000} secondes.`;
+                
+                // Fallback des stats pour éviter le crash (mais l'utilisateur ne verra pas ces stats tant qu'il est en loading)
                 highScore = 0;
                 money = 0;
                 currentGradeId = 1;
                 applyGradeStats();
                 updateHotbarDisplay();
                 
-                // Le loading screen reste affiché (currentState = GAME_STATE.LOADING)
+                // On relance la fonction de chargement après un délai
+                setTimeout(loadGameData, RELOAD_INTERVAL_MS);
             }
         }
 
@@ -1038,7 +1036,7 @@
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                  e.preventDefault(); 
-                if (currentState === GAME_STATE.MENU || currentState === GAME_STATE.GAMEOVER) { // Retiré GAME_STATE.LOADING de la condition pour éviter de démarrer si le chargement a échoué
+                if (currentState === GAME_STATE.MENU || currentState === GAME_STATE.GAMEOVER) { 
                     startGame();
                     return; 
                 }
@@ -1095,10 +1093,7 @@
             topHotbarElement.style.display = 'none';
             loadingScreenElement.style.display = 'none';
             rankingScreenElement.style.display = 'none';
-            // SUPPRESSION: usernameScreenElement.style.display = 'none';
         }
-
-        // SUPPRESSION: showUsernameScreen()
 
         function showMenu() {
             hideAllScreens();
@@ -1192,11 +1187,14 @@
              saveGameData(); // Sauvegarde lors du retour au menu
              showMenu();
         }
+        
+        function quitToMenuHTML() {
+             window.location.href = '../../menu.html';
+        }
+
 
         // --- DÉMARRAGE ET ÉVÉNEMENTS ---
         
-        // SUPPRESSION: document.getElementById('submitUsernameButton').onclick = ...
-        // SUPPRESSION: document.getElementById('changeUserButton').onclick = showUsernameScreen;
         document.getElementById('playButton').onclick = startGame;
         document.getElementById('gradesButton').onclick = showUpgradeShop; 
         document.getElementById('upgradeButton').onclick = handleUpgrade; 
@@ -1207,11 +1205,12 @@
         document.getElementById('goToMenuButton').onclick = showMenu;
         document.getElementById('rankingButton').onclick = showRankingScreen; 
         document.getElementById('backToMenuFromRanking').onclick = showMenu; 
+        document.getElementById('quitGameButton').onclick = quitToMenuHTML;
         
         // --- Initialisation du jeu
         resizeCanvas(); 
         
-        // Démarrage automatique du chargement avec le pseudo trouvé ou par défaut
+        // Démarrage automatique du chargement avec le pseudo par défaut et boucle de re-tentative
         loadGameData(); 
         
         gameLoop(); 

@@ -19,6 +19,36 @@
             color: #E0E0E0; 
             position: relative; 
         }
+
+        /* --- STYLES DES BARRES DE DÉFILEMENT (CYBER NEON) --- */
+        /* Appliqué à tous les éléments scrollables */
+        body::-webkit-scrollbar, 
+        #gradesList::-webkit-scrollbar,
+        #gradeShop::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        body::-webkit-scrollbar-track,
+        #gradesList::-webkit-scrollbar-track,
+        #gradeShop::-webkit-scrollbar-track {
+            background: #0d1b2a; /* Dark background */
+            border-radius: 10px;
+        }
+
+        body::-webkit-scrollbar-thumb,
+        #gradesList::-webkit-scrollbar-thumb,
+        #gradeShop::-webkit-scrollbar-thumb {
+            background: #00FFC0; /* Neon thumb color */
+            border-radius: 10px;
+            box-shadow: 0 0 5px #00FFC0;
+        }
+
+        body::-webkit-scrollbar-thumb:hover,
+        #gradesList::-webkit-scrollbar-thumb:hover,
+        #gradeShop::-webkit-scrollbar-thumb:hover {
+            background: #33ffcc; /* Lighter on hover */
+        }
         
         /* Conteneur principal pour le jeu et les menus */
         #gameWrapper {
@@ -101,8 +131,7 @@
             font-weight: 900;
         }
 
-        /* --- ÉCRANS GLOBAUX --- */
-        /* Suppression de #usernameScreen dans la liste */
+        /* --- ÉCRANS GLOBAUX (REMISE À 350px) --- */
         #menuContainer, #pauseMenu, #gameOverScreen, #loadingScreen, #rankingScreen {
             position: absolute;
             top: 50%;
@@ -110,11 +139,10 @@
             transform: translate(-50%, -50%);
             z-index: 50; 
             max-width: 90%; 
-            width: 350px; 
+            width: 350px; /* Taille par défaut */
         }
         
         /* STYLES COMMUNS DES ÉCRANS DE MENU */
-        /* Suppression de #usernameScreen dans la liste */
         #loadingScreen, #menuScreen, #gradeShop, #rankingScreen, #gameOverScreen, #pauseMenu {
             background-color: #1a2a3a; 
             padding: 30px;
@@ -126,6 +154,15 @@
             flex-direction: column; 
             justify-content: center;
             align-items: center;
+            max-height: 90vh; 
+            overflow-y: auto; 
+        }
+
+        /* --- STYLES SPÉCIFIQUES DU SHOP/AMÉLIORATION (ISOLÉ ET PLUS LARGE) --- */
+        #gradeShop {
+            width: 450px; /* Taille augmentée spécifiquement pour le shop */
+            max-width: 90%; 
+            gap: 15px; 
         }
         
         /* --- STYLES DES BOUTONS D'ACTION --- */
@@ -149,43 +186,12 @@
             box-shadow: 0 0 10px #00FFC0; 
         }
         
-        /* --- STYLES SPÉCIFIQUES DU SHOP/AMÉLIORATION (MODIFIÉS) --- */
-        #gradeShop {
-            width: 700px; /* AUGMENTÉ: Permet l'affichage en deux colonnes */
-            max-width: 90%; 
-            gap: 15px; 
-        }
-
-        /* NOUVEAU: Conteneur Flex pour les deux colonnes (à l'intérieur du shop) */
-        #shopContentWrapper {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            width: 95%; /* Prend presque toute la largeur du #gradeShop */
-            margin-top: 10px;
-        }
-
-        /* NOUVEAU: Colonne de gauche (Infos/Bouton d'achat) - Garde l'aspect actuel */
-        #shopInfoColumn {
-            width: 35%; /* Occupe une petite partie de la gauche */
-            display: flex;
-            flex-direction: column;
-            align-items: center; 
-            padding-right: 15px;
-            box-sizing: border-box;
-        }
-
-        #shopInfoColumn > p, #shopInfoColumn > hr {
-            width: 100%;
-            text-align: center;
-        }
-        
         #upgradeButton {
             background-color: #00BFFF; 
-            width: 100%; /* MODIFIÉ: Pour remplir la colonne de 35% */
+            width: 90%;
             font-size: 1.2em;
             padding: 15px;
-            margin: 20px 0 0 0; /* MODIFIÉ: Marge pour s'aligner avec la colonne */
+            margin-top: 20px;
             white-space: normal; 
             height: auto;
             color: white; 
@@ -200,18 +206,82 @@
             box-shadow: none;
         }
 
-        /* MODIFIÉ: Liste des grades (prend plus de place à droite) */
+        /* NOUVEAU STYLE: Liste des grades dans le shop */
         #gradesList {
             text-align: left;
-            width: 63%; /* MODIFIÉ: Prend la majeure partie de l'espace à droite */
+            width: 90%; /* Prend 90% du 450px de gradeShop */
             padding: 15px 10px; 
-            margin-top: 0; 
+            margin-top: 15px;
             border: 1px dashed #FF6B6B50; 
             border-radius: 5px;
-            max-height: 400px; /* MODIFIÉ: Plus grand pour afficher plus de grades */
+            max-height: 500px; 
             overflow-y: auto;
         }
-        
+
+        /* NOUVEAU: Style des éléments de grade - Taille augmentée et alignement à droite confirmé */
+        .grade-item {
+            display: flex; 
+            justify-content: space-between; /* Pousse les éléments aux extrémités */
+            align-items: center;
+            padding: 10px 12px; 
+            margin-bottom: 7px; 
+            border-radius: 5px;
+            background-color: #213247; 
+            transition: background-color 0.2s;
+            font-size: 1.1em; 
+            width: 100%; 
+        }
+
+        .grade-symbol {
+            font-size: 1.8em; 
+            margin-right: 15px; 
+            line-height: 1;
+            min-width: 35px; 
+            text-align: center;
+        }
+
+        .grade-name {
+            font-weight: bold;
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        .grade-status {
+            font-size: 0.9em; 
+            font-style: italic;
+            min-width: 120px; 
+            text-align: right; /* Aligne le statut à droite */
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        /* Status specific colors for grades */
+        .grade-unlocked {
+            border-left: 5px solid #00FFC0;
+            box-shadow: 0 0 5px rgba(0, 255, 192, 0.2);
+        }
+
+        .grade-unlocked .grade-status {
+            color: #00FFC0;
+        }
+
+        .grade-next {
+            border-left: 5px solid #FFD700;
+            box-shadow: 0 0 5px rgba(255, 215, 0, 0.2);
+        }
+
+        .grade-next .grade-status {
+            color: #FFD700;
+        }
+
+        .grade-locked {
+            border-left: 5px solid #4a4a6e;
+            opacity: 0.8;
+        }
+
+        .grade-locked .grade-status {
+            color: #999;
+        }
+
         /* --- CLASSEMENT --- */
         #rankingTable {
             width: 100%;
@@ -235,6 +305,21 @@
         .rank-grade {
             font-size: 1.2em;
         }
+        
+        /* --- NOUVEAU: SPINNER DE CHARGEMENT --- */
+        .spinner {
+            border: 4px solid rgba(0, 255, 192, 0.1); 
+            border-top: 4px solid #00FFC0; 
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
     </style>
 </head>
@@ -242,7 +327,8 @@
     <div id="gameWrapper">
         <div id="loadingScreen">
             <h1>STICKMAN RUNNER</h1>
-            <p>Chargement des données...</p>
+            <div class="spinner"></div> 
+            <p id="loadingMessage">Chargement des données...</p>
             <span style="color: #00FFC0;">INITIALISATION DU JEU...</span>
         </div>
 
@@ -255,26 +341,22 @@
                 <button class="menu-button" id="playButton">JOUER</button>
                 <button class="menu-button" id="gradesButton">AMÉLIORATION (GRADES)</button>
                 <button class="menu-button" id="rankingButton">CLASSEMENT</button>
+                <button class="menu-button" id="quitGameButton" style="background-color: #FF6B6B;">QUITTER LE JEU</button>
                 </div>
 
             <div id="gradeShop" style="display: none;">
                 <h2>Amélioration de Grade</h2>
                 <p style="font-size: 1.2em;">Argent : <span id="moneyInShop" style="color: gold; font-weight: bold;">0</span> <span style="color: gold; font-weight: bold;">$</span></p>
                 
-                <div id="shopContentWrapper">
-                    
-                    <div id="shopInfoColumn">
-                        <hr style="width: 80%; border-color: #FF6B6B; margin: 15px 0;"> 
-                        
-                        <p style="font-size: 1.1em; color: #E0E0E0;">Grade Actuel : <span id="currentGradeDisplay" style="font-weight: bold; color: #00FFC0;">Poussière (⚪)</span></p> 
-                        <p style="font-size: 0.9em; color: #00BFFF;">Bonus Vitesse Max : <span id="speedCapDisplay" style="font-weight: bold;">15.0</span></p>
-                        
-                        <button class="menu-button" id="upgradeButton">ACHETER : [Grade Suivant] - 50 $</button>
+                <hr style="width: 80%; border-color: #FF6B6B; margin: 15px 0;"> 
+                
+                <p style="font-size: 1.1em; color: #E0E0E0;">Grade Actuel : <span id="currentGradeDisplay" style="font-weight: bold; color: #00FFC0;">Poussière (⚪)</span></p> 
+                <p style="font-size: 0.9em; color: #00BFFF;">Bonus Vitesse Max : <span id="speedCapDisplay" style="font-weight: bold;">15.0</span></p>
+                
+                <div id="gradesList">
                     </div>
 
-                    <div id="gradesList">
-                    </div>
-                </div>
+                <button class="menu-button" id="upgradeButton">ACHETER : [Grade Suivant] - 50 $</button>
                 
                 <button class="menu-button" id="backButton" style="margin-top: 15px;">RETOUR</button>
             </div>
@@ -337,6 +419,7 @@
         // --- CONFIGURATION DU SERVEUR ---
         const SERVER_URL = 'https://project-3-api-2bgb.onrender.com'; 
         const API_BASE = '/stickman_runner';
+        const RELOAD_INTERVAL_MS = 5000; // 5 secondes
 
         // --- CONFIGURATION DU JEU (TAILLES DE RÉFÉRENCE) ---
         const BASE_WIDTH = 800;
@@ -367,7 +450,6 @@
 
         function createTone(freq, duration, type, volume = 0.5) {
             if (!audioInitialized) return;
-            // ... (logique de création de son)
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
 
@@ -414,21 +496,22 @@
         const topHotbarElement = document.getElementById('topHotbar');
         const loadingScreenElement = document.getElementById('loadingScreen');
         const rankingScreenElement = document.getElementById('rankingScreen'); 
-        // SUPPRESSION: const usernameScreenElement = document.getElementById('usernameScreen');
+        const loadingMessageElement = document.getElementById('loadingMessage');
         const currentScoreHotbarItem = document.getElementById('currentScoreHotbarItem');
         const scoreDisplayElement = document.getElementById('scoreDisplay');
 
-        const GAME_STATE = { LOADING: -1, MENU: 0, PLAYING: 1, GRADES: 2, GAMEOVER: 3, PAUSED: 4, RANKING: 5 /*, USERNAME: 6 (Supprimé)*/ };
-        let currentState = GAME_STATE.LOADING; // Démarrage direct au chargement
+        const GAME_STATE = { LOADING: -1, MENU: 0, PLAYING: 1, GRADES: 2, GAMEOVER: 3, PAUSED: 4, RANKING: 5 };
+        let currentState = GAME_STATE.LOADING; 
 
         // Vitesse initiale
         let initialPlayerColor = '#00FFC0'; 
         let currentMaxSpeed = 8; 
         
         let MAX_SPEED_CAP_BASE = 15; 
-        let MAX_SPEED_CAP = MAX_SPEED_CAP_BASE; 
+        // Vitesse d'augmentation réduite (0.01 / 1.5)
+        let MAX_SPEED_CAP = 15; 
         
-        const SPEED_INCREASE_RATE = 0.01; 
+        const SPEED_INCREASE_RATE = 0.00667; 
         
         const GRAVITY = 0.35;         
         const JUMP_VELOCITY = -10.5;  
@@ -449,9 +532,8 @@
         let isSpacePressed = false;
         let ignoreNextSpaceUp = false; 
         
-        // --- DONNÉES DU JOUEUR ---
-        // Utilisateur par défaut/stocké. Utilisation de 'admin' comme vu dans l'erreur 405.
-        let username = localStorage.getItem('username') || 'admin'; 
+        // --- DONNÉES DU JOUEUR (Chargement du pseudo depuis localStorage) ---
+        let username = localStorage.getItem('username') || 'Invité Cyber'; 
         let currentGradeName = "Poussière"; 
         
         // --- SYSTÈME DE GRADES ---
@@ -542,8 +624,6 @@
         // --- API & COMMUNICATION SERVEUR ---
 
         async function saveGameData() {
-            if (!username) return;
-
             const gradeName = getGrade(currentGradeId).name;
 
             const dataToSave = {
@@ -573,31 +653,19 @@
 
             } catch (error) {
                 console.error("Erreur de communication avec le serveur (Sauvegarde):", error);
-                // Si le serveur est injoignable, on met à jour le localStorage en fallback
-                localStorage.setItem('highScore', highScore);
-                localStorage.setItem('money', money);
-                localStorage.setItem('currentGradeId', currentGradeId);
             }
         }
 
         async function loadGameData() {
-            // Pas de vérification de longueur, on utilise le pseudo stocké ou le par défaut ('admin')
-            if (!username) { 
-                document.querySelector('#loadingScreen p').textContent = `Erreur: Nom d'utilisateur non défini. Impossible de charger.`;
-                return; 
-            }
-            
             hideAllScreens();
             currentState = GAME_STATE.LOADING;
             loadingScreenElement.style.display = 'flex';
-            document.querySelector('#loadingScreen p').textContent = `Chargement des données de ${username}...`;
-
+            loadingMessageElement.textContent = `Connexion au serveur et chargement des données de ${username}...`;
 
             try {
                 const response = await fetch(`${SERVER_URL}${API_BASE}/load_data/${username}`);
 
                 if (!response.ok) {
-                    // C'est ici que votre erreur 405 se produit et est attrapée
                     throw new Error(`Erreur HTTP: ${response.status} (${response.statusText || 'Méthode non autorisée (405)'})`);
                 }
                 
@@ -619,31 +687,29 @@
                     applyGradeStats();
                     updateHotbarDisplay(); 
 
-                    // Sauvegarder l'utilisateur dans le local pour le prochain démarrage
-                    localStorage.setItem('username', username);
-
                     showMenu(); 
                 } else {
                     // Si le serveur répond en JSON mais indique une erreur logique
                     console.error("Erreur de chargement: " + result.message);
-                    // On reste sur l'écran de chargement avec le message d'erreur
-                    document.querySelector('#loadingScreen p').textContent = `Erreur de chargement: ${result.message}.`;
+                    loadingMessageElement.textContent = `Erreur de chargement des données: ${result.message}. Nouvelle tentative dans ${RELOAD_INTERVAL_MS / 1000} secondes.`;
+                    setTimeout(loadGameData, RELOAD_INTERVAL_MS);
                 }
 
             } catch (error) {
                 console.error("Erreur de communication avec le serveur (Chargement):", error);
                 
-                // NOUVEL OBJECTIF CLIENT: RESTER EN ÉCRAN DE CHARGEMENT EN CAS D'ERREUR
-                document.querySelector('#loadingScreen p').textContent = `Erreur FATALE de communication: ${error.message}. Le serveur pourrait ne pas être disponible ou la méthode GET est rejetée. Vérifiez le statut du serveur (${SERVER_URL}) et réessayez.`;
-
-                // Fallback des stats (pour ne pas crasher le reste du code)
+                // RESTER EN ÉCRAN DE CHARGEMENT EN CAS D'ERREUR
+                loadingMessageElement.textContent = `Serveur injoignable ou erreur de connexion. Nouvelle tentative dans ${RELOAD_INTERVAL_MS / 1000} secondes.`;
+                
+                // Fallback des stats
                 highScore = 0;
                 money = 0;
                 currentGradeId = 1;
                 applyGradeStats();
                 updateHotbarDisplay();
                 
-                // Le loading screen reste affiché (currentState = GAME_STATE.LOADING)
+                // On relance la fonction de chargement après un délai
+                setTimeout(loadGameData, RELOAD_INTERVAL_MS);
             }
         }
 
@@ -654,7 +720,7 @@
             try {
                 const response = await fetch(`${SERVER_URL}${API_BASE}/leaderboard`);
                 const result = await response.json();
-                // ... (reste du code fetchLeaderboard)
+                
                 if (result.status === "success") {
                     const leaderboard = result.leaderboard;
                     
@@ -676,7 +742,7 @@
                         else if (index === 2) { row.style.backgroundColor = 'rgba(205, 127, 50, 0.2)'; }
 
                         if (isPlayer && index > 2) { 
-                            row.style.backgroundColor = 'rgba(255, 107, 107, 0.2)'; // S'il n'est pas dans le top 3
+                            row.style.backgroundColor = 'rgba(255, 107, 107, 0.2)'; 
                         }
                         
                         row.insertCell().textContent = index + 1;
@@ -696,7 +762,7 @@
         }
 
 
-        // --- LOGIQUE DE JEU RESTANTE (non modifiée) ---
+        // --- LOGIQUE DE JEU RESTANTE ---
 
         function updateUpgradeShopDisplay() {
             document.getElementById('moneyInShop').textContent = Math.floor(money); 
@@ -710,26 +776,34 @@
             document.getElementById('speedCapDisplay').textContent = MAX_SPEED_CAP.toFixed(1); 
             
             GRADES.forEach(grade => {
-                const item = document.createElement('p');
+                const item = document.createElement('div'); // Utilisation de div pour la structure Flexbox
                 item.className = 'grade-item';
 
-                let statusText = `(Vitesse Max: ${MAX_SPEED_CAP.toFixed(1)})`; 
-                let statusClass = 'grade-locked';
+                let statusText; 
+                let statusClass;
 
                 if (grade.id < currentGradeId) {
                     statusClass = 'grade-unlocked'; 
+                    statusText = `(ACQUIS)`;
                 } else if (grade.id === currentGradeId) {
                     statusClass = 'grade-unlocked'; 
                     statusText = `(ACTUEL)`;
                 } else if (grade.id === currentGradeId + 1) {
                     statusClass = 'grade-next'; 
-                    statusText = `(Coût: ${grade.cost} $)`;
+                    statusText = `Coût: ${grade.cost} $`;
                 } else {
-                    statusText = `(Coût: ${grade.cost} $) - Verrouillé`;
+                    statusClass = 'grade-locked'; 
+                    statusText = `Coût: ${grade.cost} $`;
                 }
-
+                
                 item.classList.add(statusClass);
-                item.innerHTML = `**${grade.symbol} ${grade.name}** ${statusText}`;
+
+                // Construction du contenu structuré pour le Flexbox corrigé
+                item.innerHTML = `
+                    <span class="grade-symbol" style="color:${grade.color || '#E0E0E0'};">${grade.symbol}</span>
+                    <span class="grade-name">${grade.name}</span>
+                    <span class="grade-status">${statusText}</span>
+                `;
                 gradesListElement.appendChild(item);
             });
 
@@ -742,6 +816,7 @@
             }
         }
 
+
         function handleUpgrade() {
             const nextGrade = getNextGrade();
 
@@ -752,7 +827,7 @@
                     money -= cost;
                     currentGradeId = nextGrade.id;
                     applyGradeStats(); 
-                    saveGameData(); // Sauvegarde après achat
+                    saveGameData(); 
                     sfx.upgrade();
                     updateHotbarDisplay(); 
                     updateUpgradeShopDisplay();
@@ -1026,7 +1101,7 @@
             player.velX = 0; player.velY = 0; player.rotation = 0;
             currentState = GAME_STATE.GAMEOVER;
             
-            updateHighScoreAndMoney(); // Déclenche la sauvegarde
+            updateHighScoreAndMoney(); 
 
             document.getElementById('finalHighScore').textContent = Math.floor(highScore);
             document.getElementById('finalCurrentScore').textContent = Math.floor(currentScore);
@@ -1071,7 +1146,7 @@
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                  e.preventDefault(); 
-                if (currentState === GAME_STATE.MENU || currentState === GAME_STATE.GAMEOVER) { // Retiré GAME_STATE.LOADING de la condition pour éviter de démarrer si le chargement a échoué
+                if (currentState === GAME_STATE.MENU || currentState === GAME_STATE.GAMEOVER) { 
                     startGame();
                     return; 
                 }
@@ -1128,10 +1203,7 @@
             topHotbarElement.style.display = 'none';
             loadingScreenElement.style.display = 'none';
             rankingScreenElement.style.display = 'none';
-            // SUPPRESSION: usernameScreenElement.style.display = 'none';
         }
-
-        // SUPPRESSION: showUsernameScreen()
 
         function showMenu() {
             hideAllScreens();
@@ -1145,7 +1217,6 @@
         }
 
         function startGame() {
-            // Vérification simple au cas où un utilisateur tente de démarrer sans données chargées après une erreur
             if (currentState === GAME_STATE.LOADING) return; 
 
             sfx.restart();
@@ -1222,14 +1293,17 @@
         function quitGame() {
              currentState = GAME_STATE.MENU; 
              pauseMenuElement.style.display = 'none';
-             saveGameData(); // Sauvegarde lors du retour au menu
+             saveGameData(); 
              showMenu();
         }
+        
+        function quitToMenuHTML() {
+             window.location.href = '../../menu.html';
+        }
+
 
         // --- DÉMARRAGE ET ÉVÉNEMENTS ---
         
-        // SUPPRESSION: document.getElementById('submitUsernameButton').onclick = ...
-        // SUPPRESSION: document.getElementById('changeUserButton').onclick = showUsernameScreen;
         document.getElementById('playButton').onclick = startGame;
         document.getElementById('gradesButton').onclick = showUpgradeShop; 
         document.getElementById('upgradeButton').onclick = handleUpgrade; 
@@ -1240,11 +1314,12 @@
         document.getElementById('goToMenuButton').onclick = showMenu;
         document.getElementById('rankingButton').onclick = showRankingScreen; 
         document.getElementById('backToMenuFromRanking').onclick = showMenu; 
+        document.getElementById('quitGameButton').onclick = quitToMenuHTML;
         
         // --- Initialisation du jeu
         resizeCanvas(); 
         
-        // Démarrage automatique du chargement avec le pseudo trouvé ou par défaut
+        // Démarrage automatique du chargement avec le pseudo par défaut et boucle de re-tentative
         loadGameData(); 
         
         gameLoop(); 

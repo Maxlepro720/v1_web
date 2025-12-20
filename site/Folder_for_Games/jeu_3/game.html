@@ -206,6 +206,82 @@
             box-shadow: none;
         }
 
+        /* NOUVEAU STYLE: Liste des grades dans le shop */
+        #gradesList {
+            text-align: left;
+            width: 90%; /* Prend 90% du 450px de gradeShop */
+            padding: 15px 10px; 
+            margin-top: 15px;
+            border: 1px dashed #FF6B6B50; 
+            border-radius: 5px;
+            max-height: 500px; 
+            overflow-y: auto;
+        }
+
+        /* NOUVEAU: Style des éléments de grade - Taille augmentée et alignement à droite confirmé */
+        .grade-item {
+            display: flex; 
+            justify-content: space-between; /* Pousse les éléments aux extrémités */
+            align-items: center;
+            padding: 10px 12px; 
+            margin-bottom: 7px; 
+            border-radius: 5px;
+            background-color: #213247; 
+            transition: background-color 0.2s;
+            font-size: 1.1em; 
+            width: 100%; 
+        }
+
+        .grade-symbol {
+            font-size: 1.8em; 
+            margin-right: 15px; 
+            line-height: 1;
+            min-width: 35px; 
+            text-align: center;
+        }
+
+        .grade-name {
+            font-weight: bold;
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        .grade-status {
+            font-size: 0.9em; 
+            font-style: italic;
+            min-width: 120px; 
+            text-align: right; /* Aligne le statut à droite */
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        /* Status specific colors for grades */
+        .grade-unlocked {
+            border-left: 5px solid #00FFC0;
+            box-shadow: 0 0 5px rgba(0, 255, 192, 0.2);
+        }
+
+        .grade-unlocked .grade-status {
+            color: #00FFC0;
+        }
+
+        .grade-next {
+            border-left: 5px solid #FFD700;
+            box-shadow: 0 0 5px rgba(255, 215, 0, 0.2);
+        }
+
+        .grade-next .grade-status {
+            color: #FFD700;
+        }
+
+        .grade-locked {
+            border-left: 5px solid #4a4a6e;
+            opacity: 0.8;
+        }
+
+        .grade-locked .grade-status {
+            color: #999;
+        }
+
         /* --- CLASSEMENT --- */
         #rankingTable {
             width: 100%;
@@ -277,6 +353,9 @@
                 <p style="font-size: 1.1em; color: #E0E0E0;">Grade Actuel : <span id="currentGradeDisplay" style="font-weight: bold; color: #00FFC0;">Poussière (⚪)</span></p> 
                 <p style="font-size: 0.9em; color: #00BFFF;">Bonus Vitesse Max : <span id="speedCapDisplay" style="font-weight: bold;">15.0</span></p>
                 
+                <div id="gradesList">
+                    </div>
+
                 <button class="menu-button" id="upgradeButton">ACHETER : [Grade Suivant] - 50 $</button>
                 
                 <button class="menu-button" id="backButton" style="margin-top: 15px;">RETOUR</button>
@@ -426,13 +505,13 @@
 
         // Vitesse initiale
         let initialPlayerColor = '#00FFC0'; 
-        let currentMaxSpeed = 4; 
+        let currentMaxSpeed = 8; 
         
-        let MAX_SPEED_CAP_BASE = 100; 
+        let MAX_SPEED_CAP_BASE = 15; 
         // Vitesse d'augmentation réduite (0.01 / 1.5)
         let MAX_SPEED_CAP = 15; 
         
-        const SPEED_INCREASE_RATE = 0.005; 
+        const SPEED_INCREASE_RATE = 0.00667; 
         
         const GRAVITY = 0.35;         
         const JUMP_VELOCITY = -10.5;  
@@ -443,7 +522,7 @@
         const JUMP_ROTATION = Math.PI / 4; 
 
         let lastMoneyScoreThreshold = 0; 
-        const MONEY_GAIN_PER_THRESHOLD = 10; // MODIFIÉ: de 20 à 10
+        const MONEY_GAIN_PER_THRESHOLD = 20; 
 
         // Constantes basées sur les valeurs de référence
         const START_PLATFORM_REF = { x: 0, y: BASE_HEIGHT - 50, width: BASE_WIDTH, height: 50 }; 
@@ -474,8 +553,13 @@
         let currentGradeId = 1;
         let money = 0;
 
+        /**
+         * CORRECTION: La fonction ne doit pas retourner GRADES[0] par défaut
+         * si l'ID n'est pas trouvé (comme l'ID 11), car cela cause une boucle
+         * d'achat infinie de 'Poussière'.
+         */
         function getGrade(id) {
-            return GRADES.find(g => g.id === id) || GRADES[0];
+            return GRADES.find(g => g.id === id); 
         }
 
         function getGradeByName(name) {
@@ -690,12 +774,44 @@
             
             const currentGrade = getGrade(currentGradeId);
             const nextGrade = getNextGrade();
+            const gradesListElement = document.getElementById('gradesList');
+            gradesListElement.innerHTML = '';
 
             document.getElementById('currentGradeDisplay').innerHTML = `${currentGrade.name} (${currentGrade.symbol})`; 
             document.getElementById('speedCapDisplay').textContent = MAX_SPEED_CAP.toFixed(1); 
             
-            // La liste des grades a été retirée du HTML et de la logique
-            
+            GRADES.forEach(grade => {
+                const item = document.createElement('div'); // Utilisation de div pour la structure Flexbox
+                item.className = 'grade-item';
+
+                let statusText; 
+                let statusClass;
+
+                if (grade.id < currentGradeId) {
+                    statusClass = 'grade-unlocked'; 
+                    statusText = `(ACQUIS)`;
+                } else if (grade.id === currentGradeId) {
+                    statusClass = 'grade-unlocked'; 
+                    statusText = `(ACTUEL)`;
+                } else if (grade.id === currentGradeId + 1) {
+                    statusClass = 'grade-next'; 
+                    statusText = `Coût: ${grade.cost} $`;
+                } else {
+                    statusClass = 'grade-locked'; 
+                    statusText = `Coût: ${grade.cost} $`;
+                }
+                
+                item.classList.add(statusClass);
+
+                // Construction du contenu structuré pour le Flexbox corrigé
+                item.innerHTML = `
+                    <span class="grade-symbol" style="color:${grade.color || '#E0E0E0'};">${grade.symbol}</span>
+                    <span class="grade-name">${grade.name}</span>
+                    <span class="grade-status">${statusText}</span>
+                `;
+                gradesListElement.appendChild(item);
+            });
+
             if (nextGrade) {
                 document.getElementById('upgradeButton').textContent = `ACHETER : ${nextGrade.name} - ${nextGrade.cost} $`;
                 document.getElementById('upgradeButton').disabled = money < nextGrade.cost;

@@ -1,0 +1,9 @@
+# Règles pour le cache des fichiers CSS et JS
+<FilesMatch "\.(css|js)$">
+    FileETag None
+    Header unset ETag
+    Header unset Pragma
+    Header unset Cache-Control
+    Header unset Last-Modified
+    Header set Cache-Control "max-age=0, no-cache, no-store, must-revalidate"
+</FilesMatch>

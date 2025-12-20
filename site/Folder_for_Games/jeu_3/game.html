@@ -131,7 +131,7 @@
             font-weight: 900;
         }
 
-        /* --- ÉCRANS GLOBAUX --- */
+        /* --- ÉCRANS GLOBAUX (REMISE À 350px) --- */
         #menuContainer, #pauseMenu, #gameOverScreen, #loadingScreen, #rankingScreen {
             position: absolute;
             top: 50%;
@@ -139,7 +139,7 @@
             transform: translate(-50%, -50%);
             z-index: 50; 
             max-width: 90%; 
-            width: 350px; 
+            width: 350px; /* Taille par défaut */
         }
         
         /* STYLES COMMUNS DES ÉCRANS DE MENU */
@@ -154,8 +154,15 @@
             flex-direction: column; 
             justify-content: center;
             align-items: center;
-            max-height: 90vh; /* Limite de hauteur pour le scroll */
-            overflow-y: auto; /* Active le défilement vertical */
+            max-height: 90vh; 
+            overflow-y: auto; 
+        }
+
+        /* --- STYLES SPÉCIFIQUES DU SHOP/AMÉLIORATION (ISOLÉ ET PLUS LARGE) --- */
+        #gradeShop {
+            width: 450px; /* Taille augmentée spécifiquement pour le shop */
+            max-width: 90%; 
+            gap: 15px; 
         }
         
         /* --- STYLES DES BOUTONS D'ACTION --- */
@@ -179,11 +186,6 @@
             box-shadow: 0 0 10px #00FFC0; 
         }
         
-        /* --- STYLES SPÉCIFIQUES DU SHOP/AMÉLIORATION --- */
-        #gradeShop {
-            gap: 15px; /* Ajout d'espacement pour une meilleure lisibilité */
-        }
-
         #upgradeButton {
             background-color: #00BFFF; 
             width: 90%;
@@ -207,34 +209,34 @@
         /* NOUVEAU STYLE: Liste des grades dans le shop */
         #gradesList {
             text-align: left;
-            width: 100%;
-            padding: 10px 5px; /* Ajustement du padding */
+            width: 90%; /* Prend 90% du 450px de gradeShop */
+            padding: 15px 10px; 
             margin-top: 15px;
             border: 1px dashed #FF6B6B50; 
             border-radius: 5px;
-            max-height: 250px; 
+            max-height: 300px; 
             overflow-y: auto;
         }
 
-        /* NOUVEAU: Style des éléments de grade - CORRIGÉ */
+        /* NOUVEAU: Style des éléments de grade - Taille augmentée et alignement à droite confirmé */
         .grade-item {
-            display: flex; /* Active le Flexbox */
-            justify-content: space-between;
+            display: flex; 
+            justify-content: space-between; /* Pousse les éléments aux extrémités */
             align-items: center;
-            padding: 8px 10px;
-            margin-bottom: 5px;
+            padding: 10px 12px; 
+            margin-bottom: 7px; 
             border-radius: 5px;
-            background-color: #213247; /* Fond plus foncé pour le contraste */
+            background-color: #213247; 
             transition: background-color 0.2s;
-            font-size: 0.9em;
-            width: 100%; /* S'assurer qu'il prend toute la place dans gradesList */
+            font-size: 1.1em; 
+            width: 100%; 
         }
 
         .grade-symbol {
-            font-size: 1.5em;
-            margin-right: 10px;
+            font-size: 1.8em; 
+            margin-right: 15px; 
             line-height: 1;
-            min-width: 30px;
+            min-width: 35px; 
             text-align: center;
         }
 
@@ -245,10 +247,10 @@
         }
 
         .grade-status {
-            font-size: 0.8em;
+            font-size: 0.9em; 
             font-style: italic;
-            min-width: 100px;
-            text-align: right;
+            min-width: 120px; 
+            text-align: right; /* Aligne le statut à droite */
             text-shadow: 0 0 5px rgba(0,0,0,0.5);
         }
 

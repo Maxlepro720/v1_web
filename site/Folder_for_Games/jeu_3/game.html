@@ -154,7 +154,7 @@
             flex-direction: column; 
             justify-content: center;
             align-items: center;
-            max-height: 90vh; /* Nouvelle limite de hauteur pour le scroll */
+            max-height: 90vh; /* Limite de hauteur pour le scroll */
             overflow-y: auto; /* Active le défilement vertical */
         }
         
@@ -180,6 +180,10 @@
         }
         
         /* --- STYLES SPÉCIFIQUES DU SHOP/AMÉLIORATION --- */
+        #gradeShop {
+            gap: 15px; /* Ajout d'espacement pour une meilleure lisibilité */
+        }
+
         #upgradeButton {
             background-color: #00BFFF; 
             width: 90%;
@@ -204,14 +208,77 @@
         #gradesList {
             text-align: left;
             width: 100%;
-            padding: 10px;
+            padding: 10px 5px; /* Ajustement du padding */
             margin-top: 15px;
             border: 1px dashed #FF6B6B50; 
             border-radius: 5px;
             max-height: 250px; 
             overflow-y: auto;
         }
-        
+
+        /* NOUVEAU: Style des éléments de grade */
+        .grade-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            background-color: #213247; /* Fond plus foncé pour le contraste */
+            transition: background-color 0.2s;
+            font-size: 0.9em;
+        }
+
+        .grade-symbol {
+            font-size: 1.5em;
+            margin-right: 10px;
+            line-height: 1;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .grade-name {
+            font-weight: bold;
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        .grade-status {
+            font-size: 0.8em;
+            font-style: italic;
+            min-width: 100px;
+            text-align: right;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        /* Status specific colors for grades */
+        .grade-unlocked {
+            border-left: 5px solid #00FFC0;
+            box-shadow: 0 0 5px rgba(0, 255, 192, 0.2);
+        }
+
+        .grade-unlocked .grade-status {
+            color: #00FFC0;
+        }
+
+        .grade-next {
+            border-left: 5px solid #FFD700;
+            box-shadow: 0 0 5px rgba(255, 215, 0, 0.2);
+        }
+
+        .grade-next .grade-status {
+            color: #FFD700;
+        }
+
+        .grade-locked {
+            border-left: 5px solid #4a4a6e;
+            opacity: 0.8;
+        }
+
+        .grade-locked .grade-status {
+            color: #999;
+        }
+
         /* --- CLASSEMENT --- */
         #rankingTable {
             width: 100%;
@@ -706,26 +773,34 @@
             document.getElementById('speedCapDisplay').textContent = MAX_SPEED_CAP.toFixed(1); 
             
             GRADES.forEach(grade => {
-                const item = document.createElement('p');
+                const item = document.createElement('div'); // Utilisation de div pour la structure Flexbox
                 item.className = 'grade-item';
 
-                let statusText = `(Vitesse Max: ${MAX_SPEED_CAP.toFixed(1)})`; 
-                let statusClass = 'grade-locked';
+                let statusText; 
+                let statusClass;
 
                 if (grade.id < currentGradeId) {
                     statusClass = 'grade-unlocked'; 
+                    statusText = `(ACQUIS)`;
                 } else if (grade.id === currentGradeId) {
                     statusClass = 'grade-unlocked'; 
                     statusText = `(ACTUEL)`;
                 } else if (grade.id === currentGradeId + 1) {
                     statusClass = 'grade-next'; 
-                    statusText = `(Coût: ${grade.cost} $)`;
+                    statusText = `Coût: ${grade.cost} $`;
                 } else {
-                    statusText = `(Coût: ${grade.cost} $) - Verrouillé`;
+                    statusClass = 'grade-locked'; 
+                    statusText = `Coût: ${grade.cost} $`;
                 }
-
+                
                 item.classList.add(statusClass);
-                item.innerHTML = `**${grade.symbol} ${grade.name}** ${statusText}`;
+
+                // Construction du contenu structuré
+                item.innerHTML = `
+                    <span class="grade-symbol" style="color:${grade.color || '#E0E0E0'};">${grade.symbol}</span>
+                    <span class="grade-name">${grade.name}</span>
+                    <span class="grade-status">${statusText}</span>
+                `;
                 gradesListElement.appendChild(item);
             });
 

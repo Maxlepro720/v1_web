@@ -380,6 +380,87 @@
         #terms-container a:hover {
             color: #46b32b;
         }
+
+        /* ----------------------------------- */
+        /* POPUP UPDATE - NOUVEAU */
+        /* ----------------------------------- */
+        #update-modal-overlay {
+            display: none; 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            align-items: center;
+            justify-content: center;
+            z-index: 998;
+        }
+
+        #update-modal {
+            position: relative;
+            background: #0f1419;
+            border: 2px solid #63D945; 
+            border-radius: 25px;
+            padding: 40px;
+            width: 90vw; 
+            height: 90vh; 
+            max-width: 800px; 
+            max-height: 600px; 
+            box-shadow: 0 0 50px rgba(99, 217, 69, 0.8); 
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+        }
+
+        #update-modal h3 {
+            color: #63D945;
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 2px solid rgba(99, 217, 69, 0.4);
+            padding-bottom: 10px;
+        }
+
+        #update-content {
+            flex-grow: 1;
+            font-size: 16px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            padding-right: 15px;
+            overflow-y: auto; 
+            color: #e0f7fa;
+            border-left: 3px solid rgba(255, 255, 255, 0.1);
+            padding-left: 15px;
+        }
+        
+        #update-content strong {
+            color: #00bfff;
+            font-weight: bold;
+        }
+
+        #close-update-modal {
+            background: #ff4d6d;
+            border: none;
+            padding: 12px 25px;
+            color: #fff; 
+            font-size: 16px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 30px;
+            align-self: center;
+            width: 50%;
+            max-width: 300px;
+        }
+
+        #close-update-modal:hover {
+            background: #d90026;
+            box-shadow: 0 0 20px rgba(255,77,109,0.5);
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -447,6 +528,14 @@
     </div>
 </div>
 
+<div id="update-modal-overlay">
+    <div id="update-modal">
+        <h3>[NOUVELLE VERSION] Rapport de Mise à Jour</h3>
+        <div id="update-content"></div>
+        <button id="close-update-modal">Continuer</button>
+    </div>
+</div>
+
 <script>
     const API_URL="https://project-3-api-2bgb.onrender.com";
     
@@ -454,6 +543,23 @@
     const quoteDictionary = [
         { quote: "Un grand poète a dit qui pète plus chie moins", author: "Peter Drucker" },  
     ];
+    
+    // --- GESTION DES MISES À JOUR (VERSION CLÉ) ---
+    const CURRENT_UPDATE_VERSION = 'V0.1'; 
+
+    // Détail de la dernière mise à jour
+    const lastUpdateSummary = `
+[SYS-UPDATE: V0.1 - 20/12/2025]
+        
+**MODULES AJOUTÉS :**
+        
+* **PROGRAMME 004 :** Intégration de "Stickman Runner" (jeu infini).
+* **INTERFACE GRAPHIQUE :** Optimisation des animations de la barre de navigation et du rendu des cartes.
+* **SOUMISSION :** Le protocole d'envoi de programme est désormais fonctionnel. Accessible via hotbar dans le menu.
+        
+**OPTIMISATIONS :**
+* Correction coté server.
+    `;
 
     // Fonction pour obtenir une citation aléatoire
     function getRandomQuote() {
@@ -499,6 +605,14 @@
         try{await fetch(`${API_URL}/logout`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:username})});}catch(e){console.error(e);}
         localStorage.removeItem("username");
         localStorage.removeItem("cookies_accepted"); 
+        
+        // Supprimer toutes les clés de mise à jour lues pour un "logout propre"
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('maj_read_')) {
+                localStorage.removeItem(key);
+            }
+        });
+        
         window.location.href='index.html';
     }
 
@@ -699,6 +813,58 @@
 
 
     // ----------------------------------------------------
+    // --- GESTION DU POPUP DE MISE À JOUR (VERSIONNÉE) ---
+    // ----------------------------------------------------
+    const updateModalOverlay = document.getElementById('update-modal-overlay');
+    const updateContent = document.getElementById('update-content');
+    const closeUpdateModalButton = document.getElementById('close-update-modal');
+    
+    // 2. CRÉER LA CLÉ DYNAMIQUE POUR LOCALSTORAGE
+    const LAST_VIEWED_UPDATE_KEY = `maj_read_${CURRENT_UPDATE_VERSION}`; 
+    
+    // 3. VÉRIFIER LE LOCALSTORAGE
+    const hasViewedUpdate = localStorage.getItem(LAST_VIEWED_UPDATE_KEY) === 'true';
+
+    function showUpdateSummaryModal() {
+        if (hasViewedUpdate) {
+            return; // N'affiche pas si la version actuelle a déjà été lue
+        }
+
+        updateContent.textContent = lastUpdateSummary;
+        updateModalOverlay.style.display = 'flex';
+        
+        anime({
+            targets: updateModalOverlay, 
+            opacity: [0, 1], 
+            duration: 500, 
+            easing: 'easeOutQuad'
+        });
+    }
+
+    function closeUpdateSummaryModal() {
+        // 4. MARQUER LA VERSION ACTUELLE COMME LUE
+        localStorage.setItem(LAST_VIEWED_UPDATE_KEY, 'true'); 
+        anime({
+            targets: updateModalOverlay, 
+            opacity: [1, 0], 
+            duration: 400, 
+            easing: 'easeOutQuad', 
+            complete: () => {
+                updateModalOverlay.style.display = 'none';
+            }
+        });
+    }
+
+    closeUpdateModalButton.addEventListener('click', closeUpdateSummaryModal);
+    updateModalOverlay.addEventListener('click', (e) => {
+        if (e.target === updateModalOverlay) {
+            closeUpdateSummaryModal();
+        }
+    });
+    // ----------------------------------------------------
+
+
+    // ----------------------------------------------------
     // --- GESTION DES COOKIES (AVEC VÉRIFICATION) ---
     // ----------------------------------------------------
     const isCookiesAccepted = localStorage.getItem('cookies_accepted') === 'true';
@@ -731,6 +897,7 @@
                 easing: 'easeOutQuad', 
                 complete: () => {
                     cookieOverlay.style.display = 'none'; 
+                    showUpdateSummaryModal(); // APPEL DE LA MODALE DE MISE À JOUR
                 }
             });
         }
@@ -797,7 +964,10 @@
         // 5. S'assurer que le clic sur le bouton REFUSER ne fait RIEN.
         const refuseButton = document.getElementById('refuse-cookies-button');
         refuseButton.addEventListener('click', (e) => e.preventDefault());
-    } 
+    } else {
+        // --- BLOC S'EXÉCUTANT SI LES COOKIES SONT DÉJÀ ACCEPTÉS ---
+        showUpdateSummaryModal(); // APPEL DE LA MODALE DE MISE À JOUR
+    }
 
     // ----------------------------------------------------
 </script>

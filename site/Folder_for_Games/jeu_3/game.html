@@ -271,8 +271,6 @@
                 <hr style="width: 80%; border-color: #FF6B6B; margin: 15px 0;"> 
                 
                 <p style="font-size: 1.1em; color: #E0E0E0;">Grade Actuel : <span id="currentGradeDisplay" style="font-weight: bold; color: #00FFC0;">Poussière (⚪)</span></p> 
-                <p style="font-size: 0.9em; color: #00BFFF;">Bonus Vitesse Max : <span id="speedCapDisplay" style="font-weight: bold;">15.0</span></p>
-                
                 <button class="menu-button" id="upgradeButton">ACHETER : [Grade Suivant] - 50 $</button>
                 
                 <button class="menu-button" id="backButton" style="margin-top: 15px;">RETOUR</button>
@@ -693,7 +691,9 @@
             const nextGrade = getNextGrade();
 
             document.getElementById('currentGradeDisplay').innerHTML = `${currentGrade.name} (${currentGrade.symbol})`; 
-            document.getElementById('speedCapDisplay').textContent = MAX_SPEED_CAP.toFixed(1); 
+            
+            // NOTE: L'élément 'speedCapDisplay' n'existe plus dans le DOM, mais la variable MAX_SPEED_CAP est toujours mise à jour dans applyGradeStats.
+            // Si la ligne suivante était encore présente dans le DOM, elle serait: document.getElementById('speedCapDisplay').textContent = MAX_SPEED_CAP.toFixed(1); 
             
             if (nextGrade) {
                 document.getElementById('upgradeButton').textContent = `ACHETER : ${nextGrade.name} - ${nextGrade.cost} $`;

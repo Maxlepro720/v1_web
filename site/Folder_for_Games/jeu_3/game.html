@@ -142,7 +142,7 @@
             width: 350px; 
         }
         
-        /* STYLES COMMUNS DES ÉCRANS DE MENU (avec max-height et scrollbar pour accessibilité) */
+        /* STYLES COMMUNS DES ÉCRANS DE MENU */
         #loadingScreen, #menuScreen, #gradeShop, #rankingScreen, #gameOverScreen, #pauseMenu {
             background-color: #1a2a3a; 
             padding: 30px;
@@ -216,9 +216,9 @@
             overflow-y: auto;
         }
 
-        /* NOUVEAU: Style des éléments de grade */
+        /* NOUVEAU: Style des éléments de grade - CORRIGÉ */
         .grade-item {
-            display: flex;
+            display: flex; /* Active le Flexbox */
             justify-content: space-between;
             align-items: center;
             padding: 8px 10px;
@@ -227,6 +227,7 @@
             background-color: #213247; /* Fond plus foncé pour le contraste */
             transition: background-color 0.2s;
             font-size: 0.9em;
+            width: 100%; /* S'assurer qu'il prend toute la place dans gradesList */
         }
 
         .grade-symbol {
@@ -505,9 +506,9 @@
         let currentMaxSpeed = 8; 
         
         let MAX_SPEED_CAP_BASE = 15; 
+        // Vitesse d'augmentation réduite (0.01 / 1.5)
         let MAX_SPEED_CAP = 15; 
         
-        // Vitesse d'augmentation réduite : 0.01 / 1.5 ≈ 0.00667
         const SPEED_INCREASE_RATE = 0.00667; 
         
         const GRAVITY = 0.35;         
@@ -759,7 +760,7 @@
         }
 
 
-        // --- LOGIQUE DE JEU RESTANTE (non modifiée) ---
+        // --- LOGIQUE DE JEU RESTANTE ---
 
         function updateUpgradeShopDisplay() {
             document.getElementById('moneyInShop').textContent = Math.floor(money); 
@@ -795,7 +796,7 @@
                 
                 item.classList.add(statusClass);
 
-                // Construction du contenu structuré
+                // Construction du contenu structuré pour le Flexbox corrigé
                 item.innerHTML = `
                     <span class="grade-symbol" style="color:${grade.color || '#E0E0E0'};">${grade.symbol}</span>
                     <span class="grade-name">${grade.name}</span>
@@ -812,6 +813,7 @@
                 document.getElementById('upgradeButton').disabled = true;
             }
         }
+
 
         function handleUpgrade() {
             const nextGrade = getNextGrade();

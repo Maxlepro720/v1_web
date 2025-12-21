@@ -347,32 +347,30 @@ h2 {
         });
     });
 
-    // --- Fonction utilitaire pour les API ---
+    // --- Fonction utilitaire pour les API (CORRIGÉE) ---
     async function fetchData(endpoint, method = 'GET', body = null) {
-        // L'endpoint est déjà bien formé (ex: astro_dodge/leaderboard)
         const url = `${API_BASE_URL}/${endpoint}`; 
+        
         const options = {
             method: method,
-            headers: {
-                'Content-Type': 'application/json',
-            }
+            headers: {} // Commencez avec des headers vides
         };
-        // N'ajoute le corps que si 'body' n'est pas null
-        if (body) { 
+
+        // N'ajoutez Content-Type et le corps que si un 'body' est explicitement fourni
+        if (body !== null) { 
+            options.headers['Content-Type'] = 'application/json';
             options.body = JSON.stringify(body);
         }
 
         try {
             const response = await fetch(url, options);
             if (!response.ok) {
-                // Tentative d'extraction du message d'erreur du corps de la réponse
                 const errorText = await response.text(); 
                 let errorData = {};
                 try {
-                    // Si la réponse est un JSON d'erreur, on l'utilise
                     errorData = JSON.parse(errorText);
                 } catch (e) {
-                    // Sinon, on utilise le statut HTTP
+                    // Non-JSON response
                 }
                 
                 const errorMessage = errorData.message || `Erreur HTTP ${response.status} (${response.statusText})`;
@@ -390,26 +388,21 @@ h2 {
         const rankingGameSelect = document.getElementById('rankingGameSelect');
         const playerGameSelect = document.getElementById('playerGameSelect');
         
-        // Nettoyer les options existantes
         rankingGameSelect.innerHTML = '';
         playerGameSelect.innerHTML = '';
         
-        // Ajouter une option par jeu à tous les sélecteurs
         for (const [key, value] of Object.entries(AVAILABLE_GAMES)) {
-            // Pour le classement
             const option1 = new Option(value, key);
             rankingGameSelect.add(option1);
             
-            // Pour les stats
             const option2 = new Option(value, key);
             playerGameSelect.add(option2);
         }
     }
     
-    // Initialiser les sélecteurs au chargement
     populateGameSelectors();
 
-    // --- 1. Logique du Classement (Utilise POST pour éviter le 405) ---
+    // --- 1. Logique du Classement (Rétablie à GET) ---
     const loadRankingBtn = document.getElementById('loadRankingBtn');
     const rankingGameSelect = document.getElementById('rankingGameSelect');
     const rankingTableContainer = document.getElementById('rankingTableContainer');
@@ -431,9 +424,9 @@ h2 {
         rankingMessage.style.display = 'block';
 
         try {
-            // Utilisation de POST pour le classement, sans corps de requête
+            // CORRECTION: Rétablissement à GET, sans corps de requête (body: null)
             const endpoint = `${gameId}/leaderboard`;
-            const data = await fetchData(endpoint, 'POST'); 
+            const data = await fetchData(endpoint, 'GET', null); 
             
             const leaderboardData = data.leaderboard || [];
 
@@ -443,7 +436,7 @@ h2 {
             rankingMessage.style.display = 'none';
 
         } catch (error) {
-            rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId}/leaderboard, méthode POST): ${error.message}.`;
+            rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId}/leaderboard, méthode GET): ${error.message}.`;
             rankingError.style.display = 'block';
             rankingMessage.style.display = 'none';
         }
@@ -454,7 +447,6 @@ h2 {
             return '<p class="error-message">Aucun classement trouvé pour ce jeu.</p>';
         }
 
-        // Colonnes : username, best_score, grade
         let html = '<table class="ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Meilleur Score</th><th>Grade</th></tr></thead><tbody>';
         
         rankingData.forEach((player, index) => {
@@ -473,7 +465,7 @@ h2 {
     }
 
 
-    // --- 2. Logique des Statistiques de Joueur (Utilise POST) ---
+    // --- 2. Logique des Statistiques de Joueur (Maintien de POST) ---
     const loadPlayerStatsBtn = document.getElementById('loadPlayerStatsBtn');
     const playerUsernameInput = document.getElementById('playerUsername');
     const playerGameSelect = document.getElementById('playerGameSelect');
@@ -499,11 +491,10 @@ h2 {
         statsMessage.style.display = 'block';
 
         try {
-            // Requête POST avec ID dans le body
+            // Requête POST maintenue pour les stats (nécessite un corps)
             const endpoint = `${gameId}/stats`; 
-            const body = { id: username }; // L'ID du joueur est envoyé dans le corps
+            const body = { id: username }; 
             
-            // Appel fetchData avec la méthode 'POST' et le corps
             const data = await fetchData(endpoint, 'POST', body); 
 
             statsResultsContainer.innerHTML = generatePlayerStats(data);
@@ -524,13 +515,11 @@ h2 {
             return '<p class="error-message">Aucune statistique trouvée pour ce joueur et ce jeu.</p>';
         }
 
-        // On exclut les clés non pertinentes/internes pour l'affichage
         const keysToExclude = ['id', 'username', 'created_at', 'updated_at', 'status', 'message', 'leaderboard']; 
         let html = '';
 
         for (const key in statsData) {
             if (statsData.hasOwnProperty(key) && !keysToExclude.includes(key)) {
-                // Formater la clé pour l'affichage (ex: best_score -> Meilleur Score)
                 const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 
                 html += `

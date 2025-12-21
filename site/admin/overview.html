@@ -152,16 +152,15 @@ h2 {
     background: rgba(255, 255, 255, 0.1); 
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
-/* Style Spécifique pour le menu déroulant (COULEUR CHANGÉE ICI) */
+/* Style Spécifique pour le menu déroulant (Couleur Secondary-Color) */
 .select-control {
     background: rgba(29, 233, 182, 0.15); /* Utilisation de la secondary-color transparente */
     border: 1px solid var(--secondary-color); /* Bordure en secondary-color */
-    /* Petite flèche personnalisée pour les selects */
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231de9b6'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 15px center;
     background-size: 10px;
-    padding-right: 35px; /* Pour laisser de l'espace à la flèche */
+    padding-right: 35px;
 }
 .form-control:focus, .select-control:focus {
     border-color: var(--primary-color); 
@@ -335,7 +334,7 @@ h2 {
     // --- Configuration API ---
     const API_BASE_URL = "https://project-3-api-2bgb.onrender.com";
     
-    // LISTE DES JEUX (Alignée sur les routes serveur: /astro/, /stickman_runner/, /skull_arena/)
+    // LISTE DES JEUX 
     const AVAILABLE_GAMES = {
         'astro': 'Astro Dodge', 
         'stickman_runner': 'Stickman Runner',
@@ -420,7 +419,7 @@ h2 {
     
     populateGameSelectors();
 
-    // --- 1. Logique du Classement (FIX SKULL ARENA) ---
+    // --- 1. Logique du Classement (CORRECTION MAJEURE ICI) ---
     const loadRankingBtn = document.getElementById('loadRankingBtn');
     const rankingGameSelect = document.getElementById('rankingGameSelect');
     const rankingTableContainer = document.getElementById('rankingTableContainer');
@@ -446,7 +445,7 @@ h2 {
             let method = 'GET';
 
             if (gameId === 'skull_arena') {
-                // CORRECTION SPÉCIFIQUE pour Skull Arena : utilise la route globale.
+                // Route spécifique confirmée pour Skull Arena
                 endpoint = `skull_arena_get_leaderboard`; 
             } else {
                 // Logique Générique: /astro/leaderboard, /stickman_runner/leaderboard
@@ -455,9 +454,17 @@ h2 {
 
             const data = await fetchData(endpoint, method); 
             
-            const leaderboardData = data.leaderboard || [];
+            let leaderboardData = [];
 
-            rankingTableContainer.innerHTML = generateRankingTable(leaderboardData);
+            if (gameId === 'skull_arena') {
+                // CORRECTION: Pour Skull Arena, la liste est sous la clé 'data'
+                leaderboardData = data.data || [];
+            } else {
+                // Pour les autres jeux, la liste est sous la clé 'leaderboard'
+                leaderboardData = data.leaderboard || [];
+            }
+
+            rankingTableContainer.innerHTML = generateRankingTable(leaderboardData, gameId); 
             rankingGameTitle.textContent = AVAILABLE_GAMES[gameId];
             rankingResultCard.style.display = 'block';
             rankingMessage.style.display = 'none';
@@ -469,23 +476,36 @@ h2 {
         }
     });
 
-    function generateRankingTable(rankingData) {
+    function generateRankingTable(rankingData, gameId) {
         if (rankingData.length === 0) {
-            return '<p class="error-message">Aucun classement trouvé pour ce jeu.</p>';
+            let message = 'Aucun classement trouvé pour ce jeu.';
+            if (gameId === 'skull_arena') {
+                message += '<br>Vérifiez si la table "Skull Arena" contient des données valides sur votre serveur Supabase.';
+            }
+            return `<p class="error-message">${message}</p>`;
         }
 
         let html = '<table class="ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Meilleur Score</th><th>Grade</th></tr></thead><tbody>';
         
         rankingData.forEach((player, index) => {
-             // Assure la compatibilité entre les différentes structures de données de jeux (PR_Score, best_score, etc.)
-            const score = player.PR_Score !== undefined ? player.PR_Score : (player.best_score !== undefined ? player.best_score : (player.Best_Vague !== undefined ? player.Best_Vague : 0));
+             // Détermination dynamique des clés pour la compatibilité:
+             // 1. Skull Arena: 'name' et 'wave' (du mapping serveur)
+             // 2. Astro/Stickman Runner: 'username' et ('PR_Score' ou 'best_score')
             
+            const username = player.username || player.name || 'Inconnu';
+            const score = player.PR_Score !== undefined ? player.PR_Score : 
+                            (player.best_score !== undefined ? player.best_score : 
+                            (player.Best_Vague !== undefined ? player.Best_Vague : // Ancienne clé directe
+                            (player.wave !== undefined ? player.wave : 0))); // Nouvelle clé mappée du serveur Skull Arena
+            
+            const grade = player.grade || 'N/A'; // La grade n'est pas retournée par Skull Arena (selon votre code serveur), donc N/A
+
             html += `
                 <tr>
                     <td>${index + 1}</td>
-                    <td>${player.username || 'Inconnu'}</td>
+                    <td>${username}</td>
                     <td>${score}</td>
-                    <td>${player.grade || 'N/A'}</td>
+                    <td>${grade}</td>
                 </tr>
             `;
         });
@@ -495,7 +515,7 @@ h2 {
     }
 
 
-    // --- 2. Logique des Statistiques de Joueur (FIX SKULL ARENA) ---
+    // --- 2. Logique des Statistiques de Joueur (Non Modifiée, elle était fonctionnelle) ---
     const loadPlayerStatsBtn = document.getElementById('loadPlayerStatsBtn');
     const playerUsernameInput = document.getElementById('playerUsername');
     const playerGameSelect = document.getElementById('playerGameSelect');
@@ -526,7 +546,7 @@ h2 {
             let body = null;
 
             if (gameId === 'skull_arena') {
-                // CORRECTION SPÉCIFIQUE pour Skull Arena : POST et route unique + body JSON
+                // Route spécifique confirmée pour Skull Arena (POST + body JSON)
                 endpoint = `skull_arena_get_data`;
                 method = 'POST';
                 body = { username: username };
@@ -541,18 +561,23 @@ h2 {
             // Gère le cas où les données sont enveloppées dans une clé 'data'
             let statsToDisplay = data.data || data; 
             
-            // Aplatis les "levels" pour Skull Arena (si présents) pour un affichage simple
-            if (gameId === 'skull_arena' && statsToDisplay.levels) {
-                // Renomme les clés 'damage', 'range', etc. pour la clarté avant d'aplatir
-                const levels = statsToDisplay.levels;
+            // Aplatis les "levels" de Skull Arena pour un affichage clair
+            if (gameId === 'skull_arena' && (statsToDisplay.levels || statsToDisplay.levels === 0)) {
+                // S'assurer que le niveau d'imbrication est géré correctement, y compris les cas "not_found"
+                const levels = statsToDisplay.levels || {};
+                
                 statsToDisplay = {
                     ...statsToDisplay,
-                    "UP_Degat": levels.damage,
+                    "Crânes": statsToDisplay.skulls, 
+                    "Meilleure Vague": statsToDisplay.best_wave, 
+                    "UP_Dégât": levels.damage,
                     "UP_Portée": levels.range,
-                    "UP_Vitesse": levels.speed,
-                    "UP_Cadence": levels.fire
+                    "UP_Vitesse_Perso": levels.speed,
+                    "UP_Cadence_Tir": levels.fire
                 };
                 delete statsToDisplay.levels;
+                delete statsToDisplay.skulls;
+                delete statsToDisplay.best_wave;
             }
 
             statsResultsContainer.innerHTML = generatePlayerStats(statsToDisplay);
@@ -574,14 +599,13 @@ h2 {
         }
 
         // Clés à exclure de l'affichage
-        const keysToExclude = ['id', 'username', 'created_at', 'updated_at', 'status', 'message', 'leaderboard', 'Voiture']; 
+        const keysToExclude = ['id', 'username', 'created_at', 'updated_at', 'status', 'message', 'leaderboard', 'Voiture', 'skulls', 'best_wave']; 
         let html = '';
 
         for (const key in statsData) {
-            if (statsData.hasOwnProperty(key) && !keysToExclude.includes(key)) {
+            if (statsData.hasOwnProperty(key) && !keysToExclude.includes(key) && statsData[key] !== undefined) {
                 const value = statsData[key];
                 
-                // On s'assure que ce n'est pas un objet (après l'aplatissement de Skull Arena)
                 if (typeof value === 'object' && value !== null) continue; 
                 
                 // Formate les clés comme 'best_score' en 'Best Score'

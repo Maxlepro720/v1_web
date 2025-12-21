@@ -347,16 +347,16 @@ h2 {
         });
     });
 
-    // --- Fonction utilitaire pour les API (CORRIGÉE) ---
+    // --- Fonction utilitaire pour les API ---
     async function fetchData(endpoint, method = 'GET', body = null) {
         const url = `${API_BASE_URL}/${endpoint}`; 
         
         const options = {
             method: method,
-            headers: {} // Commencez avec des headers vides
+            headers: {} // Commence avec des headers vides
         };
 
-        // N'ajoutez Content-Type et le corps que si un 'body' est explicitement fourni
+        // N'ajoute Content-Type et le corps que si un 'body' est explicitement fourni
         if (body !== null) { 
             options.headers['Content-Type'] = 'application/json';
             options.body = JSON.stringify(body);
@@ -402,7 +402,7 @@ h2 {
     
     populateGameSelectors();
 
-    // --- 1. Logique du Classement (Rétablie à GET) ---
+    // --- 1. Logique du Classement (Rétablie à POST pour contourner le 405 du serveur live) ---
     const loadRankingBtn = document.getElementById('loadRankingBtn');
     const rankingGameSelect = document.getElementById('rankingGameSelect');
     const rankingTableContainer = document.getElementById('rankingTableContainer');
@@ -424,9 +424,10 @@ h2 {
         rankingMessage.style.display = 'block';
 
         try {
-            // CORRECTION: Rétablissement à GET, sans corps de requête (body: null)
+            // CORRECTION FINALE: Force la méthode à POST et envoie le gameId dans le body
             const endpoint = `${gameId}/leaderboard`;
-            const data = await fetchData(endpoint, 'GET', null); 
+            const body = { game: gameId }; // Corps requis par le serveur live pour POST
+            const data = await fetchData(endpoint, 'POST', body); 
             
             const leaderboardData = data.leaderboard || [];
 
@@ -436,7 +437,7 @@ h2 {
             rankingMessage.style.display = 'none';
 
         } catch (error) {
-            rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId}/leaderboard, méthode GET): ${error.message}.`;
+            rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId}/leaderboard, méthode POST): ${error.message}.`;
             rankingError.style.display = 'block';
             rankingMessage.style.display = 'none';
         }

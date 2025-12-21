@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tableau de Bord Admin - Console de Jeu</title>
+<style>
+/* Réutilisation et adaptation du style de connecte.html pour un look cohérent */
+:root {
+    --bg-color: #0b0c10;
+    --card-bg: rgba(255, 255, 255, 0.05);
+    --primary-color: #00bfff;
+    --secondary-color: #1de9b6;
+    --text-color: #fff;
+    --light-text: #aaa;
+    --border-color: #333;
+    --shadow-color: rgba(0, 0, 0, 0.6);
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;}
+body{background:var(--bg-color);color:var(--text-color);min-height:100vh;display:flex;flex-direction:column;}
+
+/* Structure principale */
+.dashboard-container {
+    display: flex;
+    flex-grow: 1;
+    padding-top: 60px;
+}
+
+/* En-tête (style Search Console) */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border-color);
+    z-index: 1000;
+}
+.header-logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-right: 40px;
+}
+.header-title {
+    font-size: 18px;
+    color: var(--light-text);
+}
+
+/* Barre Latérale (Navigation) */
+.sidebar {
+    width: 250px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 20px 0;
+    border-right: 1px solid var(--border-color);
+    flex-shrink: 0;
+    transition: width 0.3s ease;
+}
+.nav-group-title {
+    color: var(--light-text);
+    padding: 10px 20px 5px;
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background 0.2s, color 0.2s;
+    color: var(--light-text);
+    border-left: 3px solid transparent;
+}
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-color);
+}
+.nav-item.active {
+    background: rgba(0, 191, 255, 0.1);
+    color: var(--primary-color);
+    border-left-color: var(--primary-color);
+    font-weight: 600;
+}
+.nav-item i {
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+/* Contenu Principal */
+.main-content {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+.content-section {
+    display: none;
+    animation: fadeIn 0.5s ease-out;
+}
+.content-section.active {
+    display: block;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+h2 {
+    font-size: 28px;
+    margin-bottom: 20px;
+    color: var(--primary-color);
+}
+
+/* Style des cartes/panneaux */
+.card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border-radius: 15px;
+    padding: 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 5px 15px var(--shadow-color);
+}
+
+/* Formulaires et entrées */
+.form-group {
+    margin-bottom: 15px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--light-text);
+}
+.form-control, .select-control {
+    width: 100%;
+    padding: 10px 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: var(--text-color);
+    font-size: 15px;
+    transition: all 0.3s;
+    -webkit-appearance: none;
+    appearance: none;
+}
+.form-control:focus, .select-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(0, 191, 255, 0.4);
+    outline: none;
+}
+
+/* Boutons */
+.btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 15px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--primary-color);
+    color: var(--text-color);
+    box-shadow: 0 5px 15px rgba(0, 191, 255, 0.4);
+}
+.btn:hover {
+    background: var(--secondary-color);
+    box-shadow: 0 0 20px rgba(29, 233, 182, 0.6);
+    transform: translateY(-2px);
+}
+
+/* Tableaux */
+.ranking-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+.ranking-table th, .ranking-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+.ranking-table th {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 14px;
+    background: rgba(0, 191, 255, 0.05);
+}
+.ranking-table tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Affichage des statistiques */
+.stats-results {
+    margin-top: 20px;
+}
+.stats-results div {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    font-size: 16px;
+    display: flex;
+    justify-content: space-between;
+}
+.stats-results strong {
+    color: var(--secondary-color);
+}
+.error-message {
+    color: #ff5555;
+    background: rgba(255, 85, 85, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+}
+.loading-message {
+    color: var(--primary-color);
+    text-align: center;
+    padding: 20px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-logo">🎮 Console Admin</div>
+    <div class="header-title">Tableau de Bord</div>
+</div>
+
+<div class="dashboard-container">
+    <div class="sidebar">
+        <div class="nav-group-title">Analytics & Données</div>
+        <div class="nav-item active" data-tab="ranking">
+            <i class="fas fa-trophy">🏆</i> Classement
+        </div>
+        <div class="nav-item" data-tab="player-stats">
+            <i class="fas fa-user-chart">📈</i> Statistiques de Joueur
+        </div>
+
+        <div class="nav-group-title" style="margin-top: 20px;">Gestion (Non Fonctionnel)</div>
+        <div class="nav-item" data-tab="users">
+            <i class="fas fa-users">👥</i> Gestion des Utilisateurs
+        </div>
+        <div class="nav-item" data-tab="content">
+            <i class="fas fa-cogs">⚙️</i> Paramètres
+        </div>
+        <div class="nav-item" data-tab="reports">
+            <i class="fas fa-bug">🚨</i> Rapports & Logs
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="content-section active" id="ranking">
+            <h2>Classement Global</h2>
+            <div class="card">
+                <p>Affichez le classement des meilleurs joueurs pour un jeu spécifique.</p>
+                <div class="form-group">
+                    <label for="rankingGameSelect">Sélectionner un Jeu :</label>
+                    <select id="rankingGameSelect" class="select-control">
+                        </select>
+                </div>
+                <button class="btn" id="loadRankingBtn">Charger le Classement</button>
+            </div>
+
+            <div class="card" id="rankingResultCard" style="display:none;">
+                <h3>Top 10 : <span id="rankingGameTitle"></span></h3>
+                <div id="rankingTableContainer">
+                    </div>
+                <div id="rankingMessage" class="loading-message" style="display:none;">Chargement...</div>
+                <div id="rankingError" class="error-message" style="display:none;"></div>
+            </div>
+        </div>
+
+        <div class="content-section" id="player-stats">
+            <h2>Statistiques de Joueur</h2>
+            <div class="card">
+                <p>Recherchez les statistiques détaillées d'un joueur pour un jeu donné.</p>
+                <div class="form-group">
+                    <label for="playerUsername">Nom d'utilisateur :</label>
+                    <input type="text" id="playerUsername" class="form-control" placeholder="Entrez l'ID du joueur">
+                </div>
+                <div class="form-group">
+                    <label for="playerGameSelect">Sélectionner un Jeu :</label>
+                    <select id="playerGameSelect" class="select-control">
+                        </select>
+                </div>
+                <button class="btn" id="loadPlayerStatsBtn">Charger les Statistiques</button>
+            </div>
+
+            <div class="card" id="statsResultCard" style="display:none;">
+                <h3>Statistiques pour <span id="statsPlayerTitle"></span> (<span id="statsGameTitle"></span>)</h3>
+                <div id="statsResultsContainer" class="stats-results">
+                    </div>
+                <div id="statsMessage" class="loading-message" style="display:none;">Chargement...</div>
+                <div id="statsError" class="error-message" style="display:none;"></div>
+            </div>
+        </div>
+
+        <div class="content-section" id="users">
+            <h2>Gestion des Utilisateurs</h2>
+            <div class="card"><p>Fonctionnalité en cours de développement...</p></div>
+        </div>
+        <div class="content-section" id="content">
+            <h2>Paramètres</h2>
+            <div class="card"><p>Fonctionnalité en cours de développement...</p></div>
+        </div>
+        <div class="content-section" id="reports">
+            <h2>Rapports & Logs</h2>
+            <div class="card"><p>Fonctionnalité en cours de développement...</p></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Configuration API (MISE À JOUR) ---
+    const API_BASE_URL = "https://project-3-api-2bgb.onrender.com";
+    
+    // LISTE DES JEUX : Les 3 jeux confirmés avec classement
+    const AVAILABLE_GAMES = {
+        'astro_dodge': 'Astro Dodge',
+        'stickman_runner': 'Stickman Runner',
+        'skull_arena': 'Skull Arena'
+    };
+    
+    // Tous les jeux listés ont un classement (pour la clarté, mais GAMES_WITH_LEADERBOARD devient redondant)
+    const GAMES_WITH_LEADERBOARD = ['astro_dodge', 'stickman_runner', 'skull_arena'];
+
+    // --- Gestion des Onglets ---
+    const navItems = document.querySelectorAll('.nav-item');
+    const contentSections = document.querySelectorAll('.content-section');
+
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            navItems.forEach(i => i.classList.remove('active'));
+            contentSections.forEach(s => s.classList.remove('active'));
+
+            item.classList.add('active');
+            const targetId = item.getAttribute('data-tab');
+            document.getElementById(targetId).classList.add('active');
+            
+            if(targetId === 'ranking' || targetId === 'player-stats') {
+                populateGameSelectors();
+            }
+        });
+    });
+
+    // --- Fonction utilitaire pour les API ---
+    async function fetchData(endpoint, method = 'GET', body = null) {
+        // L'endpoint est déjà bien formé (ex: astro_dodge/leaderboard)
+        const url = `${API_BASE_URL}/${endpoint}`; 
+        const options = {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        };
+        if (body) {
+            options.body = JSON.stringify(body);
+        }
+
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `Erreur HTTP ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error("Erreur de requête API:", error);
+            throw error;
+        }
+    }
+
+    // --- Remplissage des menus déroulants de jeux ---
+    function populateGameSelectors() {
+        const rankingGameSelect = document.getElementById('rankingGameSelect');
+        const playerGameSelect = document.getElementById('playerGameSelect');
+        
+        // Nettoyer les options existantes
+        rankingGameSelect.innerHTML = '';
+        playerGameSelect.innerHTML = '';
+        
+        // Ajouter une option par jeu à tous les sélecteurs
+        for (const [key, value] of Object.entries(AVAILABLE_GAMES)) {
+            // Pour le classement
+            const option1 = new Option(value, key);
+            rankingGameSelect.add(option1);
+            
+            // Pour les stats
+            const option2 = new Option(value, key);
+            playerGameSelect.add(option2);
+        }
+    }
+    
+    // Initialiser les sélecteurs au chargement
+    populateGameSelectors();
+
+    // --- 1. Logique du Classement ---
+    const loadRankingBtn = document.getElementById('loadRankingBtn');
+    const rankingGameSelect = document.getElementById('rankingGameSelect');
+    const rankingTableContainer = document.getElementById('rankingTableContainer');
+    const rankingGameTitle = document.getElementById('rankingGameTitle');
+    const rankingResultCard = document.getElementById('rankingResultCard');
+    const rankingMessage = document.getElementById('rankingMessage');
+    const rankingError = document.getElementById('rankingError');
+
+    loadRankingBtn.addEventListener('click', async () => {
+        const gameId = rankingGameSelect.value;
+        if (!gameId) {
+            alert("Veuillez sélectionner un jeu.");
+            return;
+        }
+
+        rankingResultCard.style.display = 'none';
+        rankingError.style.display = 'none';
+        rankingMessage.textContent = "Chargement du classement...";
+        rankingMessage.style.display = 'block';
+
+        try {
+            // Requête API standardisée: /{jeu}/leaderboard
+            const endpoint = `${gameId}/leaderboard`;
+            const data = await fetchData(endpoint); 
+            
+            const leaderboardData = data.leaderboard || [];
+
+            rankingTableContainer.innerHTML = generateRankingTable(leaderboardData);
+            rankingGameTitle.textContent = AVAILABLE_GAMES[gameId];
+            rankingResultCard.style.display = 'block';
+            rankingMessage.style.display = 'none';
+
+        } catch (error) {
+            rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId}/leaderboard): ${error.message}`;
+            rankingError.style.display = 'block';
+            rankingMessage.style.display = 'none';
+        }
+    });
+
+    function generateRankingTable(rankingData) {
+        if (rankingData.length === 0) {
+            return '<p class="error-message">Aucun classement trouvé pour ce jeu.</p>';
+        }
+
+        // Colonnes : username, best_score, grade
+        let html = '<table class="ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Meilleur Score</th><th>Grade</th></tr></thead><tbody>';
+        
+        rankingData.forEach((player, index) => {
+            html += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${player.username || 'Inconnu'}</td>
+                    <td>${player.best_score || 0}</td>
+                    <td>${player.grade || 'N/A'}</td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+        return html;
+    }
+
+
+    // --- 2. Logique des Statistiques de Joueur ---
+    const loadPlayerStatsBtn = document.getElementById('loadPlayerStatsBtn');
+    const playerUsernameInput = document.getElementById('playerUsername');
+    const playerGameSelect = document.getElementById('playerGameSelect');
+    const statsResultsContainer = document.getElementById('statsResultsContainer');
+    const statsPlayerTitle = document.getElementById('statsPlayerTitle');
+    const statsGameTitle = document.getElementById('statsGameTitle');
+    const statsResultCard = document.getElementById('statsResultCard');
+    const statsMessage = document.getElementById('statsMessage');
+    const statsError = document.getElementById('statsError');
+
+    loadPlayerStatsBtn.addEventListener('click', async () => {
+        const username = playerUsernameInput.value.trim();
+        const gameId = playerGameSelect.value;
+        
+        if (!username || !gameId) {
+            alert("Veuillez remplir l'ID du joueur et sélectionner un jeu.");
+            return;
+        }
+
+        statsResultCard.style.display = 'none';
+        statsError.style.display = 'none';
+        statsMessage.textContent = "Chargement des statistiques...";
+        statsMessage.style.display = 'block';
+
+        try {
+            // Requête API standardisée pour les stats: /{jeu}/stats?id={username}
+            const endpoint = `${gameId}/stats?id=${username}`;
+            const data = await fetchData(endpoint); 
+
+            statsResultsContainer.innerHTML = generatePlayerStats(data);
+            statsPlayerTitle.textContent = username;
+            statsGameTitle.textContent = AVAILABLE_GAMES[gameId];
+            statsResultCard.style.display = 'block';
+            statsMessage.style.display = 'none';
+
+        } catch (error) {
+            statsError.textContent = `Erreur lors du chargement des stats (route: ${gameId}/stats): ${error.message}.`;
+            statsError.style.display = 'block';
+            statsMessage.style.display = 'none';
+        }
+    });
+
+    function generatePlayerStats(statsData) {
+        if (!statsData || Object.keys(statsData).length === 0 || statsData.status === "error") {
+            return '<p class="error-message">Aucune statistique trouvée pour ce joueur et ce jeu.</p>';
+        }
+
+        // On exclut les clés non pertinentes/internes pour l'affichage
+        const keysToExclude = ['id', 'username', 'created_at', 'updated_at', 'status', 'message', 'leaderboard']; 
+        let html = '';
+
+        for (const key in statsData) {
+            if (statsData.hasOwnProperty(key) && !keysToExclude.includes(key)) {
+                // Formater la clé pour l'affichage (ex: best_score -> Meilleur Score)
+                const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+
+                html += `
+                    <div>
+                        <span>${formattedKey} :</span>
+                        <strong>${statsData[key]}</strong>
+                    </div>
+                `;
+            }
+        }
+        return html;
+    }
+
+</script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</body>
+</html>

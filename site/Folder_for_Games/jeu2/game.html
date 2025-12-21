@@ -359,6 +359,9 @@ function updateTransition() {
     }
 }
 
+// =================================================================
+// --- LOGIQUE API CORRIGÉE ---
+// =================================================================
 async function loadGameData() {
     // Simulation de chargement avec progression
     for (let i = 0; i <= 100; i += 2) {
@@ -368,10 +371,17 @@ async function loadGameData() {
     
     try {
         const response = await fetch(`${API_BASE_URL}/load_data/${username}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();
 
         if (result.status === "success" || result.status === "not_found") {
-            const data = result.data;
+            const data = result.data || {};
+            
+            // Conversion et assignation des données
             bestScore = Number(data.PR_Score) || 0;
             credits = Number(data.Coins) || 0;
             const unlockedCarsString = data.Voiture || "Standard"; 
@@ -394,12 +404,14 @@ async function loadGameData() {
             transition.active = false;
             transition.nextState = null;
         } else {
-            console.error("erreur de chargement des données:", result.message);
+            console.error("Erreur de chargement des données (Statut non conforme):", result.message);
+            // Fallback en cas d'erreur de statut de l'API
             state = STATE.START_SCREEN; 
             transition.active = false;
         }
     } catch (e) {
-        console.error("erreur de connexion API au chargement:", e);
+        console.error("Erreur de connexion API au chargement:", e.message);
+        // Fallback en cas d'erreur de connexion
         state = STATE.START_SCREEN; 
         transition.active = false;
     }
@@ -417,6 +429,7 @@ async function saveGameData(newScore = null) {
     };
     
     if (newScore !== null) {
+        // Envoie le meilleur score actuel s'il y a un nouveau record
         dataToSave.PR_Score = Math.floor(newScore);
     }
 
@@ -426,31 +439,52 @@ async function saveGameData(newScore = null) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dataToSave)
         });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();
+        // Le code original ne faisait rien avec le résultat de la sauvegarde, on conserve ce comportement
+        // if (result.status !== "success") { console.error("Erreur à la sauvegarde des données:", result.message); }
+        
     } catch (e) {
-        console.error("erreur de connexion API à la sauvegarde:", e);
+        console.error("Erreur de connexion API à la sauvegarde:", e.message);
     }
 }
 
 async function loadLeaderboard() {
     try {
         const response = await fetch(`${API_BASE_URL}/leaderboard`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();
         
         if (result.status === "success") {
+            // S'assurer que PR_Score est un nombre pour le tri
             leaderboardData = result.leaderboard.map(e => ({
                 name: (e.username === username ? "Vous" : e.username), 
-                score: e.PR_Score
+                score: Number(e.PR_Score) // S'assurer que c'est un nombre
             })).sort((a, b) => b.score - a.score).slice(0, 5); 
             
+            // Si le joueur n'est pas dans le top 5, l'ajouter à la fin pour référence
             if (!leaderboardData.some(e => e.name === "Vous")) {
+                // S'assurer que le meilleur score est celui du joueur
                 leaderboardData.push({ name: "Vous", score: bestScore });
             }
-        } 
+        } else {
+             console.error("Erreur de chargement du classement (Statut non conforme):", result.message);
+        }
     } catch (e) {
-        console.error("erreur de connexion API au classement:", e);
+        console.error("Erreur de connexion API au classement:", e.message);
     }
 }
+// =================================================================
+// --- FIN LOGIQUE API CORRIGÉE ---
+// =================================================================
 
 canvas.addEventListener("click", e=>{
     const coords = getScaledMouseCoordinates(e);

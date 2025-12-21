@@ -643,50 +643,50 @@
             }
         }
 
-       async function loadLeaderboard() {
+       async function loadStickmanRunnerLeaderboard() {
             try {
-                // L'endpoint et la méthode sont correctes pour la route Stickman Runner
+                // 1. Requête GET vers l'endpoint Stickman Runner
                 const response = await fetch(`${SERVER_URL}/stickman_runner_get_leaderboard`, {
                     method: 'GET'
                 }); 
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`Erreur HTTP! Statut: ${response.status}`);
                 }
                 
                 const result = await response.json();
                 
                 if (result.status === "success") {
-                    const leaderboardRawData = result.data; // Accès à la clé 'data'
+                    const leaderboardRawData = result.data; // Le tableau est dans 'data'
 
-                    // CORRECTION: Vérification de l'existence et du type du tableau pour éviter 'length' sur undefined
+                    // 2. CORRECTION: Vérification de l'intégrité des données pour éviter l'erreur 'length'
                     if (!Array.isArray(leaderboardRawData)) {
                         console.error("Erreur de format de données: 'data' n'est pas un tableau.", result);
                         leaderboardData = []; // Initialiser à un tableau vide
                         return;
                     }
 
-                    // Mappage des données : 'name' et 'distance' sont les clés du serveur
+                    // 3. Mappage et tri : utilisation de 'distance' comme valeur de score
                     leaderboardData = leaderboardRawData.map(e => ({
                         name: (e.name === username ? "Vous" : e.name), 
-                        score: Number(e.distance) // CORRECTION: Utilisation de 'distance' comme clé de score
+                        score: Number(e.distance) // UTILISATION CORRECTE : lecture de 'distance'
                     })).sort((a, b) => b.score - a.score).slice(0, 5); 
                     
-                    // Si le joueur n'est pas dans le top 5, l'ajouter à la fin
+                    // 4. Ajout du score de l'utilisateur s'il n'est pas dans le Top 5
                     if (!leaderboardData.some(e => e.name === "Vous")) {
-                        // Assurez-vous que 'bestScore' ou la variable de meilleure distance est accessible ici
+                        // Assurez-vous que 'bestScore' contient la meilleure distance enregistrée
                         leaderboardData.push({ name: "Vous", score: bestScore }); 
                     }
                 } else {
                     console.error("Erreur de chargement du classement (Statut non conforme):", result.message);
                 }
             } catch (e) {
-                // Affichera le message "Erreur de communication avec le serveur (Leaderboard): TypeError: Cannot read properties of undefined (reading 'length')" si l'erreur n'est pas gérée.
-                // Avec la correction ci-dessus, l'erreur est maintenant gérée.
-                console.error("Erreur de communication avec le serveur (Leaderboard):", e.message);
+                // Affichera une erreur générique si la connexion échoue avant la réponse
+                console.error("Erreur de communication avec le serveur (Classement Stickman Runner):", e.message);
+                // En cas d'échec total, s'assurer que leaderboardData est un tableau vide pour ne pas crasher l'affichage
+                leaderboardData = [];
             }
         }
-
         // --- LOGIQUE DE JEU RESTANTE ---
 
         function updateUpgradeShopDisplay() {

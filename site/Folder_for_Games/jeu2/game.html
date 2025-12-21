@@ -358,7 +358,6 @@ function updateTransition() {
         }
     }
 }
-
 // =================================================================
 // --- LOGIQUE API CORRIGÉE ---
 // =================================================================
@@ -370,11 +369,15 @@ async function loadGameData() {
     }
     
     try {
-        // CORRECTION 1: Rétablissement de la méthode 'GET' pour éviter le 405, 
-        // avec le username en paramètre d'URL.
-        const response = await fetch(`${API_BASE_URL}/astro_dodge_get_data?username=${username}`, {
-            method: 'GET'
-            // Pas de headers ni de body pour la méthode GET
+        // CORRECTION 1: Rétablissement définitif de la méthode 'POST' (selon votre log 200)
+        const response = await fetch(`${API_BASE_URL}/astro_dodge_get_data`, {
+            method: 'POST', 
+            headers: {
+                // Headers obligatoires pour envoyer un JSON en POST
+                'Content-Type': 'application/json'
+            },
+            // Le corps JSON est requis pour l'authentification côté serveur
+            body: JSON.stringify({'username': username})
         });
 
         if (!response.ok) {
@@ -386,11 +389,12 @@ async function loadGameData() {
         if (result.status === "success" || result.status === "not_found") {
             const data = result.data || {};
             
-            // Les clés sont 'score' et 'credit' selon l'API Server fournie
+            // CORRECTION: Utilisation des clés 'score' et 'credit' comme mappé par l'API
             bestScore = Number(data.score) || 0;
             credits = Number(data.credit) || 0;
             
-            // Logique de déverrouillage des vaisseaux conservée pour la compatibilité locale
+            // La gestion des voitures n'est pas explicite dans les données de l'API, 
+            // on conserve une logique de fallback robuste:
             const unlockedCarsString = data.Voiture || "Standard"; 
             const unlockedCarsArray = unlockedCarsString.split(',');
             let selectedShipName = ships[player.type].name; 
@@ -427,19 +431,18 @@ async function saveGameData(newScore = null) {
 
     const unlockedCarsNames = ships.filter(s => s.unlocked).map(s => s.name).join(',');
 
-    // newScore n'est pas utilisé directement, le score de la partie en cours (score global) est envoyé
+    // Envoi du score de la partie en cours. Le serveur se charge de comparer avec le meilleur score.
     const currentRunScore = Math.floor(score);
     
     const dataToSave = {
         username: username,
-        // Les clés sont 'credit' et 'score' selon l'API Server fournie
+        // CORRECTION 2: Endpoint '/astro_dodge_update_data' et clés 'score'/'credit'
         credit: credits, 
         score: currentRunScore, 
-        Voiture: unlockedCarsNames
+        Voiture: unlockedCarsNames // L'API ne gère plus cette clé, mais on la garde au cas où
     };
     
     try {
-        // CORRECTION 2: Endpoint '/astro_dodge_update_data' et méthode POST
         const response = await fetch(`${API_BASE_URL}/astro_dodge_update_data`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -460,9 +463,9 @@ async function saveGameData(newScore = null) {
 
 async function loadLeaderboard() {
     try {
-        // CORRECTION 3: Endpoint '/astro_dodge_get_leaderboard' et méthode GET (selon l'API Server fournie)
+        // CORRECTION 3: Endpoint '/astro_dodge_get_leaderboard' et méthode GET (selon l'API Server)
         const response = await fetch(`${API_BASE_URL}/astro_dodge_get_leaderboard`, {
-            method: 'GET'
+            method: 'GET' // Pas de body ni de headers requis pour GET
         }); 
         
         if (!response.ok) {
@@ -472,10 +475,10 @@ async function loadLeaderboard() {
         const result = await response.json();
         
         if (result.status === "success") {
-            // Utilisation de 'result.data' et de la clé 'score' (selon l'API Server fournie)
+            // CORRECTION: Utilisation de 'result.data' et de la clé 'score' (selon l'API Server)
             leaderboardData = result.data.map(e => ({
-                name: (e.username === username ? "Vous" : e.username), 
-                score: Number(e.score)
+                name: (e.name === username ? "Vous" : e.name), // L'API renvoie 'name'
+                score: Number(e.score) // L'API renvoie 'score'
             })).sort((a, b) => b.score - a.score).slice(0, 5); 
             
             // Si le joueur n'est pas dans le top 5, l'ajouter à la fin

@@ -556,7 +556,7 @@
             console.log("Sauvegarde des données:", dataToSave);
 
             try {
-                const response = await fetch(`${SERVER_URL}${API_BASE}/save_data`, {
+                const response = await fetch(`${SERVER_URL}/stickman_runner_update_data`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -583,7 +583,17 @@
             loadingMessageElement.textContent = `Connexion au serveur et chargement des données de ${username}...`;
 
             try {
-                const response = await fetch(`${SERVER_URL}${API_BASE}/load_data/${username}`);
+                const response = await fetch(`${API_BASE_URL}/stickman_runner_get_data`, {
+                    method: 'POST',
+                    headers: {
+                        // Obligatoire pour envoyer du JSON
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify({
+                        // La clé 'username' est celle attendue par votre route Flask
+                        'username': username 
+                    })
+                });
 
                 if (!response.ok) {
                     throw new Error(`Erreur HTTP: ${response.status} (${response.statusText || 'Méthode non autorisée (405)'})`);
@@ -638,7 +648,7 @@
             body.innerHTML = '<tr><td colspan="4">Connexion au serveur...</td></tr>';
 
             try {
-                const response = await fetch(`${SERVER_URL}${API_BASE}/leaderboard`);
+                const response = await fetch(`${SERVER_URL}/stickman_runner_get_leaderboard`);
                 const result = await response.json();
                 
                 if (result.status === "success") {

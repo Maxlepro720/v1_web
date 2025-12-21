@@ -370,15 +370,18 @@ async function loadGameData() {
     }
     
     try {
-        // CORRECTION 1: Utilisation de API_BASE_URL pour la requête de chargement, endpoint /astro_dodge_get_data (conformément à overview.html)
-        const response = await fetch(`${API_BASE_URL}/astro_dodge_get_data`, {
+        const response = await fetch('https://project-3-api-2bgb.onrender.com/astro_dodge_get_data', {
             method: 'POST', 
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({'username': username})
+            // ------------------------------------------------
         });
+        console.log(response)
 
+        
+        
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -441,8 +444,7 @@ async function saveGameData(newScore = null) {
     }
 
     try {
-        // CORRECTION 2: Utilisation de l'endpoint '/update_user_data' pour la sauvegarde (conformément à overview.html)
-        const response = await fetch(`${API_BASE_URL}/update_user_data`, {
+        const response = await fetch(`${API_BASE_URL}/save_data`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dataToSave)
@@ -463,12 +465,7 @@ async function saveGameData(newScore = null) {
 
 async function loadLeaderboard() {
     try {
-        // CORRECTION 3: Utilisation de l'endpoint '/astro_dodge_leaderboard' et du method POST (conformément à overview.html)
-        const response = await fetch(`${API_BASE_URL}/astro_dodge_leaderboard`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}) // Un corps JSON vide est requis pour POST
-        });
+        const response = await fetch(`${API_BASE_URL}/leaderboard`);
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -588,8 +585,7 @@ function startLaunchAnimation() {
     asteroids=[]; coins=[]; score=0; time=0; spawnTimer=0; explosion=null; flashAlpha=0; floatingTexts=[]; deathShockwave.active = false; glitchTimer = 0;
     timeScale = 1; launchProgress = 0; earthY = 500; currentLevel = 1; colorIndex = 0;
     player.x = 210; player.y = 520; player.trail = []; player.angle = 0;
-    player.life=ships[player.type].bonus==="Vie Supplémentaire" ? 2 : 1;
-    state = STATE.TAKEOFF;
+    player.life=ships[player.type].bonus==="Vie Supplémentaire" ? 2 : 1; state = STATE.TAKEOFF;
 }
 
 function update(){
@@ -600,15 +596,16 @@ function update(){
     if(glitchTimer > 0) glitchTimer--;
 
     if(state === STATE.LOADING) {
-        loadingShip.angle += 0.08; 
+        loadingShip.angle += 0.08;
+        
         // Particules du vaisseau en chargement
         if(time % 3 === 0) {
-            loadingShip.particles.push({ 
-                x: loadingShip.x + (Math.random()-0.5)*15, 
-                y: loadingShip.y + 20, 
-                r: 2 + Math.random()*3, 
-                alpha: 0.8, 
-                speed: 2 + Math.random()*2 
+            loadingShip.particles.push({
+                x: loadingShip.x + (Math.random()-0.5)*15,
+                y: loadingShip.y + 20,
+                r: 2 + Math.random()*3,
+                alpha: 0.8,
+                speed: 2 + Math.random()*2
             });
         }
         loadingShip.particles.forEach((p, i) => {
@@ -616,8 +613,10 @@ function update(){
             p.alpha -= 0.02;
             if(p.alpha <= 0) loadingShip.particles.splice(i, 1);
         });
+        
     } else if (state === STATE.START_SCREEN) {
         const isHovering = mouseInRect(110, 480, 200, 50);
+        
         if (isHovering) {
             startButtonAnim.scale += (1.08 - startButtonAnim.scale) * 0.15;
             if (!startButtonAnim.hover) {
@@ -633,35 +632,30 @@ function update(){
     }
 
     if(state === STATE.MENU) {
-        menuParticles.forEach(p => {
-            p.y += p.s;
-            if(p.y > GAME_HEIGHT) {
-                p.y = -20;
-                p.x = Math.random()*GAME_WIDTH;
-            }
-        });
+        menuParticles.forEach(p => { p.y += p.s; if(p.y > GAME_HEIGHT) { p.y = -20; p.x = Math.random()*GAME_WIDTH; } });
+        
         // Détection hover pour sons
         const buttons = [
             {x: 110, y: 240, w: 200, h: 50, id: 'play'},
             {x: 110, y: 310, w: 200, h: 50, id: 'shop'},
         ];
+        
         const yLeaderboard = isMobile ? 380 : 450;
         const yQuit = isMobile ? 450 : 520;
-
+        
         if (!isMobile) {
             buttons.push({x: 110, y: 380, w: 200, h: 50, id: 'options'});
         }
-
         buttons.push({x: 110, y: yLeaderboard, w: 200, h: 50, id: 'leader'});
         buttons.push({x: 110, y: yQuit, w: 200, h: 50, id: 'quit'});
-
+        
         let hovering = null;
         buttons.forEach(btn => {
             if(mouseInRect(btn.x, btn.y, btn.w, btn.h)) {
                 hovering = btn.id;
             }
         });
-
+        
         if(hovering && hovering !== lastHoveredButton) {
             AudioSystem.play('buttonHover');
             lastHoveredButton = hovering;
@@ -670,81 +664,43 @@ function update(){
         }
     }
 
-    floatingTexts.forEach((t, i) => {
-        t.y -= 2;
-        t.alpha -= 0.02;
-        if(t.alpha <= 0) floatingTexts.splice(i, 1);
-    });
+    floatingTexts.forEach((t, i) => { t.y -= 2; t.alpha -= 0.02; if(t.alpha <= 0) floatingTexts.splice(i, 1); });
 
-    nebulas.forEach(n => {
-        n.y += n.speed * (state === STATE.GAMEOVER ? timeScale : 1);
-        if(n.y - n.r > GAME_HEIGHT) {
-            n.y = -n.r;
-            n.x = Math.random() * GAME_WIDTH;
-        }
-    });
+    nebulas.forEach(n => { n.y += n.speed * (state === STATE.GAMEOVER ? timeScale : 1); if(n.y - n.r > GAME_HEIGHT) { n.y = -n.r; n.x = Math.random() * GAME_WIDTH; } });
 
-    if(state === STATE.TAKEOFF) {
-        launchProgress += 0.005;
-        earthY += 4;
-        player.y -= 0.5;
-        if(launchProgress >= 1) {
-            AudioSystem.play('rocket');
-            state = STATE.PLAY;
-        }
-    }
+    if(state === STATE.TAKEOFF) { launchProgress += 0.005; earthY += 4; player.y -= 0.5; if(launchProgress >= 1) { AudioSystem.play('rocket'); state = STATE.PLAY; } }
+    if(state === STATE.LANDING) { launchProgress -= 0.01; earthY -= 5; player.y += 2; if(earthY <= 500) changeState(STATE.MENU); }
 
-    if(state === STATE.LANDING) {
-        launchProgress -= 0.01;
-        earthY -= 5;
-        player.y += 2;
-        if(earthY <= 500) changeState(STATE.MENU);
-    }
-    
     if(state!==STATE.PLAY && state!==STATE.GAMEOVER && state!==STATE.TAKEOFF && state!==STATE.LANDING) return;
     
     let currentSpeed = (state === STATE.GAMEOVER) ? timeScale : 1;
     if(state === STATE.GAMEOVER && timeScale > 0) timeScale -= 0.02;
 
-    time++;
+    time++; 
     if(player.invulnerable > 0) player.invulnerable--;
-
     const sD=ships[player.type];
 
     if(state === STATE.PLAY || state === STATE.TAKEOFF || state === STATE.LANDING) {
         let trailY = state === STATE.LANDING ? player.y - 15 : player.y + 15;
         if(time % 2 === 0) player.trail.push({x: player.x + (Math.random()-0.5)*10, y: trailY, r: 4 + Math.random()*4, alpha: 0.6});
     }
+    player.trail.forEach((p, i) => { p.y += (state === STATE.LANDING ? -3 : 3) * currentSpeed; p.alpha -= 0.02; p.r *= 0.98; if(p.alpha <= 0) player.trail.splice(i, 1); });
 
-    player.trail.forEach((p, i) => {
-        p.y += (state === STATE.LANDING ? -3 : 3) * currentSpeed;
-        p.alpha -= 0.02;
-        p.r *= 0.98;
-        if(p.alpha <= 0) player.trail.splice(i, 1);
-    });
-    
     if(state === STATE.PLAY) {
         let nextLvl = Math.floor(score/500) + 1;
-        if(nextLvl > currentLevel) {
-            currentLevel = nextLvl;
-            levelAnimTimer = 100;
-            colorIndex = (currentLevel - 1) % levelColors.length;
-            flashAlpha = 0.3;
+        if(nextLvl > currentLevel) { 
+            currentLevel = nextLvl; levelAnimTimer = 100; colorIndex = (currentLevel - 1) % levelColors.length; flashAlpha = 0.3; 
             credits += 50;
             AudioSystem.play('levelUp');
-            saveGameData();
+            saveGameData(); 
         }
         if(levelAnimTimer > 0) levelAnimTimer--;
 
         score += (sD.bonus==="Score x2" ? 1.1 : 0.55);
-
         spawnTimer++;
-        if(spawnTimer>=Math.max(10, 40 - Math.floor(score/150))){
-            spawnAsteroid();
-            spawnTimer=0;
-        }
-
-        let targetAngle = 0;
+        if(spawnTimer>=Math.max(10, 40 - Math.floor(score/150))){ spawnAsteroid(); spawnTimer=0; }
+        
+        let targetAngle = 0; 
 
         // --- LOGIQUE DE CONTRÔLE MISE À JOUR ---
         // Force 'Souris' control mode if on mobile
@@ -752,315 +708,513 @@ function update(){
 
         if (effectiveControlMode === 'Fleche') {
             // Contrôle par flèches (Desktop)
-            if(keys.ArrowLeft) { player.x-=sD.speed; targetAngle = -0.8; }
-            if(keys.ArrowRight) { player.x+=sD.speed; targetAngle = 0.8; }
-            if(keys.ArrowUp) player.y-=sD.speed;
+            if(keys.ArrowLeft) { 
+                player.x-=sD.speed; 
+                targetAngle = -0.8; 
+            }
+            if(keys.ArrowRight) { 
+                player.x+=sD.speed; 
+                targetAngle = 0.8; 
+            }
+            
+            if(keys.ArrowUp) player.y-=sD.speed; 
             if(keys.ArrowDown) player.y+=sD.speed;
         } else {
             // Contrôle par souris/doigt (Souris/Mobile)
             const dx = mouseX - player.x;
             const dy = mouseY - player.y;
             const distance = Math.hypot(dx, dy);
-
-            if (distance > 5) { // Seuil pour éviter les tremblements
-                const angle = Math.atan2(dy, dx);
-                player.x += Math.cos(angle) * sD.speed;
-                player.y += Math.sin(angle) * sD.speed;
-
-                // Calcul de l'angle d'inclinaison pour le dessin
-                targetAngle = Math.max(-0.8, Math.min(0.8, dx/100)); 
+            const moveSpeed = sD.speed * 0.5;
+            
+            if (distance > 5) {
+                player.x += (dx / distance) * moveSpeed;
+                player.y += (dy / distance) * moveSpeed;
+                targetAngle = Math.max(-1.0, Math.min(1.0, dx / 80));
+            } else {
+                targetAngle = 0;
             }
-            if (distance < 5 && distance > 0) {
-                 player.x = mouseX;
-                 player.y = mouseY;
-            }
-            if(isMobile) canvas.style.cursor = "none";
         }
         
         // Lissage de l'angle
-        player.angle += (targetAngle - player.angle) * 0.1;
-
-        // Limites du joueur
+        player.angle += (targetAngle - player.angle) * 0.2;
+        // --- FIN LOGIQUE DE CONTRÔLE MISE À JOUR ---
+        
         player.x=Math.max(player.r, Math.min(GAME_WIDTH-player.r, player.x));
         player.y=Math.max(player.r, Math.min(GAME_HEIGHT-player.r, player.y));
         
-        // Mise à jour de la position des étoiles
-        stars.forEach(s=>s.y+=s.speed);
-        stars.filter(s=>s.y>GAME_HEIGHT).forEach(s=>{s.y=-10; s.x=Math.random()*GAME_WIDTH;});
-
-        // Mise à jour des pièces
-        coins.forEach(c=>{c.y+=c.speed; c.rX += c.rS;});
-        coins.filter(c=>c.y>GAME_HEIGHT+20).forEach((c,i)=>coins.splice(i,1));
-
-        // Mise à jour des astéroïdes
-        asteroids.forEach(a=>{ a.y+=a.speed*currentSpeed; a.angle+=a.rot*currentSpeed; });
-        asteroids.filter(a=>a.y>GAME_HEIGHT+40).forEach((a,i)=>asteroids.splice(i,1));
-
-        // Collision joueur / astéroïdes
         asteroids.forEach(a=>{
-            const dist = Math.hypot(player.x-a.x, player.y-a.y);
-            
-            // Détection de frôlement
-            if (player.invulnerable <= 0 && dist < a.r + player.r + 25 && dist > a.r + player.r + 5 && !a.nearMissed) {
-                a.nearMissed = true; 
-                score += 50; 
-                floatingTexts.push({x: player.x, y: player.y, text: "+50 FRÔLEMENT", alpha: 1, color: "#ffeb3b"});
-                AudioSystem.play('nearMiss');
-            }
+            a.y+=a.speed; a.rot+=a.rotSpeed;
+            const dist = Math.hypot(player.x-a.x,player.y-a.y);
+            const collisionDist = player.r + a.r;
+            const nearMissDist = collisionDist + 15; 
 
-            if(dist < a.r + player.r && player.invulnerable <= 0) {
-                player.life--;
-                flashAlpha = 1;
-                player.invulnerable = 120; // 2 secondes
-                AudioSystem.play('hit');
-                
-                if(player.life <= 0){
-                    deathShockwave = { active: true, r: 0, alpha: 1, x: player.x, y: player.y };
-                    timeScale = 0.1;
-                    glitchTimer = 30;
-                    explosion = {x: player.x, y: player.y, r: 0, alpha: 1};
+            // 1. Détection de collision
+            if(dist < collisionDist && player.invulnerable===0){
+                if(player.life>1){ 
+                    player.life--; player.invulnerable=60; flashAlpha=0.4; asteroids=[];
+                    AudioSystem.play('hit');
+                } 
+                else {
+                    state = STATE.GAMEOVER; flashAlpha = 1; timeScale = 1;
                     AudioSystem.play('crash');
                     
-                    if(Math.floor(score) > bestScore) {
-                        bestScore = Math.floor(score);
-                        saveGameData(bestScore); // Sauvegarde du nouveau record
+                    if(Math.floor(score)>bestScore){ 
+                        bestScore=Math.floor(score); 
                     }
-                    saveGameData(); // Sauvegarde des crédits
-                    changeState(STATE.GAMEOVER, ()=>console.log("Game Over"));
+                    saveGameData(score); 
+                }
+            } 
+            // 2. Détection de frôlement (Near Miss)
+            else if (dist < nearMissDist && !a.nearMissed) {
+                if (player.invulnerable === 0) {
+                    a.nearMissed = true;
+                    const bonusScore = 50;
+                    score += bonusScore;
+                    AudioSystem.play('nearMiss');
+                    // NOUVEAU STYLE POUR LE TEXTE DE FRÔLEMENT
+                    floatingTexts.push({
+                        x: player.x, 
+                        y: player.y - player.r - 10, 
+                        text: `+${bonusScore} FRÔLEMENT!`, 
+                        alpha: 1, 
+                        color: "#ffd700", // Jaune doré
+                        size: 24, // Grande taille
+                        glow: true // Activer la lueur
+                    }); 
                 }
             }
         });
 
-        // Collision joueur / pièces
-        coins.forEach(c=>{
-            const dist = Math.hypot(player.x-c.x, player.y-c.y);
-            const isMagnet = ships[player.type].bonus==="Aim Magnétique";
+        if(time%350===0) spawnCoin();
+    }
 
-            if(isMagnet && dist < 100){
-                c.x += (player.x - c.x) * 0.1;
-                c.y += (player.y - c.y) * 0.1;
-            }
+    asteroids=asteroids.filter(a=>a.y<GAME_HEIGHT+50);
+    coins.forEach(c=>{
+        c.y+=2.5 * currentSpeed;
+        if(sD.bonus==="Aim Magnétique" && Math.hypot(player.x-c.x,player.y-c.y)<220){ c.x+=(player.x-c.x)*0.07; c.y+=(player.y-c.y)*0.07; }
+        if(Math.hypot(player.x-c.x,player.y-c.y)<player.r+c.r){ 
+            const val = 50*(sD.bonus==="Pièces x2"?2:1); 
+            credits+=val;
+            AudioSystem.play('coin');
+            saveGameData(); 
+            c.collected=true; coinFlashAlpha = 0.3; 
+            floatingTexts.push({x: c.x, y: c.y, text: `+${val} 💰`, alpha: 1, color: "#ffd700"}); 
+        }
+    });
+    coins=coins.filter(c=>c.y<GAME_HEIGHT && !c.collected);
+}
 
-            if(dist < c.r + player.r) {
-                AudioSystem.play('coin');
-                coins.splice(coins.indexOf(c), 1);
-                const coinAmount = ships[player.type].bonus==="Double Pièces" ? 2 : 1;
-                credits += coinAmount;
-                coinFlashAlpha = 1;
-                floatingTexts.push({x: c.x, y: c.y, text: `+${coinAmount}`, alpha: 1, color: "#ffde21"});
-            }
+function spawnAsteroid(){ 
+    const r=16+Math.random()*28; 
+    asteroids.push({
+        x:r + Math.random()*(GAME_WIDTH-2*r), 
+        y:-r-50, r, 
+        speed:1.8 + Math.random()*1.5 + (score/800), 
+        rot:Math.random()*Math.PI*2, 
+        rotSpeed:(Math.random()-0.5)*0.05, 
+        pts:Array.from({length:7}, ()=>0.6+Math.random()*0.8),
+        nearMissed: false 
+    }); 
+}
+function spawnCoin(){ coins.push({x:25+Math.random()*370,y:-10,r:8,collected:false}); }
+
+function draw(){
+    const curCol = (state === STATE.MENU || state === STATE.SHOP || state === STATE.LEADERBOARD || state === STATE.LOADING || state === STATE.START_SCREEN || state === STATE.OPTIONS) ? "#00d9ff" : levelColors[colorIndex];
+    ctx.fillStyle = "#020510"; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+
+    nebulas.forEach(n => { let g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r); g.addColorStop(0, n.color); g.addColorStop(1, "transparent"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI*2); ctx.fill(); });
+
+    if(state === STATE.MENU || state === STATE.START_SCREEN || state === STATE.OPTIONS){
+        ctx.strokeStyle = "rgba(0, 217, 255, 0.15)"; ctx.lineWidth = 2;
+        menuParticles.forEach(p => { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, p.y + p.l); ctx.stroke(); });
+    }
+
+    stars.forEach(s=>{ ctx.fillStyle=`rgba(255,255,255,${(0.3+Math.sin(time*0.05+s.twinkle)*0.4)})`; ctx.fillRect(s.x,s.y,s.s,s.s); if(state === STATE.PLAY || state === STATE.GAMEOVER || state === STATE.TAKEOFF || state === STATE.LANDING) { let starDir = state === STATE.LANDING ? -s.speed : s.speed; s.y+=starDir * (state===STATE.GAMEOVER?timeScale:1); if(s.y>GAME_HEIGHT) s.y=0; if(s.y<0) s.y=GAME_HEIGHT; } });
+
+    if(state === STATE.TAKEOFF || state === STATE.LANDING) { ctx.fillStyle = "#2e7d32"; ctx.beginPath(); ctx.arc(210, earthY + 400, 500, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = "#1565c0"; ctx.beginPath(); ctx.arc(210, earthY + 420, 480, 0, Math.PI*2); ctx.fill(); }
+
+    if(state === STATE.PLAY || state === STATE.GAMEOVER || state === STATE.TAKEOFF || state === STATE.LANDING) {
+        player.trail.forEach(p => { ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill(); });
+        asteroids.forEach(a=>{ ctx.save(); ctx.translate(a.x,a.y); ctx.rotate(a.rot); ctx.shadowBlur=12; ctx.shadowColor=curCol; const g=ctx.createRadialGradient(0,0,0,0,0,a.r); g.addColorStop(0,"#fff"); g.addColorStop(0.4, curCol); g.addColorStop(1,"#111"); ctx.fillStyle=g; ctx.beginPath(); a.pts.forEach((p,i)=>{ const ang=i/a.pts.length*Math.PI*2; ctx.lineTo(Math.cos(ang)*a.r*p, Math.sin(ang)*a.r*p); }); ctx.closePath(); ctx.fill(); ctx.restore(); });
+        coins.forEach(c=>{ ctx.shadowBlur=15; ctx.shadowColor="#ffd700"; ctx.fillStyle="#ffd700"; ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; });
+    }
+
+    const sD=ships[player.type];
+    if(state===STATE.PLAY || state===STATE.TAKEOFF || state===STATE.LANDING || (state===STATE.GAMEOVER && timeScale > 0.5)){ 
+        ctx.save(); 
+        ctx.translate(player.x,player.y); 
+        ctx.rotate(player.angle); 
+        if(player.invulnerable>0 && Math.floor(time/5)%2===0) ctx.globalAlpha=0.3; 
+        ctx.fillStyle=sD.flame; 
+        ctx.beginPath(); ctx.moveTo(-8,15); ctx.lineTo(0,20+Math.sin(time*0.5)*8); ctx.lineTo(8,15); ctx.fill(); 
+        ctx.shadowBlur=20; ctx.shadowColor=sD.color; 
+        ctx.fillStyle=sD.color; 
+        ctx.beginPath(); 
+        ctx.moveTo(0,-22); ctx.lineTo(16,18); ctx.lineTo(0,10); ctx.lineTo(-16,18); ctx.fill(); 
+        ctx.fillStyle=sD.cockpit; 
+        ctx.beginPath(); ctx.arc(0,-4,6,0,Math.PI*2); ctx.fill(); 
+        ctx.restore(); 
+    }
+
+    if(state === STATE.START_SCREEN) {
+        
+        // --- NOUVEL AFFICHAGE DES CRÉDITS (Hotbar style, Top Center) ---
+        const barX_C = 130; 
+        const barY_C = 10;
+        const barW_C = 160;
+        const barH_C = 35;
+        const barR_C = 8;
+        const textY_C = barY_C + barH_C/2 + 5;
+        
+        // 1. Dessin du fond sombre semi-transparent
+        ctx.fillStyle="rgba(0, 0, 0, 0.7)"; 
+        drawRoundedRect(barX_C, barY_C, barW_C, barH_C, barR_C, true, false); 
+
+        // 2. Dessin du contour néon
+        ctx.strokeStyle = curCol; 
+        ctx.lineWidth = 2;
+        drawRoundedRect(barX_C, barY_C, barW_C, barH_C, barR_C, false, true, curCol, 15); 
+        
+        // 3. Dessin des éléments
+        ctx.fillStyle="#ffd700"; // Pièce en jaune doré
+        ctx.beginPath(); ctx.arc(barX_C + 22, barY_C + barH_C/2, 10, 0, Math.PI*2); ctx.fill(); 
+        ctx.fillStyle="#fff"; 
+        ctx.font=`bold 18px ${FONT_FAMILY}`; 
+        ctx.textAlign="left"; 
+        ctx.fillText(`${credits}`, barX_C + 45, textY_C);
+        // --- FIN NOUVEL AFFICHAGE CRÉDITS ---
+        
+        ctx.save(); ctx.globalAlpha = startButtonAnim.alpha;
+        const bounce = Math.sin(time * 0.04) * 8;
+        ctx.translate(210, 150 + bounce); 
+        ctx.shadowBlur = 20 + Math.sin(time*0.1)*10; ctx.shadowColor = "#00d9ff"; 
+        ctx.fillStyle = "#fff"; ctx.font = `bold 52px ${FONT_FAMILY}`; ctx.textAlign = "center"; 
+        ctx.fillText("ASTRO DODGE", 0, 0); 
+        
+        // --- NOUVEAU: AJOUT YENI ET MAXENCE ---
+        ctx.font = `bold 18px ${FONT_FAMILY}`; 
+        ctx.fillStyle = "rgba(255, 215, 0, 0.9)"; 
+        ctx.fillText("CRÉÉ PAR YENOU & MAXENCE", 0, 45); 
+        // ----------------------------------------
+        
+        // Texte des données déplacé
+        ctx.font = `bold 14px ${FONT_FAMILY}`; 
+        ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; 
+        ctx.fillText(`Données chargées : ${username}`, 0, 80); 
+        ctx.restore();
+        
+        // Effet de pulsation lumineux autour du bouton (maintenant arrondi)
+        const pulseIntensity = Math.sin(startButtonAnim.pulse) * 0.3 + 0.7;
+        ctx.save();
+        ctx.globalAlpha = startButtonAnim.alpha * 0.3 * pulseIntensity;
+        ctx.shadowBlur = 40;
+        ctx.shadowColor = curCol;
+        ctx.strokeStyle = curCol;
+        ctx.lineWidth = 3;
+        drawRoundedRect(110, 480, 200, 50, 10, false, true); 
+        ctx.restore();
+        
+        drawBtn("COMMENCER", 210, 480, 200, 50, curCol, startButtonAnim.scale, startButtonAnim.alpha);
+    
+    } else if(state===STATE.MENU){
+        
+        // --- Hotbar du Menu Principal (Meilleur Score) ---
+        const barW = 300, barH = 30, barR = 8;
+        const barX = (GAME_WIDTH - barW) / 2;
+        const barY = 5;
+        const textY = barY + barH/2 + 5; 
+        
+        // 1. Dessin du fond sombre semi-transparent
+        ctx.fillStyle="rgba(0, 0, 0, 0.7)"; 
+        drawRoundedRect(barX, barY, barW, barH, barR, true, false); 
+
+        // 2. Dessin du contour néon (utilise curCol)
+        ctx.strokeStyle = curCol; 
+        ctx.lineWidth = 2;
+        drawRoundedRect(barX, barY, barW, barH, barR, false, true, curCol, 15); 
+        
+        // 3. Dessin des textes
+        ctx.fillStyle="#fff"; ctx.font=`bold 14px ${FONT_FAMILY}`; 
+        
+        // Meilleur Score (Centré)
+        ctx.textAlign="center"; 
+        ctx.fillText(`🏆 ${bestScore}`, barX + barW / 2, textY); 
+        
+        
+        const yLeaderboard = isMobile ? 380 : 450;
+        const yQuit = isMobile ? 450 : 520;
+
+        const bounce = Math.sin(time * 0.04) * 8;
+        ctx.save(); ctx.translate(210, 150 + bounce); ctx.shadowBlur = 20 + Math.sin(time*0.1)*10; ctx.shadowColor = "#00d9ff"; ctx.fillStyle = "#fff"; ctx.font = `bold 52px ${FONT_FAMILY}`; ctx.textAlign = "center"; ctx.fillText("ASTRO DODGE", 0, 0); ctx.font = `bold 12px ${FONT_FAMILY}`; ctx.fillStyle = "rgba(0, 217, 255, 0.8)"; ctx.fillText(`Bienvenue, ${username}`, 0, 25); ctx.restore();
+        
+        drawBtn("▶ JOUER", 210, 240, 200, 50, curCol);
+        drawBtn("🛒 SHOP", 210, 310, 200, 50, curCol);
+        
+        if (!isMobile) {
+             drawBtn("⚙️ OPTIONS", 210, 380, 200, 50, curCol); 
+        }
+       
+        drawBtn("🏆 CLASSEMENT", 210, yLeaderboard, 200, 50, curCol);
+        drawBtn("✖ QUITTER", 210, yQuit, 200, 50, "#ff3300"); 
+        
+    } else if(state===STATE.OPTIONS && !isMobile){ // Affichage OPTIONS uniquement sur Desktop
+        ctx.fillStyle="#fff"; ctx.font=`bold 30px ${FONT_FAMILY}`; ctx.textAlign="center"; ctx.fillText("OPTIONS", 210, 150);
+        
+        const controlBtnText = `CONTRÔLE: ${controlMode === 'Fleche' ? 'FLÈCHE (WASD/ARROWS)' : 'SOURIS (MOUSE)'}`;
+        drawBtn(controlBtnText, 210, 240, 300, 50, controlMode === 'Fleche' ? curCol : "#ffcc00");
+
+        drawBtn("RETOUR", 210, 540, 200, 50, curCol);
+        
+        // Affichage des crédits (Hotbar style, Top Center)
+        const barX = 130; 
+        const barY = 10;
+        const barW = 160;
+        const barH = 35;
+        const barR = 8;
+        const textY = barY + barH/2 + 5;
+        
+        // 1. Dessin du fond sombre semi-transparent
+        ctx.fillStyle="rgba(0, 0, 0, 0.7)"; 
+        drawRoundedRect(barX, barY, barW, barH, barR, true, false); 
+
+        // 2. Dessin du contour néon
+        ctx.strokeStyle = curCol; 
+        ctx.lineWidth = 2;
+        drawRoundedRect(barX, barY, barW, barH, barR, false, true, curCol, 15); 
+        
+        // 3. Dessin des éléments
+        ctx.fillStyle="#ffd700"; // Pièce en jaune doré
+        ctx.beginPath(); ctx.arc(barX + 22, barY + barH/2, 10, 0, Math.PI*2); ctx.fill(); 
+        ctx.fillStyle="#fff"; 
+        ctx.font=`bold 18px ${FONT_FAMILY}`; 
+        ctx.textAlign="left"; 
+        ctx.fillText(`${credits}`, barX + 45, textY);
+        // --- Fin Affichage Crédits ---
+
+    } else if(state===STATE.LEADERBOARD){
+        ctx.fillStyle="#fff"; ctx.font=`bold 30px ${FONT_FAMILY}`; ctx.textAlign="center"; ctx.fillText("CLASSEMENT MONDIAL", 210, 80);
+        leaderboardData.forEach((entry, i) => { 
+            const y = 160 + i * 60; 
+            const isPlayer = entry.name === "Vous"; 
+            
+            // Fond et texte en jaune doré pour le joueur
+            ctx.fillStyle = isPlayer ? "rgba(255, 215, 0, 0.2)" : "rgba(255, 255, 255, 0.05)"; 
+            ctx.fillRect(40, y-35, 340, 50); 
+            
+            ctx.fillStyle = isPlayer ? "#ffd700" : "#fff"; // Jaune doré pour le texte du joueur
+            ctx.textAlign = "left"; 
+            ctx.font = `bold 20px ${FONT_FAMILY}`; 
+            ctx.fillText(`${i+1}. ${entry.name}`, 60, y); 
+            ctx.textAlign = "right"; 
+            ctx.fillText(`${entry.score}`, 360, y); 
+        });
+        drawBtn("RETOUR", 210, 540, 200, 50, curCol);
+    } else if(state===STATE.SHOP){
+        
+        ctx.fillStyle="#fff"; ctx.font=`bold 30px ${FONT_FAMILY}`; ctx.textAlign="center"; ctx.fillText("BOUTIQUE", 210, 75); 
+
+        // Dessin des cartes (avec coins arrondis et ombre)
+        ships.forEach((s,i)=>{ 
+            const cardY=140+i*160 - shopScroll; 
+            if(cardY > GAME_HEIGHT || cardY < -140) return; 
+            const hover = mouseInRect(40, cardY, 340, 140); 
+            
+            // 1. Dessin du fond de carte arrondi avec ombre
+            ctx.shadowBlur=hover?25:15; 
+            ctx.shadowColor=player.type===i?"#fff":s.color; 
+            ctx.fillStyle=hover?"#252545":"#1a1a2e"; 
+            drawRoundedRect(40, cardY, 340, 140, 10, true, false); 
+            ctx.shadowBlur=0; 
+            
+            // 2. Dessin du contenu
+            ctx.fillStyle="#fff"; ctx.textAlign="left"; ctx.font=`bold 18px ${FONT_FAMILY}`; ctx.fillText(s.name, 60, cardY+35); 
+            ctx.fillStyle=curCol; ctx.font=`14px ${FONT_FAMILY}`; ctx.fillText(s.bonus, 60, cardY+55); 
+            ctx.fillStyle="#aaa"; wrapText(s.desc, 60, cardY+80, 240, 16); 
+            ctx.fillStyle=s.unlocked?(player.type===i?"#00ff88":"#888"):"#ffd700"; 
+            ctx.textAlign="right"; ctx.fillText(s.unlocked?(player.type===i?"ÉQUIPÉ":"DÉBLOQUÉ"):s.cost+" 💰", 360, cardY+35); 
+        });
+
+        drawBtn("RETOUR", 210, 540, 200, 50, curCol);
+        
+        // --- Affichage des Crédits dans la Boutique (Hotbar style, DESSINÉ EN DERNIER pour être au-dessus) ---
+        const barX = 130; 
+        const barY = 10;
+        const barW = 160;
+        const barH = 35;
+        const barR = 8;
+        const textY = barY + barH/2 + 5;
+        
+        // 1. Dessin du fond sombre semi-transparent
+        ctx.fillStyle="rgba(0, 0, 0, 0.7)"; 
+        drawRoundedRect(barX, barY, barW, barH, barR, true, false); 
+
+        // 2. Dessin du contour néon
+        ctx.strokeStyle = curCol; 
+        ctx.lineWidth = 2;
+        drawRoundedRect(barX, barY, barW, barH, barR, false, true, curCol, 15); 
+        
+        // 3. Dessin des éléments
+        ctx.fillStyle="#ffd700"; // Pièce en jaune doré
+        ctx.beginPath(); ctx.arc(barX + 22, barY + barH/2, 10, 0, Math.PI*2); ctx.fill(); 
+        ctx.fillStyle="#fff"; 
+        ctx.font=`bold 18px ${FONT_FAMILY}`; 
+        ctx.textAlign="left"; 
+        ctx.fillText(`${credits}`, barX + 45, textY);
+        // --- Fin Affichage Crédits ---
+
+    } else if(state===STATE.GAMEOVER){
+        const finalScore = Math.floor(score);
+        
+        ctx.fillStyle="#fff"; 
+        ctx.font=`bold 45px ${FONT_FAMILY}`; 
+        ctx.textAlign="center"; 
+        ctx.fillText("CRASH SYSTÈME", 210, 250); 
+
+        // AFFICHAGE DU SCORE
+        ctx.font=`bold 30px ${FONT_FAMILY}`; 
+        ctx.fillStyle = curCol;
+        ctx.fillText(`SCORE: ${finalScore}`, 210, 320); 
+        
+        ctx.font=`20px ${FONT_FAMILY}`; 
+        ctx.fillStyle = "#aaa";
+        ctx.fillText(`Meilleur: ${bestScore}`, 210, 360); 
+        
+        ctx.font=`18px ${FONT_FAMILY}`; 
+        ctx.fillStyle = "#fff";
+        ctx.fillText("Clique pour atterrir", 210, 420);
+        
+    } else if (state===STATE.LOADING) {
+        // Barre de progression améliorée
+        ctx.fillStyle="rgba(255,255,255,0.1)"; 
+        ctx.fillRect(110, 400, 200, 20);
+        
+        const gradient = ctx.createLinearGradient(110, 400, 110 + (200 * loadingProgress/100), 420);
+        gradient.addColorStop(0, "#00d9ff");
+        gradient.addColorStop(1, "#0066ff");
+        ctx.fillStyle=gradient;
+        ctx.fillRect(110, 400, 200 * loadingProgress/100, 20);
+        
+        ctx.strokeStyle = "#00d9ff";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(110, 400, 200, 20);
+        
+        ctx.fillStyle="#fff"; 
+        ctx.font=`bold 16px ${FONT_FAMILY}`; 
+        ctx.textAlign="center"; 
+        ctx.fillText(`${Math.floor(loadingProgress)}%`, 210, 415);
+        
+        ctx.font=`bold 30px ${FONT_FAMILY}`; 
+        ctx.fillText("CONNEXION AU SYSTÈME...", 210, 360);
+        
+        // Vaisseau en rotation avec particules
+        ctx.save();
+        ctx.translate(loadingShip.x, loadingShip.y - 50);
+        ctx.rotate(loadingShip.angle);
+        
+        const sD_load = ships[0]; 
+        ctx.fillStyle=sD_load.flame; 
+        ctx.beginPath(); ctx.moveTo(-8,20); ctx.lineTo(0,25+Math.sin(time*0.3)*5); ctx.lineTo(8,20); ctx.fill(); 
+        ctx.shadowBlur=25; ctx.shadowColor="#00d9ff"; 
+        ctx.fillStyle=sD_load.color; 
+        ctx.beginPath(); 
+        ctx.moveTo(0,-22); ctx.lineTo(16,18); ctx.lineTo(0,10); ctx.lineTo(-16,18); ctx.fill(); 
+        ctx.fillStyle=sD_load.cockpit; 
+        ctx.beginPath(); ctx.arc(0,-4,6,0,Math.PI*2); ctx.fill(); 
+        ctx.restore();
+        
+        // Particules du vaisseau
+        loadingShip.particles.forEach(p => {
+            ctx.save();
+            ctx.globalAlpha = p.alpha;
+            ctx.fillStyle = "#00d9ff";
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
         });
     }
 
-    if(state === STATE.GAMEOVER) {
-        // Mise à jour de l'explosion
-        if(explosion){
-            explosion.r += 3;
-            explosion.alpha -= 0.02;
-            if(explosion.alpha <= 0) explosion = null;
+    // DESSIN DES TEXTES FLOTTANTS (AMÉLIORÉ)
+    floatingTexts.forEach(t => {
+        ctx.save(); 
+        ctx.globalAlpha = t.alpha; 
+        ctx.fillStyle = t.color || "#fff"; 
+        ctx.font = `bold ${t.size || 20}px ${FONT_FAMILY}`; 
+        ctx.textAlign = "center"; 
+        
+        if (t.glow) { // Ajout de la lueur pour le texte de Frôlement
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "#fff";
         }
-
-        if(deathShockwave.active){
-            deathShockwave.r += 10;
-            deathShockwave.alpha -= 0.03;
-            if(deathShockwave.alpha <= 0) deathShockwave.active = false;
-        }
-    }
-}
-
-function spawnAsteroid(){
-    const r=Math.random()*15+15;
-    const x=Math.random()*(GAME_WIDTH-r*2)+r;
-    const speed=Math.random()*1.5+3 + currentLevel * 0.5;
-    const rot=Math.random()*0.05-0.025;
-    const type=Math.random()>0.9 ? 1 : 0; // 10% de chance pour une pièce
-    
-    if(type === 1) {
-        coins.push({x: x, y: -20, r: 10, speed: speed, rX: 0, rS: Math.random()*0.1-0.05});
-    } else {
-        asteroids.push({x: x, y: -20, r: r, speed: speed, angle: Math.random()*Math.PI*2, rot: rot, color: `hsl(${Math.random()*360}, 50%, 50%)`});
-    }
-}
-
-function drawStar(x, y, s, color="rgba(255,255,255,0.8)") {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(x, y, s, 0, Math.PI * 2);
-    ctx.fill();
-}
-
-function drawNebula(n) {
-    ctx.save();
-    ctx.globalAlpha = 0.5;
-    ctx.fillStyle = n.color;
-    ctx.beginPath();
-    ctx.filter = `blur(${n.r/3}px)`;
-    ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.filter = 'none';
-    ctx.restore();
-}
-
-function drawPlayer(p){
-    const sD=ships[p.type];
-    ctx.save();
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.angle);
-    
-    // Traînée
-    p.trail.forEach(t=>{
-        ctx.fillStyle = `rgba(255, 100, 0, ${t.alpha})`;
-        ctx.beginPath();
-        ctx.arc(t.x-p.x, t.y-p.y, t.r, 0, Math.PI*2);
-        ctx.fill();
+        
+        ctx.fillText(t.text, t.x, t.y); 
+        
+        ctx.shadowBlur = 0; // Réinitialiser l'ombre
+        ctx.shadowColor = "#000"; 
+        ctx.restore();
     });
 
-    // Moteur
-    const flameColor = sD.flame;
-    const flameHeight = 15 + Math.sin(time*0.5)*5;
+    if(state === STATE.PLAY) { 
+        const barX = 5, barY = 5, barW = GAME_WIDTH - 10, barH = 30, barR = 8;
+        const textY = barY + barH/2 + 5; 
+        
+        // 1. Dessin du fond sombre semi-transparent
+        ctx.fillStyle="rgba(0, 0, 0, 0.7)"; 
+        drawRoundedRect(barX, barY, barW, barH, barR, true, false); 
 
-    ctx.fillStyle = `rgba(255, 100, 0, 0.9)`;
-    ctx.beginPath();
-    ctx.moveTo(-10, 20);
-    ctx.lineTo(0, 20 + flameHeight);
-    ctx.lineTo(10, 20);
-    ctx.fill();
-    
-    ctx.fillStyle = sD.flame;
-    ctx.beginPath();
-    ctx.moveTo(-5, 20);
-    ctx.lineTo(0, 20 + flameHeight * 0.7);
-    ctx.lineTo(5, 20);
-    ctx.fill();
-
-    // Corps du vaisseau
-    ctx.fillStyle = sD.color;
-    ctx.beginPath();
-    ctx.moveTo(0, -p.r);
-    ctx.lineTo(-p.r, p.r);
-    ctx.lineTo(p.r, p.r);
-    ctx.closePath();
-    ctx.fill();
-
-    // Ailes (ajout de détails)
-    ctx.fillStyle = "rgba(0,0,0,0.2)";
-    ctx.beginPath();
-    ctx.moveTo(-p.r, p.r);
-    ctx.lineTo(-p.r-5, p.r+10);
-    ctx.lineTo(-p.r/2, p.r);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(p.r, p.r);
-    ctx.lineTo(p.r+5, p.r+10);
-    ctx.lineTo(p.r/2, p.r);
-    ctx.closePath();
-    ctx.fill();
-
-    // Cockpit
-    ctx.fillStyle = sD.cockpit;
-    ctx.beginPath();
-    ctx.arc(0, 0, p.r/2, 0, Math.PI*2);
-    ctx.fill();
-
-    // Effet d'invulnérabilité
-    if(p.invulnerable > 0) {
-        ctx.strokeStyle = `rgba(0, 217, 255, ${p.invulnerable % 30 < 15 ? 0.8 : 0.3})`;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(0, 0, p.r + 5, 0, Math.PI * 2);
-        ctx.stroke();
-    }
-    
-    // Système de vies
-    if(p.life > 1){
-        ctx.fillStyle = "rgba(0,255,100, 0.8)";
-        ctx.font = `bold 16px ${FONT_FAMILY}`;
-        ctx.textAlign = "center";
-        ctx.fillText(`+${p.life - 1}`, 0, -25);
+        // 2. Dessin du contour néon (utilise curCol)
+        ctx.strokeStyle = curCol; 
+        ctx.lineWidth = 2;
+        drawRoundedRect(barX, barY, barW, barH, barR, false, true, curCol, 15); 
+        
+        // 3. Dessin des textes
+        ctx.fillStyle="#fff"; ctx.font=`bold 14px ${FONT_FAMILY}`; ctx.textAlign="left"; ctx.fillText(`🎯 ${Math.floor(score)}`, 15, textY); 
+        ctx.fillStyle=curCol; ctx.fillText(`LVL ${currentLevel}`, 75, textY); 
+        ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.fillText(`🏆 ${bestScore}`, 210, textY); 
+        ctx.textAlign="right"; ctx.fillText(`💰 ${credits}`, 405, textY); 
     }
 
-    ctx.restore();
-}
-
-function drawAsteroid(a){
-    ctx.save();
-    ctx.translate(a.x, a.y);
-    ctx.rotate(a.angle);
-    ctx.fillStyle = a.color;
-    ctx.beginPath();
-    // Forme d'astéroïde irrégulière
-    for(let i=0; i<8; i++){
-        const angle = i/8 * Math.PI*2;
-        const radius = a.r + Math.sin(angle*5+time*0.01)*3 + Math.random()*5;
-        const x = Math.cos(angle) * radius;
-        const y = Math.sin(angle) * radius;
-        if(i===0) ctx.moveTo(x,y);
-        else ctx.lineTo(x,y);
+    if(flashAlpha > 0) { ctx.fillStyle = `rgba(255,255,255,${flashAlpha})`; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT); }
+    if(coinFlashAlpha > 0) { ctx.fillStyle = `rgba(255,215,0,${coinFlashAlpha})`; ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT); }
+    
+    if (transition.active) { 
+        ctx.globalAlpha = transition.alpha; 
+        ctx.fillStyle = "#000"; 
+        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT); 
+        ctx.globalAlpha = 1.0; 
     }
-    ctx.closePath();
-    ctx.fill();
+}
+
+function drawBtn(t, x, y, w, h, c, scale = 1, alpha = 1, r = 10){ 
+    const hover = mouseInRect(x-w/2, y, w, h); 
+    if(hover) canvas.style.cursor = "pointer";
     
-    // Ombre (lumière venant d'en haut)
-    ctx.fillStyle = "rgba(0,0,0,0.15)";
-    ctx.beginPath();
-    ctx.arc(a.r/3, a.r/3, a.r*0.8, 0, Math.PI*2);
-    ctx.fill();
+    if (alpha === 1) {
+        const sizeMod = hover ? 1.05 : 1.0; 
+        
+        ctx.save(); ctx.translate(x, y + h/2); ctx.scale(sizeMod, sizeMod);
+        ctx.shadowBlur = hover ? 35 : 10; ctx.shadowColor = c;
+        ctx.fillStyle = hover ? c : "rgba(255,255,255,0.05)"; ctx.strokeStyle = c; ctx.lineWidth = 2/sizeMod; 
+        
+        drawRoundedRect(-w/2, -h/2, w, h, r/sizeMod, true, true); 
 
-    ctx.restore();
-}
-
-function drawCoin(c){
-    ctx.save();
-    ctx.translate(c.x, c.y);
-    ctx.rotate(c.rX);
-    ctx.fillStyle = "#ffde21";
-    ctx.beginPath();
-    ctx.ellipse(0, 0, c.r, c.r * (Math.abs(Math.cos(c.rX*5)) * 0.5 + 0.5), 0, 0, Math.PI*2);
-    ctx.fill();
+        ctx.shadowBlur = 0; ctx.fillStyle = hover ? "#000" : "#fff"; ctx.font = `bold 18px ${FONT_FAMILY}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, 0, 0); ctx.restore();
     
-    ctx.fillStyle = "#a16d00";
-    ctx.beginPath();
-    ctx.ellipse(0, 0, c.r/3, c.r/3 * (Math.abs(Math.cos(c.rX*5)) * 0.5 + 0.5), 0, 0, Math.PI*2);
-    ctx.fill();
-
-    ctx.restore();
-}
-
-function drawText(t, x, y, size, color="#fff", align="center", baseline="middle"){
-    ctx.fillStyle = color;
-    ctx.font = `bold ${size}px ${FONT_FAMILY}`;
-    ctx.textAlign = align;
-    ctx.textBaseline = baseline;
-    ctx.fillText(t, x, y);
-}
-
-function drawButton(t, x, y, w, h, r=10, color="#00d9ff", hover=false, shadow=true){
-    ctx.save();
-    ctx.translate(x+w/2, y+h/2);
-
-    if(hover) {
-        ctx.scale(1.05, 1.05);
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 25;
-        canvas.style.cursor = "pointer";
+    } 
+    else {
+        ctx.save(); ctx.globalAlpha = alpha; 
+        ctx.translate(x, y + h/2); ctx.scale(scale, scale);
+        
+        ctx.shadowBlur = hover ? 45 : 20; ctx.shadowColor = c;
+        ctx.fillStyle = hover ? c : "rgba(255,255,255,0.1)"; ctx.strokeStyle = c; ctx.lineWidth = 3/scale; 
+        
+        drawRoundedRect(-w/2, -h/2, w, h, r/scale, true, true); 
+        
+        ctx.shadowBlur = 0; ctx.fillStyle = hover ? "#000" : "#fff"; ctx.font = `bold 22px ${FONT_FAMILY}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(t, 0, 0); ctx.restore();
     }
-
-    ctx.strokeStyle = color;
-    ctx.fillStyle = hover ? color : "rgba(0,0,0,0.5)";
-    ctx.lineWidth = 3/scaleFactor; 
-    
-    drawRoundedRect(-w/2, -h/2, w, h, r, true, true); 
-    
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = hover ? "#000" : color;
-    ctx.font = `bold 22px ${FONT_FAMILY}`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(t, 0, 0);
-    ctx.restore();
 }
+
+function wrapText(t,x,y,mW,lH){ let words=t.split(' '), line=''; for(let n=0;n<words.length;n++){ let test=line+words[n]+' '; if(ctx.measureText(test).width>mW && n>0){ ctx.fillText(line,x,y); line=words[n]+' '; y+=lH; } else line=test; } ctx.fillText(line,x,y); }
 
 function drawRoundedRect(x, y, w, h, r, fill = true, stroke = true, shadowC = null, shadowB = 0){
     ctx.beginPath();
@@ -1074,344 +1228,35 @@ function drawRoundedRect(x, y, w, h, r, fill = true, stroke = true, shadowC = nu
     ctx.lineTo(x, y + r);
     ctx.arcTo(x, y, x + r, y, r);
     ctx.closePath();
-    if(fill) ctx.fill();
-    if(stroke) ctx.stroke();
-}
 
-function wrapText(t,x,y,mW,lH){ 
-    let words=t.split(' '), line=''; 
-    for(let n=0;n<words.length;n++){ 
-        let test=line+words[n]+' '; 
-        if(ctx.measureText(test).width>mW && n>0){ 
-            ctx.fillText(line,x,y); 
-            line=words[n]+' '; 
-            y+=lH; 
-        } else line=test; 
-    } 
-    ctx.fillText(line,x,y); 
-}
+    if (shadowC) {
+        ctx.shadowColor = shadowC;
+        ctx.shadowBlur = shadowB;
+    }
 
-function draw(t){
-    ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
-    // Fond (Étoiles)
-    ctx.fillStyle = "#020510";
-    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    if (fill) {
+        ctx.fill();
+    }
     
-    nebulas.forEach(drawNebula);
-    stars.forEach(s => drawStar(s.x, s.y, s.s, `rgba(255, 255, 255, ${0.4 + Math.sin(s.twinkle + time*0.1)*0.4})`));
-
-    // Dessin en fonction de l'état
-    if(state === STATE.LOADING) {
-        drawText("CHARGEMENT...", GAME_WIDTH/2, 100, 30, "#00d9ff");
-        drawText(loadingProgress + "%", GAME_WIDTH/2, GAME_HEIGHT - 100, 20, "#fff");
-        
-        ctx.save();
-        ctx.translate(loadingShip.x, loadingShip.y);
-        ctx.rotate(loadingShip.angle);
-        
-        loadingShip.particles.forEach(p=>{
-            ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
-            ctx.beginPath();
-            ctx.arc(p.x-loadingShip.x, p.y-loadingShip.y, p.r, 0, Math.PI*2);
-            ctx.fill();
-        });
-
-        // Vaisseau simplifié
-        ctx.fillStyle = "#00d9ff";
-        ctx.fillRect(-15, -20, 30, 40);
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(-5, -25, 10, 5);
-        
-        ctx.restore();
-
-    } else if (state === STATE.START_SCREEN) {
-        drawText("ASTRO DODGE", GAME_WIDTH/2, 150, 40, "#00d9ff");
-        drawText(`BIENVENUE, ${username}`, GAME_WIDTH/2, 250, 25, "#fff");
-        drawText(`Meilleur Score: ${bestScore}`, GAME_WIDTH/2, 300, 20, "#ffde21");
-
-        const isHovering = mouseInRect(110, 480, 200, 50);
-        
-        ctx.save();
-        ctx.globalAlpha = startButtonAnim.alpha;
-        
-        drawButton("COMMENCER", 110, 480, 200, 50, 25, "#1de9b6", isHovering);
-        
-        // Effet de pulsation
-        ctx.globalAlpha = startButtonAnim.alpha * 0.5 * (1 + Math.sin(startButtonAnim.pulse*3)/2);
-        ctx.shadowColor = "#1de9b6";
-        ctx.shadowBlur = 40;
-        drawRoundedRect(110, 480, 200, 50, 25, false, true);
-        
-        ctx.restore();
-
-    } else if(state === STATE.TAKEOFF || state === STATE.LANDING){
-        drawPlayer(player);
-        asteroids.forEach(drawAsteroid);
-        coins.forEach(drawCoin);
-
-        // Terre
-        ctx.save();
-        ctx.translate(GAME_WIDTH/2, earthY);
-        ctx.scale(1 + launchProgress * 0.5, 1 + launchProgress * 0.5);
-
-        ctx.fillStyle = "#000080";
-        ctx.beginPath();
-        ctx.arc(0, 0, 400, 0, Math.PI*2);
-        ctx.fill();
-
-        ctx.fillStyle = "#00aa00";
-        ctx.beginPath();
-        ctx.arc(0, 0, 380, 0, Math.PI*2);
-        ctx.fill();
-
-        ctx.fillStyle = "#00d9ff";
-        ctx.beginPath();
-        ctx.arc(0, 0, 350, 0, Math.PI*2);
-        ctx.fill();
-
-        ctx.restore();
-
-        // Texte de transition
-        if (state === STATE.TAKEOFF) {
-            drawText("DÉCOLLAGE", GAME_WIDTH/2, GAME_HEIGHT/2, 30, "#fff");
-        } else {
-            drawText("ATTERRISSAGE", GAME_WIDTH/2, GAME_HEIGHT/2, 30, "#fff");
-        }
-
-    } else if(state===STATE.MENU){
-        drawText("ASTRO DODGE", GAME_WIDTH/2, 120, 40, "#00d9ff");
-        drawText(`CRÉDITS: ${credits}`, GAME_WIDTH/2, 190, 20, "#ffde21");
-        
-        const isHoverPlay = mouseInRect(110, 240, 200, 50);
-        const isHoverShop = mouseInRect(110, 310, 200, 50);
-        
-        drawButton("JOUER", 110, 240, 200, 50, 15, "#1de9b6", isHoverPlay);
-        drawButton("MAGASIN", 110, 310, 200, 50, 15, "#00d9ff", isHoverShop);
-        
-        // Décalage des boutons si on est sur mobile
-        const yLeaderboard = isMobile ? 380 : 450;
-        const yQuit = isMobile ? 450 : 520;
-
-        const isHoverLeaderboard = mouseInRect(110, yLeaderboard, 200, 50);
-        const isHoverQuit = mouseInRect(110, yQuit, 200, 50);
-
-        // BOUTON OPTIONS (Desktop Only)
-        if (!isMobile) {
-            const isHoverOptions = mouseInRect(110, 380, 200, 50);
-            drawButton("OPTIONS", 110, 380, 200, 50, 15, "#ff3300", isHoverOptions);
-        }
-        
-        drawButton("CLASSEMENT", 110, yLeaderboard, 200, 50, 15, "#ffeb3b", isHoverLeaderboard);
-        drawButton("QUITTER", 110, yQuit, 200, 50, 15, "#ff00ea", isHoverQuit);
-
-    } else if(state===STATE.OPTIONS){
-        drawText("OPTIONS", GAME_WIDTH/2, 120, 40, "#00d9ff");
-
-        // Bouton de contrôle
-        const isHoverControl = mouseInRect(110, 240, 200, 50);
-        const controlText = `Contrôle: ${controlMode}`;
-        drawButton(controlText, 110, 240, 200, 50, 15, "#1de9b6", isHoverControl);
-        drawText(controlMode === 'Fleche' ? "Utilisez les flèches" : "Suivez le curseur", GAME_WIDTH/2, 280, 14, "#aaa");
-
-        // Bouton de retour
-        const isHoverBack = mouseInRect(110, 540, 200, 50);
-        drawButton("RETOUR", 110, 540, 200, 50, 15, "#ff00ea", isHoverBack);
-
-    } else if(state===STATE.SHOP){
-        drawText("MAGASIN SPATIAL", GAME_WIDTH/2, 50, 30, "#00d9ff");
-        drawText(`CRÉDITS: ${credits}`, GAME_WIDTH/2, 100, 20, "#ffde21");
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(0, 120, GAME_WIDTH, GAME_HEIGHT - 120 - 100);
-        ctx.clip();
-        
-        ships.forEach((s,i)=>{
-            const cardY=140+i*160 - shopScroll;
-            const isSelected = i===player.type;
-            const isHover = mouseInRect(40, cardY, 340, 140);
-
-            let cardColor = "#333";
-            let actionText = "";
-            let textColor = "#fff";
-
-            if(isSelected){
-                cardColor = "#00d9ff";
-                actionText = "ÉQUIPÉ";
-            } else if(s.unlocked){
-                cardColor = "#1de9b6";
-                actionText = "SÉLECTIONNER";
-            } else if(credits>=s.cost){
-                cardColor = "#ffde21";
-                actionText = `${s.cost} CRÉDITS`;
-                textColor = "#000";
-            } else {
-                cardColor = "#ff00ea";
-                actionText = `${s.cost} CRÉDITS`;
-            }
-
-            // Carte
-            ctx.save();
-            ctx.shadowColor = cardColor;
-            ctx.shadowBlur = isHover ? 30 : 10;
-            ctx.fillStyle = "rgba(0,0,0,0.4)";
-            ctx.strokeStyle = cardColor;
-            ctx.lineWidth = 3;
-            drawRoundedRect(40, cardY, 340, 140, 15, true, true);
-
-            // Vaisseau (Simplified Draw)
-            ctx.translate(80, cardY+70);
-            ctx.rotate(-Math.PI/6);
-            ctx.fillStyle = s.color;
-            ctx.beginPath();
-            ctx.moveTo(0, -15);
-            ctx.lineTo(-15, 15);
-            ctx.lineTo(15, 15);
-            ctx.closePath();
-            ctx.fill();
-            ctx.fillStyle = s.cockpit;
-            ctx.beginPath();
-            ctx.arc(0, 0, 7, 0, Math.PI*2);
-            ctx.fill();
-            ctx.restore();
-
-
-            // Infos
-            drawText(s.name, 220, cardY+30, 22, cardColor);
-            drawText(`Vitesse: ${s.speed} | Bonus: ${s.bonus}`, 220, cardY+60, 14, "#aaa");
-            drawText(s.desc, 220, cardY+85, 12, "#777");
-
-            // Action Button
-            ctx.save();
-            ctx.fillStyle = cardColor;
-            ctx.strokeStyle = isSelected || s.unlocked ? cardColor : "#000";
-            ctx.lineWidth = 2;
-            
-            drawRoundedRect(280, cardY+105, 80, 25, 10, true, !isSelected);
-            drawText(actionText, 320, cardY+118, 14, textColor);
-            ctx.restore();
-        });
-
-        ctx.restore();
-
-        // Bouton de retour
-        const isHoverBack = mouseInRect(110, 540, 200, 50);
-        drawButton("RETOUR", 110, 540, 200, 50, 15, "#ff00ea", isHoverBack);
-
-    } else if(state===STATE.LEADERBOARD){
-        drawText("CLASSEMENT", GAME_WIDTH/2, 50, 30, "#00d9ff");
-
-        // En-têtes du tableau
-        drawText("RANG", 70, 110, 16, "#1de9b6", "left");
-        drawText("JOUEUR", 180, 110, 16, "#1de9b6", "left");
-        drawText("SCORE", 340, 110, 16, "#1de9b6", "left");
-
-        // Lignes du tableau
-        leaderboardData.forEach((entry, i)=>{
-            const y = 150 + i * 40;
-            const rank = i + 1;
-            const isPlayer = entry.name === "Vous";
-
-            let color = isPlayer ? "#ffde21" : "#fff";
-            if (rank <= 3) color = ["#ffd700", "#c0c0c0", "#cd7f32"][i]; // Or, Argent, Bronze
-
-            drawText(rank + (i < 5 ? '.' : ''), 70, y, 18, color, "left");
-            drawText(entry.name, 180, y, 18, color, "left");
-            drawText(entry.score, 340, y, 18, color, "left");
-
-            if (isPlayer) {
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 1;
-                ctx.strokeRect(40, y - 20, GAME_WIDTH - 80, 40);
-            }
-        });
-
-        // Bouton de retour
-        const isHoverBack = mouseInRect(110, 540, 200, 50);
-        drawButton("RETOUR", 110, 540, 200, 50, 15, "#ff00ea", isHoverBack);
-
-    } else if(state===STATE.PLAY || state===STATE.GAMEOVER){
-        // Dessin des éléments du jeu
-        asteroids.forEach(drawAsteroid);
-        coins.forEach(drawCoin);
-        if(state!==STATE.GAMEOVER || explosion===null) drawPlayer(player);
-        if(explosion){
-            ctx.fillStyle = `rgba(255, 100, 0, ${explosion.alpha})`;
-            ctx.beginPath();
-            ctx.arc(explosion.x, explosion.y, explosion.r, 0, Math.PI*2);
-            ctx.fill();
-        }
-        
-        // Affichage du choc de mort (glitch)
-        if(deathShockwave.active){
-            ctx.save();
-            ctx.strokeStyle = `rgba(0, 217, 255, ${deathShockwave.alpha})`;
-            ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.arc(deathShockwave.x, deathShockwave.y, deathShockwave.r, 0, Math.PI*2);
-            ctx.stroke();
-            ctx.restore();
-        }
-        if(glitchTimer > 0) {
-            ctx.fillStyle = `rgba(255, 0, 0, ${glitchTimer/30})`;
-            ctx.fillRect(Math.random()*10-5, Math.random()*10-5, GAME_WIDTH, GAME_HEIGHT);
-        }
-
-        // HUD Score et Vie
-        const levelColor = levelColors[colorIndex];
-        drawText(`LEVEL ${currentLevel}`, GAME_WIDTH/2, 30, 25, levelColor);
-        drawText(`SCORE: ${Math.floor(score)}`, GAME_WIDTH/2, 60, 18, "#fff");
-        drawText(`MEILLEUR: ${bestScore}`, 310, 30, 14, "#ffde21");
-        drawText(`CRÉDITS: ${credits}`, 110, 30, 14, "#ffde21");
-        
-        // Indicateur de Vie
-        drawText(`VIE: ${player.life}`, 110, 60, 18, player.life > 1 ? "#00ff88" : "#fff");
-
-        // Affichage des textes flottants
-        floatingTexts.forEach(t => drawText(t.text, t.x, t.y, 14, t.color));
-
-        // Animation de niveau
-        if(levelAnimTimer > 0) {
-            ctx.save();
-            ctx.globalAlpha = levelAnimTimer / 100;
-            ctx.fillStyle = levelColor;
-            ctx.fillRect(0, GAME_HEIGHT/2 - 25, GAME_WIDTH, 50);
-            drawText(`NIVEAU ${currentLevel} ATTEINT!`, GAME_WIDTH/2, GAME_HEIGHT/2, 30, "#0a0e27");
-            ctx.restore();
-        }
-
-        // Affichage Game Over
-        if(state===STATE.GAMEOVER && flashAlpha <= 0.1){
-            drawText("GAME OVER", GAME_WIDTH/2, GAME_HEIGHT/2 - 80, 50, "#ff3300");
-            drawText(`SCORE FINAL: ${Math.floor(score)}`, GAME_WIDTH/2, GAME_HEIGHT/2, 25, "#fff");
-            drawText("TOUCHER L'ÉCRAN POUR CONTINUER", GAME_WIDTH/2, GAME_HEIGHT/2 + 50, 15, "#aaa");
-        }
+    if (stroke) {
+        ctx.stroke();
     }
-
-    // Flash d'écran (dégâts/nouveau niveau)
-    if(flashAlpha > 0){
-        ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`;
-        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-    }
-    // Flash de crédit
-    if(coinFlashAlpha > 0){
-        ctx.fillStyle = `rgba(255, 222, 33, ${coinFlashAlpha/2})`;
-        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-    }
-
-    // Transition d'état (fondu noir)
-    if(transition.active) {
-        ctx.fillStyle = `rgba(0, 0, 0, ${transition.nextState !== null ? transition.alpha : 1-transition.alpha})`;
-        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-    }
-
-    requestAnimationFrame(draw);
+    
+    ctx.shadowBlur = 0; 
+    ctx.shadowColor = "#000"; 
 }
 
-loadGameData();
-setInterval(update, 1000/60);
-requestAnimationFrame(draw); 
+
+function loop(){ 
+    update(); 
+    draw(); 
+    requestAnimationFrame(loop); 
+}
+
+resizeCanvas();
+draw(); 
+loadGameData(); 
+loop(); 
 </script>
 </body>
 </html>

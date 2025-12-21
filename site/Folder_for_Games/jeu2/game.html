@@ -370,7 +370,7 @@ async function loadGameData() {
     }
     
     try {
-        // CORRECTION 1: Utilisation de API_BASE_URL pour la requête de chargement
+        // CORRECTION 1: Utilisation de API_BASE_URL pour la requête de chargement, endpoint /astro_dodge_get_data (conformément à overview.html)
         const response = await fetch(`${API_BASE_URL}/astro_dodge_get_data`, {
             method: 'POST', 
             headers: {
@@ -441,7 +441,7 @@ async function saveGameData(newScore = null) {
     }
 
     try {
-        // CORRECTION 2: Utilisation de l'endpoint '/update_user_data' pour la sauvegarde (plus précis pour une mise à jour)
+        // CORRECTION 2: Utilisation de l'endpoint '/update_user_data' pour la sauvegarde (conformément à overview.html)
         const response = await fetch(`${API_BASE_URL}/update_user_data`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -834,7 +834,7 @@ function update(){
         // Collision joueur / pièces
         coins.forEach(c=>{
             const dist = Math.hypot(player.x-c.x, player.y-c.y);
-            const isMagnet = sD.bonus==="Aim Magnétique";
+            const isMagnet = ships[player.type].bonus==="Aim Magnétique";
 
             if(isMagnet && dist < 100){
                 c.x += (player.x - c.x) * 0.1;
@@ -844,7 +844,7 @@ function update(){
             if(dist < c.r + player.r) {
                 AudioSystem.play('coin');
                 coins.splice(coins.indexOf(c), 1);
-                const coinAmount = sD.bonus==="Double Pièces" ? 2 : 1;
+                const coinAmount = ships[player.type].bonus==="Double Pièces" ? 2 : 1;
                 credits += coinAmount;
                 coinFlashAlpha = 1;
                 floatingTexts.push({x: c.x, y: c.y, text: `+${coinAmount}`, alpha: 1, color: "#ffde21"});

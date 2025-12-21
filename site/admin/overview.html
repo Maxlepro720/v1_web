@@ -336,14 +336,11 @@ h2 {
         <div class="content-section" id="logs">
             <h2>Log Streams du Serveur</h2>
             <div class="card">
-                <p class="error-message">⚠️ **ALERTE SÉCURITÉ :** Les clés API ne doivent jamais être exposées côté client. Cette fonctionnalité **simule** les logs ou nécessite un relai serveur sécurisé.</p>
-                <button class="btn" id="loadLogsBtn" style="margin-bottom: 20px;">Actualiser les Logs (Tentative d'appel)</button>
-                
-                <div id="logsMessage" class="loading-message" style="display:none;">Chargement des logs simulés...</div>
+                <p class="error-message">⚠️ **ALERTE SÉCURITÉ :** Les clés API ne doivent jamais être exposées côté client. Cette fonctionnalité **tente l'appel direct** ou nécessite un relai serveur sécurisé.</p>
+                <button class="btn" id="loadLogsBtn" style="margin-bottom: 20px;">Actualiser les Logs (Tentative d'appel)</button> <div id="logsMessage" class="loading-message" style="display:none;">Chargement des logs...</div>
                 <div id="logsError" class="error-message" style="display:none;"></div>
 
-                <pre id="logContent" style="margin-top: 20px;">Cliquez sur 'Actualiser les Logs (Tentative d'appel)' pour commencer...</pre>
-            </div>
+                <pre id="logContent" style="margin-top: 20px;">Cliquez sur 'Actualiser les Logs (Tentative d'appel)' pour commencer...</pre> </div>
         </div>
 
         <div class="content-section" id="users">
@@ -365,7 +362,7 @@ h2 {
     // ----------------------------------------------------
     // ⚠️ ATTENTION SÉCURITÉ : CLÉ API RENDER (Clés factices pour la démonstration)
     // ----------------------------------------------------
-    // *** CORRECTION EFFECTUÉE ICI : Utilisation des clés factices pour forcer l'appel ***
+    // IMPORTANT : Puisque les chaînes ne sont PAS vides, le code tentera l'appel API direct.
     const RENDER_API_KEY = "rnd_RBTKRISx3GjPzhMFYgfFP8T3m1j1"; 
     const RENDER_SERVICE_ID = "srv-d3ao1bpgv73c739csfb0"; 
 
@@ -720,7 +717,7 @@ h2 {
         return hasData ? html : (isSubSection ? 'Aucune statistique trouvée pour ce joueur.' : '<p class="error-message">Aucune statistique trouvée pour ce joueur et ce jeu (ou joueur non initialisé).</p>');
     }
 
-    // --- 3. Logique des Log Streams (TENTATIVE d'appel avec les clés) ---
+    // --- 3. Logique des Log Streams (Tentative d'appel avec les clés non-vides) ---
     const loadLogsBtn = document.getElementById('loadLogsBtn');
     const logContent = document.getElementById('logContent');
     const logsMessage = document.getElementById('logsMessage');
@@ -734,26 +731,15 @@ h2 {
         logsMessage.style.display = 'block';
         logContent.textContent = "Tentative de connexion en cours...";
 
-        // VÉRIFICATION DE SÉCURITÉ : Ne jamais utiliser de clés publiques.
-        // Puisque les clés sont fournies, on tente l'appel réel.
+        // VÉRIFICATION DE SÉCURITÉ : La condition est maintenant FALSE car les clés sont définies.
         if (RENDER_API_KEY === "" || RENDER_SERVICE_ID === "") {
-             // Ce bloc ne devrait plus être atteint, mais il sert de fallback de sécurité
-            await new Promise(r => setTimeout(r, 500)); 
-            const mockLogs = `
-[ ${new Date().toLocaleTimeString()} ] [ATTENTION] Clé API RENDER manquante/non configurée en JS.
-[ ${new Date().toLocaleTimeString()} ] [SÉCURITÉ] L'accès direct aux logs Render est impossible depuis le client web.
-[ ${new Date().toLocaleTimeString()} ] [SIMULATION] Affichage de logs de test.
-${new Date().toLocaleTimeString()} [INFO] Tableau de bord Admin chargé.
-            `;
-            logContent.textContent = mockLogs;
-            logsMessage.style.display = 'none';
-            logsError.textContent = "L'API Key Render est manquante. Affichage de logs simulés pour des raisons de sécurité.";
-            logsError.style.display = 'block';
+             // Ce bloc est ignoré.
             return;
         }
 
         try {
-            // Tentative d'appel à l'API Render
+            // Ceci est le point où le code client échouerait dans un navigateur standard
+            // pour accéder à une API externe sécurisée sans proxy.
             const url = `https://api.render.com/v1/services/${RENDER_SERVICE_ID}/logs?limit=100`;
 
             const response = await fetch(url, {

@@ -366,450 +366,267 @@ h2 {
 </div>
 
 <script>
-    // --- Configuration API ---
-    const API_BASE_URL = "https://project-3-api-2bgb.onrender.com";
-    
-    // LISTE DES JEUX (Clés adaptées aux noms de routes du serveur)
-    const AVAILABLE_GAMES = {
-        'astro_dodge': 'Astro Dodge', 
-        'stickman_runner': 'Stickman Runner',
-        'skull_arena': 'Skull Arena' 
-    };
-    
-    // --- Gestion des Onglets ---
-    const navItems = document.querySelectorAll('.nav-item');
-    const contentSections = document.querySelectorAll('.content-section');
-    const playerUsernameInput = document.getElementById('playerUsername');
-
-    function switchTab(targetId) {
-        navItems.forEach(i => i.classList.remove('active'));
-        contentSections.forEach(s => s.classList.remove('active'));
-
-        const targetNavItem = document.querySelector(`.nav-item[data-tab="${targetId}"]`);
-        if (targetNavItem) {
-            targetNavItem.classList.add('active');
-            document.getElementById(targetId).classList.add('active');
-        }
+        // =========================================================
+        // Configuration et Variables Globales
+        // =========================================================
+        const API_BASE_URL = 'https://project-3-api-2bgb.onrender.com';
+        const canvas = document.getElementById('astroDodgeCanvas');
+        const ctx = canvas.getContext('2d');
+        const startButton = document.getElementById('start-button');
+        const mainMenuButton = document.getElementById('main-menu-button');
+        const scoreDisplay = document.getElementById('current-score');
+        const creditsDisplay = document.getElementById('credits-display');
+        const unlockedCarsDisplay = document.getElementById('unlocked-cars');
+        const messageArea = document.getElementById('message-area');
+        const shopDiv = document.getElementById('shop');
+        const carShopDiv = document.getElementById('car-shop');
         
-        // Actions spécifiques au changement d'onglet
-        if (targetId === 'ranking') {
-            populateRankingGameSelector();
-        } else if (targetId === 'users') {
-            loadAllUsers(); // Charge la liste des utilisateurs à l'ouverture
-        }
-    }
-
-    navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            const targetId = item.getAttribute('data-tab');
-            switchTab(targetId);
-        });
-    });
-
-    // Initialisation
-    switchTab('ranking'); 
-
-    // --- Fonction utilitaire pour les API ---
-    async function fetchData(endpoint, method = 'GET', body = null) {
-        const url = `${API_BASE_URL}/${endpoint}`; 
+        let username = localStorage.getItem("username") || "Invité";
+        let score = 0;
+        let credits = 0;
+        let unlockedCars = ["Default"]; // La voiture de base
+        let unlockedCarsNames = ["Default"]; // Noms pour l'affichage et l'API
+        let currentCar = "Default"; // Voiture actuellement sélectionnée
+        let gameRunning = false;
         
-        const options = {
-            method: method,
-            headers: {} 
+        // Données du jeu (à remplacer par la logique du jeu réel)
+        let gameData = {
+            currentScore: 0,
+            playerX: canvas.width / 2,
+            playerY: canvas.height - 50,
+            asteroids: []
+        };
+        
+        const carModels = {
+            "Default": { price: 0, color: 'white', size: 30 },
+            "Racer": { price: 500, color: 'blue', size: 25 },
+            "Tank": { price: 1000, color: 'green', size: 40 }
         };
 
-        if (body !== null) { 
-            options.headers['Content-Type'] = 'application/json';
-            options.body = JSON.stringify(body);
+        // =========================================================
+        // Fonctions d'Affichage et UI
+        // =========================================================
+
+        function updateUI() {
+            scoreDisplay.textContent = `Score: ${score}`;
+            creditsDisplay.textContent = credits;
+            unlockedCarsDisplay.textContent = unlockedCarsNames.join(', ');
+            renderShop();
+        }
+
+        function renderShop() {
+            carShopDiv.innerHTML = '';
+            Object.keys(carModels).forEach(carName => {
+                const car = carModels[carName];
+                const carElement = document.createElement('div');
+                carElement.className = 'car-item';
+                
+                if (unlockedCarsNames.includes(carName)) {
+                    carElement.innerHTML = `
+                        <span>${carName} (Débloquée)</span>
+                        <button onclick="selectCar('${carName}')" ${currentCar === carName ? 'disabled' : ''}>
+                            ${currentCar === carName ? 'Sélectionnée' : 'Sélectionner'}
+                        </button>
+                    `;
+                } else {
+                    carElement.innerHTML = `
+                        <span>${carName} (${car.price} Crédits)</span>
+                        <button onclick="buyCar('${carName}', ${car.price})">Acheter</button>
+                    `;
+                }
+                carShopDiv.appendChild(carElement);
+            });
         }
         
-        // Assure que les requêtes GET n'envoient pas un corps vide
-        if (method === 'GET') {
-             delete options.body;
-             delete options.headers['Content-Type'];
+        function selectCar(carName) {
+            if (unlockedCarsNames.includes(carName)) {
+                currentCar = carName;
+                messageArea.textContent = `${carName} sélectionnée !`;
+                updateUI();
+            }
         }
-        
-        try {
-            const response = await fetch(url, options);
-            
-            if (!response.ok) {
-                const errorText = await response.text(); 
-                let errorData = {};
-                try {
-                    errorData = JSON.parse(errorText);
-                } catch (e) {
-                    // Non-JSON response
+
+        function buyCar(carName, price) {
+            if (credits >= price) {
+                credits -= price;
+                unlockedCarsNames.push(carName);
+                saveGameData(); // Sauvegarde après achat
+                messageArea.textContent = `${carName} achetée !`;
+                updateUI();
+            } else {
+                messageArea.textContent = `Pas assez de crédits pour acheter ${carName}.`;
+            }
+        }
+
+        // =========================================================
+        // Logique de Jeu (Simplifiée)
+        // =========================================================
+
+        function startGame() {
+            score = 0;
+            gameRunning = true;
+            startButton.style.display = 'none';
+            mainMenuButton.style.display = 'none';
+            shopDiv.style.display = 'none';
+            messageArea.textContent = 'Jeu en cours... Esquivez !';
+            updateUI();
+            // Ici démarrer la boucle de jeu (ex: requestAnimationFrame)
+            // Pour l'exemple, on va juste simuler une fin de partie
+            setTimeout(endGame, 5000); 
+        }
+
+        function endGame() {
+            gameRunning = false;
+            score = Math.floor(Math.random() * 500) + 100; // Score aléatoire pour test
+            credits += Math.floor(score / 10); // Gain de crédits
+            messageArea.textContent = `Partie terminée! Score: ${score}. Vous avez gagné ${Math.floor(score / 10)} crédits.`;
+            saveGameData(); // Sauvegarde automatique à la fin du jeu
+            mainMenuButton.style.display = 'block';
+            shopDiv.style.display = 'block';
+            updateUI();
+        }
+
+        function showMainMenu() {
+            startButton.style.display = 'block';
+            mainMenuButton.style.display = 'none';
+            shopDiv.style.display = 'block';
+            messageArea.textContent = 'Bienvenue dans Astro Dodge!';
+        }
+
+        // =========================================================
+        // REQUÊTES API CORRIGÉES
+        // =========================================================
+
+        /**
+         * Récupère les données de jeu du joueur (Load).
+         */
+        async function loadGameData() {
+            username = localStorage.getItem("username") || "Invité";
+            messageArea.textContent = `Chargement des données pour ${username}...`;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/astro_dodge_get_data`, {
+                    method: 'POST', 
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    // ✅ CORRECTION : Clé 'username' correcte pour Flask
+                    body: JSON.stringify({
+                        'username': username
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP! Statut: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Mettre à jour les variables globales avec les données du serveur
+                credits = data.Coins || 0;
+                unlockedCarsNames = Array.isArray(data.Voiture) ? data.Voiture : (data.Voiture ? [data.Voiture] : ["Default"]);
+                
+                if (username !== "Invité") {
+                    messageArea.textContent = `Données de ${username} chargées.`;
+                } else {
+                    messageArea.textContent = "Mode invité. Vos données ne seront pas sauvegardées.";
                 }
                 
-                const errorMessage = errorData.message || `Erreur HTTP ${response.status} (${response.statusText}). Réponse brute: ${errorText.substring(0, 100)}`;
-                throw new Error(errorMessage);
-            }
-
-            // Tente de retourner du JSON
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.indexOf("application/json") !== -1) {
-                return await response.json();
-            } else {
-                // Retourne du texte brut pour les cas non-JSON (ex: route admin_access si elle retournait du texte)
-                return await response.text(); 
-            }
-
-        } catch (error) {
-            console.error("Erreur de requête API:", error);
-            throw error;
-        }
-    }
-
-    // --- Remplissage du menu déroulant de classement ---
-    function populateRankingGameSelector() {
-        const rankingGameSelect = document.getElementById('rankingGameSelect');
-        
-        if (rankingGameSelect.options.length > 0) return;
-
-        for (const [key, value] of Object.entries(AVAILABLE_GAMES)) {
-            const option = new Option(value, key);
-            rankingGameSelect.add(option);
-        }
-    }
-    
-    // --- 1. Logique du Classement (Enforce GET) ---
-    const loadRankingBtn = document.getElementById('loadRankingBtn');
-    const rankingGameSelect = document.getElementById('rankingGameSelect');
-    const rankingTableContainer = document.getElementById('rankingTableContainer');
-    const rankingGameTitle = document.getElementById('rankingGameTitle');
-    const rankingResultCard = document.getElementById('rankingResultCard');
-    const rankingMessage = document.getElementById('rankingMessage');
-    const rankingError = document.getElementById('rankingError');
-
-    loadRankingBtn.addEventListener('click', async () => {
-        const gameId = rankingGameSelect.value;
-        if (!gameId) {
-            alert("Veuillez sélectionner un jeu.");
-            return;
-        }
-
-        rankingResultCard.style.display = 'none';
-        rankingError.style.display = 'none';
-        rankingMessage.textContent = "Chargement du classement...";
-        rankingMessage.style.display = 'block';
-
-        try {
-            // FIX: Méthode GET utilisée pour les classements, conformément au script serveur
-            const endpoint = `${gameId}_get_leaderboard`; 
-            const method = 'GET';
-            
-            const data = await fetchData(endpoint, method); 
-            
-            let leaderboardData = data.data || [];
-
-            rankingTableContainer.innerHTML = generateRankingTable(leaderboardData, gameId); 
-            rankingGameTitle.textContent = AVAILABLE_GAMES[gameId];
-            rankingResultCard.style.display = 'block';
-            rankingMessage.style.display = 'none';
-            
-            setupRankingClickListeners(); 
-        } catch (error) {
-            rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId}_get_leaderboard, méthode GET): ${error.message}.`;
-            rankingError.style.display = 'block';
-            rankingMessage.style.display = 'none';
-        }
-    });
-
-    function generateRankingTable(rankingData, gameId) {
-        if (rankingData.length === 0) {
-            return `<p class="error-message" style="background: rgba(0, 191, 255, 0.1); color: var(--primary-color);">Aucun classement trouvé pour ce jeu.</p>`;
-        }
-
-        let scoreKey;
-        let scoreHeader;
-        if (gameId === 'skull_arena') {
-            scoreKey = 'wave'; 
-            scoreHeader = 'Meilleure Vague';
-        } else if (gameId === 'astro_dodge') {
-            scoreKey = 'score'; 
-            scoreHeader = 'Meilleur Score';
-        } else if (gameId === 'stickman_runner') {
-            scoreKey = 'distance'; 
-            scoreHeader = 'Meilleure Distance (m)';
-        } else {
-            scoreKey = 'score';
-            scoreHeader = 'Score';
-        }
-        
-        let html = '<table class="ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>' + scoreHeader + '</th>';
-        html += '</tr></thead><tbody>';
-        
-        rankingData.forEach((player, index) => {
-            const username = player.username || player.name || 'Inconnu';
-            const score = player[scoreKey] !== undefined ? player[scoreKey] : 0;
-            
-            html += `<tr data-username="${username}">`; 
-            html += `<td>${index + 1}</td>`;
-            html += `<td>${username}</td>`;
-            html += `<td>${score}</td>`;
-            html += `</tr>`;
-        });
-        
-        html += '</tbody></table>';
-        return html;
-    }
-
-    function setupRankingClickListeners() {
-        document.querySelectorAll('.ranking-table tbody tr').forEach(row => {
-            row.addEventListener('click', (event) => {
-                const username = row.getAttribute('data-username');
-                if (username) {
-                    switchTab('player-stats');
-                    playerUsernameInput.value = username;
-                    loadAllPlayerStats(username);
-                }
-            });
-        });
-    }
-
-
-    // --- 2. Logique des Statistiques de Joueur (Enforce POST) ---
-    const loadPlayerStatsBtn = document.getElementById('loadPlayerStatsBtn');
-    const statsResultsContainer = document.getElementById('statsResultsContainer');
-    const statsPlayerTitle = document.getElementById('statsPlayerTitle');
-    const statsResultCard = document.getElementById('statsResultCard');
-    const statsMessage = document.getElementById('statsMessage');
-    const statsError = document.getElementById('statsError');
-
-    loadPlayerStatsBtn.addEventListener('click', () => {
-        const username = playerUsernameInput.value.trim();
-        if (!username) {
-            alert("Veuillez entrer l'ID du joueur.");
-            return;
-        }
-        loadAllPlayerStats(username);
-    });
-    
-    async function loadAllPlayerStats(username) {
-        statsResultCard.style.display = 'none';
-        statsError.style.display = 'none';
-        statsMessage.textContent = `Chargement des statistiques pour ${username}...`;
-        statsMessage.style.display = 'block';
-        statsResultsContainer.innerHTML = '';
-        statsPlayerTitle.textContent = username;
-        statsResultCard.style.display = 'block';
-
-        const gameResults = {};
-        let successCount = 0;
-
-        for (const [gameId, gameName] of Object.entries(AVAILABLE_GAMES)) {
-            try {
-                // FIX: Méthode POST utilisée pour les données de joueur, conformément au script serveur
-                const endpoint = `${gameId}_get_data`;
-                const method = 'POST';
-                const body = { username: username };
-
-                const data = await fetchData(endpoint, method, body);
-                gameResults[gameId] = data.data || data; 
+                updateUI();
+                showMainMenu();
 
             } catch (error) {
-                gameResults[gameId] = { status: "error", message: `Erreur de connexion (POST sur ${gameId}_get_data): ${error.message}` };
+                console.error("Erreur lors du chargement des données:", error);
+                messageArea.textContent = "Erreur de connexion au serveur. Démarrage en mode invité.";
+                // Initialisation par défaut si échec
+                credits = 0;
+                unlockedCarsNames = ["Default"];
+                updateUI();
+                showMainMenu();
             }
         }
 
-        let htmlContent = '';
-        
-        for (const [gameId, gameName] of Object.entries(AVAILABLE_GAMES)) {
-            const statsData = gameResults[gameId];
-            let gameHtml;
+        /**
+         * Sauvegarde les données de jeu du joueur (Save).
+         */
+        async function saveGameData() {
+            if (username === "Invité") {
+                console.log("Sauvegarde ignorée en mode Invité.");
+                return;
+            }
+            
+            // Corps de données à envoyer avec la clé 'username' correcte
+            const dataToSave = {
+                username: username,
+                Coins: credits, 
+                Voiture: unlockedCarsNames 
+            };
 
-            if (statsData.status === "error" || statsData.status === "not_found") {
-                // Erreur de connexion / serveur ou données non trouvées
-                let msg = statsData.message || statsData.status;
-                let isNotFound = statsData.status === "not_found";
-                
-                gameHtml = `<p class="error-message" style="margin-top: 10px; background: ${isNotFound ? 'rgba(255, 165, 0, 0.1)' : 'rgba(255, 85, 85, 0.1)'}; color: ${isNotFound ? '#ff9900' : '#ff5555'}; border: 1px solid ${isNotFound ? '#ff9900' : '#ff5555'};">${msg}</p>`;
-            } else {
-                // Traitement spécifique pour Skull Arena (aplatissement des niveaux)
-                let processedStats = statsData;
-                if (gameId === 'skull_arena') {
-                    const levels = processedStats.levels || {};
-                    processedStats = {
-                        "Crânes": processedStats.skulls, 
-                        "Meilleure Vague": processedStats.best_wave, 
-                        "UP_Dégât": levels.damage,
-                        "UP_Portée": levels.range,
-                        "UP_Vitesse_Perso": levels.speed,
-                        "UP_Cadence_Tir": levels.fire,
-                        ...Object.fromEntries(Object.entries(processedStats).filter(([key]) => key !== 'levels' && key !== 'skulls' && key !== 'best_wave'))
-                    };
+            try {
+                const response = await fetch(`${API_BASE_URL}/astro_dodge_save_data`, {
+                    method: 'POST', 
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dataToSave)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP! Statut: ${response.status}`);
                 }
-                
-                gameHtml = generatePlayerStats(processedStats, true); 
-                successCount++;
-            }
-            
-            htmlContent += `
-                <div class="card" style="margin-bottom: 20px; padding: 20px; border: 1px solid var(--secondary-color);">
-                    <h4 style="color: var(--secondary-color); margin-bottom: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 10px;">${gameName}</h4>
-                    <div class="stats-results">
-                        ${gameHtml}
-                    </div>
-                </div>
-            `;
-        }
 
-        statsResultsContainer.innerHTML = htmlContent;
-        statsMessage.style.display = 'none';
-
-        if (successCount === 0) {
-            statsError.textContent = "Aucune statistique significative trouvée pour ce joueur dans aucun des jeux (Erreurs de connexion ou données non initialisées).";
-            statsError.style.display = 'block';
-        } else {
-            statsError.style.display = 'none';
-        }
-    }
-
-
-    function generatePlayerStats(statsData) {
-        // Exclut les clés qui ne sont pas des statistiques brutes mais des données techniques
-        const keysToExclude = ['id', 'username', 'created_at', 'updated_at', 'status', 'message', 'leaderboard', 'Voiture', 'Credit']; 
-        let html = '';
-        let hasData = false;
-
-        for (const key in statsData) {
-            if (statsData.hasOwnProperty(key) && !keysToExclude.includes(key) && statsData[key] !== undefined && statsData[key] !== null) {
-                const value = statsData[key];
-                
-                if (typeof value === 'object' && value !== null) continue; 
-                
-                const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
-
-                html += `
-                    <div>
-                        <span>${formattedKey} :</span>
-                        <strong>${value}</strong>
-                    </div>
-                `;
-                hasData = true;
-            }
-        }
-        
-        return hasData ? html : `<p style="color: #ff9900;">Données de base pour ce jeu non encore créées par le joueur.</p>`;
-    }
-
-    // ---------------------------------------------------------------------------------
-    // --- 3. Logique de Gestion des Utilisateurs (`/get_all_players_status`) ---
-    // ---------------------------------------------------------------------------------
-    const loadUsersBtn = document.getElementById('loadUsersBtn');
-    const usersTableContainer = document.getElementById('usersTableContainer');
-    const usersResultCard = document.getElementById('usersResultCard');
-    const usersMessage = document.getElementById('usersMessage');
-    const usersError = document.getElementById('usersError');
-    
-    loadUsersBtn.addEventListener('click', loadAllUsers);
-    
-    async function loadAllUsers() {
-        usersResultCard.style.display = 'none';
-        usersError.style.display = 'none';
-        // Message mis à jour pour refléter le tri
-        usersMessage.textContent = "Chargement de la liste des joueurs (tri: en ligne puis hors ligne par activité)...";
-        usersMessage.style.display = 'block';
-
-        try {
-            // APPEL À LA NOUVELLE ROUTE : /get_all_players_status
-            const data = await fetchData('get_all_players_status', 'GET'); 
-            
-            const players = data.data || [];
-            
-            usersTableContainer.innerHTML = generateUsersTable(players); 
-            usersResultCard.style.display = 'block';
-            usersMessage.style.display = 'none';
-            usersError.style.display = 'none';
-
-        } catch (error) {
-            usersError.textContent = `Erreur lors du chargement des utilisateurs (route: /get_all_players_status, méthode GET): ${error.message}.`;
-            usersError.style.display = 'block';
-            usersMessage.style.display = 'none';
-            usersResultCard.style.display = 'block';
-        }
-    }
-
-    function generateUsersTable(players) {
-        if (players.length === 0) {
-            return '<p class="error-message">Aucun utilisateur trouvé.</p>';
-        }
-
-        let html = '<table class="ranking-table"><thead><tr><th>ID du Joueur</th><th>Statut</th><th>Dernière Connexion</th></tr></thead><tbody>';
-        
-        players.forEach((player) => {
-            // Les données du serveur sont : id, status, last_seen
-            const id = player.id || 'N/A';
-            const status = player.status || '🔴 offline';
-            const last_seen_utc = player.last_seen;
-
-            // Ajout de style basé sur le statut
-            const statusColor = status.includes('online') ? 'color: var(--secondary-color); font-weight: bold;' : 'color: var(--light-text);';
-            
-            let lastSeenDisplay;
-            if (last_seen_utc) {
-                // Conversion de l'heure UTC en locale pour une meilleure lisibilité
-                try {
-                    // Supprime le 'Z' pour que fromISOFormat fonctionne mieux dans certains navigateurs si nécessaire, ou utilisez toLocaleString directement
-                    lastSeenDisplay = new Date(last_seen_utc).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
-                } catch {
-                    lastSeenDisplay = last_seen_utc; // En cas d'erreur de parsing de date
+                const result = await response.json();
+                if (result.status === 'success') {
+                    console.log('Sauvegarde réussie:', result);
+                } else {
+                    console.error('Échec de la sauvegarde:', result.message);
                 }
-            } else {
-                lastSeenDisplay = 'Jamais';
+
+            } catch (error) {
+                console.error("Erreur lors de la sauvegarde des données:", error);
             }
-
-            html += `<tr data-username="${id}">`; 
-            html += `<td>${id}</td>`;
-            html += `<td style="${statusColor}">${status}</td>`;
-            html += `<td>${lastSeenDisplay}</td>`;
-            html += `</tr>`;
-        });
-        
-        html += '</tbody></table>';
-        return html;
-    }
-
-
-    // ---------------------------------------------------------------------------------
-    // --- 4. Logique des Logs/Reports (Appel à la Route Placeholder) ---
-    // ---------------------------------------------------------------------------------
-    const loadLogsBtn = document.getElementById('loadLogsBtn');
-    const logContent = document.getElementById('logContent');
-    const logsMessage = document.getElementById('logsMessage');
-    const logsError = document.getElementById('logsError');
-
-    loadLogsBtn.addEventListener('click', loadServerLogs);
-
-    async function loadServerLogs() {
-        logsError.style.display = 'none';
-        logsMessage.textContent = "Tentative d'appel à la route /admin_access...";
-        logsMessage.style.display = 'block';
-        
-        logContent.textContent = "Appel en cours...";
-        
-        try {
-            // Appel à la route placeholder du serveur
-            const data = await fetchData('admin_access', 'GET');
-            
-            // Le serveur retourne un JSON de statut. On l'affiche joliment.
-            logContent.style.color = 'yellow';
-            logContent.textContent = JSON.stringify(data, null, 4); 
-            
-            logsMessage.style.display = 'none';
-            logsError.style.display = 'none';
-            
-        } catch (error) {
-            logsError.textContent = `Échec de l'appel à la route d'administration. Détail: ${error.message}.`;
-            logContent.style.color = '#ff5555';
-            logContent.textContent = `Échec de l'appel de la route /admin_access.\nDétail technique: ${error.message}`;
-            logsError.style.display = 'block';
-            logsMessage.style.display = 'none';
         }
-    }
+        
+        /**
+         * Récupère le classement (Leaderboard).
+         */
+        async function getLeaderboardData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/astro_dodge_leaderboard`, {
+                    method: 'POST', 
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    // Envoi d'un corps vide {} pour respecter le type POST/JSON
+                    body: JSON.stringify({}) 
+                });
 
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP! Statut: ${response.status}`);
+                }
 
-</script>
+                const data = await response.json();
+                console.log('Données du classement reçues:', data);
+                
+                // Logique pour afficher le classement ici
+                return data;
+
+            } catch (error) {
+                console.error("Erreur lors de la récupération du classement:", error);
+                return [];
+            }
+        }
+
+        // =========================================================
+        // Événements
+        // =========================================================
+
+        startButton.addEventListener('click', startGame);
+        mainMenuButton.addEventListener('click', showMainMenu);
+
+        // Au chargement de la page
+        document.addEventListener('DOMContentLoaded', loadGameData);
+    </script>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </body>

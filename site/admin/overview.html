@@ -323,7 +323,8 @@ h2 {
     
     // LISTE DES JEUX
     const AVAILABLE_GAMES = {
-        'astro_dodge': 'Astro Dodge',
+        // CORRECTION 1: Utilisation de 'astro' pour correspondre au préfixe des routes serveur (/astro/...)
+        'astro': 'Astro Dodge',
         'stickman_runner': 'Stickman Runner',
         'skull_arena': 'Skull Arena'
     };
@@ -349,14 +350,14 @@ h2 {
 
     // --- Fonction utilitaire pour les API ---
     async function fetchData(endpoint, method = 'GET', body = null) {
+        // L'URL est construite comme ceci: https://project-3-api-2bgb.onrender.com/astro/leaderboard
         const url = `${API_BASE_URL}/${endpoint}`; 
         
         const options = {
             method: method,
-            headers: {} // Commence avec des headers vides
+            headers: {} 
         };
 
-        // N'ajoute Content-Type et le corps que si un 'body' est explicitement fourni
         if (body !== null) { 
             options.headers['Content-Type'] = 'application/json';
             options.body = JSON.stringify(body);
@@ -402,7 +403,7 @@ h2 {
     
     populateGameSelectors();
 
-    // --- 1. Logique du Classement (Rétablie à POST pour contourner le 405 du serveur live) ---
+    // --- 1. Logique du Classement (Maintien de POST pour contourner le 405 du serveur live) ---
     const loadRankingBtn = document.getElementById('loadRankingBtn');
     const rankingGameSelect = document.getElementById('rankingGameSelect');
     const rankingTableContainer = document.getElementById('rankingTableContainer');
@@ -424,7 +425,7 @@ h2 {
         rankingMessage.style.display = 'block';
 
         try {
-            // CORRECTION FINALE: Force la méthode à POST et envoie le gameId dans le body
+            // RÉTENTION POST: L'endpoint reste `${gameId}/leaderboard` mais la méthode est POST (pour corriger le 405 sur le serveur live)
             const endpoint = `${gameId}/leaderboard`;
             const body = { game: gameId }; // Corps requis par le serveur live pour POST
             const data = await fetchData(endpoint, 'POST', body); 
@@ -451,11 +452,14 @@ h2 {
         let html = '<table class="ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Meilleur Score</th><th>Grade</th></tr></thead><tbody>';
         
         rankingData.forEach((player, index) => {
+             // Assure la compatibilité entre Astro Dodge (PR_Score) et Stickman Runner (best_score)
+            const score = player.PR_Score !== undefined ? player.PR_Score : (player.best_score !== undefined ? player.best_score : 0);
+            
             html += `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${player.username || 'Inconnu'}</td>
-                    <td>${player.best_score || 0}</td>
+                    <td>${score}</td>
                     <td>${player.grade || 'N/A'}</td>
                 </tr>
             `;
@@ -466,7 +470,7 @@ h2 {
     }
 
 
-    // --- 2. Logique des Statistiques de Joueur (Maintien de POST) ---
+    // --- 2. Logique des Statistiques de Joueur (CORRIGÉE: Utilisation de GET /load_data/<username>) ---
     const loadPlayerStatsBtn = document.getElementById('loadPlayerStatsBtn');
     const playerUsernameInput = document.getElementById('playerUsername');
     const playerGameSelect = document.getElementById('playerGameSelect');
@@ -492,20 +496,23 @@ h2 {
         statsMessage.style.display = 'block';
 
         try {
-            // Requête POST maintenue pour les stats (nécessite un corps)
-            const endpoint = `${gameId}/stats`; 
-            const body = { id: username }; 
+            // CORRECTION 2: Aligner sur le code serveur (/gameId/load_data/<username>) et méthode GET
+            const endpoint = `${gameId}/load_data/${username}`; 
             
-            const data = await fetchData(endpoint, 'POST', body); 
+            // Méthode GET (comme défini par le serveur pour load_data)
+            const data = await fetchData(endpoint, 'GET'); 
 
-            statsResultsContainer.innerHTML = generatePlayerStats(data);
+            // Utilise la clé 'data' si elle existe (renvoyée par Astro Dodge en cas de succès ou non_found)
+            const statsToDisplay = data.data || data; 
+
+            statsResultsContainer.innerHTML = generatePlayerStats(statsToDisplay);
             statsPlayerTitle.textContent = username;
             statsGameTitle.textContent = AVAILABLE_GAMES[gameId];
             statsResultCard.style.display = 'block';
             statsMessage.style.display = 'none';
 
         } catch (error) {
-            statsError.textContent = `Erreur lors du chargement des stats (route: ${gameId}/stats, méthode POST): ${error.message}.`;
+            statsError.textContent = `Erreur lors du chargement des stats (route: ${gameId}/load_data/${username}, méthode GET): ${error.message}.`;
             statsError.style.display = 'block';
             statsMessage.style.display = 'none';
         }
@@ -516,11 +523,13 @@ h2 {
             return '<p class="error-message">Aucune statistique trouvée pour ce joueur et ce jeu.</p>';
         }
 
-        const keysToExclude = ['id', 'username', 'created_at', 'updated_at', 'status', 'message', 'leaderboard']; 
+        // Clés à exclure de l'affichage
+        const keysToExclude = ['id', 'username', 'created_at', 'updated_at', 'status', 'message', 'leaderboard', 'Voiture']; 
         let html = '';
 
         for (const key in statsData) {
             if (statsData.hasOwnProperty(key) && !keysToExclude.includes(key)) {
+                // Formate les clés comme 'best_score' en 'Best Score'
                 const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 
                 html += `

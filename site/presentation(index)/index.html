@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projet Ambitieux - Futur du Jeu</title>
+    <meta name="description" content="Découvrez le projet ambitieux d'une équipe de jeunes pour créer le Hall de Jeu du futur. Innovation, communauté et technologie.">
+
+    <style>
+        /* --- 1. Variables et Base --- */
+        :root {
+            --color-primary: #4285F4; /* Bleu Google */
+            --color-secondary: #34A853; /* Vert Google */
+            --color-background: #FFFFFF; /* Blanc Pur */
+            --color-text: #202124; /* Noir foncé */
+            --color-light-gray: #f1f3f4;
+            --max-width: 1000px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Google Sans', 'Roboto', Arial, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text);
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        /* --- 2. Conteneur Central & Responsive --- */
+        .content-container {
+            width: 90%;
+            max-width: var(--max-width);
+            margin: 0 auto; /* Centrage horizontal */
+            padding: 80px 20px;
+        }
+
+        /* --- 3. Typographie Épurée --- */
+        .main-title {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--color-text);
+        }
+
+        .subtitle {
+            font-size: clamp(1.1rem, 2vw, 1.5rem);
+            color: #5f6368; /* Gris clair */
+            margin-bottom: 50px;
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 500;
+            margin-top: 50px;
+            margin-bottom: 20px;
+            color: var(--color-primary);
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            font-weight: 500;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .text-section p {
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+            text-align: left;
+            padding: 0 10px;
+            color: #5f6368;
+        }
+
+        /* --- 4. Hover Unique sur le Texte --- */
+        .text-hover {
+            display: inline-block;
+            color: var(--color-text);
+            position: relative;
+            cursor: default;
+        }
+
+        .text-hover::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            width: 100%;
+            height: 2px;
+            background: var(--color-primary);
+            transform: scaleX(0);
+            transition: transform 0.3s ease-out;
+            transform-origin: left;
+        }
+
+        .text-hover:hover::after {
+            transform: scaleX(1);
+        }
+        
+        /* Personnalisation pour la section Origine */
+        .origin-story {
+            font-style: italic;
+            background: var(--color-light-gray);
+            border-left: 5px solid var(--color-secondary);
+            padding: 20px;
+            border-radius: 4px;
+            text-align: left;
+        }
+        .origin-story p {
+             margin: 0;
+        }
+
+
+        /* --- 5. Bouton Épuré (Flat Design) --- */
+        .cta-button {
+            display: inline-block;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1.2rem;
+            padding: 12px 30px;
+            margin-top: 40px;
+            border-radius: 8px;
+
+            /* Style Épuré */
+            background-color: var(--color-primary);
+            color: var(--color-background);
+            border: 2px solid var(--color-primary);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Hover: Élévation et changement de couleur subtil */
+        .cta-button:hover {
+            background-color: #3b7ad6; /* Un peu plus foncé */
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .cta-button:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- 6. Animations au Défilement (Scroll) --- */
+
+        /* Classe de base pour les éléments animables */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+            will-change: opacity, transform; /* Optimisation de performance */
+        }
+
+        /* Classe ajoutée par JS lorsque l'élément est visible */
+        .is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+    </style>
+</head>
+<body>
+
+    <main class="content-container">
+        
+        <header class="animate-on-scroll">
+            <h1 class="main-title">
+                Le <span style="color: var(--color-primary);">Futur</span> du Divertissement Interactif
+            </h1>
+            <p class="subtitle">
+                Ce projet est <span class="text-hover">ambitieux</span>, né de la vision collective d'une <span class="text-hover">jeune génération</span> de créateurs.
+            </p>
+        </header>
+
+        <section class="text-section animate-on-scroll">
+            <h2>Redéfinir le Hall de Jeu</h2>
+            <p>
+                Nous développons un concept novateur : non pas un simple lieu de jeu, mais un <span class="text-hover">pôle technologique et social</span>. Notre objectif est de fusionner le meilleur de l'e-sport, des technologies immersives et de la communauté, le tout propulsé par l'énergie et l'expertise d'une équipe de <span class="text-hover">jeunes entrepreneurs</span>.
+            </p>
+            <p>
+                L'ampleur du projet exige une <span class="text-hover">planification méticuleuse</span> et une audace constante, des qualités que notre équipe a hissées au rang de valeurs fondamentales.
+            </p>
+        </section>
+
+        <section class="text-section animate-on-scroll">
+            <h3>L'Étincelle : L'Origine de l'Idée</h3>
+            <div class="origin-story">
+                <p>
+                    L'idée de ce Hall de Jeu ambitieux a pris racine dans le constat d'un <span class="text-hover">vide entre le virtuel et le réel</span>. Après avoir constaté le manque de structures professionnelles et communautaires dédiées aux joueurs locaux, le concept est apparu : créer un pont. Un lieu où l'entraînement de haut niveau côtoie la découverte ludique, conçu par des joueurs, pour des joueurs. Ce n'est pas un marché, c'est une <span class="text-hover">nécessité communautaire</span>.
+                </p>
+            </div>
+        </section>
+
+        <section class="animate-on-scroll">
+            <a href="../connecte.html" class="cta-button">
+                Accéder à la Connexion
+            </a>
+        </section>
+
+    </main>
+
+    <footer>
+        <p style="padding: 50px 0; font-size: 0.9rem; color: #70757a;">
+            &copy; 2025 Initiative Jeunesse. Innovation. Communauté.
+        </p>
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Sélectionne tous les éléments à animer
+            const elements = document.querySelectorAll('.animate-on-scroll');
+            
+            // Configuration de l'Intersection Observer
+            const observerOptions = {
+                root: null, // viewport par défaut
+                rootMargin: '0px',
+                threshold: 0.2 // Déclenchement quand 20% de l'élément est visible
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // Si l'élément est visible, ajoute la classe 'is-visible'
+                        entry.target.classList.add('is-visible');
+                        // Arrête d'observer l'élément une fois qu'il a été affiché
+                        observer.unobserve(entry.target); 
+                    }
+                });
+            }, observerOptions);
+
+            // Attache l'observer à chaque élément
+            elements.forEach(element => {
+                observer.observe(element);
+            });
+        });
+    </script>
+
+</body>
+</html>

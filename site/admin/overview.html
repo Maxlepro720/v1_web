@@ -694,7 +694,7 @@ h2 {
     }
 
     // ---------------------------------------------------------------------------------
-    // --- 3. Logique de Gestion des Utilisateurs (`/admin_get_all_players`) ---
+    // --- 3. Logique de Gestion des Utilisateurs (`/get_all_players_status`) ---
     // ---------------------------------------------------------------------------------
     const loadUsersBtn = document.getElementById('loadUsersBtn');
     const usersTableContainer = document.getElementById('usersTableContainer');
@@ -707,12 +707,13 @@ h2 {
     async function loadAllUsers() {
         usersResultCard.style.display = 'none';
         usersError.style.display = 'none';
-        usersMessage.textContent = "Chargement de la liste des joueurs...";
+        // Message mis à jour pour refléter le tri
+        usersMessage.textContent = "Chargement de la liste des joueurs (tri: en ligne puis hors ligne par activité)...";
         usersMessage.style.display = 'block';
 
         try {
-            // Appel à la route GET du serveur
-            const data = await fetchData('admin_get_all_players', 'GET'); 
+            // APPEL À LA NOUVELLE ROUTE : /get_all_players_status
+            const data = await fetchData('get_all_players_status', 'GET'); 
             
             const players = data.data || [];
             
@@ -722,7 +723,7 @@ h2 {
             usersError.style.display = 'none';
 
         } catch (error) {
-            usersError.textContent = `Erreur lors du chargement des utilisateurs (route: /admin_get_all_players, méthode GET): ${error.message}.`;
+            usersError.textContent = `Erreur lors du chargement des utilisateurs (route: /get_all_players_status, méthode GET): ${error.message}.`;
             usersError.style.display = 'block';
             usersMessage.style.display = 'none';
             usersResultCard.style.display = 'block';
@@ -737,14 +738,31 @@ h2 {
         let html = '<table class="ranking-table"><thead><tr><th>ID du Joueur</th><th>Statut</th><th>Dernière Connexion</th></tr></thead><tbody>';
         
         players.forEach((player) => {
-            const statusColor = player.Status.includes('online') ? 'color: var(--secondary-color); font-weight: bold;' : 'color: var(--light-text);';
-            // Conversion de l'heure UTC en locale pour une meilleure lisibilité
-            const lastSeen = player.last_seen ? new Date(player.last_seen).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : 'Jamais';
+            // Les données du serveur sont : id, status, last_seen
+            const id = player.id || 'N/A';
+            const status = player.status || '🔴 offline';
+            const last_seen_utc = player.last_seen;
 
-            html += `<tr>`;
-            html += `<td>${player.ID}</td>`;
-            html += `<td style="${statusColor}">${player.Status}</td>`;
-            html += `<td>${lastSeen}</td>`;
+            // Ajout de style basé sur le statut
+            const statusColor = status.includes('online') ? 'color: var(--secondary-color); font-weight: bold;' : 'color: var(--light-text);';
+            
+            let lastSeenDisplay;
+            if (last_seen_utc) {
+                // Conversion de l'heure UTC en locale pour une meilleure lisibilité
+                try {
+                    // Supprime le 'Z' pour que fromISOFormat fonctionne mieux dans certains navigateurs si nécessaire, ou utilisez toLocaleString directement
+                    lastSeenDisplay = new Date(last_seen_utc).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+                } catch {
+                    lastSeenDisplay = last_seen_utc; // En cas d'erreur de parsing de date
+                }
+            } else {
+                lastSeenDisplay = 'Jamais';
+            }
+
+            html += `<tr data-username="${id}">`; 
+            html += `<td>${id}</td>`;
+            html += `<td style="${statusColor}">${status}</td>`;
+            html += `<td>${lastSeenDisplay}</td>`;
             html += `</tr>`;
         });
         

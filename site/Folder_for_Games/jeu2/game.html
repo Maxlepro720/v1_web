@@ -362,6 +362,9 @@ function updateTransition() {
 // =================================================================
 // --- LOGIQUE API CORRIGÉE ---
 // =================================================================
+// =================================================================
+// --- LOGIQUE API CORRIGÉE ---
+// =================================================================
 async function loadGameData() {
     // Simulation de chargement avec progression
     for (let i = 0; i <= 100; i += 2) {
@@ -370,13 +373,12 @@ async function loadGameData() {
     }
     
     try {
-        const response = await fetch('https://project-3-api-2bgb.onrender.com/astro_dodge_get_data', {
+        const response = await fetch(`${API_BASE_URL}/astro_dodge_get_data`, {
             method: 'POST', 
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({'username': username})
-            // ------------------------------------------------
         });
         console.log(response)
 
@@ -444,7 +446,7 @@ async function saveGameData(newScore = null) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/save_data`, {
+        const response = await fetch(`${API_BASE_URL}/update_user_data`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dataToSave)
@@ -465,7 +467,13 @@ async function saveGameData(newScore = null) {
 
 async function loadLeaderboard() {
     try {
-        const response = await fetch(`${API_BASE_URL}/leaderboard`);
+        const response = await fetch(`${API_BASE_URL}/astro_dodge_leaderboard`, {
+            method: 'POST', 
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({}) 
+        });
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -492,6 +500,7 @@ async function loadLeaderboard() {
         console.error("Erreur de connexion API au classement:", e.message);
     }
 }
+
 // =================================================================
 // --- FIN LOGIQUE API CORRIGÉE ---
 // =================================================================

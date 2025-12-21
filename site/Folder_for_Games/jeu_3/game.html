@@ -583,7 +583,7 @@
             loadingMessageElement.textContent = `Connexion au serveur et chargement des données de ${username}...`;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/stickman_runner_get_data`, {
+                const response = await fetch(`${SERVER_URL}/stickman_runner_get_data`, {
                     method: 'POST',
                     headers: {
                         // Obligatoire pour envoyer du JSON

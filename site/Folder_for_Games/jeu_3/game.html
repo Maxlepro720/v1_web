@@ -643,12 +643,10 @@
             }
         }
 
-        async function loadLeaderboard() {
+       async function loadLeaderboard() {
             try {
-                // L'endpoint et la méthode GET/POST dépendent du jeu, mais la logique de traitement est la même.
-                // Je réutilise la méthode GET et l'endpoint de l'exemple du classement Astro Dodge
-                // (à ajuster si c'est pour Stickman Runner ou si la méthode est POST).
-                const response = await fetch(`${SERVER_URL}/astro_dodge_get_leaderboard`, {
+                // L'endpoint et la méthode sont correctes pour la route Stickman Runner
+                const response = await fetch(`${SERVER_URL}/stickman_runner_get_leaderboard`, {
                     method: 'GET'
                 }); 
                 
@@ -659,34 +657,35 @@
                 const result = await response.json();
                 
                 if (result.status === "success") {
-                    // CORRECTION: Sécuriser l'accès au tableau 'data'
-                    const leaderboardRawData = result.data; 
+                    const leaderboardRawData = result.data; // Accès à la clé 'data'
 
-                    // Vérifier que c'est un tableau valide avant de l'utiliser
+                    // CORRECTION: Vérification de l'existence et du type du tableau pour éviter 'length' sur undefined
                     if (!Array.isArray(leaderboardRawData)) {
                         console.error("Erreur de format de données: 'data' n'est pas un tableau.", result);
                         leaderboardData = []; // Initialiser à un tableau vide
                         return;
                     }
 
-                    // Le code client est maintenant protégé contre l'erreur 'undefined (reading 'length')'
+                    // Mappage des données : 'name' et 'distance' sont les clés du serveur
                     leaderboardData = leaderboardRawData.map(e => ({
                         name: (e.name === username ? "Vous" : e.name), 
-                        score: Number(e.score)
+                        score: Number(e.distance) // CORRECTION: Utilisation de 'distance' comme clé de score
                     })).sort((a, b) => b.score - a.score).slice(0, 5); 
                     
                     // Si le joueur n'est pas dans le top 5, l'ajouter à la fin
                     if (!leaderboardData.some(e => e.name === "Vous")) {
-                        leaderboardData.push({ name: "Vous", score: bestScore });
+                        // Assurez-vous que 'bestScore' ou la variable de meilleure distance est accessible ici
+                        leaderboardData.push({ name: "Vous", score: bestScore }); 
                     }
                 } else {
                     console.error("Erreur de chargement du classement (Statut non conforme):", result.message);
                 }
             } catch (e) {
+                // Affichera le message "Erreur de communication avec le serveur (Leaderboard): TypeError: Cannot read properties of undefined (reading 'length')" si l'erreur n'est pas gérée.
+                // Avec la correction ci-dessus, l'erreur est maintenant gérée.
                 console.error("Erreur de communication avec le serveur (Leaderboard):", e.message);
             }
         }
-
 
         // --- LOGIQUE DE JEU RESTANTE ---
 

@@ -643,52 +643,47 @@
             }
         }
 
-        async function fetchLeaderboard() {
-            const body = document.getElementById('rankingTableBody');
-            body.innerHTML = '<tr><td colspan="4">Connexion au serveur...</td></tr>';
-
+        async function loadLeaderboard() {
             try {
-                const response = await fetch(`${SERVER_URL}/stickman_runner_get_leaderboard`);
+                // L'endpoint et la méthode GET/POST dépendent du jeu, mais la logique de traitement est la même.
+                // Je réutilise la méthode GET et l'endpoint de l'exemple du classement Astro Dodge
+                // (à ajuster si c'est pour Stickman Runner ou si la méthode est POST).
+                const response = await fetch(`${SERVER_URL}/astro_dodge_get_leaderboard`, {
+                    method: 'GET'
+                }); 
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const result = await response.json();
-                console.log(response)
                 
                 if (result.status === "success") {
-                    const leaderboard = result.leaderboard;
-                    
-                    body.innerHTML = '';
-                    if (leaderboard.length === 0) {
-                        body.innerHTML = '<tr><td colspan="4">Aucun score disponible.</td></tr>';
+                    // CORRECTION: Sécuriser l'accès au tableau 'data'
+                    const leaderboardRawData = result.data; 
+
+                    // Vérifier que c'est un tableau valide avant de l'utiliser
+                    if (!Array.isArray(leaderboardRawData)) {
+                        console.error("Erreur de format de données: 'data' n'est pas un tableau.", result);
+                        leaderboardData = []; // Initialiser à un tableau vide
                         return;
                     }
 
-                    leaderboard.forEach((rank, index) => {
-                        const grade = getGradeByName(rank.grade) || GRADES[0];
-                        const isPlayer = rank.username === username;
-                        
-                        const row = body.insertRow();
-                        
-                        // Styles de classement
-                        if (index === 0) { row.style.backgroundColor = 'rgba(255, 215, 0, 0.2)'; } 
-                        else if (index === 1) { row.style.backgroundColor = 'rgba(192, 192, 192, 0.2)'; } 
-                        else if (index === 2) { row.style.backgroundColor = 'rgba(205, 127, 50, 0.2)'; }
-
-                        if (isPlayer && index > 2) { 
-                            row.style.backgroundColor = 'rgba(255, 107, 107, 0.2)'; 
-                        }
-                        
-                        row.insertCell().textContent = index + 1;
-                        row.insertCell().innerHTML = `<span class="rank-grade" style="color:${grade.color || '#E0E0E0'};">${grade.symbol}</span>`; 
-                        row.insertCell().textContent = rank.username;
-                        row.insertCell().textContent = rank.best_score;
-                    });
+                    // Le code client est maintenant protégé contre l'erreur 'undefined (reading 'length')'
+                    leaderboardData = leaderboardRawData.map(e => ({
+                        name: (e.name === username ? "Vous" : e.name), 
+                        score: Number(e.score)
+                    })).sort((a, b) => b.score - a.score).slice(0, 5); 
+                    
+                    // Si le joueur n'est pas dans le top 5, l'ajouter à la fin
+                    if (!leaderboardData.some(e => e.name === "Vous")) {
+                        leaderboardData.push({ name: "Vous", score: bestScore });
+                    }
                 } else {
-                    body.innerHTML = `<tr><td colspan="4">Erreur de récupération du classement: ${result.message}</td></tr>`;
+                    console.error("Erreur de chargement du classement (Statut non conforme):", result.message);
                 }
-
-
-            } catch (error) {
-                console.error("Erreur de communication avec le serveur (Leaderboard):", error);
-                body.innerHTML = '<tr><td colspan="4">Impossible de contacter le serveur de classement.</td></tr>';
+            } catch (e) {
+                console.error("Erreur de communication avec le serveur (Leaderboard):", e.message);
             }
         }
 

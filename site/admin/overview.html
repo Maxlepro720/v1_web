@@ -341,13 +341,13 @@ h2 {
         <div class="content-section" id="reports">
             <h2>Rapports & Logs: Log Streams du Serveur</h2>
             <div class="card">
-                <p class="error-message">⚠️ **ALERTE SÉCURITÉ :** Les clés API ne doivent jamais être exposées côté client. Cette fonctionnalité **simule** les logs ou nécessite un relai serveur sécurisé. <br>L'appel direct à Render échoue (Erreur CORS) pour votre sécurité.</p>
-                <button class="btn" id="loadLogsBtn" style="margin-bottom: 20px;">Actualiser les Logs (Simulés)</button>
+                <p class="error-message">⚠️ **ATTENTION :** L'appel direct aux logs échouera probablement à cause de la politique CORS du navigateur (sécurité). La seule solution fonctionnelle est un relai serveur (proxy).</p>
+                <button class="btn" id="loadLogsBtn" style="margin-bottom: 20px;">Actualiser les Logs</button>
                 
-                <div id="logsMessage" class="loading-message" style="display:none;">Chargement des logs simulés...</div>
+                <div id="logsMessage" class="loading-message" style="display:none;">Tentative de chargement des logs...</div>
                 <div id="logsError" class="error-message" style="display:none;"></div>
 
-                <pre id="logContent" style="margin-top: 20px;">Cliquez sur 'Actualiser les Logs (Simulés)' pour commencer...</pre>
+                <pre id="logContent" style="margin-top: 20px;">Cliquez sur 'Actualiser les Logs' pour tenter l'appel direct...</pre>
             </div>
         </div>
     </div>
@@ -355,10 +355,8 @@ h2 {
 
 <script>
     // ----------------------------------------------------
-    // ⚠️ ATTENTION SÉCURITÉ : CLÉ API RENDER (Rendues VIDES pour forcer la SIMULATION)
+    // ⚠️ ATTENTION SÉCURITÉ : CLÉ API RENDER (Laissées comme demandé)
     // ----------------------------------------------------
-    // CORRECTION suite à l'erreur CORS : Les clés sont intentionnellement laissées VIDES
-    // pour forcer la simulation de logs côté client et éviter l'erreur de sécurité.
     const RENDER_API_KEY = "rnd_vAPZzfcps0xotIbfFEwydEwuwKaF"; 
     const RENDER_SERVICE_ID = "srv-d3ao1bpgv73c739csfb0"; 
 
@@ -713,7 +711,7 @@ h2 {
         return hasData ? html : (isSubSection ? 'Aucune statistique trouvée pour ce joueur.' : '<p class="error-message">Aucune statistique trouvée pour ce joueur et ce jeu (ou joueur non initialisé).</p>');
     }
 
-    // --- 3. Logique des Log Streams (Sécurité : Simulation si clé absente) ---
+    // --- 3. Logique des Log Streams (Appel Direct Conservé) ---
     const loadLogsBtn = document.getElementById('loadLogsBtn');
     const logContent = document.getElementById('logContent');
     const logsMessage = document.getElementById('logsMessage');
@@ -723,47 +721,25 @@ h2 {
 
     async function loadServerLogs() {
         logsError.style.display = 'none';
-        logsMessage.textContent = "Tentative de récupération des logs...";
+        logsMessage.textContent = "Tentative de récupération des logs via l'API Render...";
         logsMessage.style.display = 'block';
-        logContent.textContent = "Tentative de connexion à l'API Render (Bloquée pour cause de sécurité)...";
-
-        // VÉRIFICATION DE SÉCURITÉ : Ne jamais utiliser de clés publiques
-        // La condition est vraie (clés vides), donc la simulation est forcée.
-        if (RENDER_API_KEY === "" || RENDER_SERVICE_ID === "") {
-             // Afficher les logs simulés pour fournir une expérience utilisateur
-            await new Promise(r => setTimeout(r, 500)); 
-            
-            const mockLogs = `
-[ ${new Date().toLocaleTimeString()} ] [ATTENTION] Clé API RENDER manquante/non configurée en JS.
-[ ${new Date().toLocaleTimeString()} ] [SÉCURITÉ] L'accès direct aux logs Render est impossible depuis le client web.
-[ ${new Date().toLocaleTimeString()} ] [SIMULATION] Affichage de logs de test.
-${new Date().toLocaleTimeString()} [INFO] Tableau de bord Admin chargé.
-${new Date().toLocaleTimeString()} [REQUEST] Leaderboard Stickman Runner (GET) appelé.
-${new Date().toLocaleTimeString()} [ERROR] Player 'BugReport' not found in Skull Arena table.
-${new Date().toLocaleTimeString()} [INFO] Vérification de l'intégrité des données Supabase... OK.
-${new Date().toLocaleTimeString()} [WARNING] Tentative de connexion non autorisée depuis 127.0.0.1 détectée.
-${new Date().toLocaleTimeString()} [REQUEST] Actualisation des logs demandée.
-            `;
-            
-            logContent.textContent = mockLogs;
-            logsMessage.style.display = 'none';
-            logsError.textContent = "L'API Key Render est manquante. Affichage de logs simulés pour des raisons de sécurité.";
-            logsError.style.display = 'block';
-            return;
-        }
-
-        // Ce bloc est désormais inaccessible grâce à la correction de sécurité ci-dessus.
+        logContent.textContent = "Connexion à l'API Render en cours...";
+        
+        // Ceci est le point où le code client échouerait dans un navigateur standard
+        // pour accéder à une API externe sécurisée sans proxy.
         try {
             const url = `https://api.render.com/v1/services/${RENDER_SERVICE_ID}/logs?limit=100`;
 
             const response = await fetch(url, {
                 headers: {
+                    // Utilisation des clés exposées comme demandé (NON SÉCURISÉ)
                     'Authorization': `Bearer ${RENDER_API_KEY}`,
                     'Accept': 'text/plain' 
                 }
             });
 
             if (!response.ok) {
+                // Si l'erreur n'est pas CORS, elle sera capturée ici (ex: clé invalide)
                 throw new Error(`Erreur HTTP ${response.status}: Impossible d'accéder aux logs.`);
             }
 
@@ -773,8 +749,9 @@ ${new Date().toLocaleTimeString()} [REQUEST] Actualisation des logs demandée.
             logsError.style.display = 'none';
             
         } catch (error) {
-            logsError.textContent = `Erreur FATALE: L'accès direct aux logs de Render a échoué. Cause probable: CORS/Sécurité/Clé invalide. Solution: Implémentez la route /get_server_logs sur votre serveur pour relayer l'appel. Détail: ${error.message}.`;
-            logContent.textContent = `Échec de la récupération des logs.\nDétail: ${error.message}`;
+            // Bloc qui capture l'erreur CORS ou toute autre erreur de connexion
+            logsError.textContent = `Échec de l'accès aux logs : ${error.message}. (Si le message est 'Failed to fetch' ou 'CORS', c'est que l'appel direct est bloqué par la sécurité du navigateur.)`;
+            logContent.textContent = `Échec de la récupération des logs.\nDétail technique: ${error.message}`;
             logsError.style.display = 'block';
             logsMessage.style.display = 'none';
         }

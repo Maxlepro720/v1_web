@@ -370,13 +370,11 @@ async function loadGameData() {
     }
     
     try {
-        // L'API Server côté GET DATA est en POST (selon votre code fourni)
-        const response = await fetch(`${API_BASE_URL}/astro_dodge_get_data`, {
-            method: 'POST', 
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({'username': username})
+        // CORRECTION 1: Rétablissement de la méthode 'GET' pour éviter le 405, 
+        // avec le username en paramètre d'URL.
+        const response = await fetch(`${API_BASE_URL}/astro_dodge_get_data?username=${username}`, {
+            method: 'GET'
+            // Pas de headers ni de body pour la méthode GET
         });
 
         if (!response.ok) {
@@ -388,10 +386,11 @@ async function loadGameData() {
         if (result.status === "success" || result.status === "not_found") {
             const data = result.data || {};
             
-            // CORRECTION 1: Utiliser 'score' et 'credit' au lieu de 'PR_Score' et 'Coins'
+            // Les clés sont 'score' et 'credit' selon l'API Server fournie
             bestScore = Number(data.score) || 0;
             credits = Number(data.credit) || 0;
-            // La clé "Voiture" n'est plus retournée, on laisse la logique de fallback locale:
+            
+            // Logique de déverrouillage des vaisseaux conservée pour la compatibilité locale
             const unlockedCarsString = data.Voiture || "Standard"; 
             const unlockedCarsArray = unlockedCarsString.split(',');
             let selectedShipName = ships[player.type].name; 
@@ -413,13 +412,11 @@ async function loadGameData() {
             transition.nextState = null;
         } else {
             console.error("Erreur de chargement des données (Statut non conforme):", result.message);
-            // Fallback en cas d'erreur de statut de l'API
             state = STATE.START_SCREEN; 
             transition.active = false;
         }
     } catch (e) {
         console.error("Erreur de connexion API au chargement:", e.message);
-        // Fallback en cas d'erreur de connexion
         state = STATE.START_SCREEN; 
         transition.active = false;
     }
@@ -430,22 +427,19 @@ async function saveGameData(newScore = null) {
 
     const unlockedCarsNames = ships.filter(s => s.unlocked).map(s => s.name).join(',');
 
-    // Détermine le score de la run actuelle (variable globale 'score')
-    // newScore != null indique généralement un appel après la fin de la partie
-    const currentRunScore = (newScore !== null) ? Math.floor(score) : 0;
+    // newScore n'est pas utilisé directement, le score de la partie en cours (score global) est envoyé
+    const currentRunScore = Math.floor(score);
     
     const dataToSave = {
         username: username,
-        // CORRECTION 2: Utilisation des clés 'credit' et 'score'
+        // Les clés sont 'credit' et 'score' selon l'API Server fournie
         credit: credits, 
         score: currentRunScore, 
-        Voiture: unlockedCarsNames // Conservé pour la logique locale
+        Voiture: unlockedCarsNames
     };
     
-    // L'ancienne logique pour newScore n'est plus nécessaire car le serveur fait la comparaison.
-
     try {
-        // CORRECTION 3: Changement d'endpoint à '/astro_dodge_update_data'
+        // CORRECTION 2: Endpoint '/astro_dodge_update_data' et méthode POST
         const response = await fetch(`${API_BASE_URL}/astro_dodge_update_data`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -457,7 +451,6 @@ async function saveGameData(newScore = null) {
         }
         
         const result = await response.json();
-        // Le code original ne faisait rien avec le résultat de la sauvegarde, on conserve ce comportement
         // if (result.status !== "success") { console.error("Erreur à la sauvegarde des données:", result.message); }
         
     } catch (e) {
@@ -467,8 +460,10 @@ async function saveGameData(newScore = null) {
 
 async function loadLeaderboard() {
     try {
-        // CORRECTION 4: Changement d'endpoint à '/astro_dodge_get_leaderboard' et méthode GET
-        const response = await fetch(`${API_BASE_URL}/astro_dodge_get_leaderboard`); 
+        // CORRECTION 3: Endpoint '/astro_dodge_get_leaderboard' et méthode GET (selon l'API Server fournie)
+        const response = await fetch(`${API_BASE_URL}/astro_dodge_get_leaderboard`, {
+            method: 'GET'
+        }); 
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -477,15 +472,14 @@ async function loadLeaderboard() {
         const result = await response.json();
         
         if (result.status === "success") {
-            // CORRECTION 5: Utilisation de 'result.data' et de la clé 'score'
+            // Utilisation de 'result.data' et de la clé 'score' (selon l'API Server fournie)
             leaderboardData = result.data.map(e => ({
                 name: (e.username === username ? "Vous" : e.username), 
-                score: Number(e.score) // Utilisation de 'e.score'
+                score: Number(e.score)
             })).sort((a, b) => b.score - a.score).slice(0, 5); 
             
-            // Si le joueur n'est pas dans le top 5, l'ajouter à la fin pour référence
+            // Si le joueur n'est pas dans le top 5, l'ajouter à la fin
             if (!leaderboardData.some(e => e.name === "Vous")) {
-                // S'assurer que le meilleur score est celui du joueur
                 leaderboardData.push({ name: "Vous", score: bestScore });
             }
         } else {
@@ -498,7 +492,6 @@ async function loadLeaderboard() {
 // =================================================================
 // --- FIN LOGIQUE API CORRIGÉE ---
 // =================================================================
-
 canvas.addEventListener("click", e=>{
     const coords = getScaledMouseCoordinates(e);
     mouseX = coords.x;

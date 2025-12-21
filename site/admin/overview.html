@@ -137,11 +137,10 @@ h2 {
     font-size: 14px;
     color: var(--light-text);
 }
+/* Base style for inputs and selects */
 .form-control, .select-control {
     width: 100%;
     padding: 10px 15px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 10px;
     color: var(--text-color);
     font-size: 15px;
@@ -149,8 +148,23 @@ h2 {
     -webkit-appearance: none;
     appearance: none;
 }
+.form-control {
+    background: rgba(255, 255, 255, 0.1); 
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+/* Style Spécifique pour le menu déroulant (COULEUR CHANGÉE ICI) */
+.select-control {
+    background: rgba(29, 233, 182, 0.15); /* Utilisation de la secondary-color transparente */
+    border: 1px solid var(--secondary-color); /* Bordure en secondary-color */
+    /* Petite flèche personnalisée pour les selects */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231de9b6'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 10px;
+    padding-right: 35px; /* Pour laisser de l'espace à la flèche */
+}
 .form-control:focus, .select-control:focus {
-    border-color: var(--primary-color);
+    border-color: var(--primary-color); 
     box-shadow: 0 0 10px rgba(0, 191, 255, 0.4);
     outline: none;
 }
@@ -325,10 +339,10 @@ h2 {
     const AVAILABLE_GAMES = {
         'astro': 'Astro Dodge', 
         'stickman_runner': 'Stickman Runner',
-        'skull_arena': 'Skull Arena'
+        'skull_arena': 'Skull Arena' 
     };
     
-    // --- Gestion des Onglets ---
+    // --- Gestion des Onglets (Non Modifiée) ---
     const navItems = document.querySelectorAll('.nav-item');
     const contentSections = document.querySelectorAll('.content-section');
 
@@ -347,9 +361,9 @@ h2 {
         });
     });
 
-    // --- Fonction utilitaire pour les API ---
+    // --- Fonction utilitaire pour les API (Non Modifiée) ---
     async function fetchData(endpoint, method = 'GET', body = null) {
-        // L'URL est construite comme ceci: https://project-3-api-2bgb.onrender.com/astro/leaderboard
+        // L'URL est construite: https://project-3-api-2bgb.onrender.com/endpoint
         const url = `${API_BASE_URL}/${endpoint}`; 
         
         const options = {
@@ -362,13 +376,9 @@ h2 {
             options.body = JSON.stringify(body);
         }
         
-        // CORRECTION IMPORTANTE POUR LA MÉTHODE GET: 
-        // Si la méthode est GET et qu'il n'y a pas de corps, on s'assure que l'en-tête Content-Type n'est pas envoyé.
-        // Cela permet souvent de résoudre les erreurs 405 sur des serveurs distants.
         if (method === 'GET' && body === null) {
              delete options.headers['Content-Type'];
         }
-
 
         try {
             const response = await fetch(url, options);
@@ -391,7 +401,7 @@ h2 {
         }
     }
 
-    // --- Remplissage des menus déroulants de jeux ---
+    // --- Remplissage des menus déroulants de jeux (Non Modifiée) ---
     function populateGameSelectors() {
         const rankingGameSelect = document.getElementById('rankingGameSelect');
         const playerGameSelect = document.getElementById('playerGameSelect');
@@ -410,7 +420,7 @@ h2 {
     
     populateGameSelectors();
 
-    // --- 1. Logique du Classement (CORRIGÉE en GET pour respecter le serveur) ---
+    // --- 1. Logique du Classement (FIX SKULL ARENA) ---
     const loadRankingBtn = document.getElementById('loadRankingBtn');
     const rankingGameSelect = document.getElementById('rankingGameSelect');
     const rankingTableContainer = document.getElementById('rankingTableContainer');
@@ -432,9 +442,18 @@ h2 {
         rankingMessage.style.display = 'block';
 
         try {
-            // CORRECTION FINALE : Utilisation de la méthode GET et retrait du corps, comme le veut la définition serveur.
-            const endpoint = `${gameId}/leaderboard`;
-            const data = await fetchData(endpoint, 'GET'); 
+            let endpoint;
+            let method = 'GET';
+
+            if (gameId === 'skull_arena') {
+                // CORRECTION SPÉCIFIQUE pour Skull Arena : utilise la route globale.
+                endpoint = `skull_arena_get_leaderboard`; 
+            } else {
+                // Logique Générique: /astro/leaderboard, /stickman_runner/leaderboard
+                endpoint = `${gameId}/leaderboard`;
+            }
+
+            const data = await fetchData(endpoint, method); 
             
             const leaderboardData = data.leaderboard || [];
 
@@ -444,7 +463,7 @@ h2 {
             rankingMessage.style.display = 'none';
 
         } catch (error) {
-            rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId}/leaderboard, méthode GET): ${error.message}. Si l'erreur HTTP 405 persiste sur le serveur distant, re-tenter avec 'POST'.`;
+            rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId === 'skull_arena' ? 'skull_arena_get_leaderboard' : gameId + '/leaderboard'}, méthode GET): ${error.message}.`;
             rankingError.style.display = 'block';
             rankingMessage.style.display = 'none';
         }
@@ -458,8 +477,8 @@ h2 {
         let html = '<table class="ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Meilleur Score</th><th>Grade</th></tr></thead><tbody>';
         
         rankingData.forEach((player, index) => {
-             // Assure la compatibilité entre Astro Dodge (PR_Score) et Stickman Runner (best_score)
-            const score = player.PR_Score !== undefined ? player.PR_Score : (player.best_score !== undefined ? player.best_score : 0);
+             // Assure la compatibilité entre les différentes structures de données de jeux (PR_Score, best_score, etc.)
+            const score = player.PR_Score !== undefined ? player.PR_Score : (player.best_score !== undefined ? player.best_score : (player.Best_Vague !== undefined ? player.Best_Vague : 0));
             
             html += `
                 <tr>
@@ -476,7 +495,7 @@ h2 {
     }
 
 
-    // --- 2. Logique des Statistiques de Joueur (Alignée: GET /load_data/<username>) ---
+    // --- 2. Logique des Statistiques de Joueur (FIX SKULL ARENA) ---
     const loadPlayerStatsBtn = document.getElementById('loadPlayerStatsBtn');
     const playerUsernameInput = document.getElementById('playerUsername');
     const playerGameSelect = document.getElementById('playerGameSelect');
@@ -502,14 +521,39 @@ h2 {
         statsMessage.style.display = 'block';
 
         try {
-            // Aligner sur le code serveur (/gameId/load_data/<username>) et méthode GET
-            const endpoint = `${gameId}/load_data/${username}`; 
-            
-            // Méthode GET
-            const data = await fetchData(endpoint, 'GET'); 
+            let endpoint;
+            let method;
+            let body = null;
 
-            // Utilise la clé 'data' si elle existe (renvoyée par Astro Dodge en cas de succès ou non_found)
-            const statsToDisplay = data.data || data; 
+            if (gameId === 'skull_arena') {
+                // CORRECTION SPÉCIFIQUE pour Skull Arena : POST et route unique + body JSON
+                endpoint = `skull_arena_get_data`;
+                method = 'POST';
+                body = { username: username };
+            } else {
+                // Logique Générique: GET /<gameId>/load_data/<username>
+                endpoint = `${gameId}/load_data/${username}`; 
+                method = 'GET';
+            }
+
+            const data = await fetchData(endpoint, method, body); 
+
+            // Gère le cas où les données sont enveloppées dans une clé 'data'
+            let statsToDisplay = data.data || data; 
+            
+            // Aplatis les "levels" pour Skull Arena (si présents) pour un affichage simple
+            if (gameId === 'skull_arena' && statsToDisplay.levels) {
+                // Renomme les clés 'damage', 'range', etc. pour la clarté avant d'aplatir
+                const levels = statsToDisplay.levels;
+                statsToDisplay = {
+                    ...statsToDisplay,
+                    "UP_Degat": levels.damage,
+                    "UP_Portée": levels.range,
+                    "UP_Vitesse": levels.speed,
+                    "UP_Cadence": levels.fire
+                };
+                delete statsToDisplay.levels;
+            }
 
             statsResultsContainer.innerHTML = generatePlayerStats(statsToDisplay);
             statsPlayerTitle.textContent = username;
@@ -518,15 +562,15 @@ h2 {
             statsMessage.style.display = 'none';
 
         } catch (error) {
-            statsError.textContent = `Erreur lors du chargement des stats (route: ${gameId}/load_data/${username}, méthode GET): ${error.message}.`;
+            statsError.textContent = `Erreur lors du chargement des stats (route: ${gameId === 'skull_arena' ? 'skull_arena_get_data' : gameId + '/load_data/' + username}, méthode ${gameId === 'skull_arena' ? 'POST' : 'GET'}): ${error.message}.`;
             statsError.style.display = 'block';
             statsMessage.style.display = 'none';
         }
     });
 
     function generatePlayerStats(statsData) {
-        if (!statsData || Object.keys(statsData).length === 0 || statsData.status === "error") {
-            return '<p class="error-message">Aucune statistique trouvée pour ce joueur et ce jeu.</p>';
+        if (!statsData || Object.keys(statsData).length === 0 || statsData.status === "error" || statsData.message === "Données Skull Arena introuvables. Initialisation...") {
+            return '<p class="error-message">Aucune statistique trouvée pour ce joueur et ce jeu (ou joueur non initialisé).</p>';
         }
 
         // Clés à exclure de l'affichage
@@ -535,13 +579,18 @@ h2 {
 
         for (const key in statsData) {
             if (statsData.hasOwnProperty(key) && !keysToExclude.includes(key)) {
+                const value = statsData[key];
+                
+                // On s'assure que ce n'est pas un objet (après l'aplatissement de Skull Arena)
+                if (typeof value === 'object' && value !== null) continue; 
+                
                 // Formate les clés comme 'best_score' en 'Best Score'
                 const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 
                 html += `
                     <div>
                         <span>${formattedKey} :</span>
-                        <strong>${statsData[key]}</strong>
+                        <strong>${value}</strong>
                     </div>
                 `;
             }

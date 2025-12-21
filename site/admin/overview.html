@@ -321,10 +321,9 @@ h2 {
     // --- Configuration API ---
     const API_BASE_URL = "https://project-3-api-2bgb.onrender.com";
     
-    // LISTE DES JEUX
+    // LISTE DES JEUX (Alignée sur les routes serveur: /astro/, /stickman_runner/, /skull_arena/)
     const AVAILABLE_GAMES = {
-        // CORRECTION 1: Utilisation de 'astro' pour correspondre au préfixe des routes serveur (/astro/...)
-        'astro': 'Astro Dodge',
+        'astro': 'Astro Dodge', 
         'stickman_runner': 'Stickman Runner',
         'skull_arena': 'Skull Arena'
     };
@@ -362,6 +361,14 @@ h2 {
             options.headers['Content-Type'] = 'application/json';
             options.body = JSON.stringify(body);
         }
+        
+        // CORRECTION IMPORTANTE POUR LA MÉTHODE GET: 
+        // Si la méthode est GET et qu'il n'y a pas de corps, on s'assure que l'en-tête Content-Type n'est pas envoyé.
+        // Cela permet souvent de résoudre les erreurs 405 sur des serveurs distants.
+        if (method === 'GET' && body === null) {
+             delete options.headers['Content-Type'];
+        }
+
 
         try {
             const response = await fetch(url, options);
@@ -403,7 +410,7 @@ h2 {
     
     populateGameSelectors();
 
-    // --- 1. Logique du Classement (Maintien de POST pour contourner le 405 du serveur live) ---
+    // --- 1. Logique du Classement (CORRIGÉE en GET pour respecter le serveur) ---
     const loadRankingBtn = document.getElementById('loadRankingBtn');
     const rankingGameSelect = document.getElementById('rankingGameSelect');
     const rankingTableContainer = document.getElementById('rankingTableContainer');
@@ -425,10 +432,9 @@ h2 {
         rankingMessage.style.display = 'block';
 
         try {
-            // RÉTENTION POST: L'endpoint reste `${gameId}/leaderboard` mais la méthode est POST (pour corriger le 405 sur le serveur live)
+            // CORRECTION FINALE : Utilisation de la méthode GET et retrait du corps, comme le veut la définition serveur.
             const endpoint = `${gameId}/leaderboard`;
-            const body = { game: gameId }; // Corps requis par le serveur live pour POST
-            const data = await fetchData(endpoint, 'POST', body); 
+            const data = await fetchData(endpoint, 'GET'); 
             
             const leaderboardData = data.leaderboard || [];
 
@@ -438,7 +444,7 @@ h2 {
             rankingMessage.style.display = 'none';
 
         } catch (error) {
-            rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId}/leaderboard, méthode POST): ${error.message}.`;
+            rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId}/leaderboard, méthode GET): ${error.message}. Si l'erreur HTTP 405 persiste sur le serveur distant, re-tenter avec 'POST'.`;
             rankingError.style.display = 'block';
             rankingMessage.style.display = 'none';
         }
@@ -470,7 +476,7 @@ h2 {
     }
 
 
-    // --- 2. Logique des Statistiques de Joueur (CORRIGÉE: Utilisation de GET /load_data/<username>) ---
+    // --- 2. Logique des Statistiques de Joueur (Alignée: GET /load_data/<username>) ---
     const loadPlayerStatsBtn = document.getElementById('loadPlayerStatsBtn');
     const playerUsernameInput = document.getElementById('playerUsername');
     const playerGameSelect = document.getElementById('playerGameSelect');
@@ -496,10 +502,10 @@ h2 {
         statsMessage.style.display = 'block';
 
         try {
-            // CORRECTION 2: Aligner sur le code serveur (/gameId/load_data/<username>) et méthode GET
+            // Aligner sur le code serveur (/gameId/load_data/<username>) et méthode GET
             const endpoint = `${gameId}/load_data/${username}`; 
             
-            // Méthode GET (comme défini par le serveur pour load_data)
+            // Méthode GET
             const data = await fetchData(endpoint, 'GET'); 
 
             // Utilise la clé 'data' si elle existe (renvoyée par Astro Dodge en cas de succès ou non_found)

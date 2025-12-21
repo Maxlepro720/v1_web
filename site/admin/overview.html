@@ -318,19 +318,16 @@ h2 {
 </div>
 
 <script>
-    // --- Configuration API (MISE À JOUR) ---
+    // --- Configuration API ---
     const API_BASE_URL = "https://project-3-api-2bgb.onrender.com";
     
-    // LISTE DES JEUX : Les 3 jeux confirmés avec classement
+    // LISTE DES JEUX
     const AVAILABLE_GAMES = {
         'astro_dodge': 'Astro Dodge',
         'stickman_runner': 'Stickman Runner',
         'skull_arena': 'Skull Arena'
     };
     
-    // Tous les jeux listés ont un classement (pour la clarté, mais GAMES_WITH_LEADERBOARD devient redondant)
-    const GAMES_WITH_LEADERBOARD = ['astro_dodge', 'stickman_runner', 'skull_arena'];
-
     // --- Gestion des Onglets ---
     const navItems = document.querySelectorAll('.nav-item');
     const contentSections = document.querySelectorAll('.content-section');
@@ -360,15 +357,26 @@ h2 {
                 'Content-Type': 'application/json',
             }
         };
-        if (body) {
+        // N'ajoute le corps que si 'body' n'est pas null
+        if (body) { 
             options.body = JSON.stringify(body);
         }
 
         try {
             const response = await fetch(url, options);
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Erreur HTTP ${response.status}`);
+                // Tentative d'extraction du message d'erreur du corps de la réponse
+                const errorText = await response.text(); 
+                let errorData = {};
+                try {
+                    // Si la réponse est un JSON d'erreur, on l'utilise
+                    errorData = JSON.parse(errorText);
+                } catch (e) {
+                    // Sinon, on utilise le statut HTTP
+                }
+                
+                const errorMessage = errorData.message || `Erreur HTTP ${response.status} (${response.statusText})`;
+                throw new Error(errorMessage);
             }
             return await response.json();
         } catch (error) {
@@ -401,7 +409,7 @@ h2 {
     // Initialiser les sélecteurs au chargement
     populateGameSelectors();
 
-    // --- 1. Logique du Classement ---
+    // --- 1. Logique du Classement (Utilise POST pour éviter le 405) ---
     const loadRankingBtn = document.getElementById('loadRankingBtn');
     const rankingGameSelect = document.getElementById('rankingGameSelect');
     const rankingTableContainer = document.getElementById('rankingTableContainer');
@@ -423,9 +431,9 @@ h2 {
         rankingMessage.style.display = 'block';
 
         try {
-            // Requête API standardisée: /{jeu}/leaderboard
+            // Utilisation de POST pour le classement, sans corps de requête
             const endpoint = `${gameId}/leaderboard`;
-            const data = await fetchData(endpoint); 
+            const data = await fetchData(endpoint, 'POST'); 
             
             const leaderboardData = data.leaderboard || [];
 
@@ -435,7 +443,7 @@ h2 {
             rankingMessage.style.display = 'none';
 
         } catch (error) {
-            rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId}/leaderboard): ${error.message}`;
+            rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId}/leaderboard, méthode POST): ${error.message}.`;
             rankingError.style.display = 'block';
             rankingMessage.style.display = 'none';
         }
@@ -465,7 +473,7 @@ h2 {
     }
 
 
-    // --- 2. Logique des Statistiques de Joueur ---
+    // --- 2. Logique des Statistiques de Joueur (Utilise POST) ---
     const loadPlayerStatsBtn = document.getElementById('loadPlayerStatsBtn');
     const playerUsernameInput = document.getElementById('playerUsername');
     const playerGameSelect = document.getElementById('playerGameSelect');
@@ -491,9 +499,12 @@ h2 {
         statsMessage.style.display = 'block';
 
         try {
-            // Requête API standardisée pour les stats: /{jeu}/stats?id={username}
-            const endpoint = `${gameId}/stats?id=${username}`;
-            const data = await fetchData(endpoint); 
+            // Requête POST avec ID dans le body
+            const endpoint = `${gameId}/stats`; 
+            const body = { id: username }; // L'ID du joueur est envoyé dans le corps
+            
+            // Appel fetchData avec la méthode 'POST' et le corps
+            const data = await fetchData(endpoint, 'POST', body); 
 
             statsResultsContainer.innerHTML = generatePlayerStats(data);
             statsPlayerTitle.textContent = username;
@@ -502,7 +513,7 @@ h2 {
             statsMessage.style.display = 'none';
 
         } catch (error) {
-            statsError.textContent = `Erreur lors du chargement des stats (route: ${gameId}/stats): ${error.message}.`;
+            statsError.textContent = `Erreur lors du chargement des stats (route: ${gameId}/stats, méthode POST): ${error.message}.`;
             statsError.style.display = 'block';
             statsMessage.style.display = 'none';
         }

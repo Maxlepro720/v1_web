@@ -193,6 +193,14 @@ h2 {
     border-collapse: collapse;
     margin-top: 20px;
 }
+/* Ajout du curseur pointer pour les lignes cliquables */
+.ranking-table tbody tr {
+    cursor: pointer; 
+}
+.ranking-table tbody tr:hover {
+    background: rgba(0, 191, 255, 0.05); /* Highlight on hover for click */
+}
+
 .ranking-table th, .ranking-table td {
     padding: 15px;
     text-align: left;
@@ -205,20 +213,18 @@ h2 {
     font-size: 14px;
     background: rgba(0, 191, 255, 0.05);
 }
-.ranking-table tr:hover {
-    background: rgba(255, 255, 255, 0.03);
-}
+
 
 /* Affichage des statistiques */
 .stats-results {
-    margin-top: 20px;
+    margin-top: 5px; /* Réduit l'espace car le titre est dans la sous-carte */
 }
 .stats-results div {
     background: rgba(255, 255, 255, 0.08);
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    font-size: 16px;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 15px;
     display: flex;
     justify-content: space-between;
 }
@@ -272,7 +278,7 @@ h2 {
         <div class="content-section active" id="ranking">
             <h2>Classement Global</h2>
             <div class="card">
-                <p>Affichez le classement des meilleurs joueurs pour un jeu spécifique.</p>
+                <p>Affichez le classement des meilleurs joueurs pour un jeu spécifique. Cliquez sur un joueur pour voir toutes ses statistiques.</p>
                 <div class="form-group">
                     <label for="rankingGameSelect">Sélectionner un Jeu :</label>
                     <select id="rankingGameSelect" class="select-control">
@@ -293,22 +299,17 @@ h2 {
         <div class="content-section" id="player-stats">
             <h2>Statistiques de Joueur</h2>
             <div class="card">
-                <p>Recherchez les statistiques détaillées d'un joueur pour un jeu donné.</p>
+                <p>Recherchez les statistiques détaillées d'un joueur pour **tous** les jeux.</p>
                 <div class="form-group">
                     <label for="playerUsername">Nom d'utilisateur :</label>
                     <input type="text" id="playerUsername" class="form-control" placeholder="Entrez l'ID du joueur">
                 </div>
-                <div class="form-group">
-                    <label for="playerGameSelect">Sélectionner un Jeu :</label>
-                    <select id="playerGameSelect" class="select-control">
-                        </select>
-                </div>
-                <button class="btn" id="loadPlayerStatsBtn">Charger les Statistiques</button>
+                <button class="btn" id="loadPlayerStatsBtn">Charger les Statistiques pour Tous les Jeux</button>
             </div>
 
             <div class="card" id="statsResultCard" style="display:none;">
-                <h3>Statistiques pour <span id="statsPlayerTitle"></span> (<span id="statsGameTitle"></span>)</h3>
-                <div id="statsResultsContainer" class="stats-results">
+                <h3>Statistiques pour <span id="statsPlayerTitle"></span></h3>
+                <div id="statsResultsContainer">
                     </div>
                 <div id="statsMessage" class="loading-message" style="display:none;">Chargement...</div>
                 <div id="statsError" class="error-message" style="display:none;"></div>
@@ -341,28 +342,36 @@ h2 {
         'skull_arena': 'Skull Arena' 
     };
     
-    // --- Gestion des Onglets (Non Modifiée) ---
+    // --- Gestion des Onglets ---
     const navItems = document.querySelectorAll('.nav-item');
     const contentSections = document.querySelectorAll('.content-section');
+    const playerUsernameInput = document.getElementById('playerUsername');
+
+    function switchTab(targetId) {
+        navItems.forEach(i => i.classList.remove('active'));
+        contentSections.forEach(s => s.classList.remove('active'));
+
+        const targetNavItem = document.querySelector(`.nav-item[data-tab="${targetId}"]`);
+        if (targetNavItem) {
+            targetNavItem.classList.add('active');
+            document.getElementById(targetId).classList.add('active');
+        }
+    }
 
     navItems.forEach(item => {
         item.addEventListener('click', () => {
-            navItems.forEach(i => i.classList.remove('active'));
-            contentSections.forEach(s => s.classList.remove('active'));
-
-            item.classList.add('active');
             const targetId = item.getAttribute('data-tab');
-            document.getElementById(targetId).classList.add('active');
+            switchTab(targetId);
             
-            if(targetId === 'ranking' || targetId === 'player-stats') {
-                populateGameSelectors();
+            if(targetId === 'ranking') {
+                populateRankingGameSelector();
             }
+            // Pas besoin de populate pour player-stats car il n'y a plus de select
         });
     });
 
-    // --- Fonction utilitaire pour les API (Non Modifiée) ---
+    // --- Fonction utilitaire pour les API ---
     async function fetchData(endpoint, method = 'GET', body = null) {
-        // L'URL est construite: https://project-3-api-2bgb.onrender.com/endpoint
         const url = `${API_BASE_URL}/${endpoint}`; 
         
         const options = {
@@ -400,26 +409,22 @@ h2 {
         }
     }
 
-    // --- Remplissage des menus déroulants de jeux (Non Modifiée) ---
-    function populateGameSelectors() {
+    // --- Remplissage du menu déroulant de classement ---
+    function populateRankingGameSelector() {
         const rankingGameSelect = document.getElementById('rankingGameSelect');
-        const playerGameSelect = document.getElementById('playerGameSelect');
         
-        rankingGameSelect.innerHTML = '';
-        playerGameSelect.innerHTML = '';
-        
+        // Empêche le remplissage multiple
+        if (rankingGameSelect.options.length > 0) return;
+
         for (const [key, value] of Object.entries(AVAILABLE_GAMES)) {
-            const option1 = new Option(value, key);
-            rankingGameSelect.add(option1);
-            
-            const option2 = new Option(value, key);
-            playerGameSelect.add(option2);
+            const option = new Option(value, key);
+            rankingGameSelect.add(option);
         }
     }
     
-    populateGameSelectors();
+    populateRankingGameSelector();
 
-    // --- 1. Logique du Classement (CORRECTION MAJEURE ICI) ---
+    // --- 1. Logique du Classement (SANS GRADE + Clic vers Stats) ---
     const loadRankingBtn = document.getElementById('loadRankingBtn');
     const rankingGameSelect = document.getElementById('rankingGameSelect');
     const rankingTableContainer = document.getElementById('rankingTableContainer');
@@ -445,30 +450,21 @@ h2 {
             let method = 'GET';
 
             if (gameId === 'skull_arena') {
-                // Route spécifique confirmée pour Skull Arena
                 endpoint = `skull_arena_get_leaderboard`; 
             } else {
-                // Logique Générique: /astro/leaderboard, /stickman_runner/leaderboard
                 endpoint = `${gameId}/leaderboard`;
             }
 
             const data = await fetchData(endpoint, method); 
             
-            let leaderboardData = [];
-
-            if (gameId === 'skull_arena') {
-                // CORRECTION: Pour Skull Arena, la liste est sous la clé 'data'
-                leaderboardData = data.data || [];
-            } else {
-                // Pour les autres jeux, la liste est sous la clé 'leaderboard'
-                leaderboardData = data.leaderboard || [];
-            }
+            let leaderboardData = (gameId === 'skull_arena') ? (data.data || []) : (data.leaderboard || []);
 
             rankingTableContainer.innerHTML = generateRankingTable(leaderboardData, gameId); 
             rankingGameTitle.textContent = AVAILABLE_GAMES[gameId];
             rankingResultCard.style.display = 'block';
             rankingMessage.style.display = 'none';
-
+            
+            setupRankingClickListeners(); // Démarrage des écouteurs de clic
         } catch (error) {
             rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId === 'skull_arena' ? 'skull_arena_get_leaderboard' : gameId + '/leaderboard'}, méthode GET): ${error.message}.`;
             rankingError.style.display = 'block';
@@ -485,27 +481,23 @@ h2 {
             return `<p class="error-message">${message}</p>`;
         }
 
-        let html = '<table class="ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Meilleur Score</th><th>Grade</th></tr></thead><tbody>';
+        // RETRAIT DU GRADE: Header simplifié
+        let html = '<table class="ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Meilleur Score</th></tr></thead><tbody>';
         
         rankingData.forEach((player, index) => {
-             // Détermination dynamique des clés pour la compatibilité:
-             // 1. Skull Arena: 'name' et 'wave' (du mapping serveur)
-             // 2. Astro/Stickman Runner: 'username' et ('PR_Score' ou 'best_score')
-            
             const username = player.username || player.name || 'Inconnu';
+            
             const score = player.PR_Score !== undefined ? player.PR_Score : 
                             (player.best_score !== undefined ? player.best_score : 
-                            (player.Best_Vague !== undefined ? player.Best_Vague : // Ancienne clé directe
-                            (player.wave !== undefined ? player.wave : 0))); // Nouvelle clé mappée du serveur Skull Arena
+                            (player.Best_Vague !== undefined ? player.Best_Vague : 
+                            (player.wave !== undefined ? player.wave : 0))); 
             
-            const grade = player.grade || 'N/A'; // La grade n'est pas retournée par Skull Arena (selon votre code serveur), donc N/A
-
+            // Ajout de data-username pour la fonction de clic
             html += `
-                <tr>
+                <tr data-username="${username}"> 
                     <td>${index + 1}</td>
                     <td>${username}</td>
                     <td>${score}</td>
-                    <td>${grade}</td>
                 </tr>
             `;
         });
@@ -514,93 +506,147 @@ h2 {
         return html;
     }
 
+    function setupRankingClickListeners() {
+        document.querySelectorAll('.ranking-table tbody tr').forEach(row => {
+            row.addEventListener('click', (event) => {
+                const username = row.getAttribute('data-username');
+                if (username) {
+                    // 1. Switch tab
+                    switchTab('player-stats');
+                    // 2. Set username input
+                    playerUsernameInput.value = username;
+                    // 3. Load stats for that user (all games)
+                    loadAllPlayerStats(username);
+                }
+            });
+        });
+    }
 
-    // --- 2. Logique des Statistiques de Joueur (Non Modifiée, elle était fonctionnelle) ---
+
+    // --- 2. Logique des Statistiques de Joueur (Multi-Jeux) ---
     const loadPlayerStatsBtn = document.getElementById('loadPlayerStatsBtn');
-    const playerUsernameInput = document.getElementById('playerUsername');
-    const playerGameSelect = document.getElementById('playerGameSelect');
     const statsResultsContainer = document.getElementById('statsResultsContainer');
     const statsPlayerTitle = document.getElementById('statsPlayerTitle');
-    const statsGameTitle = document.getElementById('statsGameTitle');
     const statsResultCard = document.getElementById('statsResultCard');
     const statsMessage = document.getElementById('statsMessage');
     const statsError = document.getElementById('statsError');
 
-    loadPlayerStatsBtn.addEventListener('click', async () => {
+    loadPlayerStatsBtn.addEventListener('click', () => {
         const username = playerUsernameInput.value.trim();
-        const gameId = playerGameSelect.value;
-        
-        if (!username || !gameId) {
-            alert("Veuillez remplir l'ID du joueur et sélectionner un jeu.");
+        if (!username) {
+            alert("Veuillez entrer l'ID du joueur.");
             return;
         }
-
+        loadAllPlayerStats(username);
+    });
+    
+    // Nouvelle fonction pour charger les stats de tous les jeux
+    async function loadAllPlayerStats(username) {
         statsResultCard.style.display = 'none';
         statsError.style.display = 'none';
-        statsMessage.textContent = "Chargement des statistiques...";
+        statsMessage.textContent = `Chargement des statistiques pour ${username}...`;
         statsMessage.style.display = 'block';
+        statsResultsContainer.innerHTML = '';
+        statsPlayerTitle.textContent = username;
+        statsResultCard.style.display = 'block';
 
-        try {
-            let endpoint;
-            let method;
-            let body = null;
+        const gameResults = {};
+        let successCount = 0;
 
-            if (gameId === 'skull_arena') {
-                // Route spécifique confirmée pour Skull Arena (POST + body JSON)
-                endpoint = `skull_arena_get_data`;
-                method = 'POST';
-                body = { username: username };
-            } else {
-                // Logique Générique: GET /<gameId>/load_data/<username>
-                endpoint = `${gameId}/load_data/${username}`; 
-                method = 'GET';
+        // Boucle pour charger les stats de tous les jeux
+        for (const [gameId, gameName] of Object.entries(AVAILABLE_GAMES)) {
+            try {
+                let endpoint;
+                let method;
+                let body = null;
+
+                if (gameId === 'skull_arena') {
+                    endpoint = `skull_arena_get_data`;
+                    method = 'POST';
+                    body = { username: username };
+                } else {
+                    endpoint = `${gameId}/load_data/${username}`; 
+                    method = 'GET';
+                }
+
+                const data = await fetchData(endpoint, method, body);
+                gameResults[gameId] = data.data || data; 
+
+            } catch (error) {
+                gameResults[gameId] = { status: "error", message: `Erreur de connexion: ${error.message}` };
             }
-
-            const data = await fetchData(endpoint, method, body); 
-
-            // Gère le cas où les données sont enveloppées dans une clé 'data'
-            let statsToDisplay = data.data || data; 
-            
-            // Aplatis les "levels" de Skull Arena pour un affichage clair
-            if (gameId === 'skull_arena' && (statsToDisplay.levels || statsToDisplay.levels === 0)) {
-                // S'assurer que le niveau d'imbrication est géré correctement, y compris les cas "not_found"
-                const levels = statsToDisplay.levels || {};
-                
-                statsToDisplay = {
-                    ...statsToDisplay,
-                    "Crânes": statsToDisplay.skulls, 
-                    "Meilleure Vague": statsToDisplay.best_wave, 
-                    "UP_Dégât": levels.damage,
-                    "UP_Portée": levels.range,
-                    "UP_Vitesse_Perso": levels.speed,
-                    "UP_Cadence_Tir": levels.fire
-                };
-                delete statsToDisplay.levels;
-                delete statsToDisplay.skulls;
-                delete statsToDisplay.best_wave;
-            }
-
-            statsResultsContainer.innerHTML = generatePlayerStats(statsToDisplay);
-            statsPlayerTitle.textContent = username;
-            statsGameTitle.textContent = AVAILABLE_GAMES[gameId];
-            statsResultCard.style.display = 'block';
-            statsMessage.style.display = 'none';
-
-        } catch (error) {
-            statsError.textContent = `Erreur lors du chargement des stats (route: ${gameId === 'skull_arena' ? 'skull_arena_get_data' : gameId + '/load_data/' + username}, méthode ${gameId === 'skull_arena' ? 'POST' : 'GET'}): ${error.message}.`;
-            statsError.style.display = 'block';
-            statsMessage.style.display = 'none';
         }
-    });
 
-    function generatePlayerStats(statsData) {
+        // Rendu des résultats
+        let htmlContent = '';
+        
+        for (const [gameId, gameName] of Object.entries(AVAILABLE_GAMES)) {
+            const statsData = gameResults[gameId];
+            let gameHtml;
+
+            if (statsData.status === "error") {
+                gameHtml = `<p class="error-message" style="margin-top: 10px;">${statsData.message.replace('Erreur de connexion: ', '')}</p>`;
+            } else {
+                // Traitement spécifique pour Skull Arena (aplatissement des niveaux)
+                let processedStats = statsData;
+                if (gameId === 'skull_arena' && (processedStats.levels || processedStats.levels === 0)) {
+                    const levels = processedStats.levels || {};
+                    processedStats = {
+                        ...processedStats,
+                        "Crânes": processedStats.skulls, 
+                        "Meilleure Vague": processedStats.best_wave, 
+                        "UP_Dégât": levels.damage,
+                        "UP_Portée": levels.range,
+                        "UP_Vitesse_Perso": levels.speed,
+                        "UP_Cadence_Tir": levels.fire
+                    };
+                    delete processedStats.levels;
+                    delete processedStats.skulls;
+                    delete processedStats.best_wave;
+                }
+                
+                gameHtml = generatePlayerStats(processedStats, true); 
+                
+                if (gameHtml.includes('Aucune statistique trouvée')) {
+                    // Style spécifique pour "non trouvé" (pas une erreur de connexion)
+                    gameHtml = `<p class="error-message" style="margin-top: 10px; background: rgba(255, 165, 0, 0.1); color: #ff9900; border: 1px solid #ff9900;">Aucune statistique trouvée pour ce joueur.</p>`;
+                } else {
+                    successCount++;
+                }
+            }
+            
+            // Structure de la carte pour chaque jeu
+            htmlContent += `
+                <div class="card" style="margin-bottom: 20px; padding: 20px; border: 1px solid var(--secondary-color);">
+                    <h4 style="color: var(--secondary-color); margin-bottom: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 10px;">${gameName}</h4>
+                    <div class="stats-results">
+                        ${gameHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        statsResultsContainer.innerHTML = htmlContent;
+        statsMessage.style.display = 'none';
+
+        if (successCount === 0) {
+            statsError.textContent = "Aucune statistique significative trouvée pour ce joueur dans aucun des jeux.";
+            statsError.style.display = 'block';
+        } else {
+            statsError.style.display = 'none';
+        }
+    }
+
+
+    function generatePlayerStats(statsData, isSubSection = false) {
         if (!statsData || Object.keys(statsData).length === 0 || statsData.status === "error" || statsData.message === "Données Skull Arena introuvables. Initialisation...") {
-            return '<p class="error-message">Aucune statistique trouvée pour ce joueur et ce jeu (ou joueur non initialisé).</p>';
+            return isSubSection ? 'Aucune statistique trouvée pour ce joueur.' : '<p class="error-message">Aucune statistique trouvée pour ce joueur et ce jeu (ou joueur non initialisé).</p>';
         }
 
         // Clés à exclure de l'affichage
-        const keysToExclude = ['id', 'username', 'created_at', 'updated_at', 'status', 'message', 'leaderboard', 'Voiture', 'skulls', 'best_wave']; 
+        const keysToExclude = ['id', 'username', 'created_at', 'updated_at', 'status', 'message', 'leaderboard', 'Voiture', 'skulls', 'best_wave', 'grade']; 
         let html = '';
+        let hasData = false;
 
         for (const key in statsData) {
             if (statsData.hasOwnProperty(key) && !keysToExclude.includes(key) && statsData[key] !== undefined) {
@@ -617,9 +663,11 @@ h2 {
                         <strong>${value}</strong>
                     </div>
                 `;
+                hasData = true;
             }
         }
-        return html;
+        
+        return hasData ? html : (isSubSection ? 'Aucune statistique trouvée pour ce joueur.' : '<p class="error-message">Aucune statistique trouvée pour ce joueur et ce jeu (ou joueur non initialisé).</p>');
     }
 
 </script>

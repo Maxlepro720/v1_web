@@ -608,7 +608,7 @@
                     loadedData = result.data;
                     
                     // Appliquer les données
-                    highScore = loadedData.best_score || 0;
+                    highScore = loadedData.distance || 0;
                     money = loadedData.credit || 0;
                     
                     const loadedGrade = getGradeByName(loadedData.grade) || GRADES[0];
@@ -650,6 +650,7 @@
             try {
                 const response = await fetch(`${SERVER_URL}/stickman_runner_get_leaderboard`);
                 const result = await response.json();
+                console.log(response)
                 
                 if (result.status === "success") {
                     const leaderboard = result.leaderboard;

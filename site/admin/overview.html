@@ -262,7 +262,7 @@ h2 {
 <body>
 
 <div class="header">
-    <div class="header-logo">🎮 Console Admin</div>
+    <div class="header-logo">🎮 Console</div>
     <div class="header-title">Tableau de Bord</div>
 </div>
 
@@ -280,10 +280,10 @@ h2 {
             <i class="fas fa-users">👥</i> Gestion des Utilisateurs
         </div>
         <div class="nav-item" data-tab="content">
-            <i class="fas fa-cogs">⚙️</i> Paramètres (Pas encore fait)
+            <i class="fas fa-cogs">⚙️</i> Paramètres
         </div>
         <div class="nav-item" data-tab="reports">
-            <i class="fas fa-bug">🚨</i> Logs Serveur (Statut)
+            <i class="fas fa-bug">🚨</i> Logs Serveur
         </div>
     </div>
 
@@ -291,7 +291,7 @@ h2 {
         <div class="content-section active" id="ranking">
             <h2>Classement Global</h2>
             <div class="card">
-                <p>Affichez le classement des meilleurs joueurs pour un jeu spécifique. **Méthode d'appel serveur : GET**</p>
+                <p>classement des meilleurs joueurs</p>
                 <div class="form-group">
                     <label for="rankingGameSelect">Sélectionner un Jeu :</label>
                     <select id="rankingGameSelect" class="select-control">
@@ -312,12 +312,12 @@ h2 {
         <div class="content-section" id="player-stats">
             <h2>Statistiques de Joueur</h2>
             <div class="card">
-                <p>Recherchez les statistiques détaillées d'un joueur pour **tous** les jeux. **Méthode d'appel serveur : POST**</p>
+                <p>statistiques détaillées d'un joueur</p>
                 <div class="form-group">
                     <label for="playerUsername">Nom d'utilisateur :</label>
                     <input type="text" id="playerUsername" class="form-control" placeholder="Entrez l'ID du joueur">
                 </div>
-                <button class="btn" id="loadPlayerStatsBtn">Charger les Statistiques pour Tous les Jeux</button>
+                <button class="btn" id="loadPlayerStatsBtn">Charger les Statistiques</button>
             </div>
 
             <div class="card" id="statsResultCard" style="display:none;">
@@ -332,8 +332,8 @@ h2 {
         <div class="content-section" id="users">
             <h2>Gestion des Utilisateurs</h2>
             <div class="card">
-                <p>Affichez la liste de tous les utilisateurs enregistrés et leur statut. **Méthode d'appel serveur : GET**</p>
-                <button class="btn" id="loadUsersBtn">Actualiser la Liste des Utilisateurs</button>
+                <p>Affichez la liste de tous les utilisateurs</p>
+                <button class="btn" id="loadUsersBtn">Actualiser la Liste</button>
             </div>
             
             <div class="card" id="usersResultCard" style="display:none;">
@@ -351,15 +351,15 @@ h2 {
         </div>
         
         <div class="content-section" id="reports">
-            <h2>Logs Serveur (Route Placeholder : /admin_access)</h2>
+            <h2>Logs Serveur</h2>
             <div class="card">
-                <p>La route `/admin_access` est configurée sur le serveur pour retourner un message de statut, car la gestion des logs est "pas encore fait" et la suppression des logs a été demandée.</p>
-                <button class="btn" id="loadLogsBtn" style="margin-bottom: 20px;">Vérifier le Statut de la Route Admin</button>
+                <p>Configuration pas encore terminée</p>
+                <button class="btn" id="loadLogsBtn" style="margin-bottom: 20px;">Charger</button>
                 
-                <div id="logsMessage" class="loading-message" style="display:none;">Tentative d'appel à la route admin...</div>
+                <div id="logsMessage" class="loading-message" style="display:none;">Tentative...</div>
                 <div id="logsError" class="error-message" style="display:none;"></div>
 
-                <pre id="logContent" style="margin-top: 20px; color: yellow;">Cliquez sur 'Vérifier le Statut de la Route Admin' pour obtenir la réponse du serveur (JSON).</pre>
+                <pre id="logContent" style="margin-top: 20px; color: yellow;">Cliquez sur Charger</pre>
             </div>
         </div>
     </div>

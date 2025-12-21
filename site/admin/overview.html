@@ -366,7 +366,6 @@ h2 {
             if(targetId === 'ranking') {
                 populateRankingGameSelector();
             }
-            // Pas besoin de populate pour player-stats car il n'y a plus de select
         });
     });
 
@@ -424,7 +423,7 @@ h2 {
     
     populateRankingGameSelector();
 
-    // --- 1. Logique du Classement (SANS GRADE + Clic vers Stats) ---
+    // --- 1. Logique du Classement (Grade conditionnel + Clic vers Stats) ---
     const loadRankingBtn = document.getElementById('loadRankingBtn');
     const rankingGameSelect = document.getElementById('rankingGameSelect');
     const rankingTableContainer = document.getElementById('rankingTableContainer');
@@ -481,9 +480,17 @@ h2 {
             return `<p class="error-message">${message}</p>`;
         }
 
-        // RETRAIT DU GRADE: Header simplifié
-        let html = '<table class="ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Meilleur Score</th></tr></thead><tbody>';
+        // 1. Déterminer si la colonne Grade est nécessaire (SEULEMENT pour Stickman Runner)
+        const showGrade = (gameId === 'stickman_runner');
         
+        // 2. Construire l'en-tête du tableau
+        let html = '<table class="ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Meilleur Score</th>';
+        if (showGrade) {
+            html += '<th>Grade</th>';
+        }
+        html += '</tr></thead><tbody>';
+        
+        // 3. Construire le corps du tableau
         rankingData.forEach((player, index) => {
             const username = player.username || player.name || 'Inconnu';
             
@@ -492,14 +499,19 @@ h2 {
                             (player.Best_Vague !== undefined ? player.Best_Vague : 
                             (player.wave !== undefined ? player.wave : 0))); 
             
+            const grade = player.grade || 'N/A'; 
+
             // Ajout de data-username pour la fonction de clic
-            html += `
-                <tr data-username="${username}"> 
-                    <td>${index + 1}</td>
-                    <td>${username}</td>
-                    <td>${score}</td>
-                </tr>
-            `;
+            html += `<tr data-username="${username}">`; 
+            html += `<td>${index + 1}</td>`;
+            html += `<td>${username}</td>`;
+            html += `<td>${score}</td>`;
+            
+            if (showGrade) {
+                // Affiche la grade SEULEMENT si c'est Stickman Runner
+                html += `<td>${grade}</td>`;
+            }
+            html += `</tr>`;
         });
         
         html += '</tbody></table>';
@@ -585,6 +597,7 @@ h2 {
             let gameHtml;
 
             if (statsData.status === "error") {
+                // Erreur de connexion / serveur
                 gameHtml = `<p class="error-message" style="margin-top: 10px;">${statsData.message.replace('Erreur de connexion: ', '')}</p>`;
             } else {
                 // Traitement spécifique pour Skull Arena (aplatissement des niveaux)
@@ -644,7 +657,7 @@ h2 {
         }
 
         // Clés à exclure de l'affichage
-        const keysToExclude = ['id', 'username', 'created_at', 'updated_at', 'status', 'message', 'leaderboard', 'Voiture', 'skulls', 'best_wave', 'grade']; 
+        const keysToExclude = ['id', 'username', 'created_at', 'updated_at', 'status', 'message', 'leaderboard', 'Voiture', 'skulls', 'best_wave']; 
         let html = '';
         let hasData = false;
 

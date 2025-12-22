@@ -733,13 +733,19 @@ h2 {
         let html = '<table class="ranking-table"><thead><tr><th>ID du Joueur</th><th>Statut</th><th>Dernière Connexion</th></tr></thead><tbody>';
         
         players.forEach((player) => {
-            const statusColor = player.Status.includes('online') ? 'color: var(--secondary-color); font-weight: bold;' : 'color: var(--light-text);';
-            // Conversion de l'heure UTC en locale pour une meilleure lisibilité
+            // --- CORRECTION CLÉS ---
+            const status = player.status || 'Statut Inconnu'; // Utiliser 'status'
+            const id = player.id || 'ID Inconnu';             // Utiliser 'id'
+            
+            // La couleur est basée sur le statut en minuscules
+            const statusColor = status.includes('online') ? 'color: var(--secondary-color); font-weight: bold;' : 'color: var(--light-text);';
+            
+            // last_seen est correctement utilisé
             const lastSeen = player.last_seen ? new Date(player.last_seen).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : 'Jamais';
 
             html += `<tr>`;
-            html += `<td>${player.ID}</td>`;
-            html += `<td style="${statusColor}">${player.Status}</td>`;
+            html += `<td>${id}</td>`;
+            html += `<td style="${statusColor}">${status}</td>`;
             html += `<td>${lastSeen}</td>`;
             html += `</tr>`;
         });

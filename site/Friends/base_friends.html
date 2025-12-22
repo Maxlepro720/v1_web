@@ -197,6 +197,8 @@
                     body: JSON.stringify({ 
                         action: 'get_friends_list',
                         username: username,
+                        // Le paramètre personne: "maxbryx11" n'est pas nécessaire pour get_friends_list
+                        // mais on le laisse s'il est requis par le client pour d'autres raisons.
                         personne: "maxbryx11" 
                     })
                 });
@@ -204,7 +206,8 @@
                 const result = await response.json();
 
                 if (result.status === 'success') {
-                    const friends = result.friends || []; // Assurez-vous que 'friends' est un tableau
+                    // *** CORRECTION DU BUG 1: Assurez-vous que c'est un Array pour éviter le TypeError ***
+                    const friends = Array.isArray(result.friends) ? result.friends : []; 
                     
                     if (friends.length === 0) {
                         friendsListMain.innerHTML = '<p style="text-align: center; color: #ff4d6d; padding-top: 20px;">Vous n\'avez aucun ami pour le moment.</p>';
@@ -213,10 +216,11 @@
                     }
 
                     // --- RENDU DANS L'ONGLET AMIS ---
+                    // *** CORRECTION DU BUG 2: Utiliser friend.name et friend.status ***
                     friendsListMain.innerHTML = friends.map(friend => `
                         <div class="friend-card">
-                            <span>${friend} (Status non géré)</span> 
-                            <button data-friend="${friend}" onclick="removeFriend(this)">Retirer</button>
+                            <span>${friend.name} (${friend.status || 'Statut inconnu'})</span> 
+                            <button data-friend="${friend.name}" onclick="removeFriend(this)">Retirer</button>
                         </div>
                     `).join('');
 

@@ -710,6 +710,7 @@ h2 {
             const data = await fetchData('/get_all_players_status', 'GET'); 
             
             const players = data.data || [];
+            console.log(players)
             
             usersTableContainer.innerHTML = generateUsersTable(players); 
             usersResultCard.style.display = 'block';

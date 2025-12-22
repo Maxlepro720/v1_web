@@ -658,6 +658,7 @@
                 if (!response.ok) {
                     throw new Error(`Erreur HTTP! Statut: ${response.status}`);
                 }
+                console.log(response)
                 
                 const result = await response.json();
                 

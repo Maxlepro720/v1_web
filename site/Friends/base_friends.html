@@ -24,8 +24,8 @@
         /* ----------------------------------- */
         #friends-app {
             width: 90%;
-            max-width: 1000px;
-            height: 80vh; /* Hauteur relative pour un nouveau fichier */
+            max-width: 700px; /* Réduit la largeur puisque le chat n'est plus là */
+            height: 80vh; 
             background: rgba(15, 20, 25, 0.9);
             backdrop-filter: blur(10px);
             border-radius: 20px;
@@ -79,7 +79,7 @@
             width: 100%;
             height: 100%;
             padding: 20px;
-            display: none; /* Caché par défaut */
+            display: none; 
             overflow-y: auto;
         }
         .tab-pane.active {
@@ -90,94 +90,6 @@
             padding-top: 50px;
             font-size: 20px;
             color: #777;
-        }
-        
-        /* ----------------------------------- */
-        /* STYLE DU PANNEAU CHAT */
-        /* ----------------------------------- */
-        #chat-pane {
-            display: flex;
-            padding: 0; /* Suppression du padding pour les sous-sections */
-        }
-        
-        /* Colonne de la liste des amis */
-        #friends-list-chat {
-            width: 30%;
-            min-width: 200px;
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
-            overflow-y: auto;
-            background: #182028;
-        }
-        .friend-item {
-            padding: 15px;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            transition: background 0.2s;
-            display: flex;
-            align-items: center;
-        }
-        .friend-item:hover {
-            background: rgba(0, 191, 255, 0.1);
-        }
-        .friend-item.active {
-            background: #00bfff;
-            color: #0f1419;
-            font-weight: bold;
-        }
-        
-        /* Colonne de la conversation */
-        #chat-window {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        #chat-header {
-            padding: 15px;
-            background: rgba(0, 191, 255, 0.05);
-            border-bottom: 1px solid rgba(0, 191, 255, 0.3);
-            font-size: 18px;
-            font-weight: 600;
-        }
-        #messages-container {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
-            color: #aaa;
-        }
-        #chat-input-area {
-            padding: 10px;
-            background: #182028;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-        }
-        #chat-input {
-            flex-grow: 1;
-            padding: 10px;
-            border-radius: 8px;
-            border: none;
-            background: #232c38;
-            color: #eee;
-            margin-right: 10px;
-        }
-        #send-button {
-            padding: 10px 15px;
-            background: #00bfff;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        #send-button:hover {
-            background: #009acd;
-        }
-        
-        /* Message Placeholder */
-        .chat-message-placeholder {
-            text-align: center;
-            color: #777;
-            padding-top: 100px;
         }
         
         /* ----------------------------------- */
@@ -200,6 +112,10 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
             margin-bottom: 10px;
+            transition: background 0.2s;
+        }
+        .friend-card:hover {
+            background: rgba(255, 255, 255, 0.1);
         }
         .friend-card button {
             background: #ff4d6d;
@@ -208,6 +124,7 @@
             border-radius: 5px;
             color: white;
             cursor: pointer;
+            transition: background 0.2s;
         }
         .friend-card button:hover {
             background: #d90026;
@@ -222,8 +139,7 @@
         <nav id="tab-nav">
             <button class="tab-button active" data-tab="friends">👥 Amis</button>
             <button class="tab-button" data-tab="invites">📨 Invitations</button>
-            <button class="tab-button" data-tab="chat">💬 Chat</button>
-        </nav>
+            </nav>
 
         <div id="tab-content">
             
@@ -232,17 +148,10 @@
                 <input type="text" id="search-friend-input" placeholder="Ajouter ou rechercher un ami par nom d'utilisateur...">
                 
                 <div id="friends-list-main">
-                    <div class="friend-card">
-                        <span>Alice (En ligne)</span>
-                        <button>Retirer</button>
-                    </div>
-                    <div class="friend-card">
-                        <span>Bob (Hors ligne)</span>
-                        <button>Retirer</button>
-                    </div>
+                    <p id="loading-friends" style="text-align: center; color: #00bfff;">Chargement de la liste...</p>
                 </div>
                 
-                <p class="coming-soon" id="friends-coming-soon" style="display:none;">(La récupération des données est gérée ultérieurement.)</p>
+                <p class="coming-soon" id="friends-coming-soon" style="display:none;">(La fonctionnalité complète est en cours de développement.)</p>
             </div>
 
             <div id="invites-pane" class="tab-pane">
@@ -252,91 +161,117 @@
                 </p>
                 </div>
 
-            <div id="chat-pane" class="tab-pane">
-                
-                <div id="friends-list-chat">
-                    <div class="friend-item active" data-friend-id="alice">Alice</div>
-                    <div class="friend-item" data-friend-id="bob">Bob</div>
-                    </div>
-                
-                <div id="chat-window">
-                    <div id="chat-header">Discussion avec Alice</div>
-                    
-                    <div id="messages-container">
-                        <p class="chat-message-placeholder">
-                            Le chat en temps réel est 'Coming soon...'
-                        </p>
-                    </div>
-                    
-                    <div id="chat-input-area">
-                        <input type="text" id="chat-input" placeholder="Écrire un message..." disabled>
-                        <button id="send-button" disabled>Envoyer</button>
-                    </div>
-                </div>
-
             </div>
-        </div>
     </div>
 
     <script>
-        // --- LOGIQUE DE GESTION DES ONGLETS (TABS) ---
-        document.addEventListener('DOMContentLoaded', () => {
+        // L'URL de l'API doit correspondre à celle définie dans menu.html
+        const API_URL = "https://project-3-api-2bgb.onrender.com";
+        const username = localStorage.getItem("username");
+        
+        const friendsListMain = document.getElementById('friends-list-main');
+        const friendsComingSoon = document.getElementById('friends-coming-soon');
+        
+        // La variable friendsListChat n'est plus nécessaire
+
+        // Vérification essentielle de l'utilisateur
+        if (!username) {
+            alert("Nom d'utilisateur non trouvé. Veuillez vous reconnecter.");
+            window.close(); // Ferme cet onglet s'il n'y a pas d'utilisateur
+        }
+
+        /**
+         * Fait l'appel au serveur pour récupérer la liste d'amis et l'affiche.
+         */
+        async function fetchAndRenderFriendsList() {
+            if (!username) return;
+
+            // Afficher le loader et masquer la note 'coming soon'
+            friendsListMain.innerHTML = '<p id="loading-friends" style="text-align: center; color: #00bfff;">Chargement de la liste...</p>';
+            friendsComingSoon.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_URL}/friends_control`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'get_friends_list',
+                        username: username,
+                        personne: "" 
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    const friends = result.friends || []; // Assurez-vous que 'friends' est un tableau
+                    
+                    if (friends.length === 0) {
+                        friendsListMain.innerHTML = '<p style="text-align: center; color: #ff4d6d; padding-top: 20px;">Vous n\'avez aucun ami pour le moment.</p>';
+                        friendsComingSoon.style.display = 'block'; 
+                        return;
+                    }
+
+                    // --- RENDU DANS L'ONGLET AMIS ---
+                    friendsListMain.innerHTML = friends.map(friend => `
+                        <div class="friend-card">
+                            <span>${friend} (Status non géré)</span> 
+                            <button data-friend="${friend}" onclick="removeFriend(this)">Retirer</button>
+                        </div>
+                    `).join('');
+
+                    // La liste de chat n'est plus rendue ici.
+
+                } else {
+                    friendsListMain.innerHTML = `<p style="text-align: center; color: #ff4d6d; padding-top: 20px;">Erreur de chargement: ${result.message || 'Serveur injoignable.'}</p>`;
+                }
+
+            } catch (error) {
+                console.error('Erreur lors de la requête des amis:', error);
+                friendsListMain.innerHTML = `<p style="text-align: center; color: #ff4d6d; padding-top: 20px;">Impossible de contacter le serveur.</p>`;
+            }
+        }
+        
+        // Fonction placeholder pour le retrait d'ami
+        function removeFriend(buttonElement) {
+            const friendName = buttonElement.getAttribute('data-friend');
+            // Logique pour envoyer l'action 'remove_friend' au serveur
+            alert(`Fonction 'Retirer ${friendName}' non implémentée (Coming soon...)`);
+        }
+
+        // --- LOGIQUE GÉNÉRALE DES TABS ---
+        function changeTab(tabName) {
             const tabButtons = document.querySelectorAll('.tab-button');
             const tabPanes = document.querySelectorAll('.tab-pane');
+            
+            tabButtons.forEach(button => button.classList.remove('active'));
+            tabPanes.forEach(pane => {
+                pane.classList.remove('active');
+                pane.style.display = 'none'; // Cacher tous les panneaux
+            });
 
-            // Fonction pour changer d'onglet
-            function changeTab(tabName) {
-                // Désactiver tous les boutons et masquer tous les panneaux
-                tabButtons.forEach(button => button.classList.remove('active'));
-                tabPanes.forEach(pane => {
-                    pane.classList.remove('active');
-                    // Rétablir le style 'display:block' pour #chat-pane si besoin après l'avoir caché
-                    if (pane.id === 'chat-pane') pane.style.display = 'flex';
-                });
-
-                // Activer le bouton et afficher le panneau correspondant
-                const activePane = document.getElementById(tabName + '-pane');
-                const activeButton = document.querySelector(`[data-tab="${tabName}"]`);
-                
-                if (activePane && activeButton) {
-                    activeButton.classList.add('active');
-                    activePane.classList.add('active');
-
-                    // S'assurer que le chat utilise bien le flexbox
-                    if (tabName === 'chat') {
-                        activePane.style.display = 'flex';
-                    }
-                }
+            const activePane = document.getElementById(tabName + '-pane');
+            const activeButton = document.querySelector(`[data-tab="${tabName}"]`);
+            
+            if (activePane && activeButton) {
+                activeButton.classList.add('active');
+                activePane.classList.add('active');
+                activePane.style.display = 'block'; // Afficher le panneau actif
             }
+        }
 
-            // Écouteurs d'événements pour les boutons
-            tabButtons.forEach(button => {
+        document.addEventListener('DOMContentLoaded', () => {
+            // Événements des boutons d'onglets
+            document.querySelectorAll('.tab-button').forEach(button => {
                 button.addEventListener('click', () => {
-                    const tabName = button.getAttribute('data-tab');
-                    changeTab(tabName);
+                    changeTab(button.getAttribute('data-tab'));
                 });
             });
 
-            // Gérer les clics sur les amis dans la liste du chat
-            const friendsChatItems = document.querySelectorAll('#friends-list-chat .friend-item');
-            friendsChatItems.forEach(item => {
-                item.addEventListener('click', () => {
-                    friendsChatItems.forEach(i => i.classList.remove('active'));
-                    item.classList.add('active');
-                    
-                    const friendName = item.textContent;
-                    document.getElementById('chat-header').textContent = `Discussion avec ${friendName}`;
-                    
-                    // Réinitialiser la fenêtre de messages (pour la gestion future du chat)
-                    document.getElementById('messages-container').innerHTML = `
-                        <p class="chat-message-placeholder">
-                            Le chat avec ${friendName} est 'Coming soon...'
-                        </p>
-                    `;
-                });
-            });
+            // Lancement du chargement de la liste d'amis
+            fetchAndRenderFriendsList();
 
-            // Initialisation (pour s'assurer que l'état initial est correct)
+            // Initialisation de l'onglet par défaut
             changeTab('friends'); 
         });
     </script>

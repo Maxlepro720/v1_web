@@ -658,10 +658,9 @@
                 if (!response.ok) {
                     throw new Error(`Erreur HTTP! Statut: ${response.status}`);
                 }
-                console.log(response.json())
                 
                 const result = await response.json();
-                
+                console.log(result)
                 if (result.status === "success") {
                     const leaderboardRawData = result.data; 
 

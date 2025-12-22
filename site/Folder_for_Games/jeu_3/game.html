@@ -642,10 +642,15 @@
                 setTimeout(loadGameData, RELOAD_INTERVAL_MS);
             }
         }
+        let leaderboardData = [];
+        async function fetchLeaderboard() {
+            const rankingTableBody = document.getElementById('rankingTableBody');
+            rankingTableBody.innerHTML = '<tr><td colspan="4">Chargement...</td></tr>'; // Message de chargement initial
+            
+            // NOTE: Pour éviter l'erreur de référence lors du mappage, on utilise 'highScore' stocké localement ou chargé
+            const bestScore = Math.floor(highScore); 
 
-       async function fetchLeaderboard() {
             try {
-                // 1. Requête GET vers l'endpoint Stickman Runner
                 const response = await fetch(`${SERVER_URL}/stickman_runner_get_leaderboard`, {
                     method: 'GET'
                 }); 
@@ -657,34 +662,61 @@
                 const result = await response.json();
                 
                 if (result.status === "success") {
-                    const leaderboardRawData = result.data; // Le tableau est dans 'data'
+                    const leaderboardRawData = result.data; 
 
-                    // 2. CORRECTION: Vérification de l'intégrité des données pour éviter l'erreur 'length'
                     if (!Array.isArray(leaderboardRawData)) {
                         console.error("Erreur de format de données: 'data' n'est pas un tableau.", result);
-                        leaderboardData = []; // Initialiser à un tableau vide
+                        leaderboardData = [];
+                        // Affichage de l'erreur
+                        rankingTableBody.innerHTML = '<tr><td colspan="4">Erreur de données.</td></tr>';
                         return;
                     }
 
-                    // 3. Mappage et tri : utilisation de 'distance' comme valeur de score
+                    // 1. Mappage : utiliser 'distance' et marquer l'utilisateur actuel
                     leaderboardData = leaderboardRawData.map(e => ({
-                        name: (e.name === username ? "Vous" : e.name), 
-                        score: Number(e.distance) // UTILISATION CORRECTE : lecture de 'distance'
+                        name: (e.username === username ? "Vous" : e.username), // Changement de e.name à e.username pour coller au résultat API
+                        score: Number(e.distance), 
+                        grade: e.grade 
                     })).sort((a, b) => b.score - a.score).slice(0, 5); 
                     
-                    // 4. Ajout du score de l'utilisateur s'il n'est pas dans le Top 5
+                    // 2. Ajout du score de l'utilisateur s'il n'est pas dans le Top 5 (Optionnel mais complet)
                     if (!leaderboardData.some(e => e.name === "Vous")) {
-                        // Assurez-vous que 'bestScore' contient la meilleure distance enregistrée
-                        leaderboardData.push({ name: "Vous", score: bestScore }); 
+                        // On inclut le grade actuel de l'utilisateur pour l'affichage
+                        const userGrade = getGrade(currentGradeId); 
+                        leaderboardData.push({ 
+                            name: "Vous", 
+                            score: bestScore, 
+                            grade: userGrade.name 
+                        }); 
+                        // Retrier pour assurer que "Vous" est bien classé
+                        leaderboardData.sort((a, b) => b.score - a.score);
                     }
+                    
+                    // 3. MISE À JOUR DE L'AFFICHAGE DU TABLEAU
+                    let htmlContent = '';
+                    leaderboardData.forEach((entry, index) => {
+                        const gradeInfo = getGradeByName(entry.grade);
+                        const gradeSymbol = gradeInfo ? gradeInfo.symbol : '❓';
+                        
+                        htmlContent += `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td class="rank-grade" style="color:${gradeInfo.color};">${gradeSymbol} ${entry.grade}</td>
+                                <td>${entry.name}</td>
+                                <td>${Math.floor(entry.score)}</td>
+                            </tr>
+                        `;
+                    });
+
+                    rankingTableBody.innerHTML = htmlContent;
+
                 } else {
                     console.error("Erreur de chargement du classement (Statut non conforme):", result.message);
+                    rankingTableBody.innerHTML = '<tr><td colspan="4">Échec de la récupération du classement.</td></tr>';
                 }
             } catch (e) {
-                // Affichera une erreur générique si la connexion échoue avant la réponse
                 console.error("Erreur de communication avec le serveur (Classement Stickman Runner):", e.message);
-                // En cas d'échec total, s'assurer que leaderboardData est un tableau vide pour ne pas crasher l'affichage
-                leaderboardData = [];
+                rankingTableBody.innerHTML = '<tr><td colspan="4">Serveur injoignable.</td></tr>';
             }
         }
         // --- LOGIQUE DE JEU RESTANTE ---

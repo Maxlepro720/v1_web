@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Keep-Alive Server</title>
+    <title>Keep-Alive Server Pinger (30s) - Compte à rebours</title>
     <style>
         body {
             /* Fond noir constant, Texte blanc par défaut, Centré, Pleine hauteur */
@@ -20,6 +20,8 @@
         }
         /* Style pour le compte à rebours */
         #countdown {
+            /* Nouvelle police monospace pour un look numérique */
+            font-family: 'Courier New', Courier, monospace; 
             font-size: 15vw; /* Très grande taille */
             font-weight: bold;
             line-height: 1;
@@ -27,11 +29,11 @@
             transition: color 0.2s ease-in-out; 
         }
         /* Classes pour la couleur du texte du compte à rebours */
-        .success-text { color: #00ff00 !important; } /* Vert clair (pour se démarquer sur fond noir) */
-        .error-text { color: #ff3333 !important; } /* Rouge vif (pour se démarquer sur fond noir) */
+        .success-text { color: #00ff00 !important; } /* Vert clair */
+        .error-text { color: #ff3333 !important; } /* Rouge vif */
         
-        /* Cacher les anciens éléments de statut pour ne garder que le compte à rebours principal */
-        h1, p {
+        /* Cache tous les textes additionnels */
+        h1, p, #status-message {
             display: none; 
         }
     </style>
@@ -51,11 +53,9 @@
         const STATUS_DISPLAY_TIME_MS = 2000; 
 
         const countdownElement = document.getElementById('countdown');
-        const statusMessageElement = document.getElementById('status-message');
+        // L'élément est toujours là même s'il est caché, car le JS l'utilise pour logguer (bien que non visible)
+        const statusMessageElement = document.getElementById('status-message'); 
         
-        // La couleur de base du texte est blanche (définie dans le CSS du body)
-        const DEFAULT_TEXT_COLOR_CLASS = ''; 
-
         let countdown = PING_INTERVAL_MS / 1000;
         let timer;
 
@@ -64,7 +64,7 @@
          * @param {boolean} success - True pour succès (vert), False pour erreur (rouge).
          */
         function updateTextColor(success) {
-            // Retire d'abord toute classe existante pour être sûr
+            // Retire d'abord toute classe existante
             countdownElement.classList.remove('success-text', 'error-text');
             
             // Applique la nouvelle couleur
@@ -78,7 +78,8 @@
 
         // Fonction principale pour envoyer la requête
         async function sendPing() {
-            statusMessageElement.textContent = `Envoi...`;
+            // Log dans la console pour le débogage, mais rien d'affiché à l'écran
+            console.log(`[PING] Envoi de la requête à ${new Date().toLocaleTimeString()}...`);
             
             try {
                 const response = await fetch(SERVER_URL + PING_ENDPOINT, {
@@ -87,15 +88,14 @@
 
                 if (response.ok) {
                     updateTextColor(true);
-                    statusMessageElement.textContent = `✅ OK (${response.status}) à ${new Date().toLocaleTimeString()}`;
+                    console.log(`[PING] Succès (Statut : ${response.status})`);
                 } else {
                     updateTextColor(false);
-                    statusMessageElement.textContent = `❌ Erreur HTTP ${response.status} à ${new Date().toLocaleTimeString()}`;
+                    console.error(`[PING] Erreur HTTP ${response.status}`);
                 }
             } catch (error) {
                 updateTextColor(false);
-                statusMessageElement.textContent = `❌ Erreur de connexion/réseau à ${new Date().toLocaleTimeString()}`;
-                console.error("Erreur de ping:", error);
+                console.error("[PING] Erreur de connexion/réseau:", error);
             }
         }
 

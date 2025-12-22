@@ -199,11 +199,12 @@
                         username: username,
                         // Le paramètre personne: "maxbryx11" n'est pas nécessaire pour get_friends_list
                         // mais on le laisse s'il est requis par le client pour d'autres raisons.
-                        personne: "maxbryx11" 
+                        personne: "" 
                     })
                 });
 
                 const result = await response.json();
+                print(result)
 
                 if (result.status === 'success') {
                     // *** CORRECTION DU BUG 1: Assurez-vous que c'est un Array pour éviter le TypeError ***

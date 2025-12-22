@@ -197,19 +197,24 @@
                     body: JSON.stringify({ 
                         action: 'get_friends_list',
                         username: username,
-                        // Le paramètre personne: "maxbryx11" n'est pas nécessaire pour get_friends_list
-                        // mais on le laisse s'il est requis par le client pour d'autres raisons.
-                        personne: "" 
+                        personne: "maxbryx11" 
                     })
                 });
 
                 const result = await response.json();
-                console.log(result)
 
                 if (result.status === 'success') {
-                    // *** CORRECTION DU BUG 1: Assurez-vous que c'est un Array pour éviter le TypeError ***
-                    const friends = Array.isArray(result.friends) ? result.friends : []; 
-                    
+                    let friends = [];
+
+                    // --- CORRECTION DU BUG : Gérer la réponse de type String ou Array ---
+                    if (typeof result.friends === 'string') {
+                        // Si le serveur renvoie une chaîne (ex: "maxbryx11, yenigma"), on la divise
+                        friends = result.friends.split(',').map(name => name.trim()).filter(name => name.length > 0);
+                    } else if (Array.isArray(result.friends)) {
+                        // Si le serveur renvoie un Array (ce qui est l'idéal pour les statuts)
+                        friends = result.friends;
+                    }
+
                     if (friends.length === 0) {
                         friendsListMain.innerHTML = '<p style="text-align: center; color: #ff4d6d; padding-top: 20px;">Vous n\'avez aucun ami pour le moment.</p>';
                         friendsComingSoon.style.display = 'block'; 
@@ -217,13 +222,28 @@
                     }
 
                     // --- RENDU DANS L'ONGLET AMIS ---
-                    // *** CORRECTION DU BUG 2: Utiliser friend.name et friend.status ***
-                    friendsListMain.innerHTML = friends.map(friend => `
-                        <div class="friend-card">
-                            <span>${friend.name} (${friend.status || 'Statut inconnu'})</span> 
-                            <button data-friend="${friend.name}" onclick="removeFriend(this)">Retirer</button>
-                        </div>
-                    `).join('');
+                    friendsListMain.innerHTML = friends.map(friend => {
+                        // Détermine le nom et le statut de manière robuste
+                        let name;
+                        let statusText;
+
+                        if (typeof friend === 'string') {
+                            // Si c'est juste le nom (simple chaîne après la division)
+                            name = friend;
+                            statusText = '(Statut non disponible)';
+                        } else {
+                            // Si c'est un objet (format idéal du serveur : {name: "x", status: "y"})
+                            name = friend.name || 'Nom Inconnu';
+                            statusText = `(${friend.status || 'Statut inconnu'})`;
+                        }
+                        
+                        return `
+                            <div class="friend-card">
+                                <span>${name} ${statusText}</span> 
+                                <button data-friend="${name}" onclick="removeFriend(this)">Retirer</button>
+                            </div>
+                        `;
+                    }).join('');
 
                     // La liste de chat n'est plus rendue ici.
 

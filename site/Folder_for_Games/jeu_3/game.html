@@ -660,7 +660,7 @@
                 }
                 
                 const result = await response.json();
-                console.log(result)
+                
                 if (result.status === "success") {
                     const leaderboardRawData = result.data; 
 
@@ -672,31 +672,41 @@
                         return;
                     }
 
-                    // 1. Mappage : utiliser 'distance' et marquer l'utilisateur actuel
-                    leaderboardData = leaderboardRawData.map(e => ({
-                        name: (e.username === username ? "Vous" : e.username), // Changement de e.name à e.username pour coller au résultat API
-                        score: Number(e.distance), 
-                        grade: e.grade 
-                    })).sort((a, b) => b.score - a.score).slice(0, 5); 
+                    // 1. Mappage robuste et filtration des scores à 0
+                    leaderboardData = leaderboardRawData
+                        // FILTRE : Supprimer les entrées avec un score de 0
+                        .filter(e => Number(e.distance) > 0)
+                        .map(e => {
+                            // CORRECTION : L'API renvoie le nom sous la clé 'name' (Python)
+                            const remoteUsername = e.name && e.name.trim() !== '' ? e.name : 'Joueur Inconnu';
+                            // GESTION : Le grade est manquant, on force au grade de base
+                            const gradeName = e.grade && e.grade.trim() !== '' ? e.grade : GRADES[0].name; 
+
+                            return {
+                                name: (remoteUsername === username ? "Vous" : remoteUsername), 
+                                score: Number(e.distance), 
+                                grade: gradeName // Sera 'Poussière' par défaut ou le grade s'il était présent
+                            };
+                        })
+                        .sort((a, b) => b.score - a.score)
+                        .slice(0, 5); 
                     
-                    // 2. Ajout du score de l'utilisateur s'il n'est pas dans le Top 5 (Optionnel mais complet)
+                    // 2. Ajout du score de l'utilisateur s'il n'est pas dans le Top 5 (inchangé)
                     if (!leaderboardData.some(e => e.name === "Vous")) {
-                        // On inclut le grade actuel de l'utilisateur pour l'affichage
                         const userGrade = getGrade(currentGradeId); 
                         leaderboardData.push({ 
                             name: "Vous", 
                             score: bestScore, 
                             grade: userGrade.name 
                         }); 
-                        // Retrier pour assurer que "Vous" est bien classé
                         leaderboardData.sort((a, b) => b.score - a.score);
                     }
                     
                     // 3. MISE À JOUR DE L'AFFICHAGE DU TABLEAU
                     let htmlContent = '';
                     leaderboardData.forEach((entry, index) => {
-                        const gradeInfo = getGradeByName(entry.grade);
-                        const gradeSymbol = gradeInfo ? gradeInfo.symbol : '❓';
+                        const gradeInfo = getGradeByName(entry.grade); // La fonction est maintenant résiliente
+                        const gradeSymbol = gradeInfo.symbol; 
                         
                         htmlContent += `
                             <tr>
@@ -717,27 +727,6 @@
             } catch (e) {
                 console.error("Erreur de communication avec le serveur (Classement Stickman Runner):", e.message);
                 rankingTableBody.innerHTML = '<tr><td colspan="4">Serveur injoignable.</td></tr>';
-            }
-        }
-        // --- LOGIQUE DE JEU RESTANTE ---
-
-        function updateUpgradeShopDisplay() {
-            document.getElementById('moneyInShop').textContent = Math.floor(money); 
-            
-            const currentGrade = getGrade(currentGradeId);
-            const nextGrade = getNextGrade();
-
-            document.getElementById('currentGradeDisplay').innerHTML = `${currentGrade.name} (${currentGrade.symbol})`; 
-            
-            // NOTE: L'élément 'speedCapDisplay' n'existe plus dans le DOM, mais la variable MAX_SPEED_CAP est toujours mise à jour dans applyGradeStats.
-            // Si la ligne suivante était encore présente dans le DOM, elle serait: document.getElementById('speedCapDisplay').textContent = MAX_SPEED_CAP.toFixed(1); 
-            
-            if (nextGrade) {
-                document.getElementById('upgradeButton').textContent = `ACHETER : ${nextGrade.name} - ${nextGrade.cost} $`;
-                document.getElementById('upgradeButton').disabled = money < nextGrade.cost;
-            } else {
-                document.getElementById('upgradeButton').textContent = "GRADE MAX ATTEINT";
-                document.getElementById('upgradeButton').disabled = true;
             }
         }
 

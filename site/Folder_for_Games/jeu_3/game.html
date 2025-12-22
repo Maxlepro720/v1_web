@@ -729,6 +729,25 @@
                 rankingTableBody.innerHTML = '<tr><td colspan="4">Serveur injoignable.</td></tr>';
             }
         }
+        function updateUpgradeShopDisplay() {
+            document.getElementById('moneyInShop').textContent = Math.floor(money); 
+            
+            const currentGrade = getGrade(currentGradeId);
+            const nextGrade = getNextGrade();
+
+            document.getElementById('currentGradeDisplay').innerHTML = `${currentGrade.name} (${currentGrade.symbol})`; 
+            
+            // NOTE: L'élément 'speedCapDisplay' n'existe plus dans le DOM, mais la variable MAX_SPEED_CAP est toujours mise à jour dans applyGradeStats.
+            // Si la ligne suivante était encore présente dans le DOM, elle serait: document.getElementById('speedCapDisplay').textContent = MAX_SPEED_CAP.toFixed(1); 
+            
+            if (nextGrade) {
+                document.getElementById('upgradeButton').textContent = `ACHETER : ${nextGrade.name} - ${nextGrade.cost} $`;
+                document.getElementById('upgradeButton').disabled = money < nextGrade.cost;
+            } else {
+                document.getElementById('upgradeButton').textContent = "GRADE MAX ATTEINT";
+                document.getElementById('upgradeButton').disabled = true;
+            }
+        }
 
 
         function handleUpgrade() {

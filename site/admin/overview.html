@@ -707,7 +707,7 @@ h2 {
 
         try {
             // Appel à la route GET du serveur
-            const data = await fetchData('admin_get_all_players', 'GET'); 
+            const data = await fetchData('/get_all_players_status', 'GET'); 
             
             const players = data.data || [];
             

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keep-Alive Server Pinger</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f4f4f9;
+            color: #333;
+            text-align: center;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+
+    <h1>☕ Keep-Alive Pinger</h1>
+    <p>Ce script envoie une requête au serveur toutes les 30 secondes pour le maintenir actif.</p>
+    
+    <div id="status">
+        <p>Statut : <span id="log">Initialisation...</span></p>
+        <p>Prochaine requête dans : <span id="countdown">30</span> secondes</p>
+    </div>
+    <script>
+        const SERVER_URL = 'https://project-3-api-2bgb.onrender.com'; 
+        const PING_ENDPOINT = '/stay_alive';
+        const PING_INTERVAL_MS = 10000; 
+
+        const logElement = document.getElementById('log');
+        const countdownElement = document.getElementById('countdown');
+        let countdown = PING_INTERVAL_MS / 1000;
+        let timer;
+        // Fonction principale pour envoyer la requête
+        async function sendPing() {
+            logElement.textContent = `Envoi de la requête GET à ${new Date().toLocaleTimeString()}...`;          
+            try {
+                const response = await fetch(SERVER_URL + PING_ENDPOINT, {
+                    method: 'GET'
+                });
+
+                if (response.ok) {
+                    // Tente de lire le JSON si le serveur en renvoie un (même si l'endpoint est simple)
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        const result = await response.json();
+                        logElement.innerHTML = `<span class="success">✅ OK (Statut : ${result.status || 'Success'}). Dernière requête à ${new Date().toLocaleTimeString()}</span>`;
+                    } else {
+                        // Le serveur a répondu OK (200), mais sans JSON.
+                        logElement.innerHTML = `<span class="success">✅ OK (Statut : 200). Dernière requête à ${new Date().toLocaleTimeString()}</span>`;
+                    }
+                } else {
+                    logElement.innerHTML = `<span class="error">❌ Erreur HTTP ${response.status}. Dernière requête à ${new Date().toLocaleTimeString()}</span>`;
+                }
+            } catch (error) {
+                logElement.innerHTML = `<span class="error">❌ Erreur de connexion ou réseau. Dernière requête à ${new Date().toLocaleTimeString()}</span>`;
+                console.error("Erreur de ping:", error);
+            }
+        }
+
+        // Fonction pour gérer le compte à rebours
+        function startCountdown() {
+            countdown = PING_INTERVAL_MS / 1000;
+            clearInterval(timer);
+            
+            timer = setInterval(() => {
+                countdown--;
+                countdownElement.textContent = countdown;
+                
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    sendPing();
+                    startCountdown(); // Redémarrer le cycle
+                }
+            }, 1000);
+        }
+
+        // Démarrage initial
+        sendPing(); 
+        startCountdown();
+    </script>
+</body>
+</html>

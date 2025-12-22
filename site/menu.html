@@ -151,13 +151,9 @@
         .card-button:disabled {background:#555;cursor:not-allowed;}
 
         /* ----------------------------------- */
-        /* SIDEBAR */
+        /* SIDEBAR (CSS supprimé car non utilisé) */
         /* ----------------------------------- */
-        #sidebar {position:fixed;top:0;right:-320px;width:320px;height:100%;background:rgba(20,20,30,0.9);backdrop-filter:blur(20px);box-shadow:-5px 0 30px rgba(0,0,0,0.7);transition:right 0.4s ease;z-index:50;padding:20px;display:flex;flex-direction:column;}
-        #sidebar h2 {color:#00bfff;margin-bottom:20px;}
-        #sidebar button.close-sidebar {background:#ff4d6d;color:#fff;border:none;padding:10px 18px;border-radius:12px;cursor:pointer;align-self:flex-end;transition:0.3s;}
-        #sidebar button.close-sidebar:hover {background:#ff1a3c;box-shadow:0 0 15px #ff4d6d88;}
-        .sidebar-open {right:0 !important;}
+        /* Le CSS de #sidebar, #sidebar h2, #sidebar button.close-sidebar et .sidebar-open est supprimé ici. */
 
         /* ----------------------------------- */
         /* POPUP COOKIES */
@@ -479,12 +475,6 @@
 <h2 class="section-title">Ma Bibliothèque</h2>
 <div class="game-grid" id="gameGrid"></div>
 
-<div id="sidebar">
-    <button class="close-sidebar" onclick="toggleSidebar()">✖</button>
-    <h2>Amis</h2>
-    <p>Coming soon...</p>
-</div>
-
 <div id="quote-ad-slot" class="ad-card-container" style="display:none;">
     <div id="quote-display"></div>
 </div>
@@ -735,10 +725,15 @@
     });
 
     /* SIDEBAR */
-    const sidebar=document.getElementById("sidebar");
     const friendsButton=document.getElementById("friends-button");
-    function toggleSidebar(){sidebar.classList.toggle('sidebar-open');}
-    friendsButton.addEventListener('click',toggleSidebar);
+    
+    // --- NOUVELLE LOGIQUE POUR LE BOUTON AMIS (OUVERTURE D'UN NOUVEL ONGLET) ---
+    function openFriendsPage() {
+        window.open('/Friends/base_friends.html', '_blank');
+    }
+    friendsButton.addEventListener('click', openFriendsPage);
+
+    // L'ancienne fonction toggleSidebar() et les références à sidebar sont supprimées ici.
 
 
     // ----------------------------------------------------

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Amis - Skull Arena</title>
+    <style>
+        /* ----------------------------------- */
+        /* CSS GÉNÉRAL */
+        /* ----------------------------------- */
+        * {box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif;}
+        body {
+            background-color: #0f1419;
+            color: #eee;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* ----------------------------------- */
+        /* CONTENEUR PRINCIPAL */
+        /* ----------------------------------- */
+        #friends-app {
+            width: 90%;
+            max-width: 1000px;
+            height: 80vh; /* Hauteur relative pour un nouveau fichier */
+            background: rgba(15, 20, 25, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(0, 191, 255, 0.2);
+        }
+
+        /* ----------------------------------- */
+        /* NAVIGATION DES ONGLETS (TABS) */
+        /* ----------------------------------- */
+        #tab-nav {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(0, 191, 255, 0.1);
+            border-bottom: 2px solid #00bfff;
+        }
+        .tab-button {
+            flex-grow: 1;
+            padding: 15px 20px;
+            background: transparent;
+            color: #eee;
+            border: none;
+            border-bottom: 4px solid transparent;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .tab-button:hover {
+            background: rgba(0, 191, 255, 0.15);
+        }
+        .tab-button.active {
+            color: #00bfff;
+            border-bottom-color: #00bfff;
+            background: rgba(0, 191, 255, 0.2);
+        }
+
+        /* ----------------------------------- */
+        /* CONTENU DES ONGLETS */
+        /* ----------------------------------- */
+        #tab-content {
+            flex-grow: 1;
+            display: flex;
+            overflow: hidden;
+            background: #141a20;
+        }
+        .tab-pane {
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            display: none; /* Caché par défaut */
+            overflow-y: auto;
+        }
+        .tab-pane.active {
+            display: block;
+        }
+        .coming-soon {
+            text-align: center;
+            padding-top: 50px;
+            font-size: 20px;
+            color: #777;
+        }
+        
+        /* ----------------------------------- */
+        /* STYLE DU PANNEAU CHAT */
+        /* ----------------------------------- */
+        #chat-pane {
+            display: flex;
+            padding: 0; /* Suppression du padding pour les sous-sections */
+        }
+        
+        /* Colonne de la liste des amis */
+        #friends-list-chat {
+            width: 30%;
+            min-width: 200px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
+            background: #182028;
+        }
+        .friend-item {
+            padding: 15px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .friend-item:hover {
+            background: rgba(0, 191, 255, 0.1);
+        }
+        .friend-item.active {
+            background: #00bfff;
+            color: #0f1419;
+            font-weight: bold;
+        }
+        
+        /* Colonne de la conversation */
+        #chat-window {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #chat-header {
+            padding: 15px;
+            background: rgba(0, 191, 255, 0.05);
+            border-bottom: 1px solid rgba(0, 191, 255, 0.3);
+            font-size: 18px;
+            font-weight: 600;
+        }
+        #messages-container {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            color: #aaa;
+        }
+        #chat-input-area {
+            padding: 10px;
+            background: #182028;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+        }
+        #chat-input {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background: #232c38;
+            color: #eee;
+            margin-right: 10px;
+        }
+        #send-button {
+            padding: 10px 15px;
+            background: #00bfff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #send-button:hover {
+            background: #009acd;
+        }
+        
+        /* Message Placeholder */
+        .chat-message-placeholder {
+            text-align: center;
+            color: #777;
+            padding-top: 100px;
+        }
+        
+        /* ----------------------------------- */
+        /* STYLE DU PANNEAU AMIS */
+        /* ----------------------------------- */
+        #friends-pane input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #eee;
+            margin-bottom: 20px;
+        }
+        .friend-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .friend-card button {
+            background: #ff4d6d;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+        .friend-card button:hover {
+            background: #d90026;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div id="friends-app">
+        
+        <nav id="tab-nav">
+            <button class="tab-button active" data-tab="friends">👥 Amis</button>
+            <button class="tab-button" data-tab="invites">📨 Invitations</button>
+            <button class="tab-button" data-tab="chat">💬 Chat</button>
+        </nav>
+
+        <div id="tab-content">
+            
+            <div id="friends-pane" class="tab-pane active">
+                <h3>Liste d'Amis</h3>
+                <input type="text" id="search-friend-input" placeholder="Ajouter ou rechercher un ami par nom d'utilisateur...">
+                
+                <div id="friends-list-main">
+                    <div class="friend-card">
+                        <span>Alice (En ligne)</span>
+                        <button>Retirer</button>
+                    </div>
+                    <div class="friend-card">
+                        <span>Bob (Hors ligne)</span>
+                        <button>Retirer</button>
+                    </div>
+                </div>
+                
+                <p class="coming-soon" id="friends-coming-soon" style="display:none;">(La récupération des données est gérée ultérieurement.)</p>
+            </div>
+
+            <div id="invites-pane" class="tab-pane">
+                <h3>Invitations en Attente</h3>
+                <p class="coming-soon">
+                    Gestion des invitations 'Coming soon...'
+                </p>
+                </div>
+
+            <div id="chat-pane" class="tab-pane">
+                
+                <div id="friends-list-chat">
+                    <div class="friend-item active" data-friend-id="alice">Alice</div>
+                    <div class="friend-item" data-friend-id="bob">Bob</div>
+                    </div>
+                
+                <div id="chat-window">
+                    <div id="chat-header">Discussion avec Alice</div>
+                    
+                    <div id="messages-container">
+                        <p class="chat-message-placeholder">
+                            Le chat en temps réel est 'Coming soon...'
+                        </p>
+                    </div>
+                    
+                    <div id="chat-input-area">
+                        <input type="text" id="chat-input" placeholder="Écrire un message..." disabled>
+                        <button id="send-button" disabled>Envoyer</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- LOGIQUE DE GESTION DES ONGLETS (TABS) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+
+            // Fonction pour changer d'onglet
+            function changeTab(tabName) {
+                // Désactiver tous les boutons et masquer tous les panneaux
+                tabButtons.forEach(button => button.classList.remove('active'));
+                tabPanes.forEach(pane => {
+                    pane.classList.remove('active');
+                    // Rétablir le style 'display:block' pour #chat-pane si besoin après l'avoir caché
+                    if (pane.id === 'chat-pane') pane.style.display = 'flex';
+                });
+
+                // Activer le bouton et afficher le panneau correspondant
+                const activePane = document.getElementById(tabName + '-pane');
+                const activeButton = document.querySelector(`[data-tab="${tabName}"]`);
+                
+                if (activePane && activeButton) {
+                    activeButton.classList.add('active');
+                    activePane.classList.add('active');
+
+                    // S'assurer que le chat utilise bien le flexbox
+                    if (tabName === 'chat') {
+                        activePane.style.display = 'flex';
+                    }
+                }
+            }
+
+            // Écouteurs d'événements pour les boutons
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.getAttribute('data-tab');
+                    changeTab(tabName);
+                });
+            });
+
+            // Gérer les clics sur les amis dans la liste du chat
+            const friendsChatItems = document.querySelectorAll('#friends-list-chat .friend-item');
+            friendsChatItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    friendsChatItems.forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    
+                    const friendName = item.textContent;
+                    document.getElementById('chat-header').textContent = `Discussion avec ${friendName}`;
+                    
+                    // Réinitialiser la fenêtre de messages (pour la gestion future du chat)
+                    document.getElementById('messages-container').innerHTML = `
+                        <p class="chat-message-placeholder">
+                            Le chat avec ${friendName} est 'Coming soon...'
+                        </p>
+                    `;
+                });
+            });
+
+            // Initialisation (pour s'assurer que l'état initial est correct)
+            changeTab('friends'); 
+        });
+    </script>
+
+</body>
+</html>

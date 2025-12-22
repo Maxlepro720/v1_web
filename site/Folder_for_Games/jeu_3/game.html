@@ -128,7 +128,7 @@
         }
 
         /* --- ÉCRANS GLOBAUX (REMISE À 350px) --- */
-        #menuContainer, #pauseMenu, #gameOverScreen, #loadingScreen, #rankingScreen {
+        #menuContainer, #pauseMenu, #gameOverScreen, #loadingScreen, #rankingScreen, #tutorialScreen {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -139,7 +139,7 @@
         }
         
         /* STYLES COMMUNS DES ÉCRANS DE MENU */
-        #loadingScreen, #menuScreen, #gradeShop, #rankingScreen, #gameOverScreen, #pauseMenu {
+        #loadingScreen, #menuScreen, #gradeShop, #rankingScreen, #gameOverScreen, #pauseMenu, #tutorialScreen {
             background-color: #1a2a3a; 
             padding: 30px;
             border-radius: 15px;
@@ -253,6 +253,28 @@
         </div>
 
         <div id="scoreDisplay">0</div>
+        
+        <div id="tutorialScreen" style="display: none;">
+            <h2>TUTORIEL</h2>
+            <p style="font-size: 1.1em; color: #00FFC0; margin-bottom: 20px;">Apprenez les commandes de base pour survivre dans le Cyber Espace !</p>
+            
+            <hr style="width: 70%; border-color: #00FFC0; margin: 15px 0;">
+
+            <p style="text-align: left; width: 100%; max-width: 300px; margin: 0 auto 10px auto;">
+                <span style="font-weight: bold; color: #FF6B6B;">SAUTER :</span> Appuyez sur **ESPACE** (ou Clic Gauche)<br>
+                <span style="font-weight: bold; color: #FF6B6B;">CHUTE RAPIDE :</span> Relâchez **ESPACE** (ou Clic Gauche)<br>
+                <span style="font-weight: bold; color: #FF6B6B;">PAUSE :</span> Appuyez sur **P** ou **ÉCHAP**
+            </p>
+            
+            <hr style="width: 70%; border-color: #00FFC0; margin: 15px 0;">
+
+            <p style="max-width: 300px;">Le joueur avance automatiquement. Votre objectif est de **sauter** sur les plateformes pour éviter la chute et d'utiliser la **chute rapide** pour atterrir plus vite.</p>
+
+            <button class="menu-button" id="startMenuButton" style="background-color: #00BFFF; margin-top: 20px;">
+                COMPRIS, ENTRER DANS LE MENU
+            </button>
+        </div>
+
 
         <div id="menuContainer" style="display: none;">
             <div id="menuScreen">
@@ -410,12 +432,13 @@
         const gameOverScreenElement = document.getElementById('gameOverScreen');
         const topHotbarElement = document.getElementById('topHotbar');
         const loadingScreenElement = document.getElementById('loadingScreen');
+        const tutorialScreenElement = document.getElementById('tutorialScreen'); // NOUVELLE LIGNE
         const rankingScreenElement = document.getElementById('rankingScreen'); 
         const loadingMessageElement = document.getElementById('loadingMessage');
         const currentScoreHotbarItem = document.getElementById('currentScoreHotbarItem');
         const scoreDisplayElement = document.getElementById('scoreDisplay');
 
-        const GAME_STATE = { LOADING: -1, MENU: 0, PLAYING: 1, GRADES: 2, GAMEOVER: 3, PAUSED: 4, RANKING: 5 };
+        const GAME_STATE = { LOADING: -1, TUTORIAL: -0.5, MENU: 0, PLAYING: 1, GRADES: 2, GAMEOVER: 3, PAUSED: 4, RANKING: 5 };
         let currentState = GAME_STATE.LOADING; 
 
         // Vitesse initiale
@@ -448,8 +471,7 @@
         let ignoreNextSpaceUp = false; 
         
         // --- DONNÉES DU JOUEUR (Chargement du pseudo depuis localStorage) ---
-        // Modification: Suppression du fallback 'Invité Cyber'
-        let username = localStorage.getItem('username'); 
+        let username = localStorage.getItem('username') || 'Invité Cyber'; 
         let currentGradeName = "Poussière"; 
         
         // --- SYSTÈME DE GRADES ---
@@ -531,8 +553,7 @@
         function updateHotbarDisplay() {
             document.getElementById('value1').textContent = Math.floor(highScore);
             document.getElementById('value3').textContent = Math.floor(money);
-            // Si username est null, ceci affichera null ou rien.
-            document.getElementById('currentUsernameDisplay').textContent = username || '...';
+            document.getElementById('currentUsernameDisplay').textContent = username;
             
             if (currentState === GAME_STATE.PLAYING || currentState === GAME_STATE.PAUSED) {
                 currentScoreHotbarItem.style.display = 'none'; 
@@ -546,12 +567,6 @@
         // --- API & COMMUNICATION SERVEUR ---
 
         async function saveGameData() {
-            // S'assurer que le joueur est identifié avant de sauvegarder
-            if (!username) {
-                console.error("Impossible de sauvegarder : Nom d'utilisateur non défini.");
-                return;
-            }
-            
             const gradeName = getGrade(currentGradeId).name;
 
             const dataToSave = {
@@ -588,19 +603,6 @@
             hideAllScreens();
             currentState = GAME_STATE.LOADING;
             loadingScreenElement.style.display = 'flex';
-
-            // *** MODIFICATION DEMANDÉE : GESTION DE L'ABSENCE DE NOM D'UTILISATEUR ***
-            if (!username) { 
-                const errorMsg = "Nom d'utilisateur non trouvé. Veuillez vous connecter. Nouvelle tentative dans 5 secondes...";
-                console.error(errorMsg);
-                loadingMessageElement.textContent = errorMsg;
-                
-                // Reste dans l'état de chargement et re-tente le chargement (qui re-vérifiera le username)
-                setTimeout(loadGameData, RELOAD_INTERVAL_MS); 
-                return; 
-            }
-            // *** FIN DE MODIFICATION ***
-            
             loadingMessageElement.textContent = `Connexion au serveur et chargement des données de ${username}...`;
 
             try {
@@ -638,7 +640,7 @@
                     applyGradeStats();
                     updateHotbarDisplay(); 
 
-                    showMenu(); 
+                    showTutorial(); // NOUVEL APPEL : Tutoriel après chargement.
                 } else {
                     // Si le serveur répond en JSON mais indique une erreur logique
                     console.error("Erreur de chargement: " + result.message);
@@ -713,7 +715,7 @@
                         .slice(0, 5); 
                     
                     // 2. Ajout du score de l'utilisateur s'il n'est pas dans le Top 5 (inchangé)
-                    if (username && !leaderboardData.some(e => e.name === "Vous")) {
+                    if (!leaderboardData.some(e => e.name === "Vous")) {
                         const userGrade = getGrade(currentGradeId); 
                         leaderboardData.push({ 
                             name: "Vous", 
@@ -1100,8 +1102,14 @@
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                  e.preventDefault(); 
+                // Permet de commencer le jeu depuis le menu ou l'écran de fin
                 if (currentState === GAME_STATE.MENU || currentState === GAME_STATE.GAMEOVER) { 
                     startGame();
+                    return; 
+                }
+                // Permet de passer le tutoriel
+                if (currentState === GAME_STATE.TUTORIAL) { 
+                    showMenu();
                     return; 
                 }
                 if (currentState === GAME_STATE.PLAYING && !isSpacePressed) {
@@ -1157,15 +1165,16 @@
             topHotbarElement.style.display = 'none';
             loadingScreenElement.style.display = 'none';
             rankingScreenElement.style.display = 'none';
+            tutorialScreenElement.style.display = 'none'; // NOUVELLE LIGNE
+        }
+
+        function showTutorial() {
+            hideAllScreens();
+            currentState = GAME_STATE.TUTORIAL;
+            tutorialScreenElement.style.display = 'flex';
         }
 
         function showMenu() {
-            // Empêche le jeu de passer au menu si l'utilisateur n'est pas chargé
-            if (!username) {
-                 loadGameData(); // Tente de re-charger (et re-vérifier)
-                 return;
-            }
-
             hideAllScreens();
             currentState = GAME_STATE.MENU;
             menuContainer.style.display = 'block';
@@ -1177,8 +1186,7 @@
         }
 
         function startGame() {
-            // Empêche le jeu de démarrer si l'utilisateur n'est pas chargé
-            if (currentState === GAME_STATE.LOADING || !username) return; 
+            if (currentState === GAME_STATE.LOADING) return; 
 
             sfx.restart();
             hideAllScreens();
@@ -1216,7 +1224,6 @@
         }
         
         function showUpgradeShop() {
-            if (!username) return;
             hideAllScreens();
             currentState = GAME_STATE.GRADES;
             menuContainer.style.display = 'block';
@@ -1234,7 +1241,6 @@
         }
         
         function showRankingScreen() {
-            if (!username) return;
             hideAllScreens();
             currentState = GAME_STATE.RANKING;
             rankingScreenElement.style.display = 'flex';
@@ -1278,6 +1284,7 @@
         document.getElementById('rankingButton').onclick = showRankingScreen; 
         document.getElementById('backToMenuFromRanking').onclick = showMenu; 
         document.getElementById('quitGameButton').onclick = quitToMenuHTML;
+        document.getElementById('startMenuButton').onclick = showMenu; // NOUVEAU: Bouton du tutoriel
         
         // --- Initialisation du jeu
         resizeCanvas(); 

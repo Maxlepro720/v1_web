@@ -85,12 +85,23 @@
         .loser-timer .timer-time { color: #fff; }
 
 
-        /* --- 3. Styles du Plateau (Responsive) --- */
+        /* --- 3. Styles du Plateau (Responsive & Rotation) --- */
         .chessboard-container {
             max-width: 600px; 
             width: 100%;
             aspect-ratio: 1 / 1; 
             margin: 10px 0;
+            /* Animation pour la rotation */
+            transition: transform 0.5s ease-in-out; 
+        }
+
+        /* Classe appliquée si le joueur est Noir */
+        .rotated-board {
+            transform: rotate(180deg);
+        }
+
+        .rotated-board .piece {
+            transform: rotate(180deg); /* Annule la rotation pour que les pièces restent droites */
         }
         
         .info-panel {
@@ -230,7 +241,7 @@
                 </div>
             </div>
 
-            <div class="chessboard-container">
+            <div class="chessboard-container" id="chessboard-container">
                 <div class="info-panel" id="info">Cliquez sur "Lancer Partie" pour commencer à jouer.</div>
                 <div class="chessboard" id="chessboard">
                     </div>
@@ -277,6 +288,7 @@
             'r': '♖', 'n': '♘', 'b': '♗', 'q': '♕', 'k': '♔', 'p': '♙'  
         };
         
+        // 🔥 L'USERNAME est lu ici, c'est la seule source d'ID pour le serveur
         const USERNAME = getUsernameFromStorage(); 
         const OPPONENT_NAME = "Adversaire Inconnu"; 
 
@@ -302,6 +314,7 @@
         let infoTimeout = null; 
 
         const chessboardEl = document.getElementById('chessboard');
+        const chessboardContainerEl = document.getElementById('chessboard-container');
         const infoEl = document.getElementById('info');
         const timeWhiteEl = document.getElementById('time-white');
         const timeBlackEl = document.getElementById('time-black');
@@ -494,6 +507,14 @@
                     playerColor = data.player_color;
                     opponentId = data.opponent_id || OPPONENT_NAME;
                     
+                    // 🔥 CORRECTION DE ROTATION DU PLATEAU
+                    if (playerColor === 'black') {
+                        chessboardContainerEl.classList.add('rotated-board');
+                    } else {
+                        chessboardContainerEl.classList.remove('rotated-board');
+                    }
+                    // ------------------------------------
+                    
                     updateBoardState(data.fen); 
                     
                     document.getElementById(`player-${playerColor}-name`).textContent = USERNAME;
@@ -510,10 +531,11 @@
                     
                 } else {
                     displayInfo(`Erreur de matchmaking (HTTP ${response.status}): ${data.error || 'Authentification requise.' }`, true);
+                    console.error("Erreur serveur:", data.error);
                 }
 
             } catch (e) {
-                displayInfo("Erreur critique de connexion au serveur (CORS/Réseau).", true);
+                displayInfo("Erreur critique de connexion au serveur (Réseau).", true);
                 console.error("Détail de l'erreur client:", e);
             } finally {
                 playButton.disabled = false;
@@ -525,8 +547,13 @@
         
         // Route Flask 2: Envoyer Coup 
         async function makeMoveServer(startRow, startCol, endRow, endCol, promotion = '') {
+            // Conversion des coordonnées (Row 0=8, Col 0=a) vers UCI (ex: e2e4)
             const move_uci = `${String.fromCharCode(97 + startCol)}${8 - startRow}${String.fromCharCode(97 + endCol)}${8 - endRow}${promotion}`;
             
+            // 🔥 CORRECTION DE DEBUG : Afficher le coup UCI
+            console.log("Tentative d'envoi du coup UCI:", move_uci);
+            // ------------------------------------------
+
             chessboardEl.style.pointerEvents = 'none';
             displayInfo("Envoi du coup au serveur...");
 
@@ -572,6 +599,8 @@
 
                 } else {
                     displayInfo(data.error || `Mouvement rejeté par le serveur (HTTP ${response.status}).`, true);
+                    console.error("Erreur Mouvement Serveur:", data.error);
+                    // Si le coup est rejeté, on rafraîchit l'état du plateau au dernier FEN connu
                     updateBoardState(currentFen); 
                 }
 
@@ -613,6 +642,7 @@
                 currentGameId = null;
                 playerColor = null;
                 opponentId = OPPONENT_NAME;
+                chessboardContainerEl.classList.remove('rotated-board'); // Enlève la rotation
                 updateBoardState(INITIAL_FEN); 
                 playButton.style.display = 'block';
                 playButton.textContent = 'Lancer Partie';
@@ -625,6 +655,12 @@
         }
         
         function findLegalMoves(pieceCode, startRow, startCol) {
+            // Note: Cette fonction est un placeholder. La validation réelle est faite par le serveur.
+            // Pour l'instant, elle n'est pas censée renvoyer de vrais coups légaux
+            // car le serveur ne les envoie pas. Vous devrez implémenter
+            // la récupération des coups légaux du serveur pour que cela fonctionne.
+            // Retourne un tableau de destinations bidon (ex: [{row: 4, col: 4}])
+            // Ici, on retourne simplement un tableau vide pour ne pas bloquer.
             return [];
         }
 
@@ -633,6 +669,7 @@
              if (!['Q', 'R', 'B', 'N'].includes(choice)) {
                  choice = 'Q'; 
              }
+             // Le serveur s'attend à une minuscule dans l'UCI (ex: e7e8q)
              return choice.toLowerCase();
         }
         
@@ -672,6 +709,7 @@
         }
 
         function initBoardSquares() {
+            // Création des cases statiques (ce qui ne bouge pas)
             for (let i = 0; i < 8; i++) {
                 for (let j = 0; j < 8; j++) {
                     const squareEl = document.createElement('div');
@@ -685,6 +723,7 @@
         }
 
         function drawPieces() {
+            // Logique optimisée pour mettre à jour les pièces sans tout redessiner
             const existingPieces = {};
             document.querySelectorAll('.piece').forEach(p => {
                 const key = `${p.dataset.row}-${p.dataset.col}`;
@@ -749,28 +788,33 @@
         }
         
         function handleMove(row, col, squareEl) {
+            // Bloquer le clic si la partie n'est pas active, si ce n'est pas notre couleur ou si on attend un adversaire
             if (isGameOver || playerColor !== turn || currentGameId === null) return;
 
             const pieceCode = boardState[row][col];
             const pieceColor = getPieceColor(pieceCode);
-            const isDestinationLegal = legalMoves.some(move => move.row === row && move.col === col);
+            // const isDestinationLegal = legalMoves.some(move => move.row === row && move.col === col);
             
             if (!selectedPieceEl) {
+                // Première sélection : sélectionne une pièce de sa couleur
                 if (pieceColor === playerColor) {
                     selectedPieceEl = document.querySelector(`.piece[data-row="${row}"][data-col="${col}"]`);
                     selectedCoords = { row: row, col: col };
                     
+                    // Note: findLegalMoves est vide tant que le serveur ne renvoie pas la liste des coups possibles.
                     legalMoves = findLegalMoves(pieceCode, row, col); 
                     drawBoard(); 
                 }
             }
             else {
+                // Deuxième clic : tentative de mouvement
                 const startRow = selectedCoords.row;
                 const startCol = selectedCoords.col;
                 const startPieceCode = boardState[startRow][startCol];
                 let promotion = '';
 
                 if (startRow === row && startCol === col) {
+                    // Désélectionner
                     selectedPieceEl = null;
                     selectedCoords = { row: -1, col: -1 };
                     legalMoves = [];
@@ -778,20 +822,25 @@
                     return;
                 }
                 
+                // Si la destination est différente de l'origine
                 if (startRow !== row || startCol !== col) {
                     
+                    // Gérer la promotion si c'est un pion atteignant la dernière rangée
                     if (startPieceCode.toLowerCase() === 'p' && (row === 0 || row === 7)) {
                         promotion = handlePawnPromotion(row, col); 
                     }
 
+                    // On anime le coup immédiatement côté client pour le feedback visuel
                     animateMove(selectedPieceEl, row, col);
                     
+                    // On envoie la requête au serveur pour validation et application
                     makeMoveServer(startRow, startCol, row, col, promotion);
                     
                 } else {
                     displayInfo("Sélectionner une autre pièce ou destination.", true);
                 }
                 
+                // Réinitialisation de l'état de sélection
                 selectedPieceEl = null;
                 selectedCoords = { row: -1, col: -1 };
                 legalMoves = [];

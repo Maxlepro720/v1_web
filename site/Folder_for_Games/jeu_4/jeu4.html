@@ -56,7 +56,6 @@
             border: 2px solid transparent; 
         }
         
-        /* 🔥 CLARTÉ DU TOUR : Bordure verte pour le joueur actif */
         .player-container.highlight-turn {
             border-color: #28a745; 
             box-shadow: 0 0 8px rgba(40, 167, 69, 0.5);
@@ -133,16 +132,13 @@
             border: 4px solid #f0f0f0;
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
             position: relative;
-            /* Rotation du plateau UNIQUEMENT */
             transition: transform 0.5s ease-in-out; 
         }
 
-        /* Classe appliquée si le joueur est Noir */
         .chessboard.rotated {
             transform: rotate(180deg);
         }
 
-        /* CORRECTION : Inverse la rotation des PIÈCES à l'intérieur du plateau tourné */
         .chessboard.rotated .piece {
             transform: rotate(180deg);
         }
@@ -159,7 +155,6 @@
         .dark { background-color: #b58863; }
         .selected { box-shadow: inset 0 0 0 5px #007bff; }
         
-        /* Style pour l'indicateur de coup possible (point bleu) */
         .highlight-move::after {
             content: '';
             display: block;
@@ -169,7 +164,6 @@
             background-color: rgba(0, 123, 255, 0.6);
         }
         
-        /* Style pour les captures (cercle autour de la pièce) */
         .highlight-capture::after {
             content: '';
             display: block;
@@ -247,7 +241,6 @@
             .piece { font-size: 8vw; } 
         }
         
-        /* Styles de la liste des coups (inchangés) */
         .moves-list-container {
             background-color: #1a1a1a;
             padding: 10px;
@@ -362,11 +355,9 @@
         let playerColor = null; 
         let opponentId = OPPONENT_NAME; 
         
-        let boardState = []; 
         let selectedCoords = null;
         let legalMoves = [];
         let isGameOver = false;
-        // 🔥 Indique que l'adversaire n'est pas encore connecté/prêt
         let waitingForOpponent = false; 
 
         let timer = {
@@ -375,6 +366,7 @@
         };
         let timerInterval = null; 
         let infoTimeout = null; 
+        let pollingInterval = null; // 🔥 NOUVEAU: Variable pour le polling
 
         const chessboardEl = document.getElementById('chessboard');
         const infoEl = document.getElementById('info');
@@ -400,7 +392,7 @@
             }
         }
         
-        // --- Chronomètre et Infos ---
+        // --- Chronomètre et Polling ---
 
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
@@ -445,7 +437,7 @@
         }
 
         function startTimer() {
-            // Le timer ne démarre que si l'adversaire est là
+            // Le timer ne démarre que si l'adversaire est là et qu'on ne polle plus
             if (!timerInterval && !isGameOver && !waitingForOpponent) { 
                 timerInterval = setInterval(() => {
                     const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
@@ -470,6 +462,66 @@
             updateTimers();
         }
 
+        // 🔥 NOUVEAU : Logique de Polling pour l'attente de l'adversaire (Joueur Blanc)
+        function stopPolling() {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+                console.log("Polling arrêté.");
+            }
+        }
+
+        async function checkMatchStatus() {
+            if (!currentGameId || !waitingForOpponent) {
+                stopPolling();
+                return;
+            }
+            
+            try {
+                // Requête régulière pour obtenir l'état de la partie
+                // NOTE: L'utilisateur doit implémenter cette route sur le serveur Flask
+                const response = await fetch(`${SERVER_URL}/get_game_state?game_uuid=${currentGameId}&username=${USERNAME}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.opponent_id && data.opponent_id !== OPPONENT_NAME) {
+                    // Adversaire trouvé ! Transition vers l'état actif.
+                    
+                    waitingForOpponent = false; 
+                    opponentId = data.opponent_id;
+                    
+                    document.getElementById(`player-${playerColor === 'white' ? 'black' : 'white'}-name`).textContent = opponentId;
+
+                    matchStatusEl.textContent = `Partie contre ${opponentId} !`;
+                    displayInfo("L'adversaire a rejoint la partie ! À vous de jouer.");
+                    
+                    updateBoardState(data.fen); 
+                    
+                    stopPolling(); 
+                    startTimer(); 
+                    
+                }
+
+            } catch (e) {
+                console.error("Erreur de connexion au serveur lors du polling. Ré-essaie dans 2s.", e);
+            }
+        }
+        
+        function startPolling() {
+            if (!pollingInterval) {
+                // Taux de rafraîchissement rapide pour le matchmaking (toutes les 2 secondes)
+                pollingInterval = setInterval(checkMatchStatus, 2000); 
+                console.log("Polling démarré pour l'adversaire.");
+                checkMatchStatus(); // Première vérification immédiate
+            }
+        }
+        
+        // --- Fin Polling ---
+
+
         function displayInfo(message, isError = false) {
             infoEl.textContent = message;
             infoEl.style.color = isError ? 'red' : '#fff';
@@ -486,6 +538,7 @@
         function endGame(type, loserColor) {
             isGameOver = true;
             stopTimer(); 
+            stopPolling(); // S'assurer que le polling est arrêté
             playButton.style.display = 'none';
 
             let message = '';
@@ -509,11 +562,9 @@
         
         function getPieceColor(codeOrColor) {
             if (!codeOrColor) return null;
-            // Case 1: chess.js single letter color ('w' or 'b')
             if (codeOrColor === 'w' || codeOrColor === 'W') return 'white'; 
             if (codeOrColor === 'b' || codeOrColor === 'B') return 'black';
             
-            // Case 2: FEN piece code ('P', 'p', 'R', 'r', etc.)
             return codeOrColor === codeOrColor.toLowerCase() ? 'black' : 'white'; 
         }
 
@@ -554,6 +605,10 @@
                 playButton.textContent = 'Lancer Partie';
                 return;
             }
+            
+            // Arrêter tout processus précédent
+            stopPolling(); 
+            stopTimer(); 
 
             try {
                 const headers = { 'Content-Type': 'application/json' };
@@ -571,7 +626,6 @@
                     playerColor = data.player_color;
                     opponentId = data.opponent_id || OPPONENT_NAME;
                     
-                    // Rotation du Plateau
                     if (playerColor === 'black') {
                         chessboardEl.classList.add('rotated');
                     } else {
@@ -584,18 +638,20 @@
                     document.getElementById(`player-${playerColor === 'white' ? 'black' : 'white'}-name`).textContent = opponentId;
                     
                     if (data.status === 'joined') {
-                        waitingForOpponent = false; // Deuxième joueur : OK
+                        // JOUEUR QUI REJOINT
+                        waitingForOpponent = false; 
                         matchStatusEl.textContent = `Partie contre ${opponentId} !`;
                         displayInfo(`Partie rejointe. Vous jouez les ${playerColor === 'white' ? 'Blancs' : 'Noirs'}.`);
                         startTimer(); 
                         subscribeToMatch(currentGameId); 
                     } else if (data.status === 'created') {
-                        // 🔥 CORRECTION : Premier joueur (Blanc) doit attendre
+                        // JOUEUR QUI CRÉE (BLANC)
                         waitingForOpponent = true; 
                         matchStatusEl.textContent = `Partie créée. En attente de l'adversaire...`;
                         displayInfo(`Nouvelle partie créée. En attente d'un adversaire. (Vous jouez les ${playerColor === 'white' ? 'Blancs' : 'Noirs'}).`);
+                        
+                        startPolling(); // 🔥 Démarrer le polling pour le créateur
                         subscribeToMatch(currentGameId); 
-                        // Le timer et le jeu ne démarrent pas tant que waitingForOpponent est à true
                     }
                     
                 } else {
@@ -653,7 +709,6 @@
                 } else {
                     displayInfo(data.error || `Mouvement rejeté par le serveur (HTTP ${response.status}).`, true);
                     console.error("Erreur Mouvement Serveur:", data.error);
-                    // Annule le mouvement local
                     chessBoard.undo(); 
                     updateBoardState(chessBoard.fen()); 
                 }
@@ -672,6 +727,7 @@
         async function callDestroyMatch() {
             if (!currentGameId) return;
             stopTimer(); 
+            stopPolling();
 
             try {
                 const headers = { 'Content-Type': 'application/json' };
@@ -708,19 +764,12 @@
         // --- Logique d'Interaction du Plateau (Validation Côté Client) ---
         
         function receiveMoveFromOpponent(newFen) {
-            // Cette fonction sera appelée par votre système Realtime (Supabase)
-            if (isGameOver) return;
-
-            // Logique de transition si l'adversaire vient de rejoindre
-            if (waitingForOpponent) {
-                waitingForOpponent = false;
-                matchStatusEl.textContent = `Partie contre ${opponentId} !`;
-                startTimer(); 
-                displayInfo("L'adversaire a rejoint la partie !");
-            }
+            // Cette fonction est censée être appelée par un système Realtime
+            if (isGameOver || waitingForOpponent) return; 
             
             if (newFen && newFen !== chessBoard.fen()) {
                 updateBoardState(newFen);
+                startTimer(); 
                 displayInfo("Coup de l'adversaire reçu.");
             }
         }
@@ -736,10 +785,7 @@
              }
              move.promotion = choice.toLowerCase();
              
-             // Simuler le mouvement localement pour le feedback immédiat et le FEN.
-             // On utilise chess.move() pour générer la notation correcte (UCI/SAN).
              const tempMove = chessBoard.move(move);
-             // On s'assure d'obtenir la notation correcte avant d'annuler
              move.san = tempMove.san; 
              chessBoard.undo();
              
@@ -755,7 +801,7 @@
                 let msg = '';
                 if (isGameOver) msg = "La partie est terminée.";
                 else if (currentGameId === null) msg = "Lancez une partie d'abord.";
-                else if (waitingForOpponent) msg = "En attente de l'adversaire."; // Nouveau message pour le Blanc
+                else if (waitingForOpponent) msg = "En attente de l'adversaire pour commencer.";
                 else if (playerColor !== currentTurnColor) msg = "Ce n'est pas votre tour de jouer.";
                 
                 displayInfo(msg, true);
@@ -765,7 +811,6 @@
             if (!selectedCoords) {
                 // Première sélection : sélectionne une pièce de sa couleur
                 const piece = chessBoard.get(clickedSquare);
-                // 🔥 CORRECTION : Vérification directe de la couleur du joueur avec la couleur de la pièce chess.js
                 const pieceColorMatchesPlayer = piece && (
                     (piece.color === 'w' && playerColor === 'white') || 
                     (piece.color === 'b' && playerColor === 'black')
@@ -792,15 +837,11 @@
                 let move = legalMoves.find(m => m.to === clickedSquare);
 
                 if (move) {
-                    // Le coup est légal localement
-                    
                     // Gérer la promotion si nécessaire
                     if (move.flags.includes('p') && (move.to[1] === '8' || move.to[1] === '1')) {
                         move = handlePawnPromotion(move); 
                     }
                     
-                    // Le coup a déjà été traité pour la promotion s'il y a lieu.
-                    // On l'envoie au serveur en notation SAN.
                     makeMoveServer(move.san); 
                     
                 } else {

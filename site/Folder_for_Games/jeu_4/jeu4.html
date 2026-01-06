@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jeu d'Échecs - Responsive et Multijoueur Ready</title>
+    <title>Jeu d'Échecs - Multijoueur Avancé</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.js"></script>
+    
     <style>
-        /* --- Styles du jeu (inchangés) --- */
+        /* --- Styles du jeu --- */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
@@ -91,8 +94,8 @@
             width: 100%;
             aspect-ratio: 1 / 1; 
             margin: 10px 0;
-            /* Animation pour la rotation */
             transition: transform 0.5s ease-in-out; 
+            position: relative;
         }
 
         /* Classe appliquée si le joueur est Noir */
@@ -100,8 +103,9 @@
             transform: rotate(180deg);
         }
 
+        /* 🔥 CORRECTION CRUCIALE : Inverse la rotation des PIÈCES */
         .rotated-board .piece {
-            transform: rotate(180deg); /* Annule la rotation pour que les pièces restent droites */
+            transform: rotate(180deg);
         }
         
         .info-panel {
@@ -129,12 +133,37 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            position: relative;
         }
         
         .light { background-color: #f0d9b5; }
         .dark { background-color: #b58863; }
         .selected { box-shadow: inset 0 0 0 5px #007bff; }
-        .highlight-move { background-color: rgba(0, 123, 255, 0.4) !important; }
+        
+        /* Style pour l'indicateur de coup possible (point bleu) */
+        .highlight-move::after {
+            content: '';
+            display: block;
+            width: 30%;
+            height: 30%;
+            border-radius: 50%;
+            background-color: rgba(0, 123, 255, 0.6);
+            /* Positionnement relatif à la case */
+        }
+        
+        /* Style pour les captures (cercle autour de la pièce) */
+        .highlight-capture::after {
+            content: '';
+            display: block;
+            width: 90%;
+            height: 90%;
+            border-radius: 50%;
+            border: 8px solid rgba(0, 123, 255, 0.6); 
+            /* Assurez-vous que l'indicateur est derrière la pièce */
+            z-index: 5;
+            position: absolute;
+        }
+
         .in-check { background-color: red !important; }
 
         .piece {
@@ -162,13 +191,12 @@
         }
         .black-piece { color: #000000; }
 
-        /* --- 4. Sidebar Épurée --- */
+        /* --- 4. Sidebar et Historique des Coups --- */
         .sidebar {
             flex-basis: 300px; 
             padding: 20px;
             background-color: #222; 
             border-radius: 8px;
-            box-shadow: none; 
             border: 1px solid #444; 
             display: flex;
             flex-direction: column;
@@ -201,9 +229,48 @@
             font-weight: bold;
         }
 
-        #play-button:hover { 
+        #play-button:hover:not(:disabled) { 
             background-color: #28a745; 
             color: white; 
+        }
+        
+        #play-button:disabled {
+            background-color: #555;
+            color: #aaa;
+            border-color: #555;
+            cursor: not-allowed;
+        }
+
+        /* Style de la liste des coups */
+        .moves-list-container {
+            background-color: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #444;
+        }
+
+        .moves-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95em;
+        }
+
+        .moves-table th {
+            text-align: left;
+            padding: 5px 0;
+            border-bottom: 1px solid #444;
+            color: #007bff;
+        }
+
+        .moves-table td {
+            padding: 5px;
+            color: #f0f0f0;
+        }
+
+        .moves-table tr:nth-child(even) {
+            background-color: #222;
         }
         
         @media (max-width: 900px) {
@@ -260,13 +327,26 @@
         </div>
 
         <div class="sidebar">
-            <h2>Salon de Jeu</h2>
-            <button id="play-button" class="play-button" onclick="toggleTimer()">
+            <h2>Partie et Historique</h2>
+            
+            <button id="play-button" class="play-button" onclick="findOrCreateMatch()">
                 Lancer Partie
             </button>
+            
+            <div class="moves-list-container">
+                <h3>Coups Joués</h3>
+                <table class="moves-table">
+                    <thead>
+                        <tr><th>#</th><th>Blanc</th><th>Noir</th></tr>
+                    </thead>
+                    <tbody id="moves-list">
+                        </tbody>
+                </table>
+            </div>
+
             <div class="friends-list">
-                <h3>Liste d'amis</h3>
-                <p>(Fonctionnalité à venir)</p>
+                <h3>Statut</h3>
+                <p id="match-status-text">(En attente de connexion)</p>
             </div>
         </div>
     </div>
@@ -275,9 +355,23 @@
     <script>
         // --- Fonctions Utilitaires ---
         function getUsernameFromStorage() {
-            // Lit le pseudo de l'utilisateur depuis le stockage local
             return localStorage.getItem('username');
         }
+        
+        // Convertit la notation échiquéenne (ex: 'e4') en coordonnées (ex: {row: 4, col: 4})
+        function squareToCoords(square) {
+            const col = square.charCodeAt(0) - 'a'.charCodeAt(0);
+            const row = 8 - parseInt(square[1]);
+            return { row, col };
+        }
+        
+        // Convertit les coordonnées (ex: {row: 4, col: 4}) en notation échiquéenne (ex: 'e4')
+        function coordsToSquare(row, col) {
+            const colChar = String.fromCharCode('a'.charCodeAt(0) + col);
+            const rowNum = 8 - row;
+            return `${colChar}${rowNum}`;
+        }
+
 
         // --- Constantes et État du Jeu ---
         const SERVER_URL = "https://project-3-api-2bgb.onrender.com"; 
@@ -288,23 +382,22 @@
             'r': '♖', 'n': '♘', 'b': '♗', 'q': '♕', 'k': '♔', 'p': '♙'  
         };
         
-        // 🔥 L'USERNAME est lu ici, c'est la seule source d'ID pour le serveur
         const USERNAME = getUsernameFromStorage(); 
         const OPPONENT_NAME = "Adversaire Inconnu"; 
 
         const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; 
-        let currentFen = INITIAL_FEN; 
         
+        // 🔥 NOUVEAU : Objet chess.js pour la validation côté client
+        let chessBoard = new Chess(INITIAL_FEN); 
+
         let currentGameId = null; 
         let playerColor = null; 
         let opponentId = OPPONENT_NAME; 
         
         let boardState = []; 
-        let selectedPieceEl = null;
-        let selectedCoords = { row: -1, col: -1 };
-        let turn = 'white'; 
-        let legalMoves = []; 
+        let selectedCoords = null;
         let isGameOver = false;
+        let waitingForOpponent = false;
 
         let timer = {
             'white': INITIAL_TIME_SECONDS,
@@ -321,48 +414,39 @@
         const timerWhiteBox = document.getElementById('timer-white');
         const timerBlackBox = document.getElementById('timer-black');
         const playButton = document.getElementById('play-button');
+        const movesListEl = document.getElementById('moves-list');
+        const matchStatusEl = document.getElementById('match-status-text');
 
 
-        // --- Fonctions FEN et Mise à Jour du Plateau (Inchangées) ---
+        // --- Fonctions FEN et Mise à Jour du Plateau ---
         
         function parseFenToBoard(fen) {
-            const parts = fen.split(' ');
-            const placement = parts[0];
+            // Utilise chess.js pour obtenir l'état du plateau
             const newBoard = [];
-            
-            const ranks = placement.split('/');
-            for (let r = 0; r < 8; r++) {
-                const rank = ranks[r];
-                let row = [];
-                for (let i = 0; i < rank.length; i++) {
-                    const char = rank[i];
-                    if (/\d/.test(char)) {
-                        const emptySquares = parseInt(char);
-                        for (let k = 0; k < emptySquares; k++) {
-                            row.push('');
-                        }
-                    } else {
-                        row.push(char);
-                    }
-                }
-                newBoard.push(row);
-            }
-            
-            turn = parts[1] === 'w' ? 'white' : 'black';
+            chessBoard.board().forEach(row => {
+                newBoard.push(row.map(piece => piece ? piece.type + (piece.color === 'w' ? 'r' : 'R') : ''));
+            });
+            // La conversion en majuscules/minuscules pour les couleurs
+            // est gérée dans drawPieces pour la compatibilité avec les symboles.
             return newBoard; 
         }
 
         function updateBoardState(newFen, shouldDraw = true) {
-            currentFen = newFen;
+            // Met à jour l'état interne de chess.js
+            chessBoard.load(newFen); 
+            
             boardState = parseFenToBoard(newFen);
+            
+            // Mise à jour de l'historique des coups
+            updateMovesList(chessBoard.history()); 
             
             if (shouldDraw) {
                 drawPieces();
                 drawBoard();
             }
         }
-
-        // --- Fonctions Chronomètre, Info, etc. (Inchangées) ---
+        
+        // --- Chronomètre et Infos (Simplifié : suppression de la pause/reprise) ---
 
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
@@ -377,14 +461,14 @@
             timerWhiteBox.classList.remove('active-timer', 'loser-timer');
             timerBlackBox.classList.remove('active-timer', 'loser-timer');
             
+            const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
+
             if (isGameOver) {
                  if (timer.white <= 0) timerWhiteBox.classList.add('loser-timer');
                  if (timer.black <= 0) timerBlackBox.classList.add('loser-timer');
-            } else {
-                if (timerInterval) {
-                   if (turn === 'white') timerWhiteBox.classList.add('active-timer');
+            } else if (currentGameId && !waitingForOpponent) {
+                   if (currentTurn === 'white') timerWhiteBox.classList.add('active-timer');
                    else timerBlackBox.classList.add('active-timer');
-                }
             }
 
             if (timer.white <= 0 && !isGameOver) {
@@ -395,42 +479,27 @@
             }
         }
 
-        function pauseTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-                playButton.textContent = 'Reprendre Partie';
-                updateTimers(); 
-            }
-        }
-
         function startTimer() {
-            if (!timerInterval && !isGameOver) {
+            if (!timerInterval && !isGameOver && !waitingForOpponent) {
                 timerInterval = setInterval(() => {
-                    if (turn === 'white' && timer.white > 0) {
+                    const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
+                    if (currentTurn === 'white' && timer.white > 0) {
                         timer.white--;
-                    } else if (turn === 'black' && timer.black > 0) {
+                    } else if (currentTurn === 'black' && timer.black > 0) {
                         timer.black--;
                     }
                     updateTimers();
                 }, 1000);
-                playButton.textContent = 'Pause Temps';
+                playButton.disabled = true;
+                playButton.textContent = 'Partie en Cours';
                 updateTimers(); 
             }
         }
         
-        window.toggleTimer = function() {
-            if (isGameOver) return;
-            
-            if (!currentGameId) {
-                findOrCreateMatch(); 
-                return;
-            }
-
+        function stopTimer() {
             if (timerInterval) {
-                pauseTimer();
-            } else {
-                startTimer();
+                clearInterval(timerInterval);
+                timerInterval = null;
             }
         }
 
@@ -449,31 +518,64 @@
         
         function endGame(type, loserColor) {
             isGameOver = true;
-            pauseTimer(); 
+            stopTimer(); 
             playButton.style.display = 'none';
 
+            let message = '';
             if (type === 'time') {
                 const winnerColor = loserColor === 'white' ? 'Noirs' : 'Blancs';
-                infoEl.textContent = `Temps écoulé pour les ${loserColor === 'white' ? 'Blancs' : 'Noirs'} ! Les ${winnerColor} ont gagné par temps.`;
+                message = `Temps écoulé pour les ${loserColor === 'white' ? 'Blancs' : 'Noirs'} ! Les ${winnerColor} ont gagné par temps.`;
             } else if (type === 'checkmate') {
-                const winnerColor = loserColor === 'white' ? 'Noirs' : 'Blancs';
-                infoEl.textContent = `ÉCHEC ET MAT ! Les ${winnerColor} ont gagné !`;
+                const winnerColor = loserColor === 'w' ? 'Blancs' : 'Noirs';
+                message = `ÉCHEC ET MAT ! Les ${winnerColor} ont gagné !`;
             } else if (type === 'stalemate') {
-                infoEl.textContent = `PAT ! Match nul.`;
+                message = `PAT ! Match nul.`;
             } else if (type === 'draw') {
-                 infoEl.textContent = `MATCH NUL par accord ou règles !`;
+                 message = `MATCH NUL par accord ou règles !`;
             }
+            infoEl.textContent = message;
             infoEl.style.color = 'green';
+            matchStatusEl.textContent = message;
             
-            setTimeout(callDestroyMatch, 5000); 
+            setTimeout(callDestroyMatch, 10000); // Destruction après un délai
         }
         
-        function getPieceColor(piece) {
-            if (!piece) return null;
-            return piece === piece.toLowerCase() ? 'white' : 'black'; 
+        function getPieceColor(pieceCode) {
+            // Utilise la convention FEN: minuscule = noir, majuscule = blanc
+            if (!pieceCode) return null;
+            return pieceCode === pieceCode.toLowerCase() ? 'black' : 'white'; 
         }
 
-        // --- Fonctions d'Interaction Serveur (Mises à jour sans 'credentials') ---
+
+        // --- Mise à jour de l'Historique (Nouveau) ---
+
+        function updateMovesList(history) {
+            movesListEl.innerHTML = ''; // Nettoyer l'historique
+            let html = '';
+            
+            for (let i = 0; i < history.length; i++) {
+                if (i % 2 === 0) {
+                    // C'est un coup des Blancs, commence une nouvelle ligne
+                    const moveNumber = Math.floor(i / 2) + 1;
+                    html += `<tr><td>${moveNumber}.</td><td>${history[i]}</td>`;
+                    
+                    if (i === history.length - 1) {
+                         // C'est le dernier coup et c'est le tour des Blancs
+                        html += `<td></td></tr>`; 
+                    }
+                } else {
+                    // C'est un coup des Noirs, ferme la ligne précédente
+                    html += `<td>${history[i]}</td></tr>`;
+                }
+            }
+            movesListEl.innerHTML = html;
+            
+            // Faire défiler vers le bas
+            const container = document.querySelector('.moves-list-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // --- Fonctions d'Interaction Serveur ---
         
         // Route Flask 1: Matchmaking
         async function findOrCreateMatch() {
@@ -481,23 +583,19 @@
             playButton.textContent = 'Recherche en cours...';
             
             if (!USERNAME) { 
-                displayInfo("Erreur: Pseudo non défini. Veuillez définir 'username' dans localStorage.", true);
+                displayInfo("Erreur: Pseudo non défini.", true);
                 playButton.disabled = false;
                 playButton.textContent = 'Lancer Partie';
                 return;
             }
 
             try {
-                const headers = { 
-                    'Content-Type': 'application/json',
-                };
+                const headers = { 'Content-Type': 'application/json' };
                 
                 const response = await fetch(`${SERVER_URL}/find_or_create_match`, {
                     method: 'POST',
                     headers: headers,
-                    // ✅ Le pseudo est envoyé dans le corps JSON pour l'authentification
                     body: JSON.stringify({ username: USERNAME }), 
-                    // 'credentials: 'include' est supprimé
                 });
 
                 const data = await response.json(); 
@@ -507,13 +605,12 @@
                     playerColor = data.player_color;
                     opponentId = data.opponent_id || OPPONENT_NAME;
                     
-                    // 🔥 CORRECTION DE ROTATION DU PLATEAU
+                    // 🔥 Rotation du Plateau
                     if (playerColor === 'black') {
                         chessboardContainerEl.classList.add('rotated-board');
                     } else {
                         chessboardContainerEl.classList.remove('rotated-board');
                     }
-                    // ------------------------------------
                     
                     updateBoardState(data.fen); 
                     
@@ -521,16 +618,20 @@
                     document.getElementById(`player-${playerColor === 'white' ? 'black' : 'white'}-name`).textContent = opponentId;
                     
                     if (data.status === 'joined') {
-                        displayInfo(`Partie ${data.game_uuid.substring(0, 8)}... rejointe. Vous jouez les ${playerColor === 'white' ? 'Blancs' : 'Noirs'}.`);
+                        waitingForOpponent = false;
+                        matchStatusEl.textContent = `Partie contre ${opponentId} !`;
+                        displayInfo(`Partie rejointe. Vous jouez les ${playerColor === 'white' ? 'Blancs' : 'Noirs'}.`);
                         startTimer(); 
                         subscribeToMatch(currentGameId); 
                     } else if (data.status === 'created') {
-                        displayInfo(`Partie ${data.game_uuid.substring(0, 8)}... créée. En attente d'un adversaire. Vous jouez les ${playerColor === 'white' ? 'Blancs' : 'Noirs'}.`);
+                        waitingForOpponent = true;
+                        matchStatusEl.textContent = `En attente d'un adversaire...`;
+                        displayInfo(`Nouvelle partie créée. En attente d'un adversaire.`);
                         subscribeToMatch(currentGameId); 
                     }
                     
                 } else {
-                    displayInfo(`Erreur de matchmaking (HTTP ${response.status}): ${data.error || 'Authentification requise.' }`, true);
+                    displayInfo(`Erreur de matchmaking (HTTP ${response.status}): ${data.error || 'Erreur inconnue.' }`, true);
                     console.error("Erreur serveur:", data.error);
                 }
 
@@ -538,29 +639,25 @@
                 displayInfo("Erreur critique de connexion au serveur (Réseau).", true);
                 console.error("Détail de l'erreur client:", e);
             } finally {
-                playButton.disabled = false;
-                if (!currentGameId) {
-                     playButton.textContent = 'Lancer Partie'; 
+                // Le bouton reste désactivé si la partie est créée ou rejointe.
+                if (!currentGameId || waitingForOpponent) {
+                     playButton.disabled = false;
+                     playButton.textContent = 'Recherche en cours...'; 
+                } else {
+                    playButton.disabled = true;
+                    playButton.textContent = 'Partie en Cours';
                 }
             }
         }
         
         // Route Flask 2: Envoyer Coup 
-        async function makeMoveServer(startRow, startCol, endRow, endCol, promotion = '') {
-            // Conversion des coordonnées (Row 0=8, Col 0=a) vers UCI (ex: e2e4)
-            const move_uci = `${String.fromCharCode(97 + startCol)}${8 - startRow}${String.fromCharCode(97 + endCol)}${8 - endRow}${promotion}`;
-            
-            // 🔥 CORRECTION DE DEBUG : Afficher le coup UCI
-            console.log("Tentative d'envoi du coup UCI:", move_uci);
-            // ------------------------------------------
-
+        async function makeMoveServer(move_uci) {
             chessboardEl.style.pointerEvents = 'none';
-            displayInfo("Envoi du coup au serveur...");
+            displayInfo("Validation du coup par le serveur...");
+            stopTimer(); // On arrête le timer pendant l'envoi pour éviter les problèmes de latence
 
             try {
-                const headers = { 
-                    'Content-Type': 'application/json',
-                };
+                const headers = { 'Content-Type': 'application/json' };
 
                 const response = await fetch(`${SERVER_URL}/make_move`, {
                     method: 'POST',
@@ -568,40 +665,31 @@
                     body: JSON.stringify({ 
                         game_uuid: currentGameId, 
                         move_uci: move_uci,
-                        username: USERNAME // ✅ Le pseudo est envoyé dans le corps JSON
+                        username: USERNAME 
                     }),
-                    // 'credentials: 'include' est supprimé
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
+                    // Le serveur a validé et appliqué le coup
                     const newFen = data.new_fen;
                     const gameStatus = data.game_status;
                     
                     updateBoardState(newFen); 
 
                     if (gameStatus !== 'active') {
-                        if (gameStatus === 'checkmate') {
-                            const loserColor = turn === 'white' ? 'black' : 'white';
-                            endGame('checkmate', loserColor);
-                        } else if (gameStatus === 'draw') {
-                            endGame('draw'); 
-                        }
+                        endGame(gameStatus, chessBoard.turn() === 'w' ? 'black' : 'white'); 
                     } else {
-                         displayInfo(`Coup joué: ${move_uci}. Au tour des ${turn === 'white' ? 'Blancs' : 'Noirs'}.`);
+                         displayInfo(`Coup joué: ${move_uci}. Au tour des ${chessBoard.turn() === 'w' ? 'Blancs' : 'Noirs'}.`);
+                         startTimer(); // Redémarre le timer après le changement de tour
                     }
                     
-                    selectedPieceEl = null; 
-                    selectedCoords = { row: -1, col: -1 };
-                    legalMoves = [];
-                    drawBoard(false);
-
                 } else {
                     displayInfo(data.error || `Mouvement rejeté par le serveur (HTTP ${response.status}).`, true);
                     console.error("Erreur Mouvement Serveur:", data.error);
-                    // Si le coup est rejeté, on rafraîchit l'état du plateau au dernier FEN connu
-                    updateBoardState(currentFen); 
+                    // Si le coup est rejeté, on recharge l'état du plateau pour annuler le mouvement local
+                    updateBoardState(chessBoard.fen()); 
                 }
 
             } catch (e) {
@@ -609,121 +697,211 @@
                 console.error(e);
             } finally {
                 chessboardEl.style.pointerEvents = 'auto';
+                selectedCoords = null;
+                drawBoard(false);
             }
         }
 
         // Route Flask 4: Destruction de la Partie 
         async function callDestroyMatch() {
             if (!currentGameId) return;
+            stopTimer(); 
 
             try {
-                const headers = { 
-                    'Content-Type': 'application/json',
-                };
+                const headers = { 'Content-Type': 'application/json' };
 
                 const response = await fetch(`${SERVER_URL}/destroy_match`, {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({ game_uuid: currentGameId, username: USERNAME }),
-                    // 'credentials: 'include' est supprimé
                 });
 
-                const data = await response.json();
-                
-                if (response.ok) {
-                    console.log(data.message);
-                } else {
-                    console.error("Erreur de suppression du match :", data.error);
-                }
-
+                // Traitement pour réinitialiser l'état local
             } catch (e) {
                 console.error("Erreur de connexion au serveur pour la destruction du match.", e);
             } finally {
                 currentGameId = null;
                 playerColor = null;
                 opponentId = OPPONENT_NAME;
-                chessboardContainerEl.classList.remove('rotated-board'); // Enlève la rotation
+                isGameOver = false;
+                waitingForOpponent = false;
+                
+                // Réinitialiser les éléments visuels et la logique
+                chessboardContainerEl.classList.remove('rotated-board');
+                chessBoard.reset();
                 updateBoardState(INITIAL_FEN); 
+                movesListEl.innerHTML = '';
+                matchStatusEl.textContent = `(En attente de connexion)`;
+                
+                // Réinitialiser le bouton et le timer
                 playButton.style.display = 'block';
                 playButton.textContent = 'Lancer Partie';
+                playButton.disabled = false;
+                timer = { 'white': INITIAL_TIME_SECONDS, 'black': INITIAL_TIME_SECONDS };
+                updateTimers();
             }
         }
 
-        // --- Autres Fonctions (Inchangées) ---
-        function subscribeToMatch(game_uuid) {
-            console.log("Synchronisation Realtime initiée (intégration Supabase à compléter).");
-        }
+        // --- Logique d'Interaction du Plateau (Validation Côté Client) ---
         
-        function findLegalMoves(pieceCode, startRow, startCol) {
-            // Note: Cette fonction est un placeholder. La validation réelle est faite par le serveur.
-            // Pour l'instant, elle n'est pas censée renvoyer de vrais coups légaux
-            // car le serveur ne les envoie pas. Vous devrez implémenter
-            // la récupération des coups légaux du serveur pour que cela fonctionne.
-            // Retourne un tableau de destinations bidon (ex: [{row: 4, col: 4}])
-            // Ici, on retourne simplement un tableau vide pour ne pas bloquer.
-            return [];
+        // Simule la réception d'une mise à jour FEN par l'adversaire (à travers le Realtime de Supabase)
+        function receiveMoveFromOpponent(newFen) {
+            if (isGameOver || waitingForOpponent) return;
+            
+            // Valide que le FEN est différent pour éviter les boucles
+            if (newFen !== chessBoard.fen()) {
+                updateBoardState(newFen);
+                
+                // Le timer doit redémarrer pour le tour du joueur local
+                startTimer();
+                displayInfo("Coup de l'adversaire reçu.");
+            }
         }
 
-        function handlePawnPromotion(row, col) {
+        function findLegalMoves(square) {
+            // Utilise la fonction .moves() de chess.js
+            return chessBoard.moves({ square: square, verbose: true });
+        }
+
+        function handlePawnPromotion(move) {
              let choice = prompt("Promotion du pion ! Choisissez une pièce (Q, R, B, N) pour Dame, Tour, Fou, Cavalier:").toUpperCase();
              if (!['Q', 'R', 'B', 'N'].includes(choice)) {
                  choice = 'Q'; 
              }
-             // Le serveur s'attend à une minuscule dans l'UCI (ex: e7e8q)
-             return choice.toLowerCase();
+             // Ajoute la lettre de promotion à la fin du coup UCI (ex: 'e7e8q')
+             move.promotion = choice.toLowerCase();
+             move.san = move.san.replace('=', `=${choice}`); // Mise à jour de la SAN pour l'affichage
+             return move;
         }
-        
-        function createPieceElement(pieceCode, row, col) {
-            const pieceEl = document.createElement('div');
-            pieceEl.className = 'piece';
-            const symbol = PIECES_SYMBOLS[pieceCode] ? PIECES_SYMBOLS[pieceCode] : pieceCode; 
-            pieceEl.textContent = symbol;
+
+        function handleMove(row, col, squareEl) {
+            // Convertit les coordonnées du clic en notation échiquéenne (ex: 'a1', 'h8')
+            const clickedSquare = coordsToSquare(row, col);
+            const currentTurnColor = chessBoard.turn() === 'w' ? 'white' : 'black';
             
-            const pieceColorClass = getPieceColor(pieceCode) === 'white' ? 'white-piece' : 'black-piece';
-            pieceEl.classList.add(pieceColorClass);
-            
-            pieceEl.dataset.row = row;
-            pieceEl.dataset.col = col;
-            pieceEl.dataset.code = pieceCode;
-            
-            pieceEl.style.transform = `translate(${col * 100}%, ${row * 100}%)`;
-            
-            return pieceEl;
-        }
-        
-        function animateMove(pieceEl, targetRow, targetCol, callback) {
-            if (!pieceEl) return;
-            
-            pieceEl.style.transform = `translate(${targetCol * 100}%, ${targetRow * 100}%)`;
-            
-            setTimeout(() => {
-                const capturedPieceEl = document.querySelector(`.piece[data-row="${targetRow}"][data-col="${targetCol}"]`);
-                if (capturedPieceEl) {
-                    capturedPieceEl.remove();
+            // 1. VERIFICATION PRÉ-MOUVEMENT
+            if (isGameOver || currentGameId === null || waitingForOpponent || playerColor !== currentTurnColor) {
+                let msg = '';
+                if (isGameOver) msg = "La partie est terminée.";
+                else if (currentGameId === null) msg = "Lancez une partie d'abord.";
+                else if (waitingForOpponent) msg = "En attente d'un adversaire.";
+                else if (playerColor !== currentTurnColor) msg = "Ce n'est pas votre tour de jouer.";
+                
+                displayInfo(msg, true);
+                return;
+            }
+
+            if (!selectedCoords) {
+                // Première sélection : sélectionne une pièce de sa couleur
+                if (chessBoard.get(clickedSquare) && getPieceColor(chessBoard.get(clickedSquare).color) === playerColor) {
+                    selectedCoords = clickedSquare;
+                    drawBoard(); // Met en évidence la case sélectionnée
+                    
+                    // Affiche les coups légaux
+                    legalMoves = findLegalMoves(selectedCoords); 
+                    updateHighlights(); 
                 }
+            }
+            else {
+                // Deuxième clic : tentative de mouvement ou désélection
+                const startSquare = selectedCoords;
+                
+                if (startSquare === clickedSquare) {
+                    // Désélectionner
+                    selectedCoords = null;
+                    legalMoves = [];
+                    updateHighlights(); 
+                    return;
+                }
+                
+                // Recherche si le coup est légal selon chess.js
+                let move = legalMoves.find(m => m.to === clickedSquare);
 
-                pieceEl.dataset.row = targetRow;
-                pieceEl.dataset.col = targetCol;
-                if (callback) callback();
-            }, 300); 
+                if (move) {
+                    // Le coup est légal localement
+                    
+                    // Gérer la promotion si nécessaire
+                    if (move.flags.includes('p') && (move.to[1] === '8' || move.to[1] === '1')) {
+                        move = handlePawnPromotion(move); 
+                    }
+
+                    // On envoie le coup UCI au serveur (ex: 'e2e4', 'a7a8q')
+                    makeMoveServer(move.san); 
+                    
+                    // Réinitialisation après l'envoi
+                    selectedCoords = null;
+                    legalMoves = [];
+                    updateHighlights();
+                } else {
+                    // Tentative de sélectionner une autre pièce de sa couleur
+                    if (chessBoard.get(clickedSquare) && getPieceColor(chessBoard.get(clickedSquare).color) === playerColor) {
+                         selectedCoords = clickedSquare;
+                         legalMoves = findLegalMoves(selectedCoords); 
+                         updateHighlights();
+                    } else {
+                         displayInfo("Coup illégal ou mauvaise sélection.", true);
+                    }
+                }
+            }
         }
+        
+        // La fonction de highlight est modifiée pour utiliser legalMoves de chess.js
+        function updateHighlights() {
+            document.querySelectorAll('.selected, .highlight-move, .highlight-capture, .in-check').forEach(el => {
+                el.classList.remove('selected', 'highlight-move', 'highlight-capture', 'in-check');
+            });
 
-        function initBoardSquares() {
-            // Création des cases statiques (ce qui ne bouge pas)
-            for (let i = 0; i < 8; i++) {
-                for (let j = 0; j < 8; j++) {
-                    const squareEl = document.createElement('div');
-                    const color = (i + j) % 2 === 0 ? 'light' : 'dark';
-                    squareEl.className = `square ${color}`;
-                    squareEl.id = `sq-${i}-${j}`; 
-                    squareEl.addEventListener('click', () => handleMove(i, j, squareEl));
-                    chessboardEl.appendChild(squareEl);
+            if (selectedCoords) {
+                const startCoords = squareToCoords(selectedCoords);
+                document.getElementById(`sq-${startCoords.row}-${startCoords.col}`).classList.add('selected');
+                
+                legalMoves.forEach(move => {
+                    const targetCoords = squareToCoords(move.to);
+                    const targetEl = document.getElementById(`sq-${targetCoords.row}-${targetCoords.col}`);
+                    
+                    if (move.captured) {
+                        targetEl.classList.add('highlight-capture');
+                    } else {
+                        targetEl.classList.add('highlight-move');
+                    }
+                });
+            }
+            
+            // Affichage de l'échec (si le roi est en échec)
+            if (chessBoard.in_check()) {
+                const kingSquare = chessBoard.king_square; // Pas directement accessible, mais on peut le trouver
+                
+                // Trouvez la position du roi
+                let kingPos = null;
+                chessBoard.board().forEach((row, r) => {
+                    row.forEach((piece, c) => {
+                        if (piece && piece.type === 'k' && piece.color === chessBoard.turn()) {
+                            kingPos = coordsToSquare(r, c);
+                        }
+                    });
+                });
+
+                if (kingPos) {
+                    const { row, col } = squareToCoords(kingPos);
+                    document.getElementById(`sq-${row}-${col}`).classList.add('in-check');
                 }
             }
         }
 
+        // Le reste des fonctions de dessin reste inchangé (elles appellent updateHighlights)
+        function drawBoard(updateInfoPanel = true) {
+            updateHighlights();
+            
+            if (updateInfoPanel && !isGameOver) {
+                const currentTurn = chessBoard.turn() === 'w' ? 'Blancs' : 'Noirs';
+                infoEl.textContent = `Au tour des ${currentTurn}`;
+                infoEl.style.color = '#fff';
+            }
+            updateTimers();
+        }
+        
         function drawPieces() {
-            // Logique optimisée pour mettre à jour les pièces sans tout redessiner
+            // ... (logique de dessin des pièces inchangée, utilise boardState)
             const existingPieces = {};
             document.querySelectorAll('.piece').forEach(p => {
                 const key = `${p.dataset.row}-${p.dataset.col}`;
@@ -732,9 +910,22 @@
             
             let piecesToRemove = { ...existingPieces }; 
 
+            // Convertir le tableau de chess.js en votre structure
+            const boardData = chessBoard.board(); 
+
             for (let i = 0; i < 8; i++) {
                 for (let j = 0; j < 8; j++) {
-                    const pieceCode = boardState[i][j];
+                    const piece = boardData[i][j];
+                    
+                    // Convertir en notation compatible avec PIECES_SYMBOLS (p->♟, P->♙)
+                    let pieceCode = ''; 
+                    if (piece) {
+                        pieceCode = piece.type.toUpperCase();
+                        if (piece.color === 'b') {
+                            pieceCode = pieceCode.toLowerCase(); // Minuscule pour Noir (selon votre symbologie)
+                        }
+                    }
+
                     const key = `${i}-${j}`;
                     const pieceEl = existingPieces[key];
 
@@ -764,102 +955,63 @@
             });
         }
         
-        function updateHighlights() {
-            document.querySelectorAll('.selected, .highlight-move, .in-check').forEach(el => {
-                el.classList.remove('selected', 'highlight-move', 'in-check');
-            });
-
-            if (selectedCoords.row !== -1) {
-                document.getElementById(`sq-${selectedCoords.row}-${selectedCoords.col}`).classList.add('selected');
-                legalMoves.forEach(move => {
-                    document.getElementById(`sq-${move.row}-${move.col}`).classList.add('highlight-move');
-                });
-            }
+        function createPieceElement(pieceCode, row, col) {
+            const pieceEl = document.createElement('div');
+            pieceEl.className = 'piece';
+            const symbol = PIECES_SYMBOLS[pieceCode] ? PIECES_SYMBOLS[pieceCode] : pieceCode; 
+            pieceEl.textContent = symbol;
+            
+            // Utilise la fonction locale getPieceColor
+            const pieceColorClass = getPieceColor(pieceCode) === 'white' ? 'white-piece' : 'black-piece';
+            pieceEl.classList.add(pieceColorClass);
+            
+            pieceEl.dataset.row = row;
+            pieceEl.dataset.col = col;
+            pieceEl.dataset.code = pieceCode;
+            
+            pieceEl.style.transform = `translate(${col * 100}%, ${row * 100}%)`;
+            
+            return pieceEl;
         }
 
-        function drawBoard(updateInfoPanel = true) {
-            updateHighlights();
-            
-            if (updateInfoPanel && !isGameOver) {
-                infoEl.textContent = `Au tour des ${turn === 'white' ? 'Blancs' : 'Noirs'}`;
-                infoEl.style.color = '#fff';
-            }
-            updateTimers();
-        }
-        
-        function handleMove(row, col, squareEl) {
-            // Bloquer le clic si la partie n'est pas active, si ce n'est pas notre couleur ou si on attend un adversaire
-            if (isGameOver || playerColor !== turn || currentGameId === null) return;
+        // Les fonctions initBoardSquares et initializeGame restent les mêmes dans leur rôle
 
-            const pieceCode = boardState[row][col];
-            const pieceColor = getPieceColor(pieceCode);
-            // const isDestinationLegal = legalMoves.some(move => move.row === row && move.col === col);
-            
-            if (!selectedPieceEl) {
-                // Première sélection : sélectionne une pièce de sa couleur
-                if (pieceColor === playerColor) {
-                    selectedPieceEl = document.querySelector(`.piece[data-row="${row}"][data-col="${col}"]`);
-                    selectedCoords = { row: row, col: col };
-                    
-                    // Note: findLegalMoves est vide tant que le serveur ne renvoie pas la liste des coups possibles.
-                    legalMoves = findLegalMoves(pieceCode, row, col); 
-                    drawBoard(); 
+        function initBoardSquares() {
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    const squareEl = document.createElement('div');
+                    const color = (i + j) % 2 === 0 ? 'light' : 'dark';
+                    squareEl.className = `square ${color}`;
+                    squareEl.id = `sq-${i}-${j}`; 
+                    squareEl.addEventListener('click', () => handleMove(i, j, squareEl));
+                    chessboardEl.appendChild(squareEl);
                 }
-            }
-            else {
-                // Deuxième clic : tentative de mouvement
-                const startRow = selectedCoords.row;
-                const startCol = selectedCoords.col;
-                const startPieceCode = boardState[startRow][startCol];
-                let promotion = '';
-
-                if (startRow === row && startCol === col) {
-                    // Désélectionner
-                    selectedPieceEl = null;
-                    selectedCoords = { row: -1, col: -1 };
-                    legalMoves = [];
-                    drawBoard();
-                    return;
-                }
-                
-                // Si la destination est différente de l'origine
-                if (startRow !== row || startCol !== col) {
-                    
-                    // Gérer la promotion si c'est un pion atteignant la dernière rangée
-                    if (startPieceCode.toLowerCase() === 'p' && (row === 0 || row === 7)) {
-                        promotion = handlePawnPromotion(row, col); 
-                    }
-
-                    // On anime le coup immédiatement côté client pour le feedback visuel
-                    animateMove(selectedPieceEl, row, col);
-                    
-                    // On envoie la requête au serveur pour validation et application
-                    makeMoveServer(startRow, startCol, row, col, promotion);
-                    
-                } else {
-                    displayInfo("Sélectionner une autre pièce ou destination.", true);
-                }
-                
-                // Réinitialisation de l'état de sélection
-                selectedPieceEl = null;
-                selectedCoords = { row: -1, col: -1 };
-                legalMoves = [];
-                drawBoard(false);
             }
         }
         
-        // --- Fonction d'Initialisation ---
         function initializeGame() {
             
-            // Le nom d'utilisateur est lu depuis localStorage et affiché
             document.getElementById('player-white-name').textContent = USERNAME || OPPONENT_NAME;
             document.getElementById('player-black-name').textContent = OPPONENT_NAME;
             
             initBoardSquares(); 
-            updateBoardState(currentFen); 
+            // Charge l'état initial du plateau de chess.js
+            updateBoardState(chessBoard.fen()); 
         }
 
         document.addEventListener('DOMContentLoaded', initializeGame);
+        
+        // PLACEHOLDER : Simule la souscription pour les mises à jour en temps réel
+        function subscribeToMatch(game_uuid) {
+            // Ici, vous devriez connecter le client au service Realtime de Supabase
+            // pour recevoir les mises à jour FEN quand l'adversaire joue.
+            console.log("Synchronisation Realtime initiée (intégration Supabase à compléter).");
+            
+            // Exemple de ce qui doit se passer quand un coup est reçu :
+            // function onFenReceived(newFen) {
+            //    receiveMoveFromOpponent(newFen); 
+            // }
+        }
         
     </script>
 </body>

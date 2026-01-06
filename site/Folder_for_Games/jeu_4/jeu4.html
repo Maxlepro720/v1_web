@@ -270,35 +270,34 @@
 
     <script>
         // --- Fonctions Utilitaires ---
-        // NOUVEAU: Récupération de l'username depuis localStorage
         function getUsernameFromStorage() {
             return localStorage.getItem('username');
         }
 
         // --- Constantes et État du Jeu ---
+        // NOUVEAU: URL absolue du serveur
+        const SERVER_URL = "https://project-3-api-2bgb.onrender.com"; 
+        
         const INITIAL_TIME_SECONDS = 15 * 60; // 15 minutes
         const PIECES_SYMBOLS = {
             'R': '♜', 'N': '♞', 'B': '♝', 'Q': '♛', 'K': '♚', 'P': '♟', 
             'r': '♖', 'n': '♘', 'b': '♗', 'q': '♕', 'k': '♔', 'p': '♙'  
         };
         
-        // CORRIGÉ: Utilisation de localStorage.getItem('username')
         const USERNAME = getUsernameFromStorage() || "Joueur Inconnu"; 
         const OPPONENT_NAME = "Adversaire Inconnu"; 
 
-        // CORRIGÉ: FEN standard pour le début d'une partie (toutes les pièces)
         const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; 
         let currentFen = INITIAL_FEN; 
         
-        // NOUVELLES VARIABLES GLOBALES POUR LE MULTIJOUEUR
         let currentGameId = null; 
-        let playerColor = null; // 'white' or 'black'
+        let playerColor = null; 
         let opponentId = OPPONENT_NAME; 
         
         let boardState = []; 
         let selectedPieceEl = null;
         let selectedCoords = { row: -1, col: -1 };
-        let turn = 'white'; // Dérivé du FEN
+        let turn = 'white'; 
         let legalMoves = []; 
         let isGameOver = false;
 
@@ -343,12 +342,10 @@
                 newBoard.push(row);
             }
             
-            // Mise à jour de la variable globale 'turn'
             turn = parts[1] === 'w' ? 'white' : 'black';
             return newBoard; 
         }
 
-        // Met à jour l'état local complet et redessine
         function updateBoardState(newFen, shouldDraw = true) {
             currentFen = newFen;
             boardState = parseFenToBoard(newFen);
@@ -432,7 +429,6 @@
         }
 
         // --- Fonctions d'Information et de Fin de Jeu ---
-
         function displayInfo(message, isError = false) {
             infoEl.textContent = message;
             infoEl.style.color = isError ? 'red' : '#fff';
@@ -464,7 +460,6 @@
             }
             infoEl.style.color = 'green';
             
-            // APPEL À LA DESTRUCTION DE PARTIE (Route Flask 4)
             setTimeout(callDestroyMatch, 5000); 
         }
         
@@ -473,7 +468,7 @@
             return piece === piece.toLowerCase() ? 'white' : 'black'; 
         }
 
-        // --- Fonctions d'Interaction Serveur ---
+        // --- Fonctions d'Interaction Serveur (Utilisation de l'URL Absolue) ---
         
         // Route Flask 1: Matchmaking
         async function findOrCreateMatch() {
@@ -488,8 +483,8 @@
             }
 
             try {
-                // CORRIGÉ: Utilisation du chemin d'accès relatif au serveur (même URL que le fichier)
-                const response = await fetch('/find_or_create_match', {
+                // CHANGEMENT ICI : Utilisation de SERVER_URL
+                const response = await fetch(`${SERVER_URL}/find_or_create_match`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: USERNAME }), 
@@ -504,7 +499,6 @@
                     
                     updateBoardState(data.fen); 
                     
-                    // Mise à jour des noms
                     document.getElementById(`player-${playerColor}-name`).textContent = USERNAME;
                     document.getElementById(`player-${playerColor === 'white' ? 'black' : 'white'}-name`).textContent = opponentId;
                     
@@ -540,8 +534,8 @@
             displayInfo("Envoi du coup au serveur...");
 
             try {
-                // CORRIGÉ: Utilisation du chemin d'accès relatif au serveur
-                const response = await fetch('/make_move', {
+                // CHANGEMENT ICI : Utilisation de SERVER_URL
+                const response = await fetch(`${SERVER_URL}/make_move`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -593,8 +587,8 @@
             if (!currentGameId) return;
 
             try {
-                // CORRIGÉ: Utilisation du chemin d'accès relatif au serveur
-                const response = await fetch('/destroy_match', {
+                // CHANGEMENT ICI : Utilisation de SERVER_URL
+                const response = await fetch(`${SERVER_URL}/destroy_match`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ game_uuid: currentGameId, username: USERNAME }),
@@ -622,23 +616,12 @@
 
         // --- GESTION SUPABASE REALTIME (PLACEHOLDER) ---
         function subscribeToMatch(game_uuid) {
-            displayInfo("Synchronisation Realtime initiée (intégration Supabase à compléter).");
+            console.log("Synchronisation Realtime initiée (intégration Supabase à compléter).");
         }
         
         // --- Fonctions de Règles Simplifiées (Placeholder) ---
-        // NOTE: Ces fonctions sont simplifiées et le serveur doit toujours valider le coup.
-        function isMoveLegal(piece, startRow, startCol, endRow, endCol, currentBoard = boardState) {
-            const pieceColor = getPieceColor(piece);
-            const targetPiece = currentBoard[endRow][endCol];
-            if (targetPiece && pieceColor === getPieceColor(targetPiece)) return false;
-            return true; // La validation complète est faite côté serveur.
-        }
-        
         function findLegalMoves(pieceCode, startRow, startCol) {
-            // Placeholder: Cette fonction devrait idéalement appeler une route serveur 
-            // pour la liste exacte des coups légaux pour une UX optimale, mais pour 
-            // l'instant elle n'est pas nécessaire car la validation est sur le serveur.
-            // On renvoie juste une liste vide pour l'instant pour éviter les bugs UX.
+            // Le serveur est la source de vérité, nous n'affichons pas de coups légaux côté client pour le moment.
             return [];
         }
 
@@ -650,7 +633,7 @@
              return choice.toLowerCase();
         }
 
-        // --- Fonctions d'Animation/Dessin (Inchangées) ---
+        // --- Fonctions d'Animation/Dessin ---
         
         function createPieceElement(pieceCode, row, col) {
             const pieceEl = document.createElement('div');
@@ -778,7 +761,8 @@
                     selectedPieceEl = document.querySelector(`.piece[data-row="${row}"][data-col="${col}"]`);
                     selectedCoords = { row: row, col: col };
                     
-                    legalMoves = findLegalMoves(pieceCode, row, col);
+                    // Note: findLegalMoves est vide, donc seul l'UX de sélection/désélection fonctionne
+                    legalMoves = findLegalMoves(pieceCode, row, col); 
                     drawBoard(); 
                 }
             }
@@ -798,24 +782,22 @@
                     return;
                 }
                 
-                // Exécuter le mouvement si la destination est légale
-                if (isDestinationLegal || (startRow !== row || startCol !== col)) {
+                // On permet au coup de partir si on clique sur une autre case
+                // Le serveur fera la validation réelle
+                if (startRow !== row || startCol !== col) {
                     
                     if (startPieceCode.toLowerCase() === 'p' && (row === 0 || row === 7)) {
                         promotion = handlePawnPromotion(row, col); 
                     }
 
-                    // On anime le coup AVANT de l'envoyer au serveur (optimisation UX)
                     animateMove(selectedPieceEl, row, col);
                     
-                    // Le serveur validera et renverra le nouvel état FEN
                     makeMoveServer(startRow, startCol, row, col, promotion);
                     
                 } else {
                     displayInfo("Sélectionner une autre pièce ou destination.", true);
                 }
                 
-                // Réinitialiser la sélection et redessiner les highlights
                 selectedPieceEl = null;
                 selectedCoords = { row: -1, col: -1 };
                 legalMoves = [];
@@ -825,10 +807,6 @@
         
         // --- Fonction d'Initialisation ---
         function initializeGame() {
-            // Affiche le plateau de départ
-            
-            
-            // CORRIGÉ: Affiche l'username comme joueur en bas (Blanc par défaut)
             document.getElementById('player-white-name').textContent = USERNAME;
             document.getElementById('player-black-name').textContent = OPPONENT_NAME;
             

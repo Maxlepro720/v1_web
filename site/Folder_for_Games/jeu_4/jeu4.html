@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jeu d'Échecs - Responsive et Multijoueur Ready</title>
     <style>
-        /* --- 1. Styles Généraux et Responsivité (Flexbox Layout) --- */
+        /* --- Styles du jeu (inchangés) --- */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
@@ -264,21 +264,12 @@
     <script>
         // --- Fonctions Utilitaires ---
         function getUsernameFromStorage() {
+            // Lit le pseudo de l'utilisateur depuis le stockage local
             return localStorage.getItem('username');
         }
 
-        // 🎯 NOUVELLE FONCTION CRITIQUE : Définit le cookie pour satisfaire l'authentification serveur
-        function ensureUsernameCookieIsSet(username) {
-            if (username) {
-                // Définir la date d'expiration (par exemple, 7 jours)
-                const expiryDate = new Date();
-                expiryDate.setDate(expiryDate.getDate() + 7);
-                
-                // Définition du cookie: SameSite=Lax est important pour les requêtes cross-site
-                document.cookie = `username=${username}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Lax`;
-                console.log(`Cookie 'username' défini: ${username}`);
-            }
-        }
+        // ❌ NOTE : La fonction ensureUsernameCookieIsSet() a été retirée.
+        // L'authentification passe désormais par le corps JSON de la requête.
 
         // --- Constantes et État du Jeu ---
         const SERVER_URL = "https://project-3-api-2bgb.onrender.com"; 
@@ -289,7 +280,8 @@
             'r': '♖', 'n': '♘', 'b': '♗', 'q': '♕', 'k': '♔', 'p': '♙'  
         };
         
-        const USERNAME = getUsernameFromStorage(); // La valeur de localStorage.getItem('username')
+        // Le pseudo de l'utilisateur est récupéré une seule fois au chargement
+        const USERNAME = getUsernameFromStorage(); 
         const OPPONENT_NAME = "Adversaire Inconnu"; 
 
         const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; 
@@ -361,7 +353,7 @@
             }
         }
 
-        // --- Fonctions Chronomètre (Inchangées) ---
+        // --- Fonctions Chronomètre, Info, etc. (Inchangées) ---
 
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
@@ -433,7 +425,6 @@
             }
         }
 
-        // --- Fonctions d'Information et de Fin de Jeu (Inchangées) ---
         function displayInfo(message, isError = false) {
             infoEl.textContent = message;
             infoEl.style.color = isError ? 'red' : '#fff';
@@ -473,7 +464,7 @@
             return piece === piece.toLowerCase() ? 'white' : 'black'; 
         }
 
-        // --- Fonctions d'Interaction Serveur (CORRECTION COOKIE) ---
+        // --- Fonctions d'Interaction Serveur (Mises à jour sans 'credentials') ---
         
         // Route Flask 1: Matchmaking
         async function findOrCreateMatch() {
@@ -495,9 +486,9 @@
                 const response = await fetch(`${SERVER_URL}/find_or_create_match`, {
                     method: 'POST',
                     headers: headers,
+                    // 🎯 ENVOI DU PSEUDO DANS LE CORPS JSON
                     body: JSON.stringify({ username: USERNAME }), 
-                    // 🎯 CRITIQUE : Envoie le cookie 'username' au serveur
-                    credentials: 'include' 
+                    // ❌ REMOVED: credentials: 'include'
                 });
 
                 const data = await response.json(); 
@@ -522,11 +513,11 @@
                     }
                     
                 } else {
-                    displayInfo(`Erreur de matchmaking (HTTP ${response.status}): ${data.error || 'Vérifiez si le cookie est bien envoyé (401).' }`, true);
+                    displayInfo(`Erreur de matchmaking (HTTP ${response.status}): ${data.error || 'Authentification requise.' }`, true);
                 }
 
             } catch (e) {
-                displayInfo("Erreur critique de connexion au serveur ou de format de réponse.", true);
+                displayInfo("Erreur critique de connexion au serveur (CORS/Réseau).", true);
                 console.error("Détail de l'erreur client:", e);
             } finally {
                 playButton.disabled = false;
@@ -554,10 +545,9 @@
                     body: JSON.stringify({ 
                         game_uuid: currentGameId, 
                         move_uci: move_uci,
-                        username: USERNAME
+                        username: USERNAME // 🎯 ENVOI DU PSEUDO DANS LE CORPS JSON
                     }),
-                    // 🎯 CRITIQUE : Envoie le cookie 'username' au serveur
-                    credentials: 'include' 
+                    // ❌ REMOVED: credentials: 'include'
                 });
 
                 const data = await response.json();
@@ -610,8 +600,7 @@
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({ game_uuid: currentGameId, username: USERNAME }),
-                    // 🎯 CRITIQUE : Envoie le cookie 'username' au serveur
-                    credentials: 'include' 
+                    // ❌ REMOVED: credentials: 'include'
                 });
 
                 const data = await response.json();
@@ -817,8 +806,7 @@
         // --- Fonction d'Initialisation ---
         function initializeGame() {
             
-            // 🎯 CRITIQUE : Définir le cookie AVANT toute requête AJAX pour l'authentification
-            ensureUsernameCookieIsSet(USERNAME); 
+            // ❌ La gestion des cookies a été retirée.
             
             document.getElementById('player-white-name').textContent = USERNAME || OPPONENT_NAME;
             document.getElementById('player-black-name').textContent = OPPONENT_NAME;

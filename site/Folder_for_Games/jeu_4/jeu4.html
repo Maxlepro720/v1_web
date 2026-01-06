@@ -9,7 +9,7 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
-            justify-content: center; /* Centrer le contenu principal */
+            justify-content: center; 
             align-items: flex-start; 
             min-height: 100vh;
             background-color: #333; 
@@ -22,7 +22,7 @@
             display: flex;
             width: 95%; 
             max-width: 1400px;
-            gap: 30px; /* Réduction du gap */
+            gap: 30px; 
         }
 
         .game-area {
@@ -87,7 +87,6 @@
 
         /* --- 3. Styles du Plateau (Responsive) --- */
         .chessboard-container {
-            /* Max width of the board */
             max-width: 600px; 
             width: 100%;
             aspect-ratio: 1 / 1; 
@@ -127,7 +126,6 @@
         .highlight-move { background-color: rgba(0, 123, 255, 0.4) !important; }
         .in-check { background-color: red !important; }
 
-        /* Pièces (taille responsive) */
         .piece {
             position: absolute;
             width: 12.5%; 
@@ -135,13 +133,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 4.5vw; /* Taille de police dynamique par défaut */
+            font-size: 4.5vw; 
             transition: transform 0.3s ease-in-out; 
             pointer-events: none; 
             z-index: 10;
         }
 
-        /* Limiter la taille de la police sur les grands écrans */
         @media (min-width: 1222px) { 
             .piece {
                 font-size: 55px;
@@ -158,35 +155,34 @@
         .sidebar {
             flex-basis: 300px; 
             padding: 20px;
-            background-color: #222; /* Fond sombre pour la cohérence */
+            background-color: #222; 
             border-radius: 8px;
-            box-shadow: none; /* Retrait de l'ombre */
-            border: 1px solid #444; /* Ajout d'une bordure subtile */
+            box-shadow: none; 
+            border: 1px solid #444; 
             display: flex;
             flex-direction: column;
-            gap: 15px; /* Réduction du gap */
+            gap: 15px; 
             height: fit-content; 
         }
 
         .sidebar h2 { 
             color: #007bff; 
             margin-top: 0;
-            font-size: 1.5em; /* Simplification */
+            font-size: 1.5em; 
         }
         .sidebar h3 { 
-            border-top: none; /* Retrait de la ligne de séparation */
+            border-top: none; 
             padding-top: 0; 
             margin-bottom: 5px; 
             font-size: 1.1em;
             color: #ccc;
         }
 
-        /* Style minimaliste pour le bouton Play */
-        #play-button {
+        .play-button {
             padding: 10px;
             background-color: transparent; 
-            color: #28a745; /* Texte vert */
-            border: 2px solid #28a745; /* Bordure verte */
+            color: #28a745; 
+            border: 2px solid #28a745; 
             border-radius: 5px;
             cursor: pointer;
             font-size: 1.1em;
@@ -196,10 +192,9 @@
 
         #play-button:hover { 
             background-color: #28a745; 
-            color: white; /* Changement de couleur au survol */
+            color: white; 
         }
         
-        /* Médias query pour les petits écrans: la sidebar se met en dessous */
         @media (max-width: 900px) {
             .main-container {
                 flex-direction: column;
@@ -207,18 +202,16 @@
             }
             .sidebar {
                 width: 100%;
-                max-width: 600px; /* Limiter la largeur de la sidebar aussi */
+                max-width: 600px; 
                 margin-top: 20px;
                 flex-basis: auto;
             }
             .game-area {
                 width: 100%;
             }
-            /* Augmenter la taille de la police des pièces pour les petits écrans */
             .piece { font-size: 8vw; } 
         }
 
-        /* Correction mineure pour le z-index en mode responsive */
         .piece { z-index: 100; } 
     </style>
 </head>
@@ -257,7 +250,7 @@
 
         <div class="sidebar">
             <h2>Salon de Jeu</h2>
-            <button id="play-button" onclick="toggleTimer()">
+            <button id="play-button" class="play-button" onclick="toggleTimer()">
                 Lancer Partie
             </button>
             <div class="friends-list">
@@ -275,10 +268,9 @@
         }
 
         // --- Constantes et État du Jeu ---
-        // NOUVEAU: URL absolue du serveur
         const SERVER_URL = "https://project-3-api-2bgb.onrender.com"; 
         
-        const INITIAL_TIME_SECONDS = 15 * 60; // 15 minutes
+        const INITIAL_TIME_SECONDS = 15 * 60; 
         const PIECES_SYMBOLS = {
             'R': '♜', 'N': '♞', 'B': '♝', 'Q': '♛', 'K': '♚', 'P': '♟', 
             'r': '♖', 'n': '♘', 'b': '♗', 'q': '♕', 'k': '♔', 'p': '♙'  
@@ -317,7 +309,7 @@
         const playButton = document.getElementById('play-button');
 
 
-        // --- Fonctions FEN et Mise à Jour du Plateau ---
+        // --- Fonctions FEN et Mise à Jour du Plateau (Inchangées) ---
         
         function parseFenToBoard(fen) {
             const parts = fen.split(' ');
@@ -356,7 +348,7 @@
             }
         }
 
-        // --- Fonctions Chronomètre ---
+        // --- Fonctions Chronomètre (Inchangées) ---
 
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
@@ -428,7 +420,7 @@
             }
         }
 
-        // --- Fonctions d'Information et de Fin de Jeu ---
+        // --- Fonctions d'Information et de Fin de Jeu (Inchangées) ---
         function displayInfo(message, isError = false) {
             infoEl.textContent = message;
             infoEl.style.color = isError ? 'red' : '#fff';
@@ -468,7 +460,7 @@
             return piece === piece.toLowerCase() ? 'white' : 'black'; 
         }
 
-        // --- Fonctions d'Interaction Serveur (Utilisation de l'URL Absolue) ---
+        // --- Fonctions d'Interaction Serveur (CORRECTION 401) ---
         
         // Route Flask 1: Matchmaking
         async function findOrCreateMatch() {
@@ -482,11 +474,19 @@
                 return;
             }
 
+            // Vérification de l'URL du serveur
+            console.log(`Tentative de connexion à: ${SERVER_URL}/find_or_create_match`);
+
             try {
-                // CHANGEMENT ICI : Utilisation de SERVER_URL
+                const headers = { 
+                    'Content-Type': 'application/json',
+                    // TENTATIVE DE CORRECTION 401: Ajouter le username dans un en-tête d'authentification potentiel
+                    'X-Username': USERNAME 
+                };
+                
                 const response = await fetch(`${SERVER_URL}/find_or_create_match`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({ username: USERNAME }), 
                 });
 
@@ -512,7 +512,8 @@
                     }
                     
                 } else {
-                    displayInfo(data.error || `Erreur de matchmaking (Statut HTTP ${response.status}).`, true);
+                    // Si le serveur renvoie une erreur (401 inclus)
+                    displayInfo(`Erreur de matchmaking (HTTP ${response.status}): ${data.error || 'Vérifiez si l\'API attend un jeton d\'authentification (401).' }`, true);
                 }
 
             } catch (e) {
@@ -534,10 +535,15 @@
             displayInfo("Envoi du coup au serveur...");
 
             try {
-                // CHANGEMENT ICI : Utilisation de SERVER_URL
+                const headers = { 
+                    'Content-Type': 'application/json',
+                    // TENTATIVE DE CORRECTION 401: Ajouter le username dans un en-tête
+                    'X-Username': USERNAME
+                };
+
                 const response = await fetch(`${SERVER_URL}/make_move`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({ 
                         game_uuid: currentGameId, 
                         move_uci: move_uci,
@@ -570,7 +576,7 @@
                     drawBoard(false);
 
                 } else {
-                    displayInfo(data.error || "Mouvement rejeté par le serveur.", true);
+                    displayInfo(data.error || `Mouvement rejeté par le serveur (HTTP ${response.status}).`, true);
                     updateBoardState(currentFen); 
                 }
 
@@ -587,10 +593,15 @@
             if (!currentGameId) return;
 
             try {
-                // CHANGEMENT ICI : Utilisation de SERVER_URL
+                const headers = { 
+                    'Content-Type': 'application/json',
+                    // TENTATIVE DE CORRECTION 401: Ajouter le username dans un en-tête
+                    'X-Username': USERNAME
+                };
+
                 const response = await fetch(`${SERVER_URL}/destroy_match`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({ game_uuid: currentGameId, username: USERNAME }),
                 });
 
@@ -614,14 +625,12 @@
             }
         }
 
-        // --- GESTION SUPABASE REALTIME (PLACEHOLDER) ---
+        // --- Autres Fonctions (Inchangées) ---
         function subscribeToMatch(game_uuid) {
             console.log("Synchronisation Realtime initiée (intégration Supabase à compléter).");
         }
         
-        // --- Fonctions de Règles Simplifiées (Placeholder) ---
         function findLegalMoves(pieceCode, startRow, startCol) {
-            // Le serveur est la source de vérité, nous n'affichons pas de coups légaux côté client pour le moment.
             return [];
         }
 
@@ -632,8 +641,6 @@
              }
              return choice.toLowerCase();
         }
-
-        // --- Fonctions d'Animation/Dessin ---
         
         function createPieceElement(pieceCode, row, col) {
             const pieceEl = document.createElement('div');
@@ -747,7 +754,6 @@
             updateTimers();
         }
         
-        // --- Fonction de Gestion du Clic ---
         function handleMove(row, col, squareEl) {
             if (isGameOver || playerColor !== turn || currentGameId === null) return;
 
@@ -755,25 +761,21 @@
             const pieceColor = getPieceColor(pieceCode);
             const isDestinationLegal = legalMoves.some(move => move.row === row && move.col === col);
             
-            // --- Étape 1 : Sélectionner une pièce ---
             if (!selectedPieceEl) {
                 if (pieceColor === playerColor) {
                     selectedPieceEl = document.querySelector(`.piece[data-row="${row}"][data-col="${col}"]`);
                     selectedCoords = { row: row, col: col };
                     
-                    // Note: findLegalMoves est vide, donc seul l'UX de sélection/désélection fonctionne
                     legalMoves = findLegalMoves(pieceCode, row, col); 
                     drawBoard(); 
                 }
             }
-            // --- Étape 2 : Déplacer la pièce (destination) ---
             else {
                 const startRow = selectedCoords.row;
                 const startCol = selectedCoords.col;
                 const startPieceCode = boardState[startRow][startCol];
                 let promotion = '';
 
-                // Désélectionner
                 if (startRow === row && startCol === col) {
                     selectedPieceEl = null;
                     selectedCoords = { row: -1, col: -1 };
@@ -782,8 +784,6 @@
                     return;
                 }
                 
-                // On permet au coup de partir si on clique sur une autre case
-                // Le serveur fera la validation réelle
                 if (startRow !== row || startCol !== col) {
                     
                     if (startPieceCode.toLowerCase() === 'p' && (row === 0 || row === 7)) {
@@ -805,7 +805,6 @@
             }
         }
         
-        // --- Fonction d'Initialisation ---
         function initializeGame() {
             document.getElementById('player-white-name').textContent = USERNAME;
             document.getElementById('player-black-name').textContent = OPPONENT_NAME;

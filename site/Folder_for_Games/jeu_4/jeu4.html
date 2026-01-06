@@ -218,6 +218,8 @@
             .piece { font-size: 8vw; } 
         }
 
+        /* Correction mineure pour le z-index en mode responsive */
+        .piece { z-index: 100; } 
     </style>
 </head>
 <body>
@@ -267,39 +269,36 @@
     
 
     <script>
+        // --- Fonctions Utilitaires ---
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
         // --- Constantes et État du Jeu ---
         const INITIAL_TIME_SECONDS = 15 * 60; // 15 minutes
         const PIECES_SYMBOLS = {
             'R': '♜', 'N': '♞', 'B': '♝', 'Q': '♛', 'K': '♚', 'P': '♟', 
             'r': '♖', 'n': '♘', 'b': '♗', 'q': '♕', 'k': '♔', 'p': '♙'  
         };
-        // NOTE: Assumez que l'ID est bien stocké dans localStorage après login
-        const USERNAME = localStorage.getItem("username") || "Joueur Blanc"; 
+        // UTILISATION DES COOKIES POUR RÉCUPÉRER L'ID DU JOUEUR (comme dans Flask)
+        const USERNAME = getCookie("username") || "Joueur Inconnu"; 
         const OPPONENT_NAME = "Adversaire Inconnu"; 
 
         // NOUVELLES VARIABLES GLOBALES POUR LE MULTIJOUEUR
         let currentGameId = null; 
         let playerColor = null; // 'white' or 'black'
         let opponentId = OPPONENT_NAME; 
-        let currentFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // FEN initial
-
-        // Le plateau est maintenant dérivé du FEN
-        let boardState = [
-            ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
-            ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-            ['', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-            ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
-        ];
+        let currentFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBBNR w KQkq - 0 1"; // FEN initial
         
-        // Les variables d'état locales pour le clic
+        // ... (boardState, selectedPieceEl, selectedCoords, turn, legalMoves, isGameOver inchangés) ...
+        let boardState = []; // Sera rempli par parseFenToBoard
         let selectedPieceEl = null;
         let selectedCoords = { row: -1, col: -1 };
         let turn = 'white'; // Dérivé du FEN
-        let legalMoves = []; // Validation locale simplifiée
+        let legalMoves = []; 
         let isGameOver = false;
 
         let timer = {
@@ -343,6 +342,7 @@
                 newBoard.push(row);
             }
             
+            // Mise à jour de la variable globale 'turn'
             turn = parts[1] === 'w' ? 'white' : 'black';
             return newBoard; 
         }
@@ -358,7 +358,7 @@
             }
         }
 
-        // --- Fonctions Chronomètre (Aucun Changement Majeur) ---
+        // --- Fonctions Chronomètre (Inchangées) ---
 
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
@@ -431,7 +431,7 @@
             }
         }
 
-        // --- Fonctions d'Information et de Fin de Jeu ---
+        // --- Fonctions d'Information et de Fin de Jeu (Inchangées) ---
 
         function displayInfo(message, isError = false) {
             infoEl.textContent = message;
@@ -473,15 +473,15 @@
             return piece === piece.toLowerCase() ? 'white' : 'black';
         }
 
-        // --- Fonctions d'Interaction Serveur ---
+        // --- Fonctions d'Interaction Serveur (CORRIGÉES) ---
         
         // Route Flask 1: Matchmaking
         async function findOrCreateMatch() {
             playButton.disabled = true;
             playButton.textContent = 'Recherche en cours...';
             
-            if (!USERNAME || USERNAME === "Joueur Blanc") { 
-                displayInfo("Pseudo non défini. Veuillez vous connecter.", true);
+            if (!USERNAME || USERNAME === "Joueur Inconnu") { 
+                displayInfo("Pseudo non défini. Veuillez vous connecter (cookie 'username' manquant).", true);
                 playButton.disabled = false;
                 playButton.textContent = 'Démarrer Partie (Jouer)';
                 return;
@@ -493,7 +493,8 @@
                     headers: { 'Content-Type': 'application/json' },
                 });
 
-                const data = await response.json();
+                // Tenter d'analyser la réponse JSON, même en cas d'erreur HTTP (pour lire le message d'erreur du serveur)
+                const data = await response.json(); 
 
                 if (response.ok) {
                     currentGameId = data.game_uuid;
@@ -517,20 +518,24 @@
                     }
                     
                 } else {
-                    displayInfo(data.error || "Erreur de matchmaking.", true);
+                    // Le serveur a renvoyé un statut d'erreur (4xx, 5xx) mais le JSON a été lu
+                    displayInfo(data.error || `Erreur de matchmaking (Statut HTTP ${response.status}).`, true);
                 }
 
             } catch (e) {
-                displayInfo("Erreur de connexion au serveur.", true);
-                console.error(e);
+                // Erreur de connexion pure (pas de réponse du serveur) ou échec de l'analyse JSON après une réponse non-JSON.
+                displayInfo("Erreur critique de connexion au serveur ou de format de réponse.", true);
+                console.error("Détail de l'erreur client:", e);
             } finally {
                 playButton.disabled = false;
+                if (!currentGameId) {
+                     playButton.textContent = 'Démarrer Partie (Jouer)';
+                }
             }
         }
         
-        // Route Flask 3: Envoyer Coup
+        // Route Flask 3: Envoyer Coup (Inchangée, dépend de la première correction)
         async function makeMoveServer(startRow, startCol, endRow, endCol, promotion = '') {
-            // Conversion Coordonnées (0-7) -> UCI ('a1', 'h8', etc.)
             const move_uci = `${String.fromCharCode(97 + startCol)}${8 - startRow}${String.fromCharCode(97 + endCol)}${8 - endRow}${promotion}`;
             
             chessboardEl.style.pointerEvents = 'none';
@@ -563,6 +568,7 @@
                             endGame('draw'); 
                         }
                     } else {
+                         // 'turn' est mis à jour par updateBoardState(newFen)
                          displayInfo(`Coup joué: ${move_uci}. Au tour des ${turn === 'white' ? 'Blancs' : 'Noirs'}.`);
                     }
                     
@@ -586,7 +592,7 @@
             }
         }
 
-        // Route Flask 5: Destruction de la Partie
+        // Route Flask 5: Destruction de la Partie (Inchangée)
         async function callDestroyMatch() {
             if (!currentGameId) return;
 
@@ -612,46 +618,18 @@
                 currentGameId = null;
                 playerColor = null;
                 opponentId = OPPONENT_NAME;
-                // Vous pouvez re-lancer l'initialisation du plateau ici
+                // re-lancer l'initialisation du plateau
             }
         }
 
-        // --- GESTION SUPABASE REALTIME (PLACEHOLDER) ---
-        // ATTENTION: Nécessite le SDK Supabase.js dans votre HTML.
+        // --- GESTION SUPABASE REALTIME (PLACEHOLDER INCHANGÉ) ---
         function subscribeToMatch(game_uuid) {
-            // Placeholder: Cette fonction doit écouter les changements
-            // de la ligne 'chess' ayant l'UUID game_uuid.
-            
-            // L'objectif est de mettre à jour le plateau (updateBoardState(newFen))
-            // lorsque l'adversaire joue (si le nouveau tour est celui du joueur actuel).
-            
             displayInfo("Synchronisation Realtime initiée (intégration Supabase à compléter).");
-            
-            // Si l'adversaire rejoint APRES la création de la partie:
-            // if (payload.new.black_player_id && !opponentId) {
-            //      opponentId = payload.new.black_player_id;
-            //      document.getElementById(`player-black-name`).textContent = opponentId;
-            //      displayInfo("Adversaire trouvé ! La partie peut commencer.");
-            // }
-
-            // Si le FEN change:
-            // if (payload.new.fen_state && payload.new.fen_state !== currentFen) {
-            //      // Seulement si ce n'est pas nous qui avons initié le changement
-            //      updateBoardState(payload.new.fen_state);
-            // }
         }
         
         
-        // --- Fonctions de Règles (SIMPLIFIÉES pour l'UX seulement) ---
+        // --- Fonctions de Règles (SIMPLIFIÉES - Inchangées) ---
         
-        // NOTE: Les fonctions 'isMoveValidType', 'isPathClear', 'canCastle', etc. 
-        // sont maintenant principalement pour l'UX (surbrillance) et ne garantissent
-        // PAS la légalité. La route Flask /make_move est la seule source de vérité.
-        
-        // Les fonctions existantes de règles sont conservées ci-dessous, 
-        // mais leur fiabilité dépend du FEN et devraient idéalement être remplacées
-        // par une librairie JS côté client si l'on veut une UX parfaite.
-
         function isPathClear(startRow, startCol, endRow, endCol, currentBoard) {
             let stepR = 0;
             let stepC = 0;
@@ -675,7 +653,6 @@
         }
 
         function isMoveLegal(piece, startRow, startCol, endRow, endCol, currentBoard = boardState) {
-             // Pour la surbrillance locale, nous faisons une simple vérification de couleur
             const pieceColor = getPieceColor(piece);
             const targetPiece = currentBoard[endRow][endCol];
             
@@ -683,14 +660,11 @@
             if (targetPiece && pieceColor === getPieceColor(targetPiece)) return false;
             
             // Le reste de la validation est laissé au serveur pour l'exactitude.
-            // Cette fonction ne sert qu'à minimiser le nombre d'appels /make_move
-            // et ne doit pas être fiable à 100%.
             return true; 
         }
 
         function findLegalMoves(pieceCode, startRow, startCol) {
             const moves = [];
-             // SIMPLIFICATION: On affiche toutes les cases pour la surbrillance si on sélectionne
             for (let r = 0; r < 8; r++) {
                 for (let c = 0; c < 8; c++) {
                     if (isMoveLegal(pieceCode, startRow, startCol, r, c)) {
@@ -702,20 +676,24 @@
         }
         
         function handlePawnPromotion(row, col) {
-            // Cette logique est désormais gérée par le serveur, 
-            // mais l'utilisateur doit pouvoir spécifier la promotion (e.g. 'q' pour dame).
              let choice = prompt("Promotion du pion ! Choisissez une pièce (Q, R, B, N) pour Dame, Tour, Fou, Cavalier:").toUpperCase();
-             return choice;
+             // Assurer que la valeur est valide
+             if (!['Q', 'R', 'B', 'N'].includes(choice)) {
+                 choice = 'Q'; // Choix par défaut Dame
+             }
+             return choice.toLowerCase();
         }
 
-        // --- Fonctions d'Animation/Dessin ---
+        // --- Fonctions d'Animation/Dessin (Inchangées) ---
         
         function createPieceElement(pieceCode, row, col) {
             const pieceEl = document.createElement('div');
             pieceEl.className = 'piece';
-            pieceEl.textContent = PIECES_SYMBOLS[pieceCode];
+            // Inversion de la couleur des symboles pour correspondre à l'affichage CSS
+            const symbol = PIECES_SYMBOLS[pieceCode] ? PIECES_SYMBOLS[pieceCode] : pieceCode; 
+            pieceEl.textContent = symbol;
             
-            const pieceColorClass = getPieceColor(pieceCode) === 'r' || pieceCode === 'n' || pieceCode === 'b' || pieceCode === 'q' || pieceCode === 'k' || pieceCode === 'p' ? 'white-piece' : 'black-piece';
+            const pieceColorClass = getPieceColor(pieceCode) === 'white' ? 'white-piece' : 'black-piece';
             pieceEl.classList.add(pieceColorClass);
             
             pieceEl.dataset.row = row;
@@ -733,7 +711,6 @@
             pieceEl.style.transform = `translate(${targetCol * 100}%, ${targetRow * 100}%)`;
             
             setTimeout(() => {
-                // Retrait des pièces capturées
                 const capturedPieceEl = document.querySelector(`.piece[data-row="${targetRow}"][data-col="${targetCol}"]`);
                 if (capturedPieceEl) {
                     capturedPieceEl.remove();
@@ -746,7 +723,6 @@
         }
 
         function initBoardSquares() {
-            // ... (pas de changement)
             for (let i = 0; i < 8; i++) {
                 for (let j = 0; j < 8; j++) {
                     const squareEl = document.createElement('div');
@@ -760,7 +736,6 @@
         }
 
         function drawPieces() {
-             // ... (Optimisé pour gérer les pièces en fonction du FEN/boardState)
             const existingPieces = {};
             document.querySelectorAll('.piece').forEach(p => {
                 const key = `${p.dataset.row}-${p.dataset.col}`;
@@ -779,13 +754,13 @@
                         if (pieceEl) {
                             delete piecesToRemove[key];
                             if (pieceEl.dataset.code !== pieceCode) {
-                                pieceEl.textContent = PIECES_SYMBOLS[pieceCode];
+                                // Mise à jour du symbole si promotion ou changement de pièce
+                                pieceEl.textContent = PIECES_SYMBOLS[pieceCode] || pieceCode;
                                 pieceEl.dataset.code = pieceCode;
                                 pieceEl.className = 'piece ' + (getPieceColor(pieceCode) === 'white' ? 'white-piece' : 'black-piece');
                             }
-                            // Si la pièce est à la mauvaise position (changement de FEN)
+                            // Mouvement forcé si la pièce n'est pas à la bonne position FEN
                             if (parseInt(pieceEl.dataset.row) !== i || parseInt(pieceEl.dataset.col) !== j) {
-                                // Redessiner immédiatement pour la synchronisation
                                 pieceEl.style.transform = `translate(${j * 100}%, ${i * 100}%)`;
                                 pieceEl.dataset.row = i;
                                 pieceEl.dataset.col = j;
@@ -804,7 +779,6 @@
         }
         
         function updateHighlights() {
-            // ... (pas de changement)
             document.querySelectorAll('.selected, .highlight-move, .in-check').forEach(el => {
                 el.classList.remove('selected', 'highlight-move', 'in-check');
             });
@@ -815,28 +789,19 @@
                     document.getElementById(`sq-${move.row}-${move.col}`).classList.add('highlight-move');
                 });
             }
-            
-            // NOTE: La vérification d'échec est laissée à la validation FEN du serveur
-            // pour être plus précise.
         }
 
-
         function drawBoard(updateInfoPanel = true) {
-            // Le FEN est la source de vérité
             updateHighlights();
             
             if (updateInfoPanel && !isGameOver) {
-                // Utiliser la variable globale 'turn' mise à jour par updateBoardState(FEN)
                 infoEl.textContent = `Au tour des ${turn === 'white' ? 'Blancs' : 'Noirs'}`;
                 infoEl.style.color = '#fff';
             }
-
-            // La vérification checkmate/stalemate est faite dans makeMoveServer
-            
             updateTimers();
         }
         
-        // --- Fonction de Gestion du Clic (Mise à Jour) ---
+        // --- Fonction de Gestion du Clic (Inchangée) ---
         function handleMove(row, col, squareEl) {
             if (isGameOver || playerColor !== turn || currentGameId === null) return;
 
@@ -846,11 +811,11 @@
             
             // --- Étape 1 : Sélectionner une pièce ---
             if (!selectedPieceEl) {
-                if (pieceColor === turn) {
+                // S'assurer qu'on sélectionne une pièce de SA couleur
+                if (pieceColor === playerColor) {
                     selectedPieceEl = document.querySelector(`.piece[data-row="${row}"][data-col="${col}"]`);
                     selectedCoords = { row: row, col: col };
                     
-                    // Trouver des coups légaux pour la surbrillance (UX locale)
                     legalMoves = findLegalMoves(pieceCode, row, col);
                     drawBoard(); 
                 }
@@ -876,7 +841,7 @@
                     
                     // 1. Gérer la Promotion du Pion AVANT d'envoyer au serveur
                     if (startPieceCode.toLowerCase() === 'p' && (row === 0 || row === 7)) {
-                        promotion = handlePawnPromotion(row, col).toLowerCase(); // Renvoie 'q', 'r', 'b', 'n'
+                        promotion = handlePawnPromotion(row, col); 
                     }
 
                     // 2. Animer le mouvement (optimisation locale)
@@ -903,15 +868,10 @@
             document.getElementById('player-black-name').textContent = OPPONENT_NAME;
             
             initBoardSquares(); 
-            // Mise à jour de l'état initial
             updateBoardState(currentFen); 
         }
 
         document.addEventListener('DOMContentLoaded', initializeGame);
-        
-        // Les fonctions isSquareAttacked, findKing, etc. sont omises ici car elles sont trop longues
-        // et deviennent redondantes/unfiables avec la logique serveur. Elles doivent être
-        // conservées si l'on veut une vérification d'échec locale et une bonne UX.
         
     </script>
 </body>

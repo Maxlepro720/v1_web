@@ -268,9 +268,6 @@
             return localStorage.getItem('username');
         }
 
-        // ❌ NOTE : La fonction ensureUsernameCookieIsSet() a été retirée.
-        // L'authentification passe désormais par le corps JSON de la requête.
-
         // --- Constantes et État du Jeu ---
         const SERVER_URL = "https://project-3-api-2bgb.onrender.com"; 
         
@@ -280,7 +277,6 @@
             'r': '♖', 'n': '♘', 'b': '♗', 'q': '♕', 'k': '♔', 'p': '♙'  
         };
         
-        // Le pseudo de l'utilisateur est récupéré une seule fois au chargement
         const USERNAME = getUsernameFromStorage(); 
         const OPPONENT_NAME = "Adversaire Inconnu"; 
 
@@ -486,9 +482,9 @@
                 const response = await fetch(`${SERVER_URL}/find_or_create_match`, {
                     method: 'POST',
                     headers: headers,
-                    // 🎯 ENVOI DU PSEUDO DANS LE CORPS JSON
+                    // ✅ Le pseudo est envoyé dans le corps JSON pour l'authentification
                     body: JSON.stringify({ username: USERNAME }), 
-                    // ❌ REMOVED: credentials: 'include'
+                    // 'credentials: 'include' est supprimé
                 });
 
                 const data = await response.json(); 
@@ -545,9 +541,9 @@
                     body: JSON.stringify({ 
                         game_uuid: currentGameId, 
                         move_uci: move_uci,
-                        username: USERNAME // 🎯 ENVOI DU PSEUDO DANS LE CORPS JSON
+                        username: USERNAME // ✅ Le pseudo est envoyé dans le corps JSON
                     }),
-                    // ❌ REMOVED: credentials: 'include'
+                    // 'credentials: 'include' est supprimé
                 });
 
                 const data = await response.json();
@@ -600,7 +596,7 @@
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({ game_uuid: currentGameId, username: USERNAME }),
-                    // ❌ REMOVED: credentials: 'include'
+                    // 'credentials: 'include' est supprimé
                 });
 
                 const data = await response.json();
@@ -806,8 +802,7 @@
         // --- Fonction d'Initialisation ---
         function initializeGame() {
             
-            // ❌ La gestion des cookies a été retirée.
-            
+            // Le nom d'utilisateur est lu depuis localStorage et affiché
             document.getElementById('player-white-name').textContent = USERNAME || OPPONENT_NAME;
             document.getElementById('player-black-name').textContent = OPPONENT_NAME;
             

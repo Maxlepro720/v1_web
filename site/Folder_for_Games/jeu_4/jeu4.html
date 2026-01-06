@@ -270,7 +270,7 @@
 
     <script>
         // --- Fonctions Utilitaires ---
-        // Ancienne fonction getCookie supprimée
+        // NOUVEAU: Récupération de l'username depuis localStorage
         function getUsernameFromStorage() {
             return localStorage.getItem('username');
         }
@@ -282,12 +282,13 @@
             'r': '♖', 'n': '♘', 'b': '♗', 'q': '♕', 'k': '♔', 'p': '♙'  
         };
         
-        // MODIFIÉ : Utilisation de localStorage.getItem('username')
+        // CORRIGÉ: Utilisation de localStorage.getItem('username')
         const USERNAME = getUsernameFromStorage() || "Joueur Inconnu"; 
         const OPPONENT_NAME = "Adversaire Inconnu"; 
 
-        // MODIFIÉ : FEN standard correct pour le début d'une partie
-        let currentFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; 
+        // CORRIGÉ: FEN standard pour le début d'une partie (toutes les pièces)
+        const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; 
+        let currentFen = INITIAL_FEN; 
         
         // NOUVELLES VARIABLES GLOBALES POUR LE MULTIJOUEUR
         let currentGameId = null; 
@@ -395,7 +396,6 @@
             if (timerInterval) {
                 clearInterval(timerInterval);
                 timerInterval = null;
-                // MODIFIÉ : Texte du bouton
                 playButton.textContent = 'Reprendre Partie';
                 updateTimers(); 
             }
@@ -411,18 +411,16 @@
                     }
                     updateTimers();
                 }, 1000);
-                // MODIFIÉ : Texte du bouton
                 playButton.textContent = 'Pause Temps';
                 updateTimers(); 
             }
         }
         
-        // MODIFIÉ : Logique de l'appel au Matchmaking
         window.toggleTimer = function() {
             if (isGameOver) return;
             
             if (!currentGameId) {
-                findOrCreateMatch(); // Appel à la route Flask 1
+                findOrCreateMatch(); 
                 return;
             }
 
@@ -472,11 +470,10 @@
         
         function getPieceColor(piece) {
             if (!piece) return null;
-            // Un caractère majuscule signifie une pièce noire dans ce jeu
             return piece === piece.toLowerCase() ? 'white' : 'black'; 
         }
 
-        // --- Fonctions d'Interaction Serveur (Corrigées) ---
+        // --- Fonctions d'Interaction Serveur ---
         
         // Route Flask 1: Matchmaking
         async function findOrCreateMatch() {
@@ -491,13 +488,13 @@
             }
 
             try {
+                // CORRIGÉ: Utilisation du chemin d'accès relatif au serveur (même URL que le fichier)
                 const response = await fetch('/find_or_create_match', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: USERNAME }), // Envoyer le pseudo dans le body pour l'identification
+                    body: JSON.stringify({ username: USERNAME }), 
                 });
 
-                // Tenter d'analyser la réponse JSON, même en cas d'erreur HTTP 
                 const data = await response.json(); 
 
                 if (response.ok) {
@@ -505,35 +502,32 @@
                     playerColor = data.player_color;
                     opponentId = data.opponent_id || OPPONENT_NAME;
                     
-                    // Mise à jour de l'état du plateau et de l'affichage
                     updateBoardState(data.fen); 
                     
-                    // Mise à jour des noms dans les boîtes de couleur respectives
+                    // Mise à jour des noms
                     document.getElementById(`player-${playerColor}-name`).textContent = USERNAME;
                     document.getElementById(`player-${playerColor === 'white' ? 'black' : 'white'}-name`).textContent = opponentId;
                     
                     if (data.status === 'joined') {
                         displayInfo(`Partie ${data.game_uuid.substring(0, 8)}... rejointe. Vous jouez les ${playerColor === 'white' ? 'Blancs' : 'Noirs'}.`);
                         startTimer(); 
-                        subscribeToMatch(currentGameId); // Démarre l'écoute Realtime
+                        subscribeToMatch(currentGameId); 
                     } else if (data.status === 'created') {
                         displayInfo(`Partie ${data.game_uuid.substring(0, 8)}... créée. En attente d'un adversaire. Vous jouez les ${playerColor === 'white' ? 'Blancs' : 'Noirs'}.`);
                         subscribeToMatch(currentGameId); 
                     }
                     
                 } else {
-                    // Le serveur a renvoyé un statut d'erreur (4xx, 5xx)
                     displayInfo(data.error || `Erreur de matchmaking (Statut HTTP ${response.status}).`, true);
                 }
 
             } catch (e) {
-                // Erreur de connexion pure ou échec de l'analyse JSON
                 displayInfo("Erreur critique de connexion au serveur ou de format de réponse.", true);
                 console.error("Détail de l'erreur client:", e);
             } finally {
                 playButton.disabled = false;
                 if (!currentGameId) {
-                     playButton.textContent = 'Lancer Partie'; // Rétablissement du texte en cas d'échec
+                     playButton.textContent = 'Lancer Partie'; 
                 }
             }
         }
@@ -546,6 +540,7 @@
             displayInfo("Envoi du coup au serveur...");
 
             try {
+                // CORRIGÉ: Utilisation du chemin d'accès relatif au serveur
                 const response = await fetch('/make_move', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -562,7 +557,6 @@
                     const newFen = data.new_fen;
                     const gameStatus = data.game_status;
                     
-                    // Mise à jour de l'état local depuis le serveur
                     updateBoardState(newFen); 
 
                     if (gameStatus !== 'active') {
@@ -599,6 +593,7 @@
             if (!currentGameId) return;
 
             try {
+                // CORRIGÉ: Utilisation du chemin d'accès relatif au serveur
                 const response = await fetch('/destroy_match', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -631,13 +626,20 @@
         }
         
         // --- Fonctions de Règles Simplifiées (Placeholder) ---
+        // NOTE: Ces fonctions sont simplifiées et le serveur doit toujours valider le coup.
+        function isMoveLegal(piece, startRow, startCol, endRow, endCol, currentBoard = boardState) {
+            const pieceColor = getPieceColor(piece);
+            const targetPiece = currentBoard[endRow][endCol];
+            if (targetPiece && pieceColor === getPieceColor(targetPiece)) return false;
+            return true; // La validation complète est faite côté serveur.
+        }
+        
         function findLegalMoves(pieceCode, startRow, startCol) {
-            // NOTE: Cette fonction devrait appeler une route serveur 
-            // pour la liste exacte des coups légaux. Pour l'UX, elle est
-            // laissée simple ici.
-            const moves = [];
-            // ... (logique de mouvement simple omise pour garder le code propre)
-            return moves;
+            // Placeholder: Cette fonction devrait idéalement appeler une route serveur 
+            // pour la liste exacte des coups légaux pour une UX optimale, mais pour 
+            // l'instant elle n'est pas nécessaire car la validation est sur le serveur.
+            // On renvoie juste une liste vide pour l'instant pour éviter les bugs UX.
+            return [];
         }
 
         function handlePawnPromotion(row, col) {
@@ -797,14 +799,16 @@
                 }
                 
                 // Exécuter le mouvement si la destination est légale
-                if (isDestinationLegal) {
+                if (isDestinationLegal || (startRow !== row || startCol !== col)) {
                     
                     if (startPieceCode.toLowerCase() === 'p' && (row === 0 || row === 7)) {
                         promotion = handlePawnPromotion(row, col); 
                     }
 
+                    // On anime le coup AVANT de l'envoyer au serveur (optimisation UX)
                     animateMove(selectedPieceEl, row, col);
                     
+                    // Le serveur validera et renverra le nouvel état FEN
                     makeMoveServer(startRow, startCol, row, col, promotion);
                     
                 } else {
@@ -821,13 +825,15 @@
         
         // --- Fonction d'Initialisation ---
         function initializeGame() {
-            // CORRIGÉ : Affichage du pseudo du joueur dans la boîte des Blancs (en bas) par défaut
+            // Affiche le plateau de départ
+            
+            
+            // CORRIGÉ: Affiche l'username comme joueur en bas (Blanc par défaut)
             document.getElementById('player-white-name').textContent = USERNAME;
             document.getElementById('player-black-name').textContent = OPPONENT_NAME;
             
             initBoardSquares(); 
             updateBoardState(currentFen); 
-            drawBoard(); 
         }
 
         document.addEventListener('DOMContentLoaded', initializeGame);

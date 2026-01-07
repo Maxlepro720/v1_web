@@ -42,7 +42,7 @@
             font-size: 1.8em;
         }
 
-        /* --- 2. Infos Joueur et Timer --- */
+        /* --- 2. Infos Joueur (SANS TIMER) --- */
         .player-container {
             display: flex;
             justify-content: space-between;
@@ -51,14 +51,16 @@
             max-width: 600px; 
             padding: 10px; 
             margin: 5px 0;
-            border-radius: 4px;
+            border-radius: 8px; /* Effet visuel */
             transition: all 0.3s;
             border: 2px solid transparent; 
+            background-color: #2a2a2a; /* Fond légèrement plus foncé pour les boîtes */
         }
         
+        /* Indicateur de tour (Carré vert) */
         .player-container.highlight-turn {
             border-color: #28a745; 
-            box-shadow: 0 0 8px rgba(40, 167, 69, 0.5);
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.7); /* Lueur verte */
         }
 
         .top-player { border-top: 2px solid rgba(255,255,255,0.1); } 
@@ -84,24 +86,7 @@
             font-weight: normal;
         }
 
-        .timer-box {
-            padding: 5px 10px;
-            border-radius: 4px;
-            background-color: #444;
-            transition: background-color 0.3s;
-            flex-shrink: 0;
-        }
-
-        .timer-time {
-            font-size: 1.6em;
-            font-weight: bold;
-            color: #777;
-        }
-
-        .active-timer { background-color: #007bff; }
-        .active-timer .timer-time { color: #fff; }
-        .loser-timer { background-color: #dc3545; }
-        .loser-timer .timer-time { color: #fff; }
+        /* Suppression des styles de timer */
 
 
         /* --- 3. Styles du Plateau (Responsive & Rotation) --- */
@@ -131,7 +116,7 @@
             grid-template-columns: repeat(8, 1fr); 
             grid-template-rows: repeat(8, 1fr);
             border: 4px solid #f0f0f0;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            box-shadow: 0 0 15px rgba(0,0,0,0.8), 0 0 5px rgba(255, 255, 255, 0.2); /* Effet visuel */
             position: relative;
             transition: transform 0.5s ease-in-out; 
         }
@@ -150,7 +135,10 @@
         
         .light { background-color: #f0d9b5; }
         .dark { background-color: #b58863; }
-        .selected { box-shadow: inset 0 0 0 5px #007bff; }
+        .selected { 
+            box-shadow: inset 0 0 0 5px #007bff; 
+            background-color: #ffd700 !important; /* Ajout d'une couleur pour la case sélectionnée */
+        }
         
         .highlight-move::after {
             content: '';
@@ -197,6 +185,7 @@
             /* Simule une pièce cassée ou vaincue */
             opacity: 0.4; /* Très estompé */
             filter: grayscale(100%) brightness(0.7); /* Gris foncé et estompé */
+            text-shadow: none !important; 
         }
 
 
@@ -223,8 +212,26 @@
             flex-direction: column;
             gap: 15px; 
             height: fit-content; 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5); /* Effet visuel */
         }
         
+        .play-button {
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid #007bff;
+            background-color: #007bff;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .play-button:hover:not(:disabled) {
+             background-color: #0056b3;
+             border-color: #0056b3;
+             box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        }
+
         .play-button:disabled {
             background-color: #555;
             color: #aaa;
@@ -275,10 +282,7 @@
                     <span id="player-black-name">Adversaire Inconnu</span>
                     <span class="player-elo" id="elo-black">[1200 ELO]</span>
                 </div>
-                <div class="timer-box" id="timer-black">
-                    <div class="timer-time" id="time-black">15:00</div>
                 </div>
-            </div>
 
             <div class="info-panel" id="info">Cliquez sur "Lancer Partie" pour commencer à jouer.</div>
             
@@ -292,10 +296,7 @@
                     <span id="player-white-name">Chargement...</span>
                     <span class="player-elo" id="elo-white">[1200 ELO]</span>
                 </div>
-                <div class="timer-box" id="timer-white">
-                    <div class="timer-time" id="time-white">15:00</div>
-                </div>
-            </div>
+                 </div>
 
         </div>
 
@@ -328,7 +329,6 @@
     <script>
         // --- Fonctions Utilitaires ---
         function getUsernameFromStorage() {
-            // Assurez-vous d'avoir une valeur de secours si le localStorage est vide pour les tests
             let user = localStorage.getItem('username');
             if (!user) {
                 user = `Joueur${Math.floor(Math.random() * 1000)}`;
@@ -353,7 +353,6 @@
         // --- Constantes et État du Jeu ---
         const SERVER_URL = "https://project-3-api-2bgb.onrender.com"; 
         
-        const INITIAL_TIME_SECONDS = 15 * 60; 
         const PIECES_SYMBOLS = {
             'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟', 
             'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙'  
@@ -375,24 +374,15 @@
         let isGameOver = false;
         
         // ÉTATS POUR LA GESTION DU POLLING
-        let waitingForOpponent = false; // Vrai si le créateur attend un adversaire
-        let waitingForMove = false; // Vrai si la partie est active et que c'est au tour de l'adversaire
+        let waitingForOpponent = false; 
+        let waitingForMove = false; 
 
-        let timer = {
-            'white': INITIAL_TIME_SECONDS,
-            'black': INITIAL_TIME_SECONDS
-        };
-        let timerInterval = null; 
         let infoTimeout = null; 
         let pollingInterval = null; 
 
         // Références DOM globales
         const chessboardEl = document.getElementById('chessboard');
         const infoEl = document.getElementById('info');
-        const timeWhiteEl = document.getElementById('time-white');
-        const timeBlackEl = document.getElementById('time-black');
-        const timerWhiteBox = document.getElementById('timer-white');
-        const timerBlackBox = document.getElementById('timer-black');
         const playButton = document.getElementById('play-button');
         const movesListEl = document.getElementById('moves-list');
         const matchStatusEl = document.getElementById('match-status-text');
@@ -400,8 +390,6 @@
         const playerBlackBox = document.getElementById('player-black-box');
         const eloWhiteEl = document.getElementById('elo-white');
         const eloBlackEl = document.getElementById('elo-black');
-        const gameAreaEl = document.querySelector('.game-area');
-        const chessboardContainerEl = document.getElementById('chessboard-container');
 
 
         // --- Fonctions FEN et Mise à Jour du Plateau ---
@@ -419,94 +407,34 @@
                 drawPieces();
                 drawBoard();
             }
+            
+            // Met à jour l'indicateur de tour
+            updateTurnIndicator();
         }
         
-        // --- Chronomètre et Polling ---
-
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = seconds % 60;
-            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-        }
-
         /**
-         * Met à jour l'affichage des temps et l'indicateur de tour (carré vert).
+         * Met à jour l'indicateur visuel du tour (le carré vert)
          */
-        function updateTimers() {
-            // Détermine quel temps correspond au joueur et à l'adversaire
-            const userTime = playerColor === 'white' ? timer.white : timer.black;
-            const opponentTime = playerColor === 'white' ? timer.black : timer.white;
-
-            // Le temps du joueur est toujours affiché dans la boîte du bas
-            timeWhiteEl.textContent = formatTime(userTime);
-            // Le temps de l'adversaire est toujours affiché dans la boîte du haut
-            timeBlackEl.textContent = formatTime(opponentTime);
-            
-            timerWhiteBox.classList.remove('active-timer', 'loser-timer');
-            timerBlackBox.classList.remove('active-timer', 'loser-timer');
-            
+        function updateTurnIndicator() {
             playerWhiteBox.classList.remove('highlight-turn');
             playerBlackBox.classList.remove('highlight-turn');
+
+            if (isGameOver || waitingForOpponent || !currentGameId) {
+                return;
+            }
             
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             const isUserTurn = currentTurn === playerColor;
 
-            if (isGameOver) {
-                 // Met en évidence le temps écoulé de celui qui a perdu au temps
-                 // Note: on utilise les IDs statiques des timers, mais les variables timer.white/black sont synchronisées sur la couleur.
-                 if (timer.white <= 0 && playerColor === 'white') timerWhiteBox.classList.add('loser-timer');
-                 if (timer.black <= 0 && playerColor === 'black') timerWhiteBox.classList.add('loser-timer');
-
-                 if (timer.white <= 0 && playerColor === 'black') timerBlackBox.classList.add('loser-timer');
-                 if (timer.black <= 0 && playerColor === 'white') timerBlackBox.classList.add('loser-timer');
-            } else if (currentGameId && !waitingForOpponent) {
-                   if (isUserTurn) {
-                        // C'est le tour du joueur (boîte du bas)
-                        timerWhiteBox.classList.add('active-timer');
-                        playerWhiteBox.classList.add('highlight-turn');
-                   } else {
-                        // C'est le tour de l'adversaire (boîte du haut)
-                        timerBlackBox.classList.add('active-timer');
-                        playerBlackBox.classList.add('highlight-turn');
-                   }
-            }
-
-            // Détection de la fin de partie par temps (non synchronisé)
-            if (timer.white <= 0 && !isGameOver) {
-                endGame('time', 'black'); // Si Blanc tombe à 0, Noir gagne
-            }
-            if (timer.black <= 0 && !isGameOver) {
-                endGame('time', 'white'); // Si Noir tombe à 0, Blanc gagne
+            if (isUserTurn) {
+                // C'est le tour du joueur (boîte du bas)
+                playerWhiteBox.classList.add('highlight-turn');
+            } else {
+                // C'est le tour de l'adversaire (boîte du haut)
+                playerBlackBox.classList.add('highlight-turn');
             }
         }
 
-        function startTimer() {
-            // Le timer ne démarre que si l'adversaire est là ET que ce n'est pas la fin de partie
-            if (!timerInterval && !isGameOver && !waitingForOpponent) { 
-                timerInterval = setInterval(() => {
-                    const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
-                    
-                    // Décrémente la variable de temps correspondante à la couleur qui doit jouer
-                    if (currentTurn === 'white' && timer.white > 0) {
-                        timer.white--;
-                    } else if (currentTurn === 'black' && timer.black > 0) {
-                        timer.black--;
-                    }
-                    updateTimers();
-                }, 1000);
-                playButton.disabled = true;
-                playButton.textContent = 'Partie en Cours';
-                updateTimers(); 
-            }
-        }
-        
-        function stopTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-            updateTimers();
-        }
 
         // LOGIQUE DE POLLING UNIFIÉE
         function stopPolling() {
@@ -518,10 +446,9 @@
         }
 
         function startPolling(initialDelay = 0) {
-            stopPolling(); // Assurez-vous qu'il n'y en a qu'un seul
+            stopPolling(); 
             console.log(`-> [POLLING] Démarré, prochaine vérification dans ${initialDelay/1000}s puis toutes les 2s.`);
             
-            // Exécution immédiate après un petit délai optionnel (pour le premier coup de Noir, par exemple)
             setTimeout(() => {
                 pollGameStatus();
                 pollingInterval = setInterval(pollGameStatus, 2000); // Poll toutes les 2 secondes
@@ -530,10 +457,8 @@
 
         async function pollGameStatus() { 
             console.log(`\n--- [POLLING] Démarrage du cycle pour ${USERNAME} (${playerColor}) ---`);
-            console.log(`[POLLING] État local: w4Opp=${waitingForOpponent}, w4Move=${waitingForMove}, GameID=${currentGameId}`);
 
             if (!currentGameId || isGameOver) {
-                console.log("[POLLING] Condition d'arrêt initiale (Game Over ou pas d'ID).");
                 stopPolling();
                 return;
             }
@@ -541,7 +466,6 @@
             // Si la partie est active ET que c'est notre tour, on n'a plus besoin de poller
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             if (!waitingForOpponent && currentTurn === playerColor) {
-                 console.log("[POLLING] Arrêt: Partie active, C'est notre tour. On attend l'action locale."); 
                  stopPolling(); 
                  return;
             }
@@ -553,14 +477,11 @@
                 });
 
                 const data = await response.json();
-                console.log(`[POLLING] Réponse du serveur reçue (Status HTTP: ${response.status}).`);
-                console.log("[POLLING] Données serveur:", data);
 
                 if (response.ok) {
                     
                     // 1. GESTION DE L'ATTENTE D'ADVERSAIRE (UNIQUEMENT LE CRÉATEUR/BLANC)
                     if (waitingForOpponent && data.game_status === 'active') {
-                        console.log("-> [POLLING SUCCESS] Transition Blanc: Adversaire détecté et partie 'active'.");
                         waitingForOpponent = false; 
                         
                         if (data.opponent_id && data.opponent_id !== OPPONENT_NAME) {
@@ -573,8 +494,6 @@
                         displayInfo("L'adversaire a rejoint la partie ! À vous de jouer.");
                         
                         updateBoardState(data.fen); 
-                        startTimer(); 
-                        
                         stopPolling(); 
                     }
                     
@@ -585,17 +504,16 @@
                         if (data.fen !== currentFen) {
                             // Mouvement de l'adversaire détecté
                             updateBoardState(data.fen); 
-                            console.log(`-> [POLLING SYNC] Nouveau FEN détecté. Coup de l'adversaire (${chessBoard.history().pop()}).`);
                             displayInfo(`Coup de l'adversaire joué: ${chessBoard.history().pop()}. À vous de jouer.`);
-                            startTimer(); 
                             
                             if (!waitingForMove) {
                                 stopPolling();
                             }
                         }
                     } else if (data.game_status !== 'created' && data.game_status !== 'active') {
-                        // Statut de fin de partie
-                        endGame(data.game_status, chessBoard.turn() === 'w' ? 'black' : 'white');
+                        // Statut de fin de partie reçu (Checkmate, Draw, Abandoned)
+                        const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
+                        endGame(data.game_status, winnerColor);
                     }
                     
                 } else {
@@ -615,7 +533,6 @@
                 return;
             }
 
-            // Griser le bouton pour éviter les doubles clics
             playButton.disabled = true;
             playButton.textContent = 'Recherche...';
 
@@ -633,7 +550,6 @@
                     playerColor = data.player_color;
                     opponentId = data.opponent_id || OPPONENT_NAME;
                     
-                    // Rétablir le texte du bouton après succès (la désactivation est maintenue dans startTimer)
                     playButton.textContent = 'Partie en Cours';
 
                     if (data.status === 'created') {
@@ -649,18 +565,15 @@
                         displayInfo("Vous avez rejoint la partie ! Au tour de Blanc.");
                         setupPlayerAndBoard(playerColor, opponentId);
                         updateBoardState(data.fen);
-                        startTimer();
                         startPolling();
                     }
                 } else {
-                    // En cas d'erreur serveur lors du matchmaking
                     playButton.disabled = false;
                     playButton.textContent = 'Lancer Partie';
                     displayInfo(`Erreur lors du matchmaking: ${data.error}`, 'error');
                 }
 
             } catch (e) {
-                // En cas d'erreur réseau
                 playButton.disabled = false;
                 playButton.textContent = 'Lancer Partie';
                 displayInfo("Erreur de connexion au serveur.", 'error');
@@ -669,7 +582,6 @@
         }
         
         async function makeMoveServer(move_uci) {
-            stopTimer(); // Arrête le timer localement pendant l'envoi
             
             const payload = {
                 game_uuid: currentGameId,
@@ -693,7 +605,9 @@
                     updateBoardState(data.new_fen); 
                     
                     if (data.game_status !== 'active') {
-                         endGame(data.game_status, chessBoard.turn() === 'w' ? 'black' : 'white');
+                         // L'appelant (le joueur qui fait échec et mat) appelle destroy_match en premier
+                         const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
+                         endGame(data.game_status, winnerColor);
                     } else {
                         waitingForMove = true; 
                         displayInfo("Coup envoyé. En attente du coup de l'adversaire...");
@@ -701,10 +615,10 @@
                     }
 
                 } else {
+                    // Annuler le coup local en cas d'erreur
                     chessBoard.undo();
                     updateBoardState(chessBoard.fen()); 
                     displayInfo(`Erreur Mouvement Serveur: ${data.error || 'Coup rejeté par le serveur.'}`, 'error');
-                    startTimer(); 
                 }
 
             } catch (e) {
@@ -712,14 +626,12 @@
                 chessBoard.undo();
                 updateBoardState(chessBoard.fen());
                 displayInfo("Erreur réseau. Veuillez réessayer le coup.", 'error');
-                startTimer();
             }
         }
 
         async function destroyMatch() {
             if (!currentGameId) return;
             try {
-                // Utilisation de la route de destruction (le serveur doit la supporter)
                 const response = await fetch(`${SERVER_URL}/destroy_match?game_uuid=${currentGameId}&username=${USERNAME}`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' },
@@ -730,10 +642,10 @@
                 console.error("[DESTROY MATCH] Erreur lors de la requête de destruction de partie:", e);
             }
         }
-        
+
+
         function endGame(status, winnerColor) {
             stopPolling();
-            stopTimer();
             isGameOver = true;
             
             let message = "Partie terminée : ";
@@ -742,9 +654,6 @@
                 message += `${winnerColor.toUpperCase()} (${winnerName}) gagne par échec et mat !`;
             } else if (status === 'draw' || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
                 message += "Match nul.";
-            } else if (status === 'time') {
-                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
-                message += `${winnerColor.toUpperCase()} (${winnerName}) gagne au temps !`;
             } else if (status === 'abandoned') { 
                 const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
                 const loserName = (winnerColor === playerColor) ? opponentId : USERNAME;
@@ -761,18 +670,19 @@
             drawPieces();
             drawBoard();
 
-            // Appel à la destruction du match sur le serveur après la fin
+            // APPEL À DESTROY_MATCH (DEMANDÉ PAR L'UTILISATEUR)
             destroyMatch(); 
             
             // Bloque le bouton de jeu
             playButton.disabled = true;
             playButton.textContent = 'Partie Terminée';
+            updateTurnIndicator(); // Nettoie le highlight
         }
         
         // --- Gestion du plateau et du mouvement (Interface) ---
 
         function drawBoard() {
-            // Supprime toutes les mises en évidence de la dernière sélection/coup
+            // Nettoie les highlights
             document.querySelectorAll('.highlight-move, .highlight-capture, .selected, .in-check').forEach(el => {
                 el.classList.remove('highlight-move', 'highlight-capture', 'selected', 'in-check');
             });
@@ -792,20 +702,15 @@
             });
 
             // Gère la mise en échec (King in check)
-            if (chessBoard.in_check() && !chessBoard.in_checkmate()) { // S'assurer que ce n'est pas déjà mat
+            if (chessBoard.in_check()) {
                 const kingSquare = chessBoard.kingSquare(chessBoard.turn());
                 if (kingSquare) {
                     const { row, col } = squareToCoords(kingSquare);
                     document.getElementById(`sq-${row}-${col}`).classList.add('in-check');
-                    displayInfo("Le roi est en échec !", 'warning'); // Affichage de l'échec
+                    if (!chessBoard.in_checkmate() && !isGameOver) {
+                         displayInfo("Le roi est en échec !", 'warning'); // Affichage de l'échec
+                    }
                 }
-            } else if (chessBoard.in_checkmate() && isGameOver) {
-                 // Mise en évidence du roi maté sur sa case rouge
-                 const kingSquare = chessBoard.kingSquare(chessBoard.turn());
-                 if (kingSquare) {
-                    const { row, col } = squareToCoords(kingSquare);
-                    document.getElementById(`sq-${row}-${col}`).classList.add('in-check');
-                 }
             }
         }
 
@@ -825,7 +730,7 @@
             const piece = chessBoard.get(square);
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             
-            // 1. AUCUNE CASE SÉLECTIONNÉE, on clique sur une pièce
+            // 1. AUCUNE CASE SÉLECTIONNÉE
             if (!selectedCoords) {
                 if (piece && (piece.color === currentTurn[0])) {
                     selectedCoords = { row, col };
@@ -862,13 +767,13 @@
                         move_uci_correct += moveResult.promotion;
                     }
                     
-                    // 1. Envoyer le coup au serveur
+                    // Envoyer le coup au serveur
                     makeMoveServer(move_uci_correct);
                     
-                    // 2. Nettoyer l'état local après le coup
+                    // Nettoyer l'état local après le coup
                     selectedCoords = null;
                     legalMoves = [];
-                    updateBoardState(chessBoard.fen()); 
+                    // updateBoardState sera appelé dans makeMoveServer
                     
                 } else {
                     displayInfo("Coup illégal.", 'warning');
@@ -1039,7 +944,6 @@
         
         function initializeGame() {
             
-            // Ajout des IDs aux ELOs (pour la modification dans setupPlayerAndBoard)
             document.getElementById('player-white-name').textContent = USERNAME || OPPONENT_NAME;
             document.getElementById('player-black-name').textContent = OPPONENT_NAME;
             
@@ -1048,10 +952,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', initializeGame);
-        
-        function subscribeToMatch(game_uuid) {
-            console.log("Synchronisation Realtime initiée (si disponible).");
-        }
         
     </script>
 </body>

@@ -798,19 +798,24 @@
             if (moveResult) {
                 // Le coup est légal localement
                 
-                const move_uci_correct = moveResult.uci; 
+                // 🔥 CORRECTION ICI : Reconstruction de l'UCI à partir de 'from' et 'to'
+                let move_uci_correct = moveResult.from + moveResult.to;
                 
-                // 🔥 VÉRIFICATION CRITIQUE AVANT L'APPEL
-                if (typeof move_uci_correct === 'undefined' || move_uci_correct === null) {
-                    console.error("[HANDLE MOVE ERREUR] Le coup UCI est manquant malgré un moveResult valide:", moveResult);
-                    // Annuler le coup local pour éviter un état incohérent
+                // Ajoutez la promotion si elle est présente (ex: e7e8q)
+                if (moveResult.promotion) {
+                    move_uci_correct += moveResult.promotion;
+                }
+                
+                console.log(`[HANDLE MOVE] Coup local validé. UCI généré: ${move_uci_correct}`);
+                
+                // VÉRIFICATION DE SÉCURITÉ : Bien que le moveResult soit valide, on vérifie l'UCI
+                if (!move_uci_correct) {
+                    console.error("[HANDLE MOVE ERREUR] Le coup UCI est manquant malgré un moveResult valide.");
                     chessBoard.undo();
                     updateBoardState(chessBoard.fen()); 
                     displayInfo("Erreur de mouvement interne: l'UCI du coup est introuvable.", 'error');
                     return;
                 }
-                
-                console.log(`[HANDLE MOVE] Transmission du coup UCI au serveur: ${move_uci_correct}`);
                 
                 // 1. Envoyer le coup au serveur
                 makeMoveServer(move_uci_correct);

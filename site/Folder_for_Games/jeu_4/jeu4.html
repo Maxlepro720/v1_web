@@ -159,12 +159,12 @@
             box-sizing: border-box;
         }
 
-        /* CORRIGÉ: Échec (case du roi en rouge) */
+        /* Échec (case du roi en rouge) */
         .in-check { 
             background-color: red !important; 
         }
         
-        /* CORRIGÉ: S'assurer que le roi maté a aussi la case rouge */
+        /* S'assurer que le roi maté a aussi la case rouge */
         .checkmated-square {
             background-color: red !important;
             box-shadow: inset 0 0 0 5px darkred;
@@ -185,7 +185,7 @@
             z-index: 10;
         }
 
-        /* CORRIGÉ: Style pour le Roi mis en échec et mat (cassé/vaincu) */
+        /* Style pour le Roi mis en échec et mat (cassé/vaincu) */
         .checkmated-king {
             /* Simule une pièce cassée ou vaincue */
             opacity: 0.4; /* Très estompé */
@@ -352,6 +352,26 @@
             const colChar = String.fromCharCode('a'.charCodeAt(0) + col);
             const rowNum = 8 - row;
             return `${colChar}${rowNum}`;
+        }
+        
+        /**
+         * Trouve la case (notation échecs, ex: 'e1') du roi dont c'est le tour.
+         * Répare l'erreur TypeError car chessBoard.kingSquare() n'existe pas dans la version 0.10.3.
+         * @param {string} turnColorChar 'w' ou 'b', la couleur du roi à trouver.
+         * @returns {string|null} La case du roi ou null si non trouvé.
+         */
+        function getKingSquare(turnColorChar) { 
+            const board = chessBoard.board();
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const piece = board[r][c];
+                    // On cherche le roi ('k') de la couleur dont c'est le tour.
+                    if (piece && piece.type === 'k' && piece.color === turnColorChar) {
+                        return coordsToSquare(r, c);
+                    }
+                }
+            }
+            return null;
         }
 
 
@@ -738,8 +758,10 @@
 
             // Gère la mise en échec / échec et mat
             if (chessBoard.in_check() || chessBoard.in_checkmate()) {
-                // Le roi en échec est toujours celui dont c'est le tour
-                const kingSquare = chessBoard.kingSquare(chessBoard.turn());
+                
+                // CORRECTION: Utilisation de la nouvelle fonction getKingSquare
+                const kingSquare = getKingSquare(chessBoard.turn()); 
+
                 if (kingSquare) {
                     const { row, col } = squareToCoords(kingSquare);
                     const kingSquareEl = document.getElementById(`sq-${row}-${col}`);

@@ -62,6 +62,7 @@
         }
 
         .top-player { border-top: 2px solid rgba(255,255,255,0.1); } 
+        /* La classe bottom-player est cruciale pour l'inversion visuelle */
         .bottom-player { flex-direction: row-reverse; } 
         .bottom-player .player-info { text-align: right; } 
 
@@ -136,11 +137,8 @@
         }
 
         .chessboard.rotated {
-            /* 🔥 Garder UNIQUEMENT la rotation du plateau ici */
             transform: rotate(180deg);
         }
-
-        /* 🔥 RETIRER LA RÈGLE CSS POUR LA PIÈCE : La rotation de la pièce est maintenant gérée par JS */
         
         .square {
             display: flex;
@@ -319,7 +317,13 @@
     <script>
         // --- Fonctions Utilitaires ---
         function getUsernameFromStorage() {
-            return localStorage.getItem('username');
+            // Assurez-vous d'avoir une valeur de secours si le localStorage est vide pour les tests
+            let user = localStorage.getItem('username');
+            if (!user) {
+                user = `Joueur${Math.floor(Math.random() * 1000)}`;
+                localStorage.setItem('username', user);
+            }
+            return user;
         }
         
         function squareToCoords(square) {
@@ -358,7 +362,8 @@
         let selectedCoords = null;
         let legalMoves = [];
         let isGameOver = false;
-        let waitingForOpponent = false; 
+        let waitingForOpponent = false; // Vrai si le créateur attend un adversaire
+        let waitingForMove = false; // Vrai si c'est au tour de l'adversaire
 
         let timer = {
             'white': INITIAL_TIME_SECONDS,
@@ -368,6 +373,7 @@
         let infoTimeout = null; 
         let pollingInterval = null; 
 
+        // Références DOM globales (mieux que de les chercher à chaque fois)
         const chessboardEl = document.getElementById('chessboard');
         const infoEl = document.getElementById('info');
         const timeWhiteEl = document.getElementById('time-white');
@@ -377,12 +383,20 @@
         const playButton = document.getElementById('play-button');
         const movesListEl = document.getElementById('moves-list');
         const matchStatusEl = document.getElementById('match-status-text');
+        const playerWhiteBox = document.getElementById('player-white-box');
+        const playerBlackBox = document.getElementById('player-black-box');
+        const gameAreaEl = document.querySelector('.game-area');
+        const chessboardContainerEl = document.getElementById('chessboard-container');
 
 
         // --- Fonctions FEN et Mise à Jour du Plateau ---
         
         function updateBoardState(newFen, shouldDraw = true) {
             chessBoard.load(newFen); 
+            
+            // Met à jour l'état d'attente de mouvement
+            const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
+            waitingForMove = (currentTurn !== playerColor);
             
             updateMovesList(chessBoard.history()); 
             
@@ -406,9 +420,6 @@
             
             timerWhiteBox.classList.remove('active-timer', 'loser-timer');
             timerBlackBox.classList.remove('active-timer', 'loser-timer');
-            
-            const playerWhiteBox = document.getElementById('player-white-box');
-            const playerBlackBox = document.getElementById('player-black-box');
             
             playerWhiteBox.classList.remove('highlight-turn');
             playerBlackBox.classList.remove('highlight-turn');
@@ -437,6 +448,7 @@
         }
 
         function startTimer() {
+            // Le timer ne démarre que si l'adversaire est là ET que ce n'est pas la fin de partie
             if (!timerInterval && !isGameOver && !waitingForOpponent) { 
                 timerInterval = setInterval(() => {
                     const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
@@ -461,7 +473,7 @@
             updateTimers();
         }
 
-        // 🔥 LOGIQUE DE POLLING
+        // LOGIQUE DE POLLING
         function stopPolling() {
             if (pollingInterval) {
                 clearInterval(pollingInterval);
@@ -470,14 +482,13 @@
             }
         }
 
-        async function checkMatchStatus() {
-            if (!currentGameId || !waitingForOpponent) {
+        async function pollGameStatus() { 
+            if (!currentGameId || isGameOver) {
                 stopPolling();
                 return;
             }
             
             try {
-                // Requête régulière pour obtenir l'état de la partie
                 const response = await fetch(`${SERVER_URL}/get_game_state?game_uuid=${currentGameId}&username=${USERNAME}`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' },
@@ -485,22 +496,52 @@
 
                 const data = await response.json();
 
-                if (response.ok && data.opponent_id && data.opponent_id !== OPPONENT_NAME && data.game_status === 'active') {
-                    // Adversaire trouvé ! Transition vers l'état actif.
+                if (response.ok) {
                     
-                    waitingForOpponent = false; 
-                    opponentId = data.opponent_id;
+                    // 1. GESTION DE L'ATTENTE D'ADVERSAIRE (UNIQUEMENT LE CRÉATEUR)
+                    if (waitingForOpponent && data.opponent_id && data.opponent_id !== OPPONENT_NAME && data.game_status === 'active') {
+                        waitingForOpponent = false; 
+                        opponentId = data.opponent_id;
+                        
+                        setupPlayerAndBoard(playerColor, opponentId); // Met à jour l'UI avec le vrai nom
+                        
+                        matchStatusEl.textContent = `Partie contre ${opponentId} !`;
+                        displayInfo("L'adversaire a rejoint la partie ! À vous de jouer.");
+                        
+                        updateBoardState(data.fen); 
+                        startTimer(); 
+                        // Note: Le joueur Blanc (créateur) est celui dont c'est le tour (w), 
+                        // donc il arrête le polling car il doit jouer.
+                        stopPolling(); 
+                    }
                     
-                    // Met à jour le nom de l'adversaire
-                    document.getElementById(`player-${playerColor === 'white' ? 'black' : 'white'}-name`).textContent = opponentId;
+                    // 2. SYNCHRONISATION EN COURS DE PARTIE (POUR TOUS LES JOUEURS dont c'est le tour de l'adversaire)
+                    if (!waitingForOpponent && data.game_status === 'active') {
+                        const currentFen = chessBoard.fen();
+                        
+                        if (data.fen !== currentFen) {
+                            // Mouvement de l'adversaire détecté
+                            updateBoardState(data.fen); 
+                            displayInfo(`Coup de l'adversaire joué: ${chessBoard.history().pop()}. À vous de jouer.`);
+                            startTimer(); 
+                            
+                            // Si c'est notre tour après le coup de l'adversaire, on arrête le polling
+                            if (!waitingForMove) {
+                                stopPolling();
+                            }
+                        }
+                        
+                        // Mise à jour des timers (si le serveur les gère)
+                        if (data.timer_white !== undefined && data.timer_black !== undefined) {
+                            timer.white = Math.max(0, data.timer_white);
+                            timer.black = Math.max(0, data.timer_black);
+                            updateTimers(); 
+                        }
 
-                    matchStatusEl.textContent = `Partie contre ${opponentId} !`;
-                    displayInfo("L'adversaire a rejoint la partie ! À vous de jouer.");
-                    
-                    updateBoardState(data.fen); 
-                    
-                    stopPolling(); 
-                    startTimer(); 
+                    } else if (data.game_status !== 'created' && data.game_status !== 'active') {
+                        // Statut de fin de partie
+                        endGame(data.game_status, chessBoard.turn() === 'w' ? 'black' : 'white');
+                    }
                     
                 }
 
@@ -511,12 +552,12 @@
         
         function startPolling() {
             if (!pollingInterval) {
-                pollingInterval = setInterval(checkMatchStatus, 2000); 
-                console.log("Polling démarré pour l'adversaire.");
-                checkMatchStatus(); 
+                pollingInterval = setInterval(pollGameStatus, 3000); 
+                console.log("Polling démarré pour l'état de la partie.");
+                pollGameStatus(); // Appel initial immédiat
             }
         }
-        // 🔥 FIN LOGIQUE DE POLLING
+        // FIN LOGIQUE DE POLLING
 
 
         function displayInfo(message, isError = false) {
@@ -527,7 +568,8 @@
             
             if (!isGameOver) {
                 infoTimeout = setTimeout(() => {
-                    drawBoard(false); 
+                    // Réaffiche le message de base (Au tour des X) si pas de nouvelle erreur
+                    drawBoard(true); 
                 }, 3000);
             }
         }
@@ -590,6 +632,49 @@
             container.scrollTop = container.scrollHeight;
         }
 
+        // 🔥 FONCTION ESSENTIELLE: Gère l'ordre des boîtes joueur et la rotation du plateau
+        function setupPlayerAndBoard(pColor, oppId) {
+            const isWhite = pColor === 'white';
+            
+            // 1. Définir l'ordre des éléments dans game-area et la rotation
+            if (isWhite) {
+                // JOUEUR BLANC : Blanc en bas, Noir en haut.
+                gameAreaEl.insertBefore(playerBlackBox, infoEl);
+                gameAreaEl.appendChild(playerWhiteBox); 
+                
+                playerWhiteBox.classList.add('bottom-player');
+                playerBlackBox.classList.remove('bottom-player');
+                
+                chessboardEl.classList.remove('rotated');
+
+                // Noms
+                document.getElementById('player-white-name').textContent = USERNAME;
+                document.getElementById('player-black-name').textContent = oppId;
+
+            } else {
+                // JOUEUR NOIR : Noir en bas (pièces les plus proches), Blanc en haut.
+                gameAreaEl.insertBefore(playerWhiteBox, infoEl); // White box (physically) moves to the top
+                gameAreaEl.appendChild(playerBlackBox); // Black box (physically) moves to the bottom
+
+                playerBlackBox.classList.add('bottom-player'); 
+                playerWhiteBox.classList.remove('bottom-player'); 
+
+                chessboardEl.classList.add('rotated');
+                
+                // Noms
+                document.getElementById('player-black-name').textContent = USERNAME;
+                document.getElementById('player-white-name').textContent = oppId;
+            }
+            
+            // Assurez-vous que l'ordre info -> chessboard est correct
+            gameAreaEl.insertBefore(infoEl, chessboardContainerEl); 
+            
+            // Mise à jour finale des styles pour l'initialisation
+            updateTimers();
+        }
+        // --- Fin de setupPlayerAndBoard ---
+
+
         // --- Fonctions d'Interaction Serveur ---
         
         async function findOrCreateMatch() {
@@ -622,30 +707,27 @@
                     playerColor = data.player_color;
                     opponentId = data.opponent_id || OPPONENT_NAME;
                     
-                    if (playerColor === 'black') {
-                        // Rotation du plateau pour le joueur Noir
-                        chessboardEl.classList.add('rotated');
-                    } else {
-                        chessboardEl.classList.remove('rotated');
-                    }
-                    
+                    setupPlayerAndBoard(playerColor, opponentId);
                     updateBoardState(data.fen); 
                     
-                    document.getElementById(`player-${playerColor}-name`).textContent = USERNAME;
-                    document.getElementById(`player-${playerColor === 'white' ? 'black' : 'white'}-name`).textContent = opponentId;
-                    
                     if (data.status === 'joined') {
-                        // JOUEUR QUI REJOINT
+                        // JOUEUR QUI REJOINT (Noir)
                         waitingForOpponent = false; 
                         matchStatusEl.textContent = `Partie contre ${opponentId} !`;
-                        displayInfo(`Partie rejointe. Vous jouez les ${playerColor === 'white' ? 'Blancs' : 'Noirs'}.`);
+                        displayInfo(`Partie rejointe. Vous jouez les ${playerColor === 'white' ? 'Blancs' : 'Noirs'}. En attente du premier coup des Blancs.`);
+                        
+                        // Noir est le joueur dont c'est le tour de l'adversaire (Blanc), donc il doit POLLE
+                        waitingForMove = true;
+                        startPolling(); 
                         startTimer(); 
+                        
                     } else if (data.status === 'created') {
-                        // JOUEUR QUI CRÉE (BLANC)
-                        waitingForOpponent = true; 
+                        // JOUEUR QUI CRÉE (Blanc)
+                        waitingForOpponent = true; // Attend l'adversaire
                         matchStatusEl.textContent = `Partie créée. En attente de l'adversaire...`;
                         displayInfo(`Nouvelle partie créée. En attente d'un adversaire. (Vous jouez les ${playerColor === 'white' ? 'Blancs' : 'Noirs'}).`);
                         
+                        // Blanc doit POLLE pour détecter la connexion de Noir
                         startPolling(); 
                     }
                     
@@ -662,6 +744,7 @@
                      playButton.disabled = true;
                      playButton.textContent = 'En attente...'; 
                 } else {
+                    // Si la partie a commencé, on laisse le bouton en "Partie en cours"
                     playButton.disabled = true;
                     playButton.textContent = 'Partie en Cours';
                 }
@@ -669,6 +752,9 @@
         }
         
         async function makeMoveServer(move_uci) {
+            // Le joueur ne peut pas jouer s'il est en attente (d'adversaire ou de coup)
+            if (waitingForOpponent || waitingForMove) return; 
+            
             chessboardEl.style.pointerEvents = 'none';
             displayInfo("Validation du coup par le serveur...");
             stopTimer(); 
@@ -699,6 +785,12 @@
                     } else {
                          displayInfo(`Coup joué: ${move_uci}. Au tour des ${chessBoard.turn() === 'w' ? 'Blancs' : 'Noirs'}.`);
                          startTimer(); 
+                         
+                         // C'est au tour de l'adversaire, on commence à poller
+                         if (chessBoard.turn() !== playerColor[0]) {
+                            waitingForMove = true;
+                            startPolling(); 
+                         }
                     }
                     
                 } else {
@@ -742,8 +834,9 @@
                 opponentId = OPPONENT_NAME;
                 isGameOver = false;
                 waitingForOpponent = false;
+                waitingForMove = false;
                 
-                chessboardEl.classList.remove('rotated');
+                setupPlayerAndBoard('white', OPPONENT_NAME); // Reset l'UI en vue par défaut
                 chessBoard.reset();
                 updateBoardState(INITIAL_FEN); 
                 movesListEl.innerHTML = '';
@@ -782,11 +875,12 @@
             const currentTurnColor = chessBoard.turn() === 'w' ? 'white' : 'black';
             
             // 1. VERIFICATION PRÉ-MOUVEMENT
-            if (isGameOver || currentGameId === null || waitingForOpponent || playerColor !== currentTurnColor) {
+            if (isGameOver || currentGameId === null || waitingForOpponent || waitingForMove || playerColor !== currentTurnColor) {
                 let msg = '';
                 if (isGameOver) msg = "La partie est terminée.";
                 else if (currentGameId === null) msg = "Lancez une partie d'abord.";
                 else if (waitingForOpponent) msg = "En attente de l'adversaire pour commencer.";
+                else if (waitingForMove) msg = "Veuillez attendre le coup de l'adversaire.";
                 else if (playerColor !== currentTurnColor) msg = "Ce n'est pas votre tour de jouer.";
                 
                 displayInfo(msg, true);
@@ -889,14 +983,22 @@
             updateHighlights();
             
             if (updateInfoPanel && !isGameOver) {
-                const currentTurn = chessBoard.turn() === 'w' ? 'Blancs' : 'Noirs';
-                infoEl.textContent = `Au tour des ${currentTurn}`;
+                let message;
+                if (waitingForOpponent) {
+                     message = "En attente de l'adversaire...";
+                } else if (waitingForMove) {
+                     message = `Au tour de l'adversaire (${chessBoard.turn() === 'w' ? 'Blancs' : 'Noirs'})`;
+                } else {
+                     message = `À vous de jouer (${chessBoard.turn() === 'w' ? 'Blancs' : 'Noirs'})`;
+                }
+                
+                infoEl.textContent = message;
                 infoEl.style.color = '#fff';
             }
             updateTimers();
         }
         
-        // 🔥 NOUVEAU: Logique de dessin et de rotation/positionnement des pièces
+        // LOGIQUE DE DESSIN : Gère l'inversion des coordonnées ET la rotation de la pièce
         function drawPieces() {
             const existingPieces = {};
             document.querySelectorAll('.piece').forEach(p => {
@@ -949,7 +1051,7 @@
                  
                  let finalRow = r; 
                  let finalCol = c; 
-                 let rotation = '0deg'; // Pour le joueur blanc
+                 let rotation = '0deg'; 
 
                  // Si le joueur est Noir, on inverse les coordonnées (pour la position) 
                  // et on contre-tourne la pièce elle-même (pour l'orientation)
@@ -982,8 +1084,6 @@
             pieceEl.dataset.col = col;
             pieceEl.dataset.code = pieceCode;
             
-            // La position et la rotation sont gérées par drawPieces
-            
             return pieceEl;
         }
 
@@ -1003,19 +1103,14 @@
         }
         
         function initializeGame() {
-            
-            document.getElementById('player-white-name').textContent = USERNAME || OPPONENT_NAME;
-            document.getElementById('player-black-name').textContent = OPPONENT_NAME;
+            // Initialisation avec la vue par défaut (Blanc en bas)
+            setupPlayerAndBoard('white', OPPONENT_NAME); 
             
             initBoardSquares(); 
             updateBoardState(chessBoard.fen()); 
         }
 
         document.addEventListener('DOMContentLoaded', initializeGame);
-        
-        function subscribeToMatch(game_uuid) {
-            console.log("Synchronisation Realtime initiée (si disponible).");
-        }
         
     </script>
 </body>

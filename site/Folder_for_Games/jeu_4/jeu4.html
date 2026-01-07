@@ -742,83 +742,94 @@
         }
 
         function handleMove(row, col, squareEl) {
-            // Empêche de jouer si la partie n'est pas lancée, est finie, ou si ce n'est pas notre tour
-            if (isGameOver || !currentGameId || waitingForOpponent || waitingForMove) {
-                // AJOUT DU LOG POUR LE DIAGNOSTIC DANS LA CONSOLE
-                console.warn(`[HANDLE MOVE BLOQUÉ] isGameOver: ${isGameOver}, currentGameId: ${currentGameId}, waitingForOpponent: ${waitingForOpponent}, waitingForMove: ${waitingForMove}`);
+        // Empêche de jouer si la partie n'est pas lancée, est finie, ou si ce n'est pas notre tour
+        if (isGameOver || !currentGameId || waitingForOpponent || waitingForMove) {
+            console.warn(`[HANDLE MOVE BLOQUÉ] isGameOver: ${isGameOver}, currentGameId: ${currentGameId}, waitingForOpponent: ${waitingForOpponent}, waitingForMove: ${waitingForMove}`);
 
-                displayInfo(
-                    isGameOver ? "La partie est terminée." : 
-                    !currentGameId ? "Cliquez sur 'Lancer Partie'." :
-                    waitingForOpponent ? "En attente de l'adversaire." :
-                    "Veuillez attendre le coup de l'adversaire."
-                );
+            displayInfo(
+                isGameOver ? "La partie est terminée." : 
+                !currentGameId ? "Cliquez sur 'Lancer Partie'." :
+                waitingForOpponent ? "En attente de l'adversaire." :
+                "Veuillez attendre le coup de l'adversaire."
+            );
+            return;
+        }
+        
+        const square = coordsToSquare(row, col);
+        const piece = chessBoard.get(square);
+        const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
+        
+        // 1. AUCUNE CASE SÉLECTIONNÉE, on clique sur une pièce
+        if (!selectedCoords) {
+            if (piece && (piece.color === currentTurn[0])) {
+                // Sélectionne une pièce de notre couleur
+                selectedCoords = { row, col };
+                
+                // Récupère les coups légaux possibles
+                legalMoves = chessBoard.moves({ square: square, verbose: true });
+                
+                drawBoard(); // Met en évidence la sélection et les coups possibles
+            }
+            
+        // 2. UNE CASE EST DÉJÀ SÉLECTIONNÉE
+        } else {
+            const startCoord = coordsToSquare(selectedCoords.row, selectedCoords.col);
+            const endCoord = square;
+            
+            // Si on reclique sur la même case ou sur une autre de nos pièces, on change la sélection
+            if (startCoord === endCoord || (piece && piece.color === currentTurn[0])) {
+                selectedCoords = (startCoord === endCoord) ? null : { row, col };
+                legalMoves = selectedCoords ? chessBoard.moves({ square: endCoord, verbose: true }) : [];
+                drawBoard();
                 return;
             }
             
-            const square = coordsToSquare(row, col);
-            const piece = chessBoard.get(square);
-            const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
+            // C'est un mouvement vers une nouvelle case
+            const moveAttempt = {
+                from: startCoord,
+                to: endCoord,
+                // Gestion de la promotion par défaut sur 'q' pour simplifier l'interface ici
+                promotion: (chessBoard.get(startCoord).type === 'p' && (row === 0 || row === 7)) ? 'q' : undefined
+            };
             
-            // 1. AUCUNE CASE SÉLECTIONNÉE, on clique sur une pièce
-            if (!selectedCoords) {
-                if (piece && (piece.color === currentTurn[0])) {
-                    // Sélectionne une pièce de notre couleur
-                    selectedCoords = { row, col };
-                    
-                    // Récupère les coups légaux possibles
-                    legalMoves = chessBoard.moves({ square: square, verbose: true });
-                    
-                    drawBoard(); // Met en évidence la sélection et les coups possibles
-                }
+            // Tente le coup localement
+            const moveResult = chessBoard.move(moveAttempt); 
+
+            if (moveResult) {
+                // Le coup est légal localement
                 
-            // 2. UNE CASE EST DÉJÀ SÉLECTIONNÉE
-            } else {
-                const startCoord = coordsToSquare(selectedCoords.row, selectedCoords.col);
-                const endCoord = square;
+                const move_uci_correct = moveResult.uci; 
                 
-                // Si on reclique sur la même case ou sur une autre de nos pièces, on change la sélection
-                if (startCoord === endCoord || (piece && piece.color === currentTurn[0])) {
-                    selectedCoords = (startCoord === endCoord) ? null : { row, col };
-                    legalMoves = selectedCoords ? chessBoard.moves({ square: endCoord, verbose: true }) : [];
-                    drawBoard();
+                // 🔥 VÉRIFICATION CRITIQUE AVANT L'APPEL
+                if (typeof move_uci_correct === 'undefined' || move_uci_correct === null) {
+                    console.error("[HANDLE MOVE ERREUR] Le coup UCI est manquant malgré un moveResult valide:", moveResult);
+                    // Annuler le coup local pour éviter un état incohérent
+                    chessBoard.undo();
+                    updateBoardState(chessBoard.fen()); 
+                    displayInfo("Erreur de mouvement interne: l'UCI du coup est introuvable.", 'error');
                     return;
                 }
                 
-                // C'est un mouvement vers une nouvelle case
-                const moveAttempt = {
-                    from: startCoord,
-                    to: endCoord,
-                    // Gestion de la promotion par défaut sur 'q' pour simplifier l'interface ici
-                    promotion: (chessBoard.get(startCoord).type === 'p' && (row === 0 || row === 7)) ? 'q' : undefined
-                };
+                console.log(`[HANDLE MOVE] Transmission du coup UCI au serveur: ${move_uci_correct}`);
                 
-                // Tente le coup localement
-                const moveResult = chessBoard.move(moveAttempt); 
-
-                if (moveResult) {
-                    // Le coup est légal localement
-                    
-                    const move_uci_correct = moveResult.uci; 
-                    
-                    // 1. Envoyer le coup au serveur
-                    makeMoveServer(move_uci_correct);
-                    
-                    // 2. Nettoyer l'état local après le coup
-                    selectedCoords = null;
-                    legalMoves = [];
-                    // Le FEN sera mis à jour après la confirmation du serveur, mais on met à jour l'affichage immédiatement
-                    updateBoardState(chessBoard.fen()); 
-                    
-                } else {
-                    // Coup illégal
-                    displayInfo("Coup illégal.", 'warning');
-                    selectedCoords = null;
-                    legalMoves = [];
-                    drawBoard(); // Nettoie la sélection
-                }
+                // 1. Envoyer le coup au serveur
+                makeMoveServer(move_uci_correct);
+                
+                // 2. Nettoyer l'état local après le coup
+                selectedCoords = null;
+                legalMoves = [];
+                // Le FEN sera mis à jour après la confirmation du serveur, mais on met à jour l'affichage immédiatement
+                updateBoardState(chessBoard.fen()); 
+                
+            } else {
+                // Coup illégal
+                displayInfo("Coup illégal.", 'warning');
+                selectedCoords = null;
+                legalMoves = [];
+                drawBoard(); // Nettoie la sélection
             }
         }
+    }
 
 
         // --- Fonctions d'Interface ---

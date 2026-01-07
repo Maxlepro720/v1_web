@@ -644,11 +644,13 @@
         async function makeMoveServer(move_uci) {
             stopTimer(); // Arrête le timer localement pendant l'envoi
             
+            // DÉBUT DE LA CORRECTION
             const payload = {
                 game_uuid: currentGameId,
-                username: USERNAME,
+                player_id: USERNAME, // CLÉ CORRIGÉE: Utiliser 'player_id' au lieu de 'username'
                 move_uci: move_uci,
             };
+            // FIN DE LA CORRECTION
             
             console.log(`[SERVER] Tentative d'envoi du coup UCI: ${move_uci}`);
 

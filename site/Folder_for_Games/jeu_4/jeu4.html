@@ -564,15 +564,6 @@
                                 stopPolling();
                             }
                         }
-                        
-                        // Mise à jour des timers 
-                        // (Non implémenté côté serveur mais laissé ici pour l'évolution)
-                        // if (data.timer_white !== undefined && data.timer_black !== undefined) {
-                        //     timer.white = Math.max(0, data.timer_white);
-                        //     timer.black = Math.max(0, data.timer_black);
-                        //     updateTimers(); 
-                        // }
-
                     } else if (data.game_status !== 'created' && data.game_status !== 'active') {
                         // Statut de fin de partie
                         endGame(data.game_status, chessBoard.turn() === 'w' ? 'black' : 'white');
@@ -649,23 +640,42 @@
                 username: USERNAME,
                 move_uci: move_uci,
             };
-            
-            console.log(`[SERVER] Tentative d'envoi du coup UCI: ${move_uci}`);
+
+            // --- LOGGING AMÉLIORÉ (ENVOI) ---
+            const jsonPayload = JSON.stringify(payload);
+            console.log(`[MAKE_MOVE] Envoi du coup : ${move_uci}`);
+            console.log("[MAKE_MOVE] JSON PAYLOAD ENVOYÉ:", jsonPayload);
+            // ------------------------------------
+
+            // Vérification critique pour l'erreur 400 (gardée car essentielle pour le diagnostic)
+            if (!payload.game_uuid || !payload.username || !payload.move_uci) {
+                 console.error("!!! [ERREUR CRITIQUE 400] !!! Un champ est NULL ou vide. Le fetch est annulé. Payload:", payload);
+                 displayInfo("Erreur de partie: ID de partie ou Pseudo manquant. Relancez la partie.", 'error');
+                 
+                 // Annuler le coup localement pour éviter de bloquer l'interface
+                 chessBoard.undo();
+                 updateBoardState(chessBoard.fen()); 
+                 startTimer();
+                 return; // Arrête l'envoi au serveur
+            }
+            // FIN DU BLOC DE VÉRIFICATION
 
             try {
                 const response = await fetch(`${SERVER_URL}/make_move`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: jsonPayload
                 });
                 
+                // --- LOGGING AMÉLIORÉ (RÉCEPTION) ---
+                console.log(`[MAKE_MOVE] Réponse reçue. HTTP Status: ${response.status}`);
                 const data = await response.json();
+                console.log("[MAKE_MOVE] DONNÉES JSON REÇUES:", data);
+                // ------------------------------------
 
                 if (response.ok && data.success) {
-                    console.log(`[SERVER] Coup accepté. Nouveau FEN: ${data.new_fen}`);
+                    console.log(`[MAKE_MOVE] Succès du serveur. Nouveau FEN: ${data.new_fen}`);
                     
-                    // Mettre à jour l'état final du plateau avec la réponse du serveur
-                    // (Le FEN local est déjà à jour, mais c'est une bonne pratique)
                     updateBoardState(data.new_fen); 
                     
                     if (data.game_status !== 'active') {
@@ -678,16 +688,16 @@
                     }
 
                 } else {
-                    // Si le coup est rejeté par le serveur (ex: illégal, hors tour), on annule le coup local.
+                    // Le serveur a rejeté le coup (response.ok peut être false ou data.success peut être false)
                     chessBoard.undo();
                     updateBoardState(chessBoard.fen()); 
                     displayInfo(`Erreur Mouvement Serveur: ${data.error || 'Coup rejeté par le serveur.'}`, 'error');
-                    console.error("Erreur Mouvement Serveur:", data.error || data.message);
+                    console.error("[MAKE_MOVE] Échec du serveur. Erreur:", data.error || data.message);
                     startTimer(); // Redémarre le timer car on n'a pas pu jouer
                 }
 
             } catch (e) {
-                console.error("Erreur réseau lors de l'envoi du coup:", e);
+                console.error("[MAKE_MOVE] Erreur réseau lors de l'envoi du coup:", e);
                 // Si erreur réseau, on annule le coup local et on redémarre le timer
                 chessBoard.undo();
                 updateBoardState(chessBoard.fen());
@@ -734,6 +744,9 @@
         function handleMove(row, col, squareEl) {
             // Empêche de jouer si la partie n'est pas lancée, est finie, ou si ce n'est pas notre tour
             if (isGameOver || !currentGameId || waitingForOpponent || waitingForMove) {
+                // AJOUT DU LOG POUR LE DIAGNOSTIC DANS LA CONSOLE
+                console.warn(`[HANDLE MOVE BLOQUÉ] isGameOver: ${isGameOver}, currentGameId: ${currentGameId}, waitingForOpponent: ${waitingForOpponent}, waitingForMove: ${waitingForMove}`);
+
                 displayInfo(
                     isGameOver ? "La partie est terminée." : 
                     !currentGameId ? "Cliquez sur 'Lancer Partie'." :
@@ -777,7 +790,7 @@
                     from: startCoord,
                     to: endCoord,
                     // Gestion de la promotion par défaut sur 'q' pour simplifier l'interface ici
-                    promotion: (piece && piece.type === 'p' && (row === 0 || row === 7)) ? 'q' : undefined
+                    promotion: (chessBoard.get(startCoord).type === 'p' && (row === 0 || row === 7)) ? 'q' : undefined
                 };
                 
                 // Tente le coup localement
@@ -786,7 +799,6 @@
                 if (moveResult) {
                     // Le coup est légal localement
                     
-                    // 🔥 CORRECTION CRITIQUE (V6): Utiliser moveResult.uci pour le format e.g. 'e2e4'
                     const move_uci_correct = moveResult.uci; 
                     
                     // 1. Envoyer le coup au serveur
@@ -852,7 +864,7 @@
             
             let message = "Partie terminée : ";
             if (status === 'checkmate') {
-                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
+                const winnerName = (winnerColor === chessBoard.turn()) ? USERNAME : opponentId;
                 message += `${winnerColor.toUpperCase()} (${winnerName}) gagne par échec et mat !`;
             } else if (status === 'draw') {
                 message += "Match nul (Stalemate, Matériel insuffisant, etc.).";
@@ -895,9 +907,8 @@
                 chessboardEl.classList.remove('rotated'); 
             } else {
                 // Noir en bas
-                // CORRECTION : L'adversaire est en haut (remove) et le joueur est en bas (add)
-                opponentBox.classList.remove('bottom-player'); // Retire la classe de la boîte de l'adversaire (WhiteBox)
-                playerBox.classList.add('bottom-player');    // Ajoute la classe à la boîte du joueur (BlackBox)
+                opponentBox.classList.remove('bottom-player'); 
+                playerBox.classList.add('bottom-player');    
                 chessboardEl.classList.add('rotated'); 
             }
         }

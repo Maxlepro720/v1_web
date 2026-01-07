@@ -742,99 +742,100 @@
         }
 
         function handleMove(row, col, squareEl) {
-        // Empêche de jouer si la partie n'est pas lancée, est finie, ou si ce n'est pas notre tour
-        if (isGameOver || !currentGameId || waitingForOpponent || waitingForMove) {
-            console.warn(`[HANDLE MOVE BLOQUÉ] isGameOver: ${isGameOver}, currentGameId: ${currentGameId}, waitingForOpponent: ${waitingForOpponent}, waitingForMove: ${waitingForMove}`);
+            // Empêche de jouer si la partie n'est pas lancée, est finie, ou si ce n'est pas notre tour
+            if (isGameOver || !currentGameId || waitingForOpponent || waitingForMove) {
+                // AJOUT DU LOG POUR LE DIAGNOSTIC DANS LA CONSOLE
+                console.warn(`[HANDLE MOVE BLOQUÉ] isGameOver: ${isGameOver}, currentGameId: ${currentGameId}, waitingForOpponent: ${waitingForOpponent}, waitingForMove: ${waitingForMove}`);
 
-            displayInfo(
-                isGameOver ? "La partie est terminée." : 
-                !currentGameId ? "Cliquez sur 'Lancer Partie'." :
-                waitingForOpponent ? "En attente de l'adversaire." :
-                "Veuillez attendre le coup de l'adversaire."
-            );
-            return;
-        }
-        
-        const square = coordsToSquare(row, col);
-        const piece = chessBoard.get(square);
-        const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
-        
-        // 1. AUCUNE CASE SÉLECTIONNÉE, on clique sur une pièce
-        if (!selectedCoords) {
-            if (piece && (piece.color === currentTurn[0])) {
-                // Sélectionne une pièce de notre couleur
-                selectedCoords = { row, col };
-                
-                // Récupère les coups légaux possibles
-                legalMoves = chessBoard.moves({ square: square, verbose: true });
-                
-                drawBoard(); // Met en évidence la sélection et les coups possibles
-            }
-            
-        // 2. UNE CASE EST DÉJÀ SÉLECTIONNÉE
-        } else {
-            const startCoord = coordsToSquare(selectedCoords.row, selectedCoords.col);
-            const endCoord = square;
-            
-            // Si on reclique sur la même case ou sur une autre de nos pièces, on change la sélection
-            if (startCoord === endCoord || (piece && piece.color === currentTurn[0])) {
-                selectedCoords = (startCoord === endCoord) ? null : { row, col };
-                legalMoves = selectedCoords ? chessBoard.moves({ square: endCoord, verbose: true }) : [];
-                drawBoard();
+                displayInfo(
+                    isGameOver ? "La partie est terminée." : 
+                    !currentGameId ? "Cliquez sur 'Lancer Partie'." :
+                    waitingForOpponent ? "En attente de l'adversaire." :
+                    "Veuillez attendre le coup de l'adversaire."
+                );
                 return;
             }
             
-            // C'est un mouvement vers une nouvelle case
-            const moveAttempt = {
-                from: startCoord,
-                to: endCoord,
-                // Gestion de la promotion par défaut sur 'q' pour simplifier l'interface ici
-                promotion: (chessBoard.get(startCoord).type === 'p' && (row === 0 || row === 7)) ? 'q' : undefined
-            };
+            const square = coordsToSquare(row, col);
+            const piece = chessBoard.get(square);
+            const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             
-            // Tente le coup localement
-            const moveResult = chessBoard.move(moveAttempt); 
-
-            if (moveResult) {
-                // Le coup est légal localement
-                
-                // 🔥 CORRECTION ICI : Reconstruction de l'UCI à partir de 'from' et 'to'
-                let move_uci_correct = moveResult.from + moveResult.to;
-                
-                // Ajoutez la promotion si elle est présente (ex: e7e8q)
-                if (moveResult.promotion) {
-                    move_uci_correct += moveResult.promotion;
+            // 1. AUCUNE CASE SÉLECTIONNÉE, on clique sur une pièce
+            if (!selectedCoords) {
+                if (piece && (piece.color === currentTurn[0])) {
+                    // Sélectionne une pièce de notre couleur
+                    selectedCoords = { row, col };
+                    
+                    // Récupère les coups légaux possibles
+                    legalMoves = chessBoard.moves({ square: square, verbose: true });
+                    
+                    drawBoard(); // Met en évidence la sélection et les coups possibles
                 }
                 
-                console.log(`[HANDLE MOVE] Coup local validé. UCI généré: ${move_uci_correct}`);
+            // 2. UNE CASE EST DÉJÀ SÉLECTIONNÉE
+            } else {
+                const startCoord = coordsToSquare(selectedCoords.row, selectedCoords.col);
+                const endCoord = square;
                 
-                // VÉRIFICATION DE SÉCURITÉ : Bien que le moveResult soit valide, on vérifie l'UCI
-                if (!move_uci_correct) {
-                    console.error("[HANDLE MOVE ERREUR] Le coup UCI est manquant malgré un moveResult valide.");
-                    chessBoard.undo();
-                    updateBoardState(chessBoard.fen()); 
-                    displayInfo("Erreur de mouvement interne: l'UCI du coup est introuvable.", 'error');
+                // Si on reclique sur la même case ou sur une autre de nos pièces, on change la sélection
+                if (startCoord === endCoord || (piece && piece.color === currentTurn[0])) {
+                    selectedCoords = (startCoord === endCoord) ? null : { row, col };
+                    legalMoves = selectedCoords ? chessBoard.moves({ square: endCoord, verbose: true }) : [];
+                    drawBoard();
                     return;
                 }
                 
-                // 1. Envoyer le coup au serveur
-                makeMoveServer(move_uci_correct);
+                // C'est un mouvement vers une nouvelle case
+                const moveAttempt = {
+                    from: startCoord,
+                    to: endCoord,
+                    // Gestion de la promotion par défaut sur 'q' pour simplifier l'interface ici
+                    promotion: (chessBoard.get(startCoord).type === 'p' && (row === 0 || row === 7)) ? 'q' : undefined
+                };
                 
-                // 2. Nettoyer l'état local après le coup
-                selectedCoords = null;
-                legalMoves = [];
-                // Le FEN sera mis à jour après la confirmation du serveur, mais on met à jour l'affichage immédiatement
-                updateBoardState(chessBoard.fen()); 
-                
-            } else {
-                // Coup illégal
-                displayInfo("Coup illégal.", 'warning');
-                selectedCoords = null;
-                legalMoves = [];
-                drawBoard(); // Nettoie la sélection
+                // Tente le coup localement
+                const moveResult = chessBoard.move(moveAttempt); 
+
+                if (moveResult) {
+                    // Le coup est légal localement
+                    
+                    // 🔥 CORRECTION UCI : Reconstruction de l'UCI à partir de 'from' et 'to' (car .uci peut manquer)
+                    let move_uci_correct = moveResult.from + moveResult.to;
+                    
+                    // Ajoutez la promotion si elle est présente (ex: e7e8q)
+                    if (moveResult.promotion) {
+                        move_uci_correct += moveResult.promotion;
+                    }
+                    
+                    console.log(`[HANDLE MOVE] Coup local validé. UCI généré: ${move_uci_correct}`);
+                    
+                    // VÉRIFICATION DE SÉCURITÉ
+                    if (!move_uci_correct) {
+                        console.error("[HANDLE MOVE ERREUR] Le coup UCI est manquant malgré un moveResult valide.");
+                        chessBoard.undo();
+                        updateBoardState(chessBoard.fen()); 
+                        displayInfo("Erreur de mouvement interne: l'UCI du coup est introuvable.", 'error');
+                        return;
+                    }
+
+                    // 1. Envoyer le coup au serveur
+                    makeMoveServer(move_uci_correct);
+                    
+                    // 2. Nettoyer l'état local après le coup
+                    selectedCoords = null;
+                    legalMoves = [];
+                    // Le FEN sera mis à jour après la confirmation du serveur, mais on met à jour l'affichage immédiatement
+                    updateBoardState(chessBoard.fen()); 
+                    
+                } else {
+                    // Coup illégal
+                    displayInfo("Coup illégal.", 'warning');
+                    selectedCoords = null;
+                    legalMoves = [];
+                    drawBoard(); // Nettoie la sélection
+                }
             }
         }
-    }
 
 
         // --- Fonctions d'Interface ---
@@ -907,26 +908,22 @@
             
             const isWhite = color === 'white';
             
-            // 1. CORRECTION: Assurez-vous que le nom du joueur et de l'adversaire est dans la bonne boîte
-            document.getElementById('player-white-name').textContent = isWhite ? USERNAME : opponentId;
-            document.getElementById('player-black-name').textContent = isWhite ? opponentId : USERNAME;
+            // 🔥 CORRECTION DE POSITION : Le joueur est toujours affiché en bas (player-white-box)
+            // et l'adversaire en haut (player-black-box), quelle que soit la couleur du joueur.
+            document.getElementById('player-white-name').textContent = USERNAME; 
+            document.getElementById('player-black-name').textContent = opponentId; 
 
-            // 2. Logique d'inversion visuelle (rotation du plateau et placement des boîtes)
-            const playerBox = isWhite ? playerWhiteBox : playerBlackBox;
-            const opponentBox = isWhite ? playerBlackBox : playerWhiteBox;
-            
-            // Inverse l'ordre d'affichage dans le DOM et ajoute la classe de rotation
+            // Gère l'ajout/retrait du style bottom-player sur les conteneurs (si nécessaire, mais conservé pour l'homogénéité du style)
             if (isWhite) {
-                // Blanc en bas (par défaut)
-                opponentBox.classList.remove('bottom-player');
-                playerBox.classList.add('bottom-player');
+                // Si joueur est Blanc, les pièces blanches sont en bas -> pas de rotation
                 chessboardEl.classList.remove('rotated'); 
+                // Les styles CSS par défaut (player-white-box a bottom-player) sont suffisants.
             } else {
-                // Noir en bas
-                opponentBox.classList.remove('bottom-player'); 
-                playerBox.classList.add('bottom-player');    
+                // Si joueur est Noir, les pièces noires doivent être en bas -> rotation du plateau
                 chessboardEl.classList.add('rotated'); 
             }
+            // NOTE: La manipulation des classes playerBox/opponentBox a été retirée car elle n'affectait pas la position
+            // globale et compliquait la logique de positionnement des noms.
         }
         
 
@@ -969,6 +966,8 @@
             // Si le plateau est rotatif, les pièces doivent tourner dans le sens inverse
             if (playerColor === 'black') {
                 pieceEl.style.transform = 'rotate(180deg)';
+            } else {
+                 pieceEl.style.transform = 'none'; // S'assurer qu'elle n'est pas tournée
             }
             
             // Stocke les coordonnées pour la gestion des événements

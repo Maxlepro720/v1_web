@@ -173,7 +173,10 @@
             box-sizing: border-box;
         }
 
-        .in-check { background-color: red !important; }
+        /* MISE À JOUR: Échec (case du roi en rouge) */
+        .in-check { 
+            background-color: red !important; 
+        }
 
         .piece {
             position: absolute;
@@ -188,6 +191,14 @@
             pointer-events: none; 
             z-index: 10;
         }
+
+        /* NOUVEAU: Style pour le Roi mis en échec et mat (cassé/vaincu) */
+        .checkmated-king {
+            /* Simule une pièce cassée ou vaincue */
+            opacity: 0.4; /* Très estompé */
+            filter: grayscale(100%) brightness(0.7); /* Gris foncé et estompé */
+        }
+
 
         @media (min-width: 1222px) { 
             .piece {
@@ -420,8 +431,6 @@
 
         /**
          * Met à jour l'affichage des temps et l'indicateur de tour (carré vert).
-         * La logique est ajustée pour que le temps du joueur soit toujours affiché en bas,
-         * et l'indicateur de tour suive le joueur ou l'adversaire dans leur position visuelle (bas/haut).
          */
         function updateTimers() {
             // Détermine quel temps correspond au joueur et à l'adversaire
@@ -444,8 +453,12 @@
 
             if (isGameOver) {
                  // Met en évidence le temps écoulé de celui qui a perdu au temps
-                 if (timer.white <= 0) timerWhiteBox.classList.add('loser-timer'); // Si Blanc est la couleur qui a perdu au temps
-                 if (timer.black <= 0) timerBlackBox.classList.add('loser-timer'); // Si Noir est la couleur qui a perdu au temps
+                 // Note: on utilise les IDs statiques des timers, mais les variables timer.white/black sont synchronisées sur la couleur.
+                 if (timer.white <= 0 && playerColor === 'white') timerWhiteBox.classList.add('loser-timer');
+                 if (timer.black <= 0 && playerColor === 'black') timerWhiteBox.classList.add('loser-timer');
+
+                 if (timer.white <= 0 && playerColor === 'black') timerBlackBox.classList.add('loser-timer');
+                 if (timer.black <= 0 && playerColor === 'white') timerBlackBox.classList.add('loser-timer');
             } else if (currentGameId && !waitingForOpponent) {
                    if (isUserTurn) {
                         // C'est le tour du joueur (boîte du bas)
@@ -582,7 +595,6 @@
                         }
                     } else if (data.game_status !== 'created' && data.game_status !== 'active') {
                         // Statut de fin de partie
-                        // Le client gère l'échec et mat, le match nul, etc.
                         endGame(data.game_status, chessBoard.turn() === 'w' ? 'black' : 'white');
                     }
                     
@@ -718,12 +730,49 @@
                 console.error("[DESTROY MATCH] Erreur lors de la requête de destruction de partie:", e);
             }
         }
+        
+        function endGame(status, winnerColor) {
+            stopPolling();
+            stopTimer();
+            isGameOver = true;
+            
+            let message = "Partie terminée : ";
+            if (status === 'checkmate') {
+                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
+                message += `${winnerColor.toUpperCase()} (${winnerName}) gagne par échec et mat !`;
+            } else if (status === 'draw' || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
+                message += "Match nul.";
+            } else if (status === 'time') {
+                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
+                message += `${winnerColor.toUpperCase()} (${winnerName}) gagne au temps !`;
+            } else if (status === 'abandoned') { 
+                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
+                const loserName = (winnerColor === playerColor) ? opponentId : USERNAME;
+                message += `${loserName} a abandonné. ${winnerName.toUpperCase()} gagne !`;
+            }
+            else {
+                message += "Statut inconnu.";
+            }
 
+            matchStatusEl.textContent = `FIN : ${message}`;
+            displayInfo(message, 'gameover');
+            
+            // Forcer un redessin pour l'effet 'Roi cassé'
+            drawPieces();
+            drawBoard();
 
+            // Appel à la destruction du match sur le serveur après la fin
+            destroyMatch(); 
+            
+            // Bloque le bouton de jeu
+            playButton.disabled = true;
+            playButton.textContent = 'Partie Terminée';
+        }
+        
         // --- Gestion du plateau et du mouvement (Interface) ---
 
         function drawBoard() {
-            // ... (logique inchangée pour les mises en évidence)
+            // Supprime toutes les mises en évidence de la dernière sélection/coup
             document.querySelectorAll('.highlight-move, .highlight-capture, .selected, .in-check').forEach(el => {
                 el.classList.remove('highlight-move', 'highlight-capture', 'selected', 'in-check');
             });
@@ -743,13 +792,20 @@
             });
 
             // Gère la mise en échec (King in check)
-            if (chessBoard.in_check()) {
+            if (chessBoard.in_check() && !chessBoard.in_checkmate()) { // S'assurer que ce n'est pas déjà mat
                 const kingSquare = chessBoard.kingSquare(chessBoard.turn());
                 if (kingSquare) {
                     const { row, col } = squareToCoords(kingSquare);
                     document.getElementById(`sq-${row}-${col}`).classList.add('in-check');
                     displayInfo("Le roi est en échec !", 'warning'); // Affichage de l'échec
                 }
+            } else if (chessBoard.in_checkmate() && isGameOver) {
+                 // Mise en évidence du roi maté sur sa case rouge
+                 const kingSquare = chessBoard.kingSquare(chessBoard.turn());
+                 if (kingSquare) {
+                    const { row, col } = squareToCoords(kingSquare);
+                    document.getElementById(`sq-${row}-${col}`).classList.add('in-check');
+                 }
             }
         }
 
@@ -860,40 +916,6 @@
             }
         }
         
-        function endGame(status, winnerColor) {
-            stopPolling();
-            stopTimer();
-            isGameOver = true;
-            
-            let message = "Partie terminée : ";
-            if (status === 'checkmate') {
-                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
-                message += `${winnerColor.toUpperCase()} (${winnerName}) gagne par échec et mat !`;
-            } else if (status === 'draw' || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
-                message += "Match nul.";
-            } else if (status === 'time') {
-                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
-                message += `${winnerColor.toUpperCase()} (${winnerName}) gagne au temps !`;
-            } else if (status === 'abandoned') { 
-                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
-                const loserName = (winnerColor === playerColor) ? opponentId : USERNAME;
-                message += `${loserName} a abandonné. ${winnerName.toUpperCase()} gagne !`;
-            }
-            else {
-                message += "Statut inconnu.";
-            }
-
-            matchStatusEl.textContent = `FIN : ${message}`;
-            displayInfo(message, 'gameover');
-            
-            // Appel à la destruction du match sur le serveur après la fin
-            destroyMatch(); 
-            
-            // Bloque le bouton de jeu
-            playButton.disabled = true;
-            playButton.textContent = 'Partie Terminée';
-        }
-        
         /**
          * Configure les noms des joueurs, l'ELO et la rotation du plateau.
          * Le pseudo du joueur est toujours en bas (player-white-box).
@@ -959,13 +981,34 @@
             pieceEl.style.left = `${x_pos}%`;
             pieceEl.style.top = `${y_pos}%`;
 
-            // Si le plateau est rotatif, les pièces doivent tourner dans le sens inverse
-            if (playerColor === 'black') {
-                pieceEl.style.transform = 'rotate(180deg)';
-            } else {
-                 pieceEl.style.transform = 'none'; // S'assurer qu'elle n'est pas tournée
+            // 1. Détection et application de la classe 'checkmated-king'
+            if (isGameOver && chessBoard.in_checkmate()) {
+                const isKing = pieceCode.toUpperCase() === 'K';
+                // La couleur de la pièce que l'on dessine
+                const pieceColorChar = pieceCode === pieceCode.toLowerCase() ? 'b' : 'w';
+                
+                // Le roi échec et mat est le roi de la couleur dont c'est le tour (turn() après le coup gagnant)
+                if (isKing && pieceColorChar === chessBoard.turn()) {
+                    pieceEl.classList.add('checkmated-king');
+                }
             }
             
+            // 2. Application de la rotation du plateau + effet 'cassé'
+            let transformValue = '';
+            
+            // Rotation pour le joueur noir (si le joueur est Noir)
+            if (playerColor === 'black') {
+                transformValue += 'rotate(180deg)';
+            }
+
+            // Ajout de l'effet 'cassé' si c'est le roi checkmaté
+            if (pieceEl.classList.contains('checkmated-king')) {
+                 // Applique une légère rotation et une réduction de taille pour l'effet 'cassé'
+                 transformValue += ' scale(0.7) rotate(15deg)'; 
+            }
+            
+            pieceEl.style.transform = transformValue || 'none'; 
+
             // Stocke les coordonnées pour la gestion des événements
             pieceEl.dataset.row = row;
             pieceEl.dataset.col = col;

@@ -363,7 +363,7 @@
         let legalMoves = [];
         let isGameOver = false;
         
-        // NOUVEAUX ÉTATS POUR LA GESTION DU POLLING
+        // ÉTATS POUR LA GESTION DU POLLING
         let waitingForOpponent = false; // Vrai si le créateur attend un adversaire
         let waitingForMove = false; // Vrai si la partie est active et que c'est au tour de l'adversaire
 
@@ -396,7 +396,7 @@
         function updateBoardState(newFen, shouldDraw = true) {
             chessBoard.load(newFen); 
             
-            // 🔥 NOUVEAU: Met à jour l'état d'attente de mouvement
+            // Met à jour l'état d'attente de mouvement
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             waitingForMove = (currentTurn !== playerColor);
             
@@ -507,7 +507,8 @@
                 if (response.ok) {
                     
                     // 1. GESTION DE L'ATTENTE D'ADVERSAIRE (UNIQUEMENT LE CRÉATEUR)
-                    if (waitingForOpponent && data.opponent_id && data.opponent_id !== OPPONENT_NAME && data.game_status === 'active') {
+                    // Condition: On attend l'adversaire ET le serveur nous en fournit un (opponent_id est le nom de l'adversaire)
+                    if (waitingForOpponent && data.opponent_id && data.opponent_id !== OPPONENT_NAME) {
                         waitingForOpponent = false; 
                         opponentId = data.opponent_id;
                         
@@ -519,12 +520,11 @@
                         updateBoardState(data.fen); 
                         startTimer(); 
                         
-                        // Blanc (créateur) doit jouer, donc il arrête le polling.
+                        // Le créateur (Blanc) doit jouer, donc il arrête le polling.
                         stopPolling(); 
                     }
                     
-                    // 2. SYNCHRONISATION EN COURS DE PARTIE (POUR TOUS LES JOUEURS dont c'est le tour de l'adversaire)
-                    // Cette condition est vraie pour Noir au début (waitingForMove=true) et pour les deux joueurs ensuite.
+                    // 2. SYNCHRONISATION EN COURS DE PARTIE 
                     if (!waitingForOpponent && data.game_status === 'active') {
                         const currentFen = chessBoard.fen();
                         
@@ -641,50 +641,45 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // 🔥 FONCTION ESSENTIELLE: Gère l'ordre des boîtes joueur et la rotation du plateau
+        // 🔥 FIX V3: Gère l'ordre des boîtes joueur et la rotation du plateau
         function setupPlayerAndBoard(pColor, oppId) {
             const isWhite = pColor === 'white';
             
-            const playerWhiteBox = document.getElementById('player-white-box');
-            const playerBlackBox = document.getElementById('player-black-box');
-            const gameAreaEl = document.querySelector('.game-area');
-            const chessboardEl = document.getElementById('chessboard');
-
-            // 1. Définir l'ordre des éléments dans game-area et la rotation
+            // 1. Retirer tous les éléments dynamiques pour garantir l'ordre
+            playerWhiteBox.remove();
+            playerBlackBox.remove();
+            infoEl.remove();
+            chessboardContainerEl.remove(); 
+            
+            // 2. Réinsérer dans l'ordre (Haut -> Info -> Plateau -> Bas)
+            // Haut: Adversaire
+            gameAreaEl.appendChild(isWhite ? playerBlackBox : playerWhiteBox); 
+            // Info
+            gameAreaEl.appendChild(infoEl); 
+            // Plateau
+            gameAreaEl.appendChild(chessboardContainerEl);
+            // Bas: Joueur
+            gameAreaEl.appendChild(isWhite ? playerWhiteBox : playerBlackBox); 
+            
             if (isWhite) {
                 // JOUEUR BLANC : Blanc en bas, Noir en haut.
-                gameAreaEl.insertBefore(playerBlackBox, infoEl);
-                gameAreaEl.appendChild(playerWhiteBox); 
-                
                 playerWhiteBox.classList.add('bottom-player');
                 playerBlackBox.classList.remove('bottom-player');
-                
                 chessboardEl.classList.remove('rotated');
-
-                // Noms
                 document.getElementById('player-white-name').textContent = USERNAME;
                 document.getElementById('player-black-name').textContent = oppId;
-
             } else {
-                // JOUEUR NOIR : Noir en bas (pièces les plus proches), Blanc en haut.
-                gameAreaEl.insertBefore(playerWhiteBox, infoEl); // White box (physically) moves to the top
-                gameAreaEl.appendChild(playerBlackBox); // Black box (physically) moves to the bottom
-
+                // JOUEUR NOIR : Noir en bas, Blanc en haut.
                 playerBlackBox.classList.add('bottom-player'); 
                 playerWhiteBox.classList.remove('bottom-player'); 
-
                 chessboardEl.classList.add('rotated');
-                
-                // Noms
                 document.getElementById('player-black-name').textContent = USERNAME;
                 document.getElementById('player-white-name').textContent = oppId;
             }
             
-            // Assurez-vous que l'ordre info -> chessboard est correct
-            gameAreaEl.insertBefore(infoEl, chessboardContainerEl); 
-            
             // Mise à jour finale des styles pour l'initialisation
             updateTimers();
+            // Le redessin des pièces s'occupera de la rotation des symboles.
         }
         // --- Fin de setupPlayerAndBoard ---
 
@@ -730,15 +725,14 @@
                         matchStatusEl.textContent = `Partie contre ${opponentId} !`;
                         displayInfo(`Partie rejointe. Vous jouez les ${playerColor === 'white' ? 'Blancs' : 'Noirs'}. En attente du premier coup des Blancs.`);
                         
-                        // Noir est le joueur dont c'est le tour de l'adversaire (Blanc), donc il doit POLLE
-                        waitingForMove = true; // 🔥 NOUVEAU: On attend le coup de l'adversaire
+                        waitingForMove = true; 
                         startPolling(); 
                         startTimer(); 
                         
                     } else if (data.status === 'created') {
                         // JOUEUR QUI CRÉE (Blanc)
                         waitingForOpponent = true; // Attend l'adversaire
-                        waitingForMove = false; // 🔥 NOUVEAU: N'attend pas de coup tant que pas d'adversaire
+                        waitingForMove = false; 
                         matchStatusEl.textContent = `Partie créée. En attente de l'adversaire...`;
                         displayInfo(`Nouvelle partie créée. En attente d'un adversaire. (Vous jouez les ${playerColor === 'white' ? 'Blancs' : 'Noirs'}).`);
                         
@@ -801,7 +795,7 @@
                          displayInfo(`Coup joué: ${move_uci}. Au tour des ${chessBoard.turn() === 'w' ? 'Blancs' : 'Noirs'}.`);
                          startTimer(); 
                          
-                         // 🔥 NOUVEAU: C'est au tour de l'adversaire, on commence à poller
+                         // C'est au tour de l'adversaire, on commence à poller
                          if (chessBoard.turn() !== playerColor[0]) {
                             waitingForMove = true;
                             startPolling(); 
@@ -849,7 +843,7 @@
                 opponentId = OPPONENT_NAME;
                 isGameOver = false;
                 waitingForOpponent = false;
-                waitingForMove = false; // 🔥 NOUVEAU: Reset de l'état
+                waitingForMove = false; 
                 
                 setupPlayerAndBoard('white', OPPONENT_NAME); // Reset l'UI en vue par défaut
                 chessBoard.reset();

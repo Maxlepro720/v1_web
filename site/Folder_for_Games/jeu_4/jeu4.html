@@ -644,13 +644,11 @@
         async function makeMoveServer(move_uci) {
             stopTimer(); // Arrête le timer localement pendant l'envoi
             
-            // DÉBUT DE LA CORRECTION
             const payload = {
                 game_uuid: currentGameId,
-                player_id: USERNAME, // CLÉ CORRIGÉE: Utiliser 'player_id' au lieu de 'username'
+                username: USERNAME,
                 move_uci: move_uci,
             };
-            // FIN DE LA CORRECTION
             
             console.log(`[SERVER] Tentative d'envoi du coup UCI: ${move_uci}`);
 
@@ -881,10 +879,11 @@
             
             const isWhite = color === 'white';
             
+            // 1. CORRECTION: Assurez-vous que le nom du joueur et de l'adversaire est dans la bonne boîte
             document.getElementById('player-white-name').textContent = isWhite ? USERNAME : opponentId;
             document.getElementById('player-black-name').textContent = isWhite ? opponentId : USERNAME;
 
-            // Logique d'inversion visuelle (rotation du plateau)
+            // 2. Logique d'inversion visuelle (rotation du plateau et placement des boîtes)
             const playerBox = isWhite ? playerWhiteBox : playerBlackBox;
             const opponentBox = isWhite ? playerBlackBox : playerWhiteBox;
             
@@ -896,8 +895,9 @@
                 chessboardEl.classList.remove('rotated'); 
             } else {
                 // Noir en bas
-                opponentBox.classList.add('bottom-player');
-                playerBox.classList.remove('bottom-player');
+                // CORRECTION : L'adversaire est en haut (remove) et le joueur est en bas (add)
+                opponentBox.classList.remove('bottom-player'); // Retire la classe de la boîte de l'adversaire (WhiteBox)
+                playerBox.classList.add('bottom-player');    // Ajoute la classe à la boîte du joueur (BlackBox)
                 chessboardEl.classList.add('rotated'); 
             }
         }

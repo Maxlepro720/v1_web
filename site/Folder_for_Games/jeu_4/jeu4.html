@@ -480,20 +480,37 @@
             if (pollingInterval) {
                 clearInterval(pollingInterval);
                 pollingInterval = null;
-                console.log("Polling arrêté.");
+                console.log("-> [POLLING] Arrêté."); 
             }
         }
 
+        function startPolling(initialDelay = 0) {
+            stopPolling(); // Assurez-vous qu'il n'y en a qu'un seul
+            console.log(`-> [POLLING] Démarré, prochaine vérification dans ${initialDelay/1000}s puis toutes les 2s.`);
+            
+            // Exécution immédiate après un petit délai optionnel (pour le premier coup de Noir, par exemple)
+            setTimeout(() => {
+                pollGameStatus();
+                pollingInterval = setInterval(pollGameStatus, 2000); // Poll toutes les 2 secondes
+            }, initialDelay);
+        }
+
         async function pollGameStatus() { 
+            console.log(`\n--- [POLLING] Démarrage du cycle pour ${USERNAME} (${playerColor}) ---`);
+            console.log(`[POLLING] État local: w4Opp=${waitingForOpponent}, w4Move=${waitingForMove}, GameID=${currentGameId}`);
+
             if (!currentGameId || isGameOver) {
+                console.log("[POLLING] Condition d'arrêt initiale (Game Over ou pas d'ID).");
                 stopPolling();
                 return;
             }
             
-            // Si la partie est active ET que c'est notre tour, on n'a pas besoin de poller
-            if (!waitingForOpponent && !waitingForMove) {
-                stopPolling(); 
-                return;
+            // Si la partie est active ET que c'est notre tour, on n'a plus besoin de poller
+            const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
+            if (!waitingForOpponent && currentTurn === playerColor) {
+                 console.log("[POLLING] Arrêt: Partie active, C'est notre tour. On attend l'action locale."); 
+                 stopPolling(); 
+                 return;
             }
             
             try {
@@ -503,12 +520,15 @@
                 });
 
                 const data = await response.json();
+                console.log(`[POLLING] Réponse du serveur reçue (Status HTTP: ${response.status}).`);
+                console.log("[POLLING] Données serveur:", data);
 
                 if (response.ok) {
                     
                     // 1. GESTION DE L'ATTENTE D'ADVERSAIRE (UNIQUEMENT LE CRÉATEUR/BLANC)
-                    // 🔥 FIX V4 : On vérifie que le statut de la partie est passé à 'active'.
+                    // La transition se fait si le statut est 'active'
                     if (waitingForOpponent && data.game_status === 'active') {
+                        console.log("-> [POLLING SUCCESS] Transition Blanc: Adversaire détecté et partie 'active'.");
                         waitingForOpponent = false; 
                         
                         // Si le nom de l'adversaire est fourni, on l'utilise
@@ -535,6 +555,7 @@
                         if (data.fen !== currentFen) {
                             // Mouvement de l'adversaire détecté
                             updateBoardState(data.fen); 
+                            console.log(`-> [POLLING SYNC] Nouveau FEN détecté. Coup de l'adversaire (${chessBoard.history().pop()}).`);
                             displayInfo(`Coup de l'adversaire joué: ${chessBoard.history().pop()}. À vous de jouer.`);
                             startTimer(); 
                             
@@ -545,556 +566,383 @@
                         }
                         
                         // Mise à jour des timers 
-                        if (data.timer_white !== undefined && data.timer_black !== undefined) {
-                            timer.white = Math.max(0, data.timer_white);
-                            timer.black = Math.max(0, data.timer_black);
-                            updateTimers(); 
-                        }
+                        // (Non implémenté côté serveur mais laissé ici pour l'évolution)
+                        // if (data.timer_white !== undefined && data.timer_black !== undefined) {
+                        //     timer.white = Math.max(0, data.timer_white);
+                        //     timer.black = Math.max(0, data.timer_black);
+                        //     updateTimers(); 
+                        // }
 
                     } else if (data.game_status !== 'created' && data.game_status !== 'active') {
                         // Statut de fin de partie
                         endGame(data.game_status, chessBoard.turn() === 'w' ? 'black' : 'white');
                     }
                     
+                } else {
+                    console.error(`[POLLING ERROR] Réponse serveur non-OK: ${data.error || 'Erreur inconnue.'}`);
                 }
 
             } catch (e) {
-                console.warn("Erreur de connexion au serveur lors du polling (polling continue).", e);
+                console.warn("[POLLING ERROR] Erreur lors de la requête de statut :", e);
             }
         }
         
-        function startPolling() {
-            if (!pollingInterval) {
-                // Polling toutes les 3 secondes
-                pollingInterval = setInterval(pollGameStatus, 3000); 
-                console.log("Polling démarré pour l'état de la partie.");
-                pollGameStatus(); // Appel initial immédiat
-            }
-        }
-        // FIN LOGIQUE DE POLLING
+        // --- Fonctions d'API Serveur ---
 
-
-        function displayInfo(message, isError = false) {
-            infoEl.textContent = message;
-            infoEl.style.color = isError ? 'red' : '#fff';
-            
-            if (infoTimeout) clearTimeout(infoTimeout);
-            
-            if (!isGameOver) {
-                infoTimeout = setTimeout(() => {
-                    // Réaffiche le message de base (Au tour des X) si pas de nouvelle erreur
-                    drawBoard(true); 
-                }, 3000);
-            }
-        }
-        
-        function endGame(type, loserColor) {
-            isGameOver = true;
-            stopTimer(); 
-            stopPolling(); 
-            playButton.style.display = 'none';
-
-            let message = '';
-            if (type === 'time') {
-                const winnerColor = loserColor === 'white' ? 'Noirs' : 'Blancs';
-                message = `Temps écoulé pour les ${loserColor === 'white' ? 'Blancs' : 'Noirs'} ! Les ${winnerColor} ont gagné par temps.`;
-            } else if (type === 'checkmate') {
-                const winnerColor = loserColor === 'w' ? 'Blancs' : 'Noirs';
-                message = `ÉCHEC ET MAT ! Les ${winnerColor} ont gagné !`;
-            } else if (type === 'stalemate') {
-                message = `PAT ! Match nul.`;
-            } else if (type === 'draw') {
-                 message = `MATCH NUL par accord ou règles !`;
-            }
-            infoEl.textContent = message;
-            infoEl.style.color = 'green';
-            matchStatusEl.textContent = message;
-            
-            setTimeout(callDestroyMatch, 10000); 
-        }
-        
-        function getPieceColor(codeOrColor) {
-            if (!codeOrColor) return null;
-            if (codeOrColor === 'w' || codeOrColor === 'W') return 'white'; 
-            if (codeOrColor === 'b' || codeOrColor === 'B') return 'black';
-            
-            return codeOrColor === codeOrColor.toLowerCase() ? 'black' : 'white'; 
-        }
-
-
-        // --- Mise à jour de l'Historique ---
-
-        function updateMovesList(history) {
-            movesListEl.innerHTML = ''; 
-            let html = '';
-            
-            for (let i = 0; i < history.length; i++) {
-                if (i % 2 === 0) {
-                    const moveNumber = Math.floor(i / 2) + 1;
-                    html += `<tr><td>${moveNumber}.</td><td>${history[i]}</td>`;
-                    
-                    if (i === history.length - 1) {
-                        html += `<td></td></tr>`; 
-                    }
-                } else {
-                    html += `<td>${history[i]}</td></tr>`;
-                }
-            }
-            movesListEl.innerHTML = html;
-            
-            const container = document.querySelector('.moves-list-container');
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // Gère l'ordre des boîtes joueur et la rotation du plateau
-        function setupPlayerAndBoard(pColor, oppId) {
-            const isWhite = pColor === 'white';
-            
-            // 1. Retirer tous les éléments dynamiques pour garantir l'ordre
-            playerWhiteBox.remove();
-            playerBlackBox.remove();
-            infoEl.remove();
-            chessboardContainerEl.remove(); 
-            
-            // 2. Réinsérer dans l'ordre (Haut -> Info -> Plateau -> Bas)
-            // Haut: Adversaire
-            gameAreaEl.appendChild(isWhite ? playerBlackBox : playerWhiteBox); 
-            // Info
-            gameAreaEl.appendChild(infoEl); 
-            // Plateau
-            gameAreaEl.appendChild(chessboardContainerEl);
-            // Bas: Joueur
-            gameAreaEl.appendChild(isWhite ? playerWhiteBox : playerBlackBox); 
-            
-            if (isWhite) {
-                // JOUEUR BLANC : Blanc en bas, Noir en haut.
-                playerWhiteBox.classList.add('bottom-player');
-                playerBlackBox.classList.remove('bottom-player');
-                chessboardEl.classList.remove('rotated');
-                document.getElementById('player-white-name').textContent = USERNAME;
-                document.getElementById('player-black-name').textContent = oppId;
-            } else {
-                // JOUEUR NOIR : Noir en bas, Blanc en haut.
-                playerBlackBox.classList.add('bottom-player'); 
-                playerWhiteBox.classList.remove('bottom-player'); 
-                chessboardEl.classList.add('rotated');
-                document.getElementById('player-black-name').textContent = USERNAME;
-                document.getElementById('player-white-name').textContent = oppId;
-            }
-            
-            // Mise à jour finale des styles pour l'initialisation
-            updateTimers();
-        }
-        // --- Fin de setupPlayerAndBoard ---
-
-
-        // --- Fonctions d'Interaction Serveur ---
-        
         async function findOrCreateMatch() {
-            playButton.disabled = true;
-            playButton.textContent = 'Recherche en cours...';
-            
-            if (!USERNAME) { 
-                displayInfo("Erreur: Pseudo non défini. Vérifiez le localStorage.", true);
-                playButton.disabled = false;
-                playButton.textContent = 'Lancer Partie';
+            if (currentGameId) {
+                displayInfo("Partie déjà en cours.");
                 return;
             }
-            
-            stopPolling(); 
-            stopTimer(); 
 
             try {
-                const headers = { 'Content-Type': 'application/json' };
-                
                 const response = await fetch(`${SERVER_URL}/find_or_create_match`, {
                     method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({ username: USERNAME }), 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: USERNAME })
                 });
 
-                const data = await response.json(); 
+                const data = await response.json();
 
                 if (response.ok) {
                     currentGameId = data.game_uuid;
                     playerColor = data.player_color;
                     opponentId = data.opponent_id || OPPONENT_NAME;
                     
-                    setupPlayerAndBoard(playerColor, opponentId);
-                    updateBoardState(data.fen); 
-                    
-                    if (data.status === 'joined') {
-                        // JOUEUR QUI REJOINT (Noir)
-                        waitingForOpponent = false; 
+                    if (data.status === 'created') {
+                        // Créateur (Blanc)
+                        waitingForOpponent = true;
+                        matchStatusEl.textContent = `En attente d'un adversaire... (ID: ${currentGameId})`;
+                        displayInfo("Partie créée. En attente de l'adversaire.");
+                        setupPlayerAndBoard(playerColor, opponentId);
+                        
+                        // Commence le polling pour détecter l'adversaire
+                        startPolling(); 
+                        
+                    } else if (data.status === 'joined') {
+                        // Joindre (Noir)
+                        waitingForMove = true;
                         matchStatusEl.textContent = `Partie contre ${opponentId} !`;
-                        displayInfo(`Partie rejointe. Vous jouez les ${playerColor === 'white' ? 'Blancs' : 'Noirs'}. En attente du premier coup des Blancs.`);
+                        displayInfo("Vous avez rejoint la partie ! Au tour de Blanc.");
+                        setupPlayerAndBoard(playerColor, opponentId);
+                        updateBoardState(data.fen);
+                        startTimer();
                         
-                        waitingForMove = true; 
-                        startPolling(); 
-                        startTimer(); 
-                        
-                    } else if (data.status === 'created') {
-                        // JOUEUR QUI CRÉE (Blanc)
-                        waitingForOpponent = true; // Attend l'adversaire
-                        waitingForMove = false; 
-                        matchStatusEl.textContent = `Partie créée. En attente de l'adversaire...`;
-                        displayInfo(`Nouvelle partie créée. En attente d'un adversaire. (Vous jouez les ${playerColor === 'white' ? 'Blancs' : 'Noirs'}).`);
-                        
-                        // Blanc doit POLLE pour détecter la connexion de Noir
-                        startPolling(); 
+                        // Commence le polling pour attendre le coup de Blanc
+                        startPolling();
                     }
-                    
                 } else {
-                    displayInfo(`Erreur de matchmaking (HTTP ${response.status}): ${data.error || 'Erreur inconnue.' }`, true);
-                    console.error("Erreur serveur:", data.error);
+                    displayInfo(`Erreur lors du matchmaking: ${data.error}`, 'error');
                 }
 
             } catch (e) {
-                displayInfo("Erreur critique de connexion au serveur (Réseau).", true);
-                console.error("Détail de l'erreur client:", e);
-            } finally {
-                if (!currentGameId || waitingForOpponent) {
-                     playButton.disabled = true;
-                     playButton.textContent = 'En attente...'; 
-                } else {
-                    // Si la partie a commencé, on laisse le bouton en "Partie en cours"
-                    playButton.disabled = true;
-                    playButton.textContent = 'Partie en Cours';
-                }
+                displayInfo("Erreur de connexion au serveur.", 'error');
+                console.error("Erreur Matchmaking:", e);
             }
         }
         
         async function makeMoveServer(move_uci) {
-            // Le joueur ne peut pas jouer s'il est en attente (d'adversaire ou de coup)
-            if (waitingForOpponent || waitingForMove) return; 
+            stopTimer(); // Arrête le timer localement pendant l'envoi
             
-            chessboardEl.style.pointerEvents = 'none';
-            displayInfo("Validation du coup par le serveur...");
-            stopTimer(); 
+            const payload = {
+                game_uuid: currentGameId,
+                username: USERNAME,
+                move_uci: move_uci,
+            };
+            
+            console.log(`[SERVER] Tentative d'envoi du coup UCI: ${move_uci}`);
 
             try {
-                const headers = { 'Content-Type': 'application/json' };
-
                 const response = await fetch(`${SERVER_URL}/make_move`, {
                     method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({ 
-                        game_uuid: currentGameId, 
-                        move_uci: move_uci,
-                        username: USERNAME 
-                    }),
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
-
+                
                 const data = await response.json();
 
-                if (response.ok) {
-                    const newFen = data.new_fen;
-                    const gameStatus = data.game_status;
+                if (response.ok && data.success) {
+                    console.log(`[SERVER] Coup accepté. Nouveau FEN: ${data.new_fen}`);
                     
-                    updateBoardState(newFen); 
-
-                    if (gameStatus !== 'active' && gameStatus !== 'created') {
-                        endGame(gameStatus, chessBoard.turn() === 'w' ? 'black' : 'white'); 
+                    // Mettre à jour l'état final du plateau avec la réponse du serveur
+                    // (Le FEN local est déjà à jour, mais c'est une bonne pratique)
+                    updateBoardState(data.new_fen); 
+                    
+                    if (data.game_status !== 'active') {
+                         endGame(data.game_status, chessBoard.turn() === 'w' ? 'black' : 'white');
                     } else {
-                         displayInfo(`Coup joué: ${move_uci}. Au tour des ${chessBoard.turn() === 'w' ? 'Blancs' : 'Noirs'}.`);
-                         startTimer(); 
-                         
-                         // C'est au tour de l'adversaire, on commence à poller
-                         if (chessBoard.turn() !== playerColor[0]) {
-                            waitingForMove = true;
-                            startPolling(); 
-                         }
+                        // C'est au tour de l'adversaire, on démarre le polling
+                        waitingForMove = true; 
+                        displayInfo("Coup envoyé. En attente du coup de l'adversaire...");
+                        startPolling(); 
                     }
-                    
+
                 } else {
-                    displayInfo(data.error || `Mouvement rejeté par le serveur (HTTP ${response.status}).`, true);
-                    console.error("Erreur Mouvement Serveur:", data.error);
-                    chessBoard.undo(); 
+                    // Si le coup est rejeté par le serveur (ex: illégal, hors tour), on annule le coup local.
+                    chessBoard.undo();
                     updateBoardState(chessBoard.fen()); 
-                    startTimer(); 
+                    displayInfo(`Erreur Mouvement Serveur: ${data.error || 'Coup rejeté par le serveur.'}`, 'error');
+                    console.error("Erreur Mouvement Serveur:", data.error || data.message);
+                    startTimer(); // Redémarre le timer car on n'a pas pu jouer
                 }
 
             } catch (e) {
-                displayInfo("Erreur de connexion au serveur lors de l'envoi du coup.", true);
-                console.error(e);
-            } finally {
-                chessboardEl.style.pointerEvents = 'auto';
-                selectedCoords = null;
-                legalMoves = [];
-                drawBoard(false);
+                console.error("Erreur réseau lors de l'envoi du coup:", e);
+                // Si erreur réseau, on annule le coup local et on redémarre le timer
+                chessBoard.undo();
+                updateBoardState(chessBoard.fen());
+                displayInfo("Erreur réseau. Veuillez réessayer le coup.", 'error');
+                startTimer();
             }
         }
 
-        async function callDestroyMatch() {
-            if (!currentGameId) return;
-            stopTimer(); 
-            stopPolling();
 
-            try {
-                const headers = { 'Content-Type': 'application/json' };
+        // --- Gestion du plateau et du mouvement (Interface) ---
 
-                await fetch(`${SERVER_URL}/destroy_match`, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({ game_uuid: currentGameId, username: USERNAME }),
-                });
-
-            } catch (e) {
-                console.error("Erreur de connexion au serveur pour la destruction du match.", e);
-            } finally {
-                currentGameId = null;
-                playerColor = null;
-                opponentId = OPPONENT_NAME;
-                isGameOver = false;
-                waitingForOpponent = false;
-                waitingForMove = false; 
-                
-                setupPlayerAndBoard('white', OPPONENT_NAME); // Reset l'UI en vue par défaut
-                chessBoard.reset();
-                updateBoardState(INITIAL_FEN); 
-                movesListEl.innerHTML = '';
-                matchStatusEl.textContent = `(En attente de connexion)`;
-                
-                playButton.style.display = 'block';
-                playButton.textContent = 'Lancer Partie';
-                playButton.disabled = false;
-                timer = { 'white': INITIAL_TIME_SECONDS, 'black': INITIAL_TIME_SECONDS };
-                updateTimers();
-            }
-        }
-
-        // --- Logique d'Interaction du Plateau (Validation Côté Client) ---
-        
-        function findLegalMoves(square) {
-            return chessBoard.moves({ square: square, verbose: true });
-        }
-
-        function handlePawnPromotion(move) {
-             let choice = prompt("Promotion du pion ! Choisissez une pièce (Q, R, B, N) pour Dame, Tour, Fou, Cavalier:").toUpperCase();
-             if (!['Q', 'R', 'B', 'N'].includes(choice)) {
-                 choice = 'Q'; 
-             }
-             move.promotion = choice.toLowerCase();
-             
-             const tempMove = chessBoard.move(move);
-             move.san = tempMove.san; 
-             chessBoard.undo();
-             
-             return move;
-        }
-
-        function handleMove(row, col, squareEl) {
-            const clickedSquare = coordsToSquare(row, col);
-            const currentTurnColor = chessBoard.turn() === 'w' ? 'white' : 'black';
+        function drawBoard() {
+            // Supprime toutes les mises en évidence de la dernière sélection/coup
+            document.querySelectorAll('.highlight-move, .highlight-capture, .selected, .in-check').forEach(el => {
+                el.classList.remove('highlight-move', 'highlight-capture', 'selected', 'in-check');
+            });
             
-            // 1. VERIFICATION PRÉ-MOUVEMENT
-            if (isGameOver || currentGameId === null || waitingForOpponent || waitingForMove || playerColor !== currentTurnColor) {
-                let msg = '';
-                if (isGameOver) msg = "La partie est terminée.";
-                else if (currentGameId === null) msg = "Lancez une partie d'abord.";
-                else if (waitingForOpponent) msg = "En attente de l'adversaire pour commencer.";
-                else if (waitingForMove) msg = "Veuillez attendre le coup de l'adversaire.";
-                else if (playerColor !== currentTurnColor) msg = "Ce n'est pas votre tour de jouer.";
-                
-                displayInfo(msg, true);
-                return;
+            // Met en évidence la case sélectionnée
+            if (selectedCoords) {
+                document.getElementById(`sq-${selectedCoords.row}-${selectedCoords.col}`).classList.add('selected');
             }
-
-            if (!selectedCoords) {
-                // Première sélection : sélectionne une pièce de sa couleur
-                const piece = chessBoard.get(clickedSquare);
-                const pieceColorMatchesPlayer = piece && (
-                    (piece.color === 'w' && playerColor === 'white') || 
-                    (piece.color === 'b' && playerColor === 'black')
-                );
-
-                if (pieceColorMatchesPlayer) {
-                    selectedCoords = clickedSquare;
-                    legalMoves = findLegalMoves(selectedCoords); 
-                    updateHighlights(); 
-                }
-            }
-            else {
-                // Deuxième clic : tentative de mouvement ou désélection
-                const startSquare = selectedCoords;
-                
-                if (startSquare === clickedSquare) {
-                    selectedCoords = null;
-                    legalMoves = [];
-                    updateHighlights(); 
-                    return;
-                }
-                
-                let move = legalMoves.find(m => m.to === clickedSquare);
-
-                if (move) {
-                    if (move.flags.includes('p') && (move.to[1] === '8' || move.to[1] === '1')) {
-                        move = handlePawnPromotion(move); 
-                    }
-                    
-                    makeMoveServer(move.san); 
-                    
+            
+            // Met en évidence les cases de destination possibles
+            legalMoves.forEach(move => {
+                const { row, col } = squareToCoords(move.to);
+                const targetEl = document.getElementById(`sq-${row}-${col}`);
+                if (chessBoard.get(move.to)) {
+                    targetEl.classList.add('highlight-capture');
                 } else {
-                    const piece = chessBoard.get(clickedSquare);
-                    const pieceColorMatchesPlayer = piece && (
-                        (piece.color === 'w' && playerColor === 'white') || 
-                        (piece.color === 'b' && playerColor === 'black')
-                    );
-
-                    if (pieceColorMatchesPlayer) {
-                         selectedCoords = clickedSquare;
-                         legalMoves = findLegalMoves(selectedCoords); 
-                         updateHighlights();
-                    } else {
-                         displayInfo("Coup illégal ou mauvaise sélection.", true);
-                    }
+                    targetEl.classList.add('highlight-move');
                 }
-            }
-        }
-        
-        function updateHighlights() {
-            document.querySelectorAll('.selected, .highlight-move, .highlight-capture, .in-check').forEach(el => {
-                el.classList.remove('selected', 'highlight-move', 'highlight-capture', 'in-check');
             });
 
-            if (selectedCoords) {
-                const startCoords = squareToCoords(selectedCoords);
-                document.getElementById(`sq-${startCoords.row}-${startCoords.col}`).classList.add('selected');
-                
-                legalMoves.forEach(move => {
-                    const targetCoords = squareToCoords(move.to);
-                    const targetEl = document.getElementById(`sq-${targetCoords.row}-${targetCoords.col}`);
-                    
-                    if (move.captured) {
-                        targetEl.classList.add('highlight-capture');
-                    } else {
-                        targetEl.classList.add('highlight-move');
-                    }
-                });
-            }
-            
+            // Gère la mise en échec (King in check)
             if (chessBoard.in_check()) {
-                const turnChar = chessBoard.turn();
-                
-                let kingPos = null;
-                chessBoard.board().forEach((row, r) => {
-                    row.forEach((piece, c) => {
-                        if (piece && piece.type === 'k' && piece.color === turnChar) {
-                            kingPos = coordsToSquare(r, c);
-                        }
-                    });
-                });
-
-                if (kingPos) {
-                    const { row, col } = squareToCoords(kingPos);
+                const kingSquare = chessBoard.kingSquare(chessBoard.turn());
+                if (kingSquare) {
+                    const { row, col } = squareToCoords(kingSquare);
                     document.getElementById(`sq-${row}-${col}`).classList.add('in-check');
                 }
             }
         }
 
-        function drawBoard(updateInfoPanel = true) {
-            updateHighlights();
+        function handleMove(row, col, squareEl) {
+            // Empêche de jouer si la partie n'est pas lancée, est finie, ou si ce n'est pas notre tour
+            if (isGameOver || !currentGameId || waitingForOpponent || waitingForMove) {
+                displayInfo(
+                    isGameOver ? "La partie est terminée." : 
+                    !currentGameId ? "Cliquez sur 'Lancer Partie'." :
+                    waitingForOpponent ? "En attente de l'adversaire." :
+                    "Veuillez attendre le coup de l'adversaire."
+                );
+                return;
+            }
             
-            if (updateInfoPanel && !isGameOver) {
-                let message;
-                if (waitingForOpponent) {
-                     message = "En attente de l'adversaire...";
-                } else if (waitingForMove) {
-                     message = `Au tour de l'adversaire (${chessBoard.turn() === 'w' ? 'Blancs' : 'Noirs'})`;
-                } else {
-                     message = `À vous de jouer (${chessBoard.turn() === 'w' ? 'Blancs' : 'Noirs'})`;
+            const square = coordsToSquare(row, col);
+            const piece = chessBoard.get(square);
+            const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
+            
+            // 1. AUCUNE CASE SÉLECTIONNÉE, on clique sur une pièce
+            if (!selectedCoords) {
+                if (piece && (piece.color === currentTurn[0])) {
+                    // Sélectionne une pièce de notre couleur
+                    selectedCoords = { row, col };
+                    
+                    // Récupère les coups légaux possibles
+                    legalMoves = chessBoard.moves({ square: square, verbose: true });
+                    
+                    drawBoard(); // Met en évidence la sélection et les coups possibles
                 }
                 
-                infoEl.textContent = message;
-                infoEl.style.color = '#fff';
-            }
-            updateTimers();
-        }
-        
-        // LOGIQUE DE DESSIN : Gère l'inversion des coordonnées ET la rotation de la pièce
-        function drawPieces() {
-            const existingPieces = {};
-            document.querySelectorAll('.piece').forEach(p => {
-                const key = `${p.dataset.row}-${p.dataset.col}`;
-                existingPieces[key] = p;
-            });
-            
-            let piecesToRemove = { ...existingPieces }; 
+            // 2. UNE CASE EST DÉJÀ SÉLECTIONNÉE
+            } else {
+                const startCoord = coordsToSquare(selectedCoords.row, selectedCoords.col);
+                const endCoord = square;
+                
+                // Si on reclique sur la même case ou sur une autre de nos pièces, on change la sélection
+                if (startCoord === endCoord || (piece && piece.color === currentTurn[0])) {
+                    selectedCoords = (startCoord === endCoord) ? null : { row, col };
+                    legalMoves = selectedCoords ? chessBoard.moves({ square: endCoord, verbose: true }) : [];
+                    drawBoard();
+                    return;
+                }
+                
+                // C'est un mouvement vers une nouvelle case
+                const moveAttempt = {
+                    from: startCoord,
+                    to: endCoord,
+                    // Gestion de la promotion par défaut sur 'q' pour simplifier l'interface ici
+                    promotion: (piece && piece.type === 'p' && (row === 0 || row === 7)) ? 'q' : undefined
+                };
+                
+                // Tente le coup localement
+                const moveResult = chessBoard.move(moveAttempt); 
 
-            const boardData = chessBoard.board(); 
-
-            for (let i = 0; i < 8; i++) {
-                for (let j = 0; j < 8; j++) {
-                    const piece = boardData[i][j];
+                if (moveResult) {
+                    // Le coup est légal localement
                     
-                    let pieceCode = ''; 
-                    if (piece) {
-                        pieceCode = piece.type; 
-                        if (piece.color === 'w') {
-                            pieceCode = pieceCode.toUpperCase(); 
-                        } else {
-                            pieceCode = pieceCode.toLowerCase(); 
-                        }
-                    }
-
-                    const key = `${i}-${j}`;
-                    const pieceEl = existingPieces[key];
-
-                    if (pieceCode) {
-                        if (pieceEl) {
-                            delete piecesToRemove[key];
-                            if (pieceEl.dataset.code !== pieceCode) {
-                                pieceEl.textContent = PIECES_SYMBOLS[pieceCode] || pieceCode;
-                                pieceEl.dataset.code = pieceCode;
-                                pieceEl.className = 'piece ' + (getPieceColor(pieceCode) === 'white' ? 'white-piece' : 'black-piece');
-                            }
-                        } else {
-                            // On crée la pièce avec ses coordonnées FEN (r, c)
-                            const newPieceEl = createPieceElement(pieceCode, i, j); 
-                            chessboardEl.appendChild(newPieceEl);
-                        }
-                    } 
+                    // 🔥 CORRECTION CRITIQUE (V6): Utiliser moveResult.uci pour le format e.g. 'e2e4'
+                    const move_uci_correct = moveResult.uci; 
+                    
+                    // 1. Envoyer le coup au serveur
+                    makeMoveServer(move_uci_correct);
+                    
+                    // 2. Nettoyer l'état local après le coup
+                    selectedCoords = null;
+                    legalMoves = [];
+                    // Le FEN sera mis à jour après la confirmation du serveur, mais on met à jour l'affichage immédiatement
+                    updateBoardState(chessBoard.fen()); 
+                    
+                } else {
+                    // Coup illégal
+                    displayInfo("Coup illégal.", 'warning');
+                    selectedCoords = null;
+                    legalMoves = [];
+                    drawBoard(); // Nettoie la sélection
                 }
             }
+        }
 
-            // Mise à jour de la position de TOUTES les pièces basées sur la couleur du joueur
-            document.querySelectorAll('.piece').forEach(p => {
-                 const r = parseInt(p.dataset.row);
-                 const c = parseInt(p.dataset.col);
-                 
-                 let finalRow = r; 
-                 let finalCol = c; 
-                 let rotation = '0deg'; 
 
-                 // 🔥 FIX V4 : Si le joueur est Noir, on garde les coordonnées (r, c) car le plateau
-                 // entier est déjà tourné, et on contre-tourne la pièce pour l'orientation.
-                 if (playerColor === 'black') {
-                    // PAS D'INVERSION DE COORDONNÉES ICI !
-                    // finalRow = 7 - r; 
-                    // finalCol = 7 - c;
-                    rotation = '180deg'; 
-                 }
-                 // Si le joueur est Blanc, finalRow=r, finalCol=c. Correct.
+        // --- Fonctions d'Interface ---
 
-                 // On combine la translation (positionnement) et la rotation (orientation)
-                 p.style.transform = `translate(${finalCol * 100}%, ${finalRow * 100}%) rotate(${rotation})`;
-            });
+        function displayInfo(message, type = 'info') {
+            if (infoTimeout) clearTimeout(infoTimeout);
             
-            Object.values(piecesToRemove).forEach(pieceEl => {
-                 pieceEl.remove();
+            infoEl.textContent = message;
+            
+            // Réinitialise après 5 secondes
+            infoTimeout = setTimeout(() => {
+                infoEl.textContent = !isGameOver ? (waitingForOpponent ? "En attente de l'adversaire..." : (waitingForMove ? "Au tour de l'adversaire" : "À vous de jouer")) : "Partie terminée.";
+            }, 5000);
+        }
+
+        function updateMovesList(history) {
+            movesListEl.innerHTML = '';
+            
+            for (let i = 0; i < history.length; i += 2) {
+                const moveNumber = Math.floor(i / 2) + 1;
+                const tr = document.createElement('tr');
+                
+                const tdNum = document.createElement('td');
+                tdNum.textContent = `${moveNumber}.`;
+                tr.appendChild(tdNum);
+                
+                const tdWhite = document.createElement('td');
+                tdWhite.textContent = history[i];
+                tr.appendChild(tdWhite);
+                
+                const tdBlack = document.createElement('td');
+                tdBlack.textContent = (i + 1 < history.length) ? history[i+1] : '';
+                tr.appendChild(tdBlack);
+                
+                movesListEl.appendChild(tr);
+            }
+        }
+        
+        function endGame(status, winnerColor) {
+            stopPolling();
+            stopTimer();
+            isGameOver = true;
+            
+            let message = "Partie terminée : ";
+            if (status === 'checkmate') {
+                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
+                message += `${winnerColor.toUpperCase()} (${winnerName}) gagne par échec et mat !`;
+            } else if (status === 'draw') {
+                message += "Match nul (Stalemate, Matériel insuffisant, etc.).";
+            } else if (status === 'time') {
+                const loserColor = winnerColor === 'white' ? 'black' : 'white';
+                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
+                message += `${winnerColor.toUpperCase()} (${winnerName}) gagne au temps !`;
+            } else {
+                message += "Statut inconnu.";
+            }
+
+            matchStatusEl.textContent = `FIN : ${message}`;
+            displayInfo(message, 'gameover');
+            
+            // Bloque le bouton de jeu
+            playButton.disabled = true;
+            playButton.textContent = 'Partie Terminée';
+        }
+        
+        function setupPlayerAndBoard(color, opponent) {
+            playerColor = color;
+            opponentId = opponent;
+            currentGameId = currentGameId; // Conserve l'ID de partie
+            
+            const isWhite = color === 'white';
+            
+            document.getElementById('player-white-name').textContent = isWhite ? USERNAME : opponentId;
+            document.getElementById('player-black-name').textContent = isWhite ? opponentId : USERNAME;
+
+            // Logique d'inversion visuelle (rotation du plateau)
+            const playerBox = isWhite ? playerWhiteBox : playerBlackBox;
+            const opponentBox = isWhite ? playerBlackBox : playerWhiteBox;
+            
+            // Inverse l'ordre d'affichage dans le DOM et ajoute la classe de rotation
+            if (isWhite) {
+                // Blanc en bas (par défaut)
+                opponentBox.classList.remove('bottom-player');
+                playerBox.classList.add('bottom-player');
+                chessboardEl.classList.remove('rotated'); 
+            } else {
+                // Noir en bas
+                opponentBox.classList.add('bottom-player');
+                playerBox.classList.remove('bottom-player');
+                chessboardEl.classList.add('rotated'); 
+            }
+        }
+        
+
+        // --- Fonctions de Dessin et Initialisation ---
+
+        function drawPieces() {
+            // Supprime toutes les pièces existantes
+            document.querySelectorAll('.piece').forEach(p => p.remove());
+            
+            // Parcourt le FEN pour dessiner les pièces
+            const fen = chessBoard.fen().split(' ')[0];
+            const rows = fen.split('/');
+            
+            rows.forEach((rowStr, r) => {
+                let col = 0;
+                for (const char of rowStr) {
+                    if (/[1-8]/.test(char)) {
+                        col += parseInt(char);
+                    } else {
+                        const pieceEl = createPieceElement(char, r, col);
+                        chessboardEl.appendChild(pieceEl);
+                        col++;
+                    }
+                }
             });
         }
         
         function createPieceElement(pieceCode, row, col) {
             const pieceEl = document.createElement('div');
-            pieceEl.className = 'piece';
-            const symbol = PIECES_SYMBOLS[pieceCode] ? PIECES_SYMBOLS[pieceCode] : pieceCode; 
-            pieceEl.textContent = symbol;
+            pieceEl.className = `piece ${pieceCode.toLowerCase() === pieceCode ? 'black-piece' : 'white-piece'}`;
+            pieceEl.textContent = PIECES_SYMBOLS[pieceCode] || '?';
             
-            const pieceColorClass = getPieceColor(pieceCode) === 'white' ? 'white-piece' : 'black-piece';
-            pieceEl.classList.add(pieceColorClass);
+            // Positionnement absolu pour le FEN
+            const x_pos = col * 12.5; // 100% / 8
+            const y_pos = row * 12.5; // 100% / 8
+
+            pieceEl.style.left = `${x_pos}%`;
+            pieceEl.style.top = `${y_pos}%`;
+
+            // Si le plateau est rotatif, les pièces doivent tourner dans le sens inverse
+            if (playerColor === 'black') {
+                pieceEl.style.transform = 'rotate(180deg)';
+            }
             
-            // On stocke les coordonnées FEN originales dans les datasets
+            // Stocke les coordonnées pour la gestion des événements
             pieceEl.dataset.row = row;
             pieceEl.dataset.col = col;
             pieceEl.dataset.code = pieceCode;
@@ -1111,21 +959,32 @@
                     const color = (i + j) % 2 === 0 ? 'light' : 'dark';
                     squareEl.className = `square ${color}`;
                     squareEl.id = `sq-${i}-${j}`; 
-                    squareEl.addEventListener('click', () => handleMove(i, j, squareEl));
+                    
+                    // L'événement est attaché ici
+                    squareEl.addEventListener('click', () => {
+                         // L'appel utilise les coordonnées row et col de la boucle
+                        handleMove(i, j, squareEl)
+                    }); 
+                    
                     chessboardEl.appendChild(squareEl);
                 }
             }
         }
         
         function initializeGame() {
-            // Initialisation avec la vue par défaut (Blanc en bas)
-            setupPlayerAndBoard('white', OPPONENT_NAME); 
+            
+            document.getElementById('player-white-name').textContent = USERNAME || OPPONENT_NAME;
+            document.getElementById('player-black-name').textContent = OPPONENT_NAME;
             
             initBoardSquares(); 
             updateBoardState(chessBoard.fen()); 
         }
 
         document.addEventListener('DOMContentLoaded', initializeGame);
+        
+        function subscribeToMatch(game_uuid) {
+            console.log("Synchronisation Realtime initiée (si disponible).");
+        }
         
     </script>
 </body>

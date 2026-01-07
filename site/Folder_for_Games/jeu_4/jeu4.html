@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chess - Multijoueur Avancé</title>
+    <title>Jeu d'Échecs - Multijoueur Avancé</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.js"></script>
     
@@ -221,19 +221,6 @@
             cursor: not-allowed;
         }
 
-        /* Style pour le bouton d'abandon */
-        #abort-button {
-            background-color: #dc3545; /* Rouge pour l'abandon */
-            border-color: #dc3545;
-            color: #fff;
-        }
-        #abort-button:disabled {
-            background-color: #555 !important;
-            color: #aaa !important;
-            border-color: #555 !important;
-            cursor: not-allowed !important;
-        }
-
         /* Responsive pour les petits écrans */
         @media (max-width: 900px) {
             .main-container {
@@ -270,7 +257,7 @@
 <body>
     <div class="main-container">
         <div class="game-area">
-            <h1>Chess</h1>
+            <h1>Jeu d'Échecs</h1>
             
             <div class="player-container" id="player-black-box">
                 <div class="player-info">
@@ -306,9 +293,6 @@
             
             <button id="play-button" class="play-button" onclick="findOrCreateMatch()">
                 Lancer Partie
-            </button>
-            <button id="abort-button" class="play-button" onclick="abortMatch()" disabled>
-                Abandonner la Partie
             </button>
             
             <div class="moves-list-container">
@@ -399,7 +383,6 @@
         const timerWhiteBox = document.getElementById('timer-white');
         const timerBlackBox = document.getElementById('timer-black');
         const playButton = document.getElementById('play-button');
-        const abortButton = document.getElementById('abort-button');
         const movesListEl = document.getElementById('moves-list');
         const matchStatusEl = document.getElementById('match-status-text');
         const playerWhiteBox = document.getElementById('player-white-box');
@@ -444,12 +427,15 @@
             playerBlackBox.classList.remove('highlight-turn');
             
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
+            // NOUVEAU: Détermine si c'est au tour de l'utilisateur ou de l'adversaire
+            const isUserTurn = currentTurn === playerColor;
 
             if (isGameOver) {
                  if (timer.white <= 0) timerWhiteBox.classList.add('loser-timer');
                  if (timer.black <= 0) timerBlackBox.classList.add('loser-timer');
             } else if (currentGameId && !waitingForOpponent) {
-                   if (currentTurn === 'white') {
+                   // LOGIQUE CORRIGÉE: L'utilisateur est toujours dans playerWhiteBox (bas), l'adversaire dans playerBlackBox (haut)
+                   if (isUserTurn) {
                         timerWhiteBox.classList.add('active-timer');
                         playerWhiteBox.classList.add('highlight-turn');
                    } else {
@@ -478,7 +464,8 @@
                     }
                     updateTimers();
                 }, 1000);
-                // Le bouton n'est plus géré ici, mais dans findOrCreateMatch
+                playButton.disabled = true;
+                playButton.textContent = 'Partie en Cours';
                 updateTimers(); 
             }
         }
@@ -602,11 +589,6 @@
                 return;
             }
 
-            // Gère l'état du bouton immédiatement
-            playButton.disabled = true;
-            playButton.textContent = 'Recherche...';
-            abortButton.disabled = false; // Permettre l'annulation si la recherche prend du temps
-
             try {
                 const response = await fetch(`${SERVER_URL}/find_or_create_match`, {
                     method: 'POST',
@@ -621,11 +603,6 @@
                     playerColor = data.player_color;
                     opponentId = data.opponent_id || OPPONENT_NAME;
                     
-                    // État du bouton mis à jour après succès
-                    playButton.disabled = true;
-                    playButton.textContent = 'Partie en Cours';
-                    abortButton.disabled = false;
-
                     if (data.status === 'created') {
                         // Créateur (Blanc)
                         waitingForOpponent = true;
@@ -649,14 +626,10 @@
                         startPolling();
                     }
                 } else {
-                    // En cas d'erreur serveur lors du matchmaking
-                    resetGameUI(); 
                     displayInfo(`Erreur lors du matchmaking: ${data.error}`, 'error');
                 }
 
             } catch (e) {
-                // En cas d'erreur réseau
-                resetGameUI();
                 displayInfo("Erreur de connexion au serveur.", 'error');
                 console.error("Erreur Matchmaking:", e);
             }
@@ -670,23 +643,42 @@
                 username: USERNAME,
                 move_uci: move_uci,
             };
-            
-            console.log(`[SERVER] Tentative d'envoi du coup UCI: ${move_uci}`);
+
+            // --- LOGGING AMÉLIORÉ (ENVOI) ---
+            const jsonPayload = JSON.stringify(payload);
+            console.log(`[MAKE_MOVE] Envoi du coup : ${move_uci}`);
+            console.log("[MAKE_MOVE] JSON PAYLOAD ENVOYÉ:", jsonPayload);
+            // ------------------------------------
+
+            // Vérification critique pour l'erreur 400 (gardée car essentielle pour le diagnostic)
+            if (!payload.game_uuid || !payload.username || !payload.move_uci) {
+                 console.error("!!! [ERREUR CRITIQUE 400] !!! Un champ est NULL ou vide. Le fetch est annulé. Payload:", payload);
+                 displayInfo("Erreur de partie: ID de partie ou Pseudo manquant. Relancez la partie.", 'error');
+                 
+                 // Annuler le coup localement pour éviter de bloquer l'interface
+                 chessBoard.undo();
+                 updateBoardState(chessBoard.fen()); 
+                 startTimer();
+                 return; // Arrête l'envoi au serveur
+            }
+            // FIN DU BLOC DE VÉRIFICATION
 
             try {
                 const response = await fetch(`${SERVER_URL}/make_move`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: jsonPayload
                 });
                 
+                // --- LOGGING AMÉLIORÉ (RÉCEPTION) ---
+                console.log(`[MAKE_MOVE] Réponse reçue. HTTP Status: ${response.status}`);
                 const data = await response.json();
+                console.log("[MAKE_MOVE] DONNÉES JSON REÇUES:", data);
+                // ------------------------------------
 
                 if (response.ok && data.success) {
-                    console.log(`[SERVER] Coup accepté. Nouveau FEN: ${data.new_fen}`);
+                    console.log(`[MAKE_MOVE] Succès du serveur. Nouveau FEN: ${data.new_fen}`);
                     
-                    // Mettre à jour l'état final du plateau avec la réponse du serveur
-                    // (Le FEN local est déjà à jour, mais c'est une bonne pratique)
                     updateBoardState(data.new_fen); 
                     
                     if (data.game_status !== 'active') {
@@ -699,64 +691,21 @@
                     }
 
                 } else {
-                    // Si le coup est rejeté par le serveur (ex: illégal, hors tour), on annule le coup local.
+                    // Le serveur a rejeté le coup (response.ok peut être false ou data.success peut être false)
                     chessBoard.undo();
                     updateBoardState(chessBoard.fen()); 
                     displayInfo(`Erreur Mouvement Serveur: ${data.error || 'Coup rejeté par le serveur.'}`, 'error');
-                    console.error("Erreur Mouvement Serveur:", data.error || data.message);
+                    console.error("[MAKE_MOVE] Échec du serveur. Erreur:", data.error || data.message);
                     startTimer(); // Redémarre le timer car on n'a pas pu jouer
                 }
 
             } catch (e) {
-                console.error("Erreur réseau lors de l'envoi du coup:", e);
+                console.error("[MAKE_MOVE] Erreur réseau lors de l'envoi du coup:", e);
                 // Si erreur réseau, on annule le coup local et on redémarre le timer
                 chessBoard.undo();
                 updateBoardState(chessBoard.fen());
                 displayInfo("Erreur réseau. Veuillez réessayer le coup.", 'error');
                 startTimer();
-            }
-        }
-
-        async function abortMatch() {
-            if (!currentGameId) {
-                displayInfo("Aucune partie en cours à abandonner.");
-                return;
-            }
-            
-            // On désactive le bouton pour éviter les doubles clics
-            abortButton.disabled = true;
-
-            const payload = {
-                game_uuid: currentGameId,
-                username: USERNAME,
-            };
-            
-            console.log(`[SERVER] Tentative d'abandon de la partie : ${currentGameId}`);
-
-            try {
-                // Utilisation de la route demandée
-                const response = await fetch(`${SERVER_URL}/destroy_match`, { 
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    displayInfo("Partie abandonnée. L'adversaire gagne.");
-                    // Mettre fin au jeu localement, l'adversaire est le vainqueur.
-                    endGame('abandoned', playerColor === 'white' ? 'black' : 'white'); 
-                } else {
-                    displayInfo(`Erreur lors de l'abandon: ${data.error || 'Erreur inconnue.'}`, 'error');
-                    console.error("Erreur Abandon:", data.error || data.message);
-                    abortButton.disabled = false; // Réactiver si échec de l'envoi
-                }
-
-            } catch (e) {
-                console.error("Erreur réseau lors de l'abandon:", e);
-                displayInfo("Erreur réseau lors de l'abandon. Réessayez.", 'error');
-                abortButton.disabled = false;
             }
         }
 
@@ -798,6 +747,9 @@
         function handleMove(row, col, squareEl) {
             // Empêche de jouer si la partie n'est pas lancée, est finie, ou si ce n'est pas notre tour
             if (isGameOver || !currentGameId || waitingForOpponent || waitingForMove) {
+                // AJOUT DU LOG POUR LE DIAGNOSTIC DANS LA CONSOLE
+                console.warn(`[HANDLE MOVE BLOQUÉ] isGameOver: ${isGameOver}, currentGameId: ${currentGameId}, waitingForOpponent: ${waitingForOpponent}, waitingForMove: ${waitingForMove}`);
+
                 displayInfo(
                     isGameOver ? "La partie est terminée." : 
                     !currentGameId ? "Cliquez sur 'Lancer Partie'." :
@@ -841,7 +793,7 @@
                     from: startCoord,
                     to: endCoord,
                     // Gestion de la promotion par défaut sur 'q' pour simplifier l'interface ici
-                    promotion: (piece && piece.type === 'p' && (row === 0 || row === 7)) ? 'q' : undefined
+                    promotion: (chessBoard.get(startCoord).type === 'p' && (row === 0 || row === 7)) ? 'q' : undefined
                 };
                 
                 // Tente le coup localement
@@ -850,9 +802,25 @@
                 if (moveResult) {
                     // Le coup est légal localement
                     
-                    // 🔥 CORRECTION CRITIQUE (V6): Utiliser moveResult.uci pour le format e.g. 'e2e4'
-                    const move_uci_correct = moveResult.uci; 
+                    // 🔥 CORRECTION UCI : Reconstruction de l'UCI à partir de 'from' et 'to' (car .uci peut manquer)
+                    let move_uci_correct = moveResult.from + moveResult.to;
                     
+                    // Ajoutez la promotion si elle est présente (ex: e7e8q)
+                    if (moveResult.promotion) {
+                        move_uci_correct += moveResult.promotion;
+                    }
+                    
+                    console.log(`[HANDLE MOVE] Coup local validé. UCI généré: ${move_uci_correct}`);
+                    
+                    // VÉRIFICATION DE SÉCURITÉ
+                    if (!move_uci_correct) {
+                        console.error("[HANDLE MOVE ERREUR] Le coup UCI est manquant malgré un moveResult valide.");
+                        chessBoard.undo();
+                        updateBoardState(chessBoard.fen()); 
+                        displayInfo("Erreur de mouvement interne: l'UCI du coup est introuvable.", 'error');
+                        return;
+                    }
+
                     // 1. Envoyer le coup au serveur
                     makeMoveServer(move_uci_correct);
                     
@@ -909,6 +877,20 @@
             }
         }
         
+        async function destroyMatch() {
+            try {
+                // Utilise l'ID de partie et le nom d'utilisateur pour identifier la partie à terminer
+                const response = await fetch(`${SERVER_URL}/destroy_match?game_uuid=${currentGameId}&username=${USERNAME}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                const data = await response.json();
+                console.log("[DESTROY MATCH] Réponse du serveur:", data);
+            } catch (e) {
+                console.error("[DESTROY MATCH] Erreur lors de la requête de destruction de partie:", e);
+            }
+        }
+        
         function endGame(status, winnerColor) {
             stopPolling();
             stopTimer();
@@ -924,56 +906,19 @@
                 const loserColor = winnerColor === 'white' ? 'black' : 'white';
                 const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
                 message += `${winnerColor.toUpperCase()} (${winnerName}) gagne au temps !`;
-            } else if (status === 'abandoned') { 
-                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
-                const loserName = (winnerColor === playerColor) ? opponentId : USERNAME;
-                message += `${loserName} a abandonné. ${winnerName.toUpperCase()} gagne !`;
-            }
-            else {
+            } else {
                 message += "Statut inconnu.";
             }
 
             matchStatusEl.textContent = `FIN : ${message}`;
             displayInfo(message, 'gameover');
             
-            // Bloque les deux boutons
+            // Appel à la destruction du match sur le serveur après la fin
+            destroyMatch(); 
+            
+            // Bloque le bouton de jeu
             playButton.disabled = true;
             playButton.textContent = 'Partie Terminée';
-            abortButton.disabled = true;
-        }
-
-        function resetGameUI() {
-            // Nettoyage de l'état du jeu local
-            currentGameId = null;
-            playerColor = null;
-            opponentId = OPPONENT_NAME;
-            selectedCoords = null;
-            legalMoves = [];
-            isGameOver = false;
-            waitingForOpponent = false;
-            waitingForMove = false;
-            
-            // Réinitialisation des timers et de l'affichage
-            timer.white = INITIAL_TIME_SECONDS;
-            timer.black = INITIAL_TIME_SECONDS;
-            updateTimers(); 
-            
-            // Réinitialisation du plateau
-            chessBoard = new Chess(INITIAL_FEN); 
-            updateBoardState(chessBoard.fen());
-            
-            document.getElementById('player-white-name').textContent = USERNAME || OPPONENT_NAME;
-            document.getElementById('player-black-name').textContent = OPPONENT_NAME;
-            matchStatusEl.textContent = "(En attente de connexion)";
-            displayInfo("Cliquez sur 'Lancer Partie' pour commencer à jouer.");
-            
-            // Gestion des boutons
-            playButton.disabled = false;
-            playButton.textContent = 'Lancer Partie';
-            abortButton.disabled = true; 
-            
-            // Assure l'orientation par défaut (Blanc en bas)
-            setupPlayerAndBoard('white', OPPONENT_NAME);
         }
         
         function setupPlayerAndBoard(color, opponent) {
@@ -983,25 +928,22 @@
             
             const isWhite = color === 'white';
             
-            document.getElementById('player-white-name').textContent = isWhite ? USERNAME : opponentId;
-            document.getElementById('player-black-name').textContent = isWhite ? opponentId : USERNAME;
+            // 🔥 CORRECTION DE POSITION : Le joueur est toujours affiché en bas (player-white-box)
+            // et l'adversaire en haut (player-black-box), quelle que soit la couleur du joueur.
+            document.getElementById('player-white-name').textContent = USERNAME; 
+            document.getElementById('player-black-name').textContent = opponentId; 
 
-            // Logique d'inversion visuelle (rotation du plateau)
-            const playerBox = isWhite ? playerWhiteBox : playerBlackBox;
-            const opponentBox = isWhite ? playerBlackBox : playerWhiteBox;
-            
-            // Inverse l'ordre d'affichage dans le DOM et ajoute la classe de rotation
+            // Gère l'ajout/retrait du style bottom-player sur les conteneurs (si nécessaire, mais conservé pour l'homogénéité du style)
             if (isWhite) {
-                // Blanc en bas (par défaut)
-                opponentBox.classList.remove('bottom-player');
-                playerBox.classList.add('bottom-player');
+                // Si joueur est Blanc, les pièces blanches sont en bas -> pas de rotation
                 chessboardEl.classList.remove('rotated'); 
+                // Les styles CSS par défaut (player-white-box a bottom-player) sont suffisants.
             } else {
-                // Noir en bas
-                opponentBox.classList.add('bottom-player');
-                playerBox.classList.remove('bottom-player');
+                // Si joueur est Noir, les pièces noires doivent être en bas -> rotation du plateau
                 chessboardEl.classList.add('rotated'); 
             }
+            // NOTE: La manipulation des classes playerBox/opponentBox a été retirée car elle n'affectait pas la position
+            // globale et compliquait la logique de positionnement des noms.
         }
         
 
@@ -1044,6 +986,8 @@
             // Si le plateau est rotatif, les pièces doivent tourner dans le sens inverse
             if (playerColor === 'black') {
                 pieceEl.style.transform = 'rotate(180deg)';
+            } else {
+                 pieceEl.style.transform = 'none'; // S'assurer qu'elle n'est pas tournée
             }
             
             // Stocke les coordonnées pour la gestion des événements
@@ -1081,9 +1025,7 @@
             document.getElementById('player-black-name').textContent = OPPONENT_NAME;
             
             initBoardSquares(); 
-            
-            // Initialisation avec l'état de réinitialisation pour une UI propre au démarrage
-            resetGameUI(); 
+            updateBoardState(chessBoard.fen()); 
         }
 
         document.addEventListener('DOMContentLoaded', initializeGame);

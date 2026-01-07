@@ -475,7 +475,7 @@
             updateTimers();
         }
 
-        // 🔥 LOGIQUE DE POLLING UNIFIÉE
+        // LOGIQUE DE POLLING UNIFIÉE
         function stopPolling() {
             if (pollingInterval) {
                 clearInterval(pollingInterval);
@@ -506,13 +506,17 @@
 
                 if (response.ok) {
                     
-                    // 1. GESTION DE L'ATTENTE D'ADVERSAIRE (UNIQUEMENT LE CRÉATEUR)
-                    // Condition: On attend l'adversaire ET le serveur nous en fournit un (opponent_id est le nom de l'adversaire)
-                    if (waitingForOpponent && data.opponent_id && data.opponent_id !== OPPONENT_NAME) {
+                    // 1. GESTION DE L'ATTENTE D'ADVERSAIRE (UNIQUEMENT LE CRÉATEUR/BLANC)
+                    // 🔥 FIX V4 : On vérifie que le statut de la partie est passé à 'active'.
+                    if (waitingForOpponent && data.game_status === 'active') {
                         waitingForOpponent = false; 
-                        opponentId = data.opponent_id;
                         
-                        setupPlayerAndBoard(playerColor, opponentId); // Met à jour l'UI avec le vrai nom
+                        // Si le nom de l'adversaire est fourni, on l'utilise
+                        if (data.opponent_id && data.opponent_id !== OPPONENT_NAME) {
+                             opponentId = data.opponent_id;
+                        }
+                        
+                        setupPlayerAndBoard(playerColor, opponentId); 
                         
                         matchStatusEl.textContent = `Partie contre ${opponentId} !`;
                         displayInfo("L'adversaire a rejoint la partie ! À vous de jouer.");
@@ -520,11 +524,11 @@
                         updateBoardState(data.fen); 
                         startTimer(); 
                         
-                        // Le créateur (Blanc) doit jouer, donc il arrête le polling.
+                        // Blanc doit jouer, donc il arrête le polling.
                         stopPolling(); 
                     }
                     
-                    // 2. SYNCHRONISATION EN COURS DE PARTIE 
+                    // 2. SYNCHRONISATION EN COURS DE PARTIE (pour tous les joueurs en attente de coup)
                     if (!waitingForOpponent && data.game_status === 'active') {
                         const currentFen = chessBoard.fen();
                         
@@ -561,6 +565,7 @@
         
         function startPolling() {
             if (!pollingInterval) {
+                // Polling toutes les 3 secondes
                 pollingInterval = setInterval(pollGameStatus, 3000); 
                 console.log("Polling démarré pour l'état de la partie.");
                 pollGameStatus(); // Appel initial immédiat
@@ -641,7 +646,7 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // 🔥 FIX V3: Gère l'ordre des boîtes joueur et la rotation du plateau
+        // Gère l'ordre des boîtes joueur et la rotation du plateau
         function setupPlayerAndBoard(pColor, oppId) {
             const isWhite = pColor === 'white';
             
@@ -679,7 +684,6 @@
             
             // Mise à jour finale des styles pour l'initialisation
             updateTimers();
-            // Le redessin des pièces s'occupera de la rotation des symboles.
         }
         // --- Fin de setupPlayerAndBoard ---
 
@@ -1062,13 +1066,15 @@
                  let finalCol = c; 
                  let rotation = '0deg'; 
 
-                 // Si le joueur est Noir, on inverse les coordonnées (pour la position) 
-                 // et on contre-tourne la pièce elle-même (pour l'orientation)
+                 // 🔥 FIX V4 : Si le joueur est Noir, on garde les coordonnées (r, c) car le plateau
+                 // entier est déjà tourné, et on contre-tourne la pièce pour l'orientation.
                  if (playerColor === 'black') {
-                    finalRow = 7 - r;
-                    finalCol = 7 - c;
+                    // PAS D'INVERSION DE COORDONNÉES ICI !
+                    // finalRow = 7 - r; 
+                    // finalCol = 7 - c;
                     rotation = '180deg'; 
                  }
+                 // Si le joueur est Blanc, finalRow=r, finalCol=c. Correct.
 
                  // On combine la translation (positionnement) et la rotation (orientation)
                  p.style.transform = `translate(${finalCol * 100}%, ${finalRow * 100}%) rotate(${rotation})`;

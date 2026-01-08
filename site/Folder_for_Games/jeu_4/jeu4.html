@@ -491,12 +491,7 @@
             // Si la partie est active ET que c'est notre tour, on n'a plus besoin de poller
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             if (!waitingForOpponent && currentTurn === playerColor) {
-                 // On ne stoppe le polling que si on est certain d'avoir la dernière info
-                 // Si data.fen dans le dernier poll n'est pas le même que chessBoard.fen()
-                 // (c'est géré par la logique du 'if (data.fen !== currentFen)')
-                 // Mais par sécurité, on laisse le polling actif jusqu'à ce que le coup soit joué.
-                 // Laissez le polling continuer pour l'instant pour synchronisation.
-                 // stopPolling(); 
+                 stopPolling(); 
                  return;
             }
             
@@ -524,8 +519,6 @@
                         displayInfo("L'adversaire a rejoint la partie ! À vous de jouer.");
                         
                         updateBoardState(data.fen); 
-                        // Note: Le polling devrait redémarrer si l'adversaire joue immédiatement (cas rare)
-                        // ou s'arrêter si c'est notre tour. On va le laisser s'arrêter ici.
                         stopPolling(); 
                     }
                     
@@ -538,18 +531,17 @@
                             updateBoardState(data.fen); 
                             displayInfo(`Coup de l'adversaire joué: ${chessBoard.history().pop()}. À vous de jouer.`);
                             
-                            // Après avoir reçu un coup, ce n'est plus "waitingForMove" (car c'est notre tour)
-                            waitingForMove = false; 
-                            
-                            // Si c'est notre tour, on arrête le polling pour économiser les ressources.
-                            if (chessBoard.turn() === playerColor[0]) {
+                            if (!waitingForMove) {
                                 stopPolling();
                             }
                         }
                     } else if (data.game_status !== 'created' && data.game_status !== 'active') {
                         // Statut de fin de partie reçu (Checkmate, Draw, Abandoned)
-                        updateBoardState(data.fen); // Assurez-vous d'avoir le FEN final
-                        // La couleur qui vient d'être mise au mat/pat est la couleur dont c'est le tour (turn())
+                        
+                        // CORRECTION: Assurer la mise à jour finale du FEN pour le client perdant
+                        updateBoardState(data.fen); 
+                        
+                        // Le FEN actuel est celui après le dernier coup qui a causé la fin (ex: Mat)
                         const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
                         // Le perdant/l'observateur ne doit PAS appeler destroyMatch()
                         endGame(data.game_status, winnerColor, false); 
@@ -655,9 +647,8 @@
                         updateBoardState(data.new_fen); 
                         
                         if (data.game_status !== 'active') {
-                            // Le FEN final est chargé. chessBoard.turn() est maintenant la couleur du perdant.
                             const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
-                            // C'est le joueur qui a joué le coup gagnant, donc il doit détruire le match.
+                            // Le joueur qui a joué le coup gagnant doit appeler destroyMatch()
                             endGame(data.game_status, winnerColor, true); 
                         } else {
                             waitingForMove = true; 
@@ -698,16 +689,61 @@
             displayInfo("Échec critique de la communication. Coup annulé localement. Veuillez relancer la partie ou vérifier la connexion.", 'error');
         }
 
+        /**
+         * CORRECTION: Réinitialise l'état local du jeu après une partie.
+         */
+        function resetClientState() {
+            currentGameId = null;
+            playerColor = null;
+            opponentId = OPPONENT_NAME;
+            selectedCoords = null;
+            legalMoves = [];
+            isGameOver = false;
+            waitingForOpponent = false;
+            waitingForMove = false;
 
+            // Réinitialisation de l'état visuel et des contrôles
+            stopPolling();
+            updateBoardState(INITIAL_FEN, true); // True pour forcer le redessin au FEN initial
+            displayInfo("Cliquez sur \"Lancer Partie\" pour commencer à jouer."); 
+            playButton.textContent = "Lancer Partie";
+            playButton.disabled = false;
+            matchStatusEl.textContent = "(En attente de connexion)";
+            playerWhiteBox.classList.remove('highlight-turn');
+            playerBlackBox.classList.remove('highlight-turn');
+        }
+
+
+        /**
+         * CORRECTION: Détruit la partie en utilisant POST et un corps JSON.
+         */
         async function destroyMatch() {
-            if (!currentGameId) return;
+            if (!currentGameId || !USERNAME) return;
+            
+            const url = `${SERVER_URL}/destroy_match`;
+            
             try {
-                const response = await fetch(`${SERVER_URL}/destroy_match?game_uuid=${currentGameId}&username=${USERNAME}`, {
-                    method: 'GET',
+                const response = await fetch(url, {
+                    method: 'POST', // CORRECTION: Utilisation de POST
                     headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ // CORRECTION: Envoi des données dans le corps JSON
+                        game_uuid: currentGameId,
+                        username: USERNAME
+                    }) 
                 });
-                const data = await response.json();
-                console.log("[DESTROY MATCH] Tentative de destruction réussie/signalée au serveur.", data);
+                
+                if (response.ok) {
+                    try {
+                        const data = await response.json(); 
+                        console.log("[DESTROY MATCH] Succès/Signalé au serveur.", data);
+                    } catch (e) {
+                        // Le serveur a pu renvoyer une réponse non-JSON (ex: texte 'OK')
+                        console.warn("[DESTROY MATCH] Réponse du serveur non-JSON. La destruction a probablement été signalée.", e);
+                    }
+                } else {
+                    console.error(`[DESTROY MATCH] Erreur HTTP: ${response.status}. Vérifiez le script serveur.`);
+                }
+
             } catch (e) {
                 console.error("[DESTROY MATCH] Erreur lors de la requête de destruction de partie:", e);
             }
@@ -715,7 +751,7 @@
 
 
         /**
-         * Gère la fin de partie (Mat, Nul, Abandon).
+         * CORRECTION: Gère la fin de partie avec un affichage clair (VICTOIRE/DÉFAITE) et réinitialise le client après un délai.
          * @param {string} status - Le statut de fin ('checkmate', 'draw', etc.).
          * @param {string} winnerColor - La couleur du gagnant ('white' ou 'black').
          * @param {boolean} shouldDestroy - Indique si ce client doit appeler destroyMatch().
@@ -724,41 +760,33 @@
             stopPolling();
             isGameOver = true;
             
+            // Détermine si le joueur local est le gagnant pour l'affichage
+            const isLocalPlayerWinner = (status === 'checkmate' || status === 'abandoned' || status === 'timeout') && (winnerColor === playerColor);
+            
             let message = "Partie terminée : ";
-            let winnerName = "";
-            let loserName = "";
             
-            // Déterminer les noms en fonction de la couleur gagnante
-            if (winnerColor === 'draw') {
+            if (status === 'checkmate') {
+                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
+                message = isLocalPlayerWinner ? `VICTOIRE ! Vous gagnez par Échec et Mat contre ${opponentId}.` : `DÉFAITE. ${winnerName} vous a maté.`;
+            } else if (status.includes('draw') || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
                 message = "Match nul.";
+            } else if (status === 'abandoned' || status === 'timeout') { 
+                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
+                const loserName = (winnerColor === playerColor) ? opponentId : USERNAME;
+                message = isLocalPlayerWinner ? `VICTOIRE ! ${loserName} a ${status === 'abandoned' ? 'abandonné' : 'perdu au temps'}.` : `DÉFAITE. Vous avez perdu par ${status === 'abandoned' ? 'abandon' : 'temps'}.`;
             } else {
-                winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
-                loserName = (winnerColor === playerColor) ? opponentId : USERNAME;
-
-                if (status === 'checkmate') {
-                    message = `${winnerColor.toUpperCase()} (${winnerName}) gagne par échec et mat !`;
-                } else if (status === 'abandoned') { 
-                    message = `${loserName} a abandonné. ${winnerName.toUpperCase()} gagne !`;
-                } else if (status === 'timeout') {
-                    // Si le statut d'abandon n'est pas géré, on utilise un message par défaut.
-                    message = `${loserName} a perdu au temps. ${winnerName.toUpperCase()} gagne !`;
-                }
-            }
-            
-            if (status === 'draw' || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
-                message = "Match nul.";
+                message = `Partie terminée: ${status.toUpperCase()}.`;
             }
 
             matchStatusEl.textContent = `FIN : ${message}`;
-            displayInfo(message, 'gameover');
+            displayInfo(message, 'gameover'); // Affiche le message de victoire/défaite
             
             // Forcer un redessin pour l'effet 'Roi cassé'
             drawPieces();
             drawBoard();
 
-            // APPEL À DESTROY_MATCH (Conditionnel au fait d'être le joueur qui a causé la fin)
+            // APPEL À DESTROY_MATCH
             if (shouldDestroy) {
-                // Le joueur qui a causé la fin (par mat ou abandon/timeout) détruit la partie.
                 destroyMatch(); 
             }
             
@@ -766,6 +794,9 @@
             playButton.disabled = true;
             playButton.textContent = 'Partie Terminée';
             updateTurnIndicator(); // Nettoie le highlight
+            
+            // CORRECTION: Réinitialisation du client après un délai de 5 secondes pour permettre l'affichage du résultat.
+            setTimeout(resetClientState, 5000); 
         }
         
         // --- Gestion du plateau et du mouvement (Interface) ---

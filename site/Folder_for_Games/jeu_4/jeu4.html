@@ -648,6 +648,45 @@
             }, initialDelay);
         }
 
+        // --- LOGIQUE DE POLLING UNIFIÉE ---
+
+        /**
+         * ⭐ NOUVELLE FONCTION
+         * Fonction de secours pour vérifier l'abandon via la route dédiée.
+         */
+        async function checkAbandonStatus() {
+            if (!currentGameId) return false;
+
+            try {
+                const response = await fetch(`${SERVER_URL}/get_give_up_chess?game_uuid=${currentGameId}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'abandoned') {
+                    console.log(`[ABANDON CHECK] Adversaire a abandonné (Gagnant: ${data.winner_color})`);
+                    
+                    // Déterminer la couleur gagnante pour l'affichage
+                    const winnerColor = data.winner_color;
+                    
+                    // Mettre fin à la partie. Note : false car le serveur n'a pas renvoyé la FEN finale,
+                    // et le joueur adverse (le perdant) est celui qui devrait appeler destroy_match.
+                    // Pour plus de sécurité, on peut appeler destroy_match ici si on est sûr d'être le seul client restant.
+                    endGame('abandoned', winnerColor, true); // true: demander la destruction
+                    return true; // Abandon détecté
+                }
+                
+                return false; // Pas d'abandon détecté ou erreur de requête non critique
+
+            } catch (e) {
+                console.warn("[ABANDON CHECK ERROR] Erreur lors de la requête de vérification d'abandon :", e);
+                return false;
+            }
+        }
+
+
         async function pollGameStatus() { 
             console.log(`\n--- [POLLING] Démarrage du cycle pour ${USERNAME} (${playerColor}) ---`);
 
@@ -656,7 +695,7 @@
                 return;
             }
             
-            const currentFen = chessBoard.fen(); // Déclaration locale de currentFen pour comparaison
+            const currentFen = chessBoard.fen(); 
             
             try {
                 const response = await fetch(`${SERVER_URL}/get_game_state?game_uuid=${currentGameId}&username=${USERNAME}`, {
@@ -668,14 +707,16 @@
 
                 if (response.ok) {
                     
-                    // ⭐ CORRECTION CRITIQUE: Détection immédiate de l'abandon via le statut principal (Pour le joueur gagnant)
+                    // 1. Détection immédiate de l'abandon via le statut principal (méthode préférée)
                     if (data.game_status === 'abandoned') {
                          const winnerColor = playerColor; // Si nous le détectons, nous sommes le gagnant
-                         endGame('abandoned', winnerColor, true); // true: demande la destruction du match
-                         return; // Termine le cycle de polling
+                         endGame('abandoned', winnerColor, true); 
+                         return; 
                     }
                     
                     if (waitingForOpponent && data.game_status === 'active') {
+                        // Logique d'attente d'un adversaire (inchangée)
+                        // ... (reste du code pour 'waitingForOpponent') ...
                         waitingForOpponent = false; 
                         
                         if (data.opponent_id && data.opponent_id !== OPPONENT_NAME) {
@@ -691,28 +732,33 @@
                         showModal(title, message, 'info'); 
                         
                         updateBoardState(data.fen); 
-                        // L'arrêt du polling est supprimé ici. Le polling continue pour détecter l'abandon ou le timeout.
                     }
                     
                     if (!waitingForOpponent && data.game_status === 'active') {
                         
                         if (data.fen !== currentFen) {
-                            // Mouvement de l'adversaire détecté
+                            // Mouvement de l'adversaire détecté (Logique inchangée)
                             updateBoardState(data.fen); 
                             
                             if (chessBoard.in_checkmate() || chessBoard.in_draw()) {
                                 const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
                                 const status = chessBoard.in_checkmate() ? 'checkmate' : 'draw';
                                 
-                                endGame(status, winnerColor, true); // true: Le joueur qui détecte la fin détruit le match
+                                endGame(status, winnerColor, true); 
                                 return; 
                             }
                             
-                            // Afficher le dernier coup ajouté à l'historique locale
                             const lastMove = clientMoveHistory.length > 0 ? clientMoveHistory[clientMoveHistory.length - 1] : "un coup";
                             displayInfo(`Coup de l'adversaire joué: ${lastMove}. À vous de jouer.`, 'info');
                             
-                            // L'arrêt du polling est supprimé ici. Le polling continue pour détecter l'abandon ou le timeout.
+                        } else if (chessBoard.turn() === playerColor[0]) {
+                            // ⭐ NOUVEAU: Si c'est notre tour et que la FEN n'a pas changé, l'adversaire pourrait avoir abandonné.
+                            // Nous lançons la vérification explicite (de secours).
+                            const abandoned = await checkAbandonStatus();
+                            if (abandoned) {
+                                return; // Si abandonné, on quitte le polling après endGame
+                            }
+                            
                         }
                     } else if (data.game_status !== 'created' && data.game_status !== 'active') {
                         // Statut de fin de partie reçu (Confirmation du serveur: mat, nul, etc.)

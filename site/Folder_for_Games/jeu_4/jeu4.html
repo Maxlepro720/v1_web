@@ -3,20 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jeu d'Échecs - Multijoueur Avancé</title>
+    <title>Jeu d'Échecs - Multijoueur Avancé (Style Chess.com)</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.js"></script>
     
     <style>
+        /* --- NOUVELLE PALETTE DE STYLE CHESS.COM --- */
+        :root {
+            /* Couleurs de fond et conteneurs */
+            --bg-dark: #312e2b; 
+            --bg-darker: #262421; 
+            --text-light: #e8e8e8;
+            
+            /* Couleurs de l'échiquier (Green/Beige) */
+            --board-dark: #769656; /* Vert Olive */
+            --board-light: #eeeed2; /* Beige Clair */
+            
+            /* Couleurs d'interaction */
+            --highlight-color: rgba(129, 182, 76, 0.8); /* Vert Semi-transparent pour les coups */
+            --selected-color: #ffcc66; /* Or pour la sélection */
+            --check-color: #cc0000;
+            --turn-indicator: #ff9900; /* Or/Orange pour l'indicateur de tour */
+            
+            /* Couleurs des boutons */
+            --button-primary: #81b64c; /* Vert Chess.com */
+            --button-danger: #dc3545; /* Rouge Abandonner */
+        }
+        
         /* --- Styles du jeu --- */
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            /* Typographie moderne et élégante */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             display: flex;
             justify-content: center; 
             align-items: flex-start; 
             min-height: 100vh;
-            background-color: #333; 
-            color: #fff;
+            /* Dégradé de fond sombre et élégant */
+            background-color: var(--bg-dark); 
+            background-image: linear-gradient(180deg, var(--bg-darker) 0%, var(--bg-dark) 100%);
+            color: var(--text-light);
             margin: 0;
             padding: 20px;
         }
@@ -37,44 +62,38 @@
         }
 
         h1 {
-            color: #f0f0f0;
+            color: var(--text-light);
             margin-bottom: 20px;
             font-size: 1.8em;
+            font-weight: 600;
         }
 
-        /* --- 2. Infos Joueur (SANS TIMER) --- */
+        /* --- 2. Infos Joueur --- */
         .player-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
             width: 100%;
             max-width: 600px; 
-            padding: 10px; 
+            padding: 10px 15px; 
             margin: 5px 0;
-            border-radius: 8px; /* Effet visuel */
-            transition: all 0.3s;
-            border: 2px solid transparent; 
-            background-color: #2a2a2a; /* Fond légèrement plus foncé pour les boîtes */
+            background-color: var(--bg-darker); 
+            border-radius: 6px; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease-out;
         }
         
-        /* Indicateur de tour (Carré vert) */
+        /* Indicateur de tour (Lueur dorée/orangée) */
         .player-container.highlight-turn {
-            border-color: #28a745; 
-            box-shadow: 0 0 10px rgba(40, 167, 69, 0.7); /* Lueur verte */
+            border-color: var(--turn-indicator); 
+            box-shadow: 0 0 12px rgba(255, 153, 0, 0.8), 0 0 4px rgba(255, 255, 255, 0.3); 
+            transform: translateY(-2px);
         }
 
-        .top-player { 
-            border-top: 2px solid rgba(255,255,255,0.1); 
-            /* S'assurer que la boîte du haut a le texte à gauche */
-            flex-direction: row; 
-        } 
-        /* La classe bottom-player est cruciale pour l'inversion visuelle */
-        .bottom-player { 
-            flex-direction: row-reverse; /* Inverse l'ordre pour mettre l'info à droite */
-        } 
-        .bottom-player .player-info { 
-            text-align: right; 
-        } 
+        .top-player { flex-direction: row; } 
+        .bottom-player { flex-direction: row-reverse; } 
+        .bottom-player .player-info { text-align: right; } 
 
         .player-info {
             display: flex;
@@ -86,7 +105,6 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            /* Le style par défaut est text-align: left */
         }
 
         .player-elo {
@@ -96,27 +114,18 @@
         }
 
 
-        /* --- 3. Styles du Plateau (Responsive & Rotation) --- */
+        /* --- 3. Styles du Plateau --- */
         .chessboard-container {
             max-width: 600px; 
             width: 100%;
             aspect-ratio: 1 / 1; 
             margin: 10px 0;
             position: relative;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.8);
+            border-radius: 4px; 
         }
 
-        /* Masque le panneau d'information */
-        .info-panel {
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 1.1em;
-            font-weight: bold;
-            height: 30px; 
-            color: #fff; 
-            max-width: 600px; 
-            width: 100%;
-            display: none; 
-        }
+        .info-panel { display: none; } /* Caché */
 
         .chessboard {
             display: grid;
@@ -124,10 +133,12 @@
             height: 100%;
             grid-template-columns: repeat(8, 1fr); 
             grid-template-rows: repeat(8, 1fr);
-            border: 4px solid #f0f0f0;
-            box-shadow: 0 0 15px rgba(0,0,0,0.8), 0 0 5px rgba(255, 255, 255, 0.2); /* Effet visuel */
+            border: none;
+            box-shadow: none; 
             position: relative;
             transition: transform 0.5s ease-in-out; 
+            border-radius: 4px;
+            overflow: hidden; /* Assure que les coins arrondis du conteneur s'appliquent */
         }
 
         .chessboard.rotated {
@@ -140,22 +151,31 @@
             justify-content: center;
             cursor: pointer;
             position: relative;
+            transition: background-color 0.1s;
         }
         
-        .light { background-color: #f0d9b5; }
-        .dark { background-color: #b58863; }
+        /* Couleurs Chess.com (Vert Olive & Beige) */
+        .light { background-color: var(--board-light); }
+        .dark { background-color: var(--board-dark); }
+        
+        .square:hover {
+            /* Effet de hover élégant */
+            background-color: rgba(0, 0, 0, 0.1) !important; 
+            box-shadow: inset 0 0 0 3px rgba(0, 123, 255, 0.3);
+        }
+
         .selected { 
-            box-shadow: inset 0 0 0 5px #007bff; 
-            background-color: #ffd700 !important; 
+            background-color: var(--selected-color) !important; 
+            box-shadow: inset 0 0 0 5px var(--turn-indicator); 
         }
         
         .highlight-move::after {
             content: '';
             display: block;
-            width: 30%;
-            height: 30%;
+            width: 35%;
+            height: 35%;
             border-radius: 50%;
-            background-color: rgba(0, 123, 255, 0.6);
+            background-color: var(--highlight-color);
         }
         
         .highlight-capture::after {
@@ -164,21 +184,21 @@
             width: 90%;
             height: 90%;
             border-radius: 50%;
-            border: 8px solid rgba(0, 123, 255, 0.6); 
+            border: 8px solid var(--highlight-color); 
             z-index: 5;
             position: absolute;
             box-sizing: border-box;
         }
 
-        /* Échec (case du roi en rouge) */
+        /* Échec et Mat (Rouge vif avec lueur) */
         .in-check { 
-            background-color: red !important; 
+            background-color: var(--check-color) !important; 
+            box-shadow: inset 0 0 20px rgba(255, 0, 0, 0.5);
         }
         
-        /* S'assurer que le roi maté a aussi la case rouge */
         .checkmated-square {
-            background-color: red !important;
-            box-shadow: inset 0 0 0 5px darkred;
+            background-color: var(--check-color) !important;
+            box-shadow: inset 0 0 0 5px darkred, inset 0 0 20px rgba(255, 0, 0, 0.8);
         }
 
 
@@ -190,45 +210,45 @@
             align-items: center;
             justify-content: center;
             font-size: 4.5vw; 
-            /* Transition pour le mouvement des pièces */
             transition: transform 0.3s ease-in-out; 
             pointer-events: none; 
             z-index: 10;
         }
-
-        /* Style pour le Roi mis en échec et mat (cassé/vaincu) */
+        
+        /* Ombres portées subtiles sur les pièces */
+        .white-piece {
+            color: #ffffff; 
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+        .black-piece { 
+            color: #000000; 
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+        }
+        
         .checkmated-king {
-            /* Simule une pièce cassée ou vaincue */
-            opacity: 0.4; /* Très estompé */
-            filter: grayscale(100%) brightness(0.7); /* Gris foncé et estompé */
+            opacity: 0.4;
+            filter: grayscale(100%) brightness(0.7);
             text-shadow: none !important; 
         }
-
-
+        
         @media (min-width: 1222px) { 
             .piece {
                 font-size: 55px;
             }
         }
         
-        .white-piece {
-            color: #ffffff; 
-            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
-        }
-        .black-piece { color: #000000; }
-
         /* --- 4. Sidebar --- */
         .sidebar {
             flex-basis: 300px; 
             padding: 20px;
-            background-color: #222; 
+            background-color: var(--bg-darker); 
             border-radius: 8px;
-            border: 1px solid #444; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5); 
             display: flex;
             flex-direction: column;
             gap: 15px; 
             height: fit-content; 
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5); /* Effet visuel */
         }
         
         .button-group {
@@ -238,23 +258,28 @@
         }
         
         .play-button, .abandon-button {
-            padding: 10px 15px;
-            border-radius: 6px;
+            padding: 12px 15px;
+            border-radius: 4px;
             font-weight: bold;
             cursor: pointer;
-            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+            transition: all 0.2s;
+            font-size: 1.1em;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+            color: var(--text-light);
         }
         
+        /* Bouton Lancer Partie (Vert Chess.com avec dégradé) */
         .play-button {
-            border: 1px solid #007bff;
-            background-color: #007bff;
-            color: #fff;
+            background-color: var(--button-primary);
+            border: 1px solid #6aa03e;
+            background-image: linear-gradient(180deg, #99d668 0%, var(--button-primary) 100%);
         }
         
         .play-button:hover:not(:disabled) {
-             background-color: #0056b3;
-             border-color: #0056b3;
-             box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+             background-color: #6aa03e;
+             background-image: linear-gradient(180deg, var(--button-primary) 0%, #6aa03e 100%);
+             box-shadow: 0 0 15px rgba(129, 182, 76, 0.8);
+             transform: translateY(-1px);
         }
 
         .play-button:disabled {
@@ -262,44 +287,28 @@
             color: #aaa;
             border-color: #555;
             cursor: not-allowed;
+            box-shadow: none;
         }
 
-        /* Style pour le nouveau bouton Abandonner */
+        /* Bouton Abandonner (Rouge avec dégradé) */
         .abandon-button {
-            border: 1px solid #dc3545;
-            background-color: #dc3545; 
-            color: #fff;
+            background-color: var(--button-danger);
+            border: 1px solid #b32635;
+            background-image: linear-gradient(180deg, #e35a67 0%, var(--button-danger) 100%);
         }
         
         .abandon-button:hover:not(:disabled) {
-             background-color: #c82333;
-             border-color: #bd2130;
-             box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
-        }
-
-        .abandon-button:disabled {
-            background-color: #555;
-            color: #aaa;
-            border-color: #555;
-            cursor: not-allowed;
+             background-color: #b32635;
+             background-image: linear-gradient(180deg, var(--button-danger) 0%, #b32635 100%);
+             box-shadow: 0 0 15px rgba(220, 53, 69, 0.8);
+             transform: translateY(-1px);
         }
         
-
-        /* Responsive pour les petits écrans */
+        /* Responsive */
         @media (max-width: 900px) {
-            .main-container {
-                flex-direction: column;
-                align-items: center;
-            }
-            .sidebar {
-                width: 100%;
-                max-width: 600px; 
-                margin-top: 20px;
-                flex-basis: auto;
-            }
-            .game-area {
-                width: 100%;
-            }
+            .main-container { flex-direction: column; align-items: center; }
+            .sidebar { width: 100%; max-width: 600px; margin-top: 20px; flex-basis: auto; }
+            .game-area { width: 100%; }
             .piece { font-size: 8vw; } 
         }
         
@@ -310,7 +319,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(0, 0, 0, 0.7);
+            /* Effet de flou sur l'arrière-plan */
+            backdrop-filter: blur(5px); 
+            -webkit-backdrop-filter: blur(5px); 
             display: flex;
             justify-content: center;
             align-items: center;
@@ -318,67 +330,68 @@
         }
 
         #modal-content {
-            background-color: #2a2a2a; 
-            color: #fff;
+            background-color: var(--bg-dark); 
+            color: var(--text-light);
             padding: 30px 40px;
             border-radius: 10px;
             text-align: center;
             max-width: 80vw;
             min-width: 300px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
-            border: 3px solid #007bff;
-            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+            border: none;
             position: relative; 
         }
         
-        /* Styles pour le bouton de fermeture (Croix) */
         #modal-close-cross {
             position: absolute;
             top: 10px;
-            right: 15px;
-            font-size: 2.5em;
+            right: 18px;
+            font-size: 3em; /* Plus grande croix */
             font-weight: 300;
-            color: #ccc;
+            color: #aaa;
             cursor: pointer;
             line-height: 1; 
             transition: color 0.2s;
         }
 
         #modal-close-cross:hover {
-            color: #fff; 
+            color: var(--text-light); 
         }
 
         #modal-title {
-            font-size: 2.2em;
+            font-size: 2em;
             margin-bottom: 10px;
-            color: #007bff;
-            font-weight: bold;
+            color: var(--text-light);
+            font-weight: 600;
         }
 
         #modal-message {
             font-size: 1.2em;
             margin: 15px 0 25px 0;
             line-height: 1.4;
+            color: #ccc;
         }
 
+        /* Bouton dans la modale */
         #modal-close-button {
-            padding: 10px 25px;
-            background-color: #007bff;
+            padding: 12px 25px;
+            background-color: var(--button-primary);
+            background-image: linear-gradient(180deg, #99d668 0%, var(--button-primary) 100%);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 4px;
             cursor: pointer;
             font-size: 1.1em;
             font-weight: bold;
-            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s;
         }
 
         #modal-close-button:hover {
-            background-color: #0056b3;
+            background-color: #6aa03e;
             transform: translateY(-1px);
         }
         
-        /* Boutons pour la modale de confirmation d'abandon */
         .modal-buttons-group {
             display: flex;
             justify-content: center;
@@ -394,28 +407,9 @@
 
 
         /* Couleurs contextuelles pour la modale */
-        .modal-win #modal-content { 
-            border-color: #28a745; 
-            box-shadow: 0 0 20px rgba(40, 167, 69, 0.7);
-        }
-        .modal-win #modal-title { color: #28a745; }
-
-        .modal-loss #modal-content { 
-            border-color: #dc3545;
-            box-shadow: 0 0 20px rgba(220, 53, 69, 0.7);
-        }
-        .modal-loss #modal-title { color: #dc3545; }
-
-        .modal-draw #modal-content { 
-            border-color: #ffc107;
-            box-shadow: 0 0 20px rgba(255, 193, 7, 0.7);
-        }
+        .modal-win #modal-title { color: var(--button-primary); }
+        .modal-loss #modal-title { color: var(--button-danger); }
         .modal-draw #modal-title { color: #ffc107; }
-
-        .modal-info #modal-content { 
-            border-color: #007bff; 
-            box-shadow: 0 0 20px rgba(0, 123, 255, 0.7);
-        }
 
     </style>
 </head>
@@ -595,15 +589,15 @@
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             const isUserTurn = currentTurn === playerColor[0]; 
             
-            // La logique d'indicateur de tour utilise les IDs des boîtes (white/black) qui représentent
-            // la COULEUR des pièces, indépendamment de la position physique (haut/bas).
             if (isUserTurn) {
+                // Si c'est votre tour, mettez en surbrillance la boîte qui contient votre couleur (peu importe si haut/bas)
                 if (playerColor === 'white') {
                     playerWhiteBox.classList.add('highlight-turn');
                 } else {
                     playerBlackBox.classList.add('highlight-turn');
                 }
             } else {
+                 // Si c'est le tour de l'adversaire, mettez en surbrillance la boîte qui contient sa couleur
                 if (playerColor === 'white') {
                     playerBlackBox.classList.add('highlight-turn');
                 } else {
@@ -632,11 +626,8 @@
             }, initialDelay);
         }
 
-        // --- LOGIQUE DE POLLING UNIFIÉE ---
+        // --- LOGIQUE D'ABANDON ET DE POLLING ---
 
-        /**
-         * Fonction de secours pour vérifier l'abandon via la route dédiée.
-         */
         async function checkAbandonStatus() {
             if (!currentGameId) return false;
 
@@ -649,10 +640,7 @@
                 const data = await response.json();
 
                 if (response.ok && data.status === 'abandoned') {
-                    console.log(`[ABANDON CHECK] Adversaire a abandonné (Gagnant: ${data.winner_color})`);
-                    
                     const winnerColor = data.winner_color;
-                    
                     endGame('abandoned', winnerColor, true); 
                     return true; 
                 }
@@ -667,8 +655,6 @@
 
 
         async function pollGameStatus() { 
-            console.log(`\n--- [POLLING] Démarrage du cycle pour ${USERNAME} (${playerColor}) ---`);
-
             if (!currentGameId || isGameOver) {
                 stopPolling();
                 return;
@@ -700,11 +686,10 @@
                         }
                         
                         setupPlayerAndBoard(playerColor, opponentId); 
-                        
                         matchStatusEl.textContent = `Partie contre ${opponentId} !`;
                         
                         const title = "Partie Démarrée !";
-                        const message = `L'adversaire (${opponentId}) a rejoint la partie ! Vous jouez ${playerColor.toUpperCase()}. À vous de jouer.`;
+                        const message = `L'adversaire (${opponentId}) a rejoint la partie ! Vous jouez ${playerColor.toUpperCase()}. Au tour de ${chessBoard.turn() === 'w' ? 'Blanc' : 'Noir'}.`;
                         showModal(title, message, 'info'); 
                         
                         updateBoardState(data.fen); 
@@ -883,9 +868,6 @@
         }
         
         
-        /**
-         * Gère l'envoi de la requête d'abandon au serveur.
-         */
         async function giveUpMatch() {
              if (!currentGameId || isGameOver) {
                  displayInfo("Pas de partie en cours ou déjà terminée pour abandonner.", 'warning');
@@ -903,11 +885,11 @@
                  });
 
                  const data = await response.json();
-                 console.log(data)
 
                  if (response.ok && data.status === 'success') {
                      const winnerColor = data.winner_color;
                      
+                     // L'utilisateur local a initié l'abandon, ne pas appeler destroyMatch ici.
                      endGame('abandoned', winnerColor, false); 
 
                  } else {
@@ -923,9 +905,6 @@
         }
         
         
-        /**
-         * Réinitialise l'état complet du client (variables et DOM) au statut initial.
-         */
         function resetClientState() {
             currentGameId = null;
             playerColor = null;
@@ -958,9 +937,6 @@
             playerBlackBox.classList.remove('highlight-turn');
         }
 
-        /**
-         * Envoie la requête de destruction/finalisation au serveur.
-         */
         async function destroyMatch() {
             if (!currentGameId || !USERNAME) return;
             
@@ -980,7 +956,6 @@
 
                 if (response.ok) {
                     console.log("[DESTROY MATCH] Succès : Partie signalée et détruite sur le serveur.", responseData.message || responseData);
-                    
                     stopPolling(); 
                 } else {
                     const errorMessage = responseData.error || `Erreur inconnue (Status: ${response.status}).`;
@@ -993,9 +968,6 @@
         }
 
 
-        /**
-         * Gère la fin de partie avec un affichage clair (modale).
-         */
         function endGame(status, winnerColor, shouldDestroy = false) {
             stopPolling();
             isGameOver = true;
@@ -1039,13 +1011,9 @@
             playButton.textContent = 'Partie Terminée';
             updateTurnIndicator(); 
             
-            // Réinitialisation du client après un délai de 5 secondes
             setTimeout(resetClientState, 5000); 
         }
 
-        /**
-         * Affiche une modale (pop-up) à l'écran.
-         */
         function showModal(title, message, type = 'info', buttons = null) {
             modalTitle.textContent = title;
             modalMessage.textContent = message;
@@ -1057,11 +1025,9 @@
             if (oldButton) oldButton.remove();
             document.querySelectorAll('.modal-buttons-group').forEach(el => el.remove());
             
-            // La croix est visible pour Info, Win, Loss, Draw (y compris Défaite/Abandon)
             modalCloseCross.style.display = buttons ? 'none' : 'block'; 
 
             if (buttons) {
-                 // Affichage de boutons personnalisés (pour la confirmation d'abandon)
                  const buttonsGroup = document.createElement('div');
                  buttonsGroup.className = 'modal-buttons-group';
                  buttons.forEach(btn => {
@@ -1077,7 +1043,6 @@
                  modalContent.appendChild(buttonsGroup);
                 
             } else {
-                // Bouton standard (pour fin de partie ou info)
                 const closeButton = document.createElement('button');
                 closeButton.id = 'modal-close-button';
                 
@@ -1100,9 +1065,6 @@
             modalOverlay.style.display = 'flex';
         }
         
-        /**
-         * Affiche la modale de confirmation avant d'abandonner.
-         */
         function showAbandonConfirmation() {
             if (!currentGameId || isGameOver) return;
             
@@ -1127,7 +1089,6 @@
             );
         }
 
-        // displayInfo est maintenant principalement pour le log/feedback non-modal.
         function displayInfo(message, type = 'info') {
             if (infoTimeout) clearTimeout(infoTimeout);
             
@@ -1142,43 +1103,35 @@
             }, 5000);
         }
         
-        /**
-         * Configure le plateau, la rotation et les informations des joueurs.
-         * Assure que l'utilisateur local est TOUJOURS en bas.
-         */
         function setupPlayerAndBoard(color, opponent) {
             playerColor = color;
             opponentId = opponent;
             
             const isWhite = color === 'white';
             
-            // --- FIX: Assurer que l'utilisateur local est toujours dans la boîte du BAS (player-white-box) ---
-            
-            // La boîte du bas (player-white-box) affiche toujours l'utilisateur local (VOUS)
+            // L'utilisateur local (VOUS) est toujours dans la boîte du BAS (player-white-box)
             document.getElementById('player-white-name').textContent = USERNAME;
             const localColor = isWhite ? 'Blanc' : 'Noir';
             document.getElementById('elo-white').textContent = `[1200 ELO (VOUS / ${localColor})]`;
             
-            // La boîte du haut (player-black-box) affiche toujours l'adversaire (ADV)
+            // L'adversaire (ADV) est toujours dans la boîte du HAUT (player-black-box)
             document.getElementById('player-black-name').textContent = opponentId;
             const opponentColor = isWhite ? 'Noir' : 'Blanc';
             document.getElementById('elo-black').textContent = `[1200 ELO (ADV / ${opponentColor})]`;
             
-            // --- FIN FIX ---
-
-            // Rotation du plateau (basée sur la couleur des pièces de l'utilisateur)
+            // Rotation du plateau
             if (isWhite) {
                 chessboardEl.classList.remove('rotated'); 
             } else {
                 chessboardEl.classList.add('rotated'); 
             }
             
-            // Réapplication des classes de position pour les styles (elles sont fixes car le contenu est échangé)
+            // Assurer que les classes de position (CSS pour haut/bas) sont bien appliquées
             playerWhiteBox.classList.remove('top-player');
-            playerWhiteBox.classList.add('bottom-player'); // VOUS (boîte du bas)
+            playerWhiteBox.classList.add('bottom-player'); 
 
             playerBlackBox.classList.add('top-player');
-            playerBlackBox.classList.remove('bottom-player'); // ADV (boîte du haut)
+            playerBlackBox.classList.remove('bottom-player');
         }
         
         function drawBoard() {
@@ -1356,7 +1309,6 @@
         
         function initializeGame() {
             
-            // Positionnement par défaut de l'utilisateur local dans la boîte du bas
             document.getElementById('player-white-name').textContent = USERNAME || OPPONENT_NAME;
             document.getElementById('player-black-name').textContent = OPPONENT_NAME;
             

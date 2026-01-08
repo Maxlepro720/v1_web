@@ -515,10 +515,9 @@
             chessBoard.load(newFen); 
             
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
-            // Cette ligne met à jour waitingForMove selon la FEN, ce qui est correct.
             waitingForMove = (currentTurn !== playerColor); 
             
-            updateMovesList(chessBoard.history()); 
+            updateMovesList(chessBoard.history()); // Appel avec la liste des coups
             
             if (shouldDraw) {
                 drawPieces();
@@ -575,7 +574,6 @@
             }
             
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
-            // Arrêter le polling si c'est notre tour et que nous ne sommes pas en attente d'adversaire
             if (!waitingForOpponent && currentTurn === playerColor) { 
                  stopPolling(); 
                  return;
@@ -740,9 +738,6 @@
                             const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
                             endGame(data.game_status, winnerColor, true); 
                         } else {
-                            // ✅ CORRECTION: Suppression de l'affectation manuelle de waitingForMove.
-                            // updateBoardState juste au-dessus a déjà mis à jour cette variable
-                            // correctement en fonction de la nouvelle FEN.
                             displayInfo("Coup envoyé. En attente du coup de l'adversaire...");
                             startPolling(); 
                         }
@@ -911,8 +906,6 @@
                 modalCloseButton.textContent = "Rejouer";
                 modalCloseButton.onclick = () => {
                     modalOverlay.style.display = 'none';
-                    // Le resetClientState est déjà programmé.
-                    // On peut relancer la recherche immédiatement, elle sera traitée après le reset.
                     findOrCreateMatch(); 
                 };
             } else {
@@ -942,7 +935,13 @@
             }, 5000);
         }
 
+        /**
+         * Met à jour la liste des coups joués.
+         */
         function updateMovesList(history) {
+            // ✅ NOUVEAU: Ajout d'un diagnostic dans la console
+            console.log(`[HISTORIQUE] Tentative de mise à jour avec ${history.length} coups. Contenu:`, history);
+            
             movesListEl.innerHTML = '';
             
             for (let i = 0; i < history.length; i += 2) {
@@ -1024,7 +1023,6 @@
 
         function handleMove(row, col, squareEl) {
             if (isGameOver || !currentGameId || waitingForOpponent || waitingForMove) {
-                // Pour le débogage: affiche la raison dans la console si le mouvement est bloqué
                 const reason = isGameOver ? "Partie terminée." : 
                              !currentGameId ? "Cliquez sur 'Lancer Partie'." :
                              waitingForOpponent ? "En attente de l'adversaire." :
@@ -1040,7 +1038,8 @@
             if (!selectedCoords) {
                 if (piece && (piece.color === currentTurn[0])) {
                     selectedCoords = { row, col };
-                    legalMoves = chessBoard.moves({ square: square, verbose: true });
+                    // Obtient les coups légaux en format détaillé
+                    legalMoves = chessBoard.moves({ square: square, verbose: true }); 
                     drawBoard(); 
                 }
                 
@@ -1055,6 +1054,7 @@
                     return;
                 }
                 
+                // Promotion par défaut en Dame ('q')
                 const moveAttempt = {
                     from: startCoord,
                     to: endCoord,
@@ -1125,8 +1125,6 @@
             
             let transformValue = '';
             
-            // Applique la rotation des pièces si le joueur est Noir ET si la partie est en cours.
-            // Après le reset, playerColor est null, donc pas de rotation.
             if (playerColor === 'black' && !isGameOver) {
                 transformValue += 'rotate(180deg)';
             }

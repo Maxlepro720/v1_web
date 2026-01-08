@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Échecs - Menu Principal Classique</title>
+    <style>
+        /* Importation d'une police classique */
+        @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap');
+
+        :root {
+            /* Couleurs Bois Classique et Chaleureux */
+            --color-dark-wood: #5D4037; /* Marron foncé chocolat */
+            --color-medium-wood: #795548; /* Marron moyen */
+            --color-light-wood: #EFEBE9; /* Blanc cassé / Crème */
+            --color-gold-accent: #FFC107; /* Jaune or pour l'éclat */
+            --color-text-light: #FFF8E1; /* Crème très clair */
+            --color-text-dark: #3E2723; /* Marron très foncé */
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Merriweather', serif;
+            background-color: var(--color-medium-wood);
+            /* Motif de grain de bois subtil */
+            background-image: linear-gradient(rgba(0, 0, 0, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--color-text-light);
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .container {
+            background-color: var(--color-dark-wood);
+            padding: 50px 70px;
+            border-radius: 15px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7), 0 0 0 7px var(--color-gold-accent); /* Cadre épais Or */
+            max-width: 500px;
+            width: 90%;
+            animation: fadeInScale 1s ease-out;
+            position: relative; /* Pour les éléments décoratifs */
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        h1 {
+            font-size: 3.5em;
+            margin-bottom: 0px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: var(--color-gold-accent);
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            margin-bottom: 30px;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .button {
+            display: block;
+            width: 100%;
+            padding: 18px 0;
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--color-text-dark);
+            background-color: var(--color-light-wood);
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color var(--transition-speed), transform 0.2s ease, box-shadow var(--transition-speed);
+            box-shadow: 0 6px 0 var(--color-medium-wood); /* Profondeur */
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Bouton Jouer */
+        .button-play {
+            background-color: var(--color-gold-accent);
+            color: var(--color-dark-wood);
+            box-shadow: 0 6px 0 #D1A000;
+        }
+
+        .button-play:hover {
+            background-color: #FFEB3B;
+            transform: translateY(-3px);
+            box-shadow: 0 9px 0 #D1A000;
+        }
+
+        /* Boutons secondaires */
+        .button-secondary {
+            background-color: var(--color-text-light);
+            color: var(--color-dark-wood);
+            box-shadow: 0 6px 0 var(--color-medium-wood);
+        }
+
+        .button-secondary:hover {
+            background-color: #FFFFFF;
+            transform: translateY(-3px);
+            box-shadow: 0 9px 0 var(--color-medium-wood);
+        }
+
+        /* Bouton Quitter */
+        .button-quit {
+            background-color: #E57373; /* Rouge terracotta */
+            color: var(--color-text-dark);
+            box-shadow: 0 6px 0 #B71C1C;
+            margin-top: 30px;
+        }
+
+        .button-quit:hover {
+            background-color: #EF9A9A;
+            transform: translateY(-3px);
+            box-shadow: 0 9px 0 #B71C1C;
+        }
+
+        /* --- Style de la fenêtre des Règles (Modale) --- */
+        .rules-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(3px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+        }
+
+        .rules-content {
+            background-color: var(--color-light-wood);
+            color: var(--color-text-dark);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+            max-width: 800px;
+            width: 90%;
+            margin: 20px auto;
+            text-align: left;
+            position: relative;
+        }
+
+        .rules-content h2 {
+            text-align: center;
+            color: var(--color-dark-wood);
+            font-size: 2.2em;
+            border-bottom: 3px solid var(--color-dark-wood);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--color-dark-wood);
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .close-button:hover {
+            color: #E57373;
+        }
+        
+        /* --- Style Interactif des Règles (Accordéon) --- */
+        .rule-tab {
+            margin-bottom: 10px;
+            border: 1px solid var(--color-medium-wood);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .rule-header {
+            background-color: var(--color-medium-wood);
+            color: var(--color-text-light);
+            padding: 15px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 1.2em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+
+        .rule-header:hover {
+            background-color: #6D4C41;
+        }
+
+        .rule-header span {
+            font-size: 1.5em;
+            transition: transform 0.3s;
+        }
+
+        .rule-content {
+            padding: 0 15px;
+            background-color: var(--color-light-wood);
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out;
+            color: var(--color-text-dark);
+        }
+
+        .rule-content p, .rule-content ul {
+            padding: 10px 0;
+            margin: 0;
+        }
+
+        .rule-content ul {
+            list-style: square;
+            margin-left: 20px;
+        }
+
+        .active .rule-header span {
+            transform: rotate(90deg);
+        }
+
+        /* Style des symboles de pièces dans le texte */
+        .piece-symbol {
+            font-size: 1.2em;
+            margin-right: 5px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Les Échecs</h1>
+        <p class="subtitle">Le jeu de stratégie le plus noble. Quelle sera votre prochaine attaque ?</p>
+        <div class="button-group">
+            <a href="jeu4.html" class="button button-play">Jouer</a>
+            <button class="button button-secondary" onclick="openRules()">Règles du Jeu</button>
+            <a href="../../menu.html" class="button button-quit">Quitter</a>
+        </div>
+    </div>
+
+    <div id="rulesModal" class="rules-overlay">
+        <div class="rules-content">
+            <span class="close-button" onclick="closeRules()">&times;</span>
+            <h2>⚜️ Guide des Règles ⚜️</h2>
+            
+            <div class="rule-tab">
+                <div class="rule-header" onclick="toggleRule(this)">
+                    1. Mouvements de Base <span class="arrow-icon">▶</span>
+                </div>
+                <div class="rule-content">
+                    <p>Chaque pièce a une manière unique de se déplacer :</p>
+                    <ul>
+                        <li><span class="piece-symbol">♛</span> **Dame :** Lignes droites et diagonales, aussi loin qu'elle le souhaite.</li>
+                        <li><span class="piece-symbol">♜</span> **Tour :** Lignes droites (verticales et horizontales).</li>
+                        <li><span class="piece-symbol">♝</span> **Fou :** Uniquement en diagonale.</li>
+                        <li><span class="piece-symbol">♞</span> **Cavalier :** En forme de "L" (2 cases dans une direction, puis 1 case perpendiculaire). Il est le seul à sauter les pièces.</li>
+                        <li><span class="piece-symbol">♚</span> **Roi :** Une seule case dans n'importe quelle direction.</li>
+                        <li><span class="piece-symbol">♟</span> **Pion :** Une case vers l'avant (deux cases au premier coup). Capture en diagonale.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="rule-tab">
+                <div class="rule-header" onclick="toggleRule(this)">
+                    2. Règles Spéciales <span class="arrow-icon">▶</span>
+                </div>
+                <div class="rule-content">
+                    <ul>
+                        <li>**Le Roque :** Un coup unique entre le Roi et la Tour (si aucun n'a bougé et qu'aucune menace ne traverse le chemin du Roi).</li>
+                        <li>**Prise en passant :** Un pion peut capturer un pion adverse qui vient d'avancer de deux cases d'un coup.</li>
+                        <li>**Promotion :** Quand un pion atteint la dernière rangée, il est immédiatement remplacé par une Dame, Tour, Fou ou Cavalier.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="rule-tab">
+                <div class="rule-header" onclick="toggleRule(this)">
+                    3. Échec et Mat (Fin de Partie) <span class="arrow-icon">▶</span>
+                </div>
+                <div class="rule-content">
+                    <p>L'objectif est d'atteindre l'**Échec et Mat** (le Roi est attaqué et ne peut s'échapper par aucun moyen).</p>
+                    <ul>
+                        <li>**Échec :** Le Roi est directement menacé par une pièce adverse. Le joueur doit y remédier immédiatement.</li>
+                        <li>**Pat :** Le joueur dont c'est le tour de jouer n'a aucun coup légal possible, mais son Roi n'est pas en échec. La partie est **Nulle**.</li>
+                        <li>**Matériel Insuffisant :** Par exemple, Roi et Cavalier contre Roi. La partie est **Nulle**.</li>
+                    </ul>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        function openRules() {
+            document.getElementById('rulesModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeRules() {
+            document.getElementById('rulesModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function toggleRule(header) {
+            const tab = header.parentElement;
+            const content = header.nextElementSibling;
+            
+            // Fermer tous les autres onglets ouverts
+            document.querySelectorAll('.rule-tab.active').forEach(openTab => {
+                if (openTab !== tab) {
+                    openTab.classList.remove('active');
+                    openTab.querySelector('.rule-content').style.maxHeight = null;
+                }
+            });
+
+            // Ouvrir/Fermer l'onglet cliqué
+            tab.classList.toggle('active');
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+            } else {
+                // Donne une hauteur suffisante pour afficher tout le contenu
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        }
+    </script>
+</body>
+</html>

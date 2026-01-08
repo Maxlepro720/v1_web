@@ -491,7 +491,12 @@
             // Si la partie est active ET que c'est notre tour, on n'a plus besoin de poller
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             if (!waitingForOpponent && currentTurn === playerColor) {
-                 stopPolling(); 
+                 // On ne stoppe le polling que si on est certain d'avoir la dernière info
+                 // Si data.fen dans le dernier poll n'est pas le même que chessBoard.fen()
+                 // (c'est géré par la logique du 'if (data.fen !== currentFen)')
+                 // Mais par sécurité, on laisse le polling actif jusqu'à ce que le coup soit joué.
+                 // Laissez le polling continuer pour l'instant pour synchronisation.
+                 // stopPolling(); 
                  return;
             }
             
@@ -519,6 +524,8 @@
                         displayInfo("L'adversaire a rejoint la partie ! À vous de jouer.");
                         
                         updateBoardState(data.fen); 
+                        // Note: Le polling devrait redémarrer si l'adversaire joue immédiatement (cas rare)
+                        // ou s'arrêter si c'est notre tour. On va le laisser s'arrêter ici.
                         stopPolling(); 
                     }
                     
@@ -531,13 +538,18 @@
                             updateBoardState(data.fen); 
                             displayInfo(`Coup de l'adversaire joué: ${chessBoard.history().pop()}. À vous de jouer.`);
                             
-                            if (!waitingForMove) {
+                            // Après avoir reçu un coup, ce n'est plus "waitingForMove" (car c'est notre tour)
+                            waitingForMove = false; 
+                            
+                            // Si c'est notre tour, on arrête le polling pour économiser les ressources.
+                            if (chessBoard.turn() === playerColor[0]) {
                                 stopPolling();
                             }
                         }
                     } else if (data.game_status !== 'created' && data.game_status !== 'active') {
                         // Statut de fin de partie reçu (Checkmate, Draw, Abandoned)
-                        // Le FEN actuel est celui après le dernier coup qui a causé la fin (ex: Mat)
+                        updateBoardState(data.fen); // Assurez-vous d'avoir le FEN final
+                        // La couleur qui vient d'être mise au mat/pat est la couleur dont c'est le tour (turn())
                         const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
                         // Le perdant/l'observateur ne doit PAS appeler destroyMatch()
                         endGame(data.game_status, winnerColor, false); 
@@ -643,8 +655,9 @@
                         updateBoardState(data.new_fen); 
                         
                         if (data.game_status !== 'active') {
+                            // Le FEN final est chargé. chessBoard.turn() est maintenant la couleur du perdant.
                             const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
-                            // Le joueur qui a joué le coup gagnant doit appeler destroyMatch()
+                            // C'est le joueur qui a joué le coup gagnant, donc il doit détruire le match.
                             endGame(data.game_status, winnerColor, true); 
                         } else {
                             waitingForMove = true; 
@@ -712,18 +725,28 @@
             isGameOver = true;
             
             let message = "Partie terminée : ";
-            if (status === 'checkmate') {
-                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
-                message += `${winnerColor.toUpperCase()} (${winnerName}) gagne par échec et mat !`;
-            } else if (status === 'draw' || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
-                message += "Match nul.";
-            } else if (status === 'abandoned') { 
-                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
-                const loserName = (winnerColor === playerColor) ? opponentId : USERNAME;
-                message += `${loserName} a abandonné. ${winnerName.toUpperCase()} gagne !`;
+            let winnerName = "";
+            let loserName = "";
+            
+            // Déterminer les noms en fonction de la couleur gagnante
+            if (winnerColor === 'draw') {
+                message = "Match nul.";
+            } else {
+                winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
+                loserName = (winnerColor === playerColor) ? opponentId : USERNAME;
+
+                if (status === 'checkmate') {
+                    message = `${winnerColor.toUpperCase()} (${winnerName}) gagne par échec et mat !`;
+                } else if (status === 'abandoned') { 
+                    message = `${loserName} a abandonné. ${winnerName.toUpperCase()} gagne !`;
+                } else if (status === 'timeout') {
+                    // Si le statut d'abandon n'est pas géré, on utilise un message par défaut.
+                    message = `${loserName} a perdu au temps. ${winnerName.toUpperCase()} gagne !`;
+                }
             }
-            else {
-                message += "Statut inconnu.";
+            
+            if (status === 'draw' || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
+                message = "Match nul.";
             }
 
             matchStatusEl.textContent = `FIN : ${message}`;
@@ -735,6 +758,7 @@
 
             // APPEL À DESTROY_MATCH (Conditionnel au fait d'être le joueur qui a causé la fin)
             if (shouldDestroy) {
+                // Le joueur qui a causé la fin (par mat ou abandon/timeout) détruit la partie.
                 destroyMatch(); 
             }
             

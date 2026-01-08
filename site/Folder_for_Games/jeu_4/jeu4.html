@@ -901,7 +901,7 @@
                      const winnerColor = data.winner_color;
                      
                      // Met fin à la partie côté client (nous sommes le perdant)
-                     endGame('abandoned', winnerColor, true); // true: détruit le match
+                     endGame('abandoned', winnerColor, false); // true: détruit le match
 
                  } else {
                      displayInfo(`Erreur lors de l'abandon: ${data.message || 'Erreur inconnue.'}`, 'error');

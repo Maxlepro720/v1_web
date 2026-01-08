@@ -916,7 +916,7 @@
         }
         
         /**
-         * ⭐ NOUVELLE FONCTION
+         * ⭐ MODIFICATION APPLIQUÉE
          * Vérifie si l'adversaire a abandonné (polling du statut d'abandon).
          */
          async function checkOpponentGiveUp() {
@@ -934,6 +934,9 @@
                     // L'adversaire a abandonné
                     const winnerColor = data.winner_color;
                     
+                    // ⭐ CORRECTION: Arrêter le polling immédiatement ici pour éviter une course condition
+                    stopPolling(); 
+
                     if (winnerColor === playerColor) {
                         // C'est nous le gagnant, met fin à la partie et détruit le match
                         endGame('abandoned', winnerColor, true); 
@@ -1016,6 +1019,8 @@
                 if (response.ok) {
                     console.log("[DESTROY MATCH] Succès : Partie signalée et détruite sur le serveur.", responseData.message || responseData);
                     
+                    // ⭐ CORRECTION: Arrêter le polling immédiatement après la destruction réussie.
+                    stopPolling(); 
                 } else {
                     const errorMessage = responseData.error || `Erreur inconnue (Status: ${response.status}).`;
                     console.error(`[DESTROY MATCH] Erreur HTTP: ${response.status}. Impossible de supprimer le match.`, errorMessage);

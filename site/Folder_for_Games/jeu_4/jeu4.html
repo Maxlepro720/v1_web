@@ -222,15 +222,24 @@
             box-shadow: inset 0 0 10px rgba(0,0,0,0.5); /* Effet visuel */
         }
         
-        .play-button {
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .play-button, .abandon-button {
             padding: 10px 15px;
             border-radius: 6px;
-            border: 1px solid #007bff;
-            background-color: #007bff;
-            color: #fff;
             font-weight: bold;
             cursor: pointer;
             transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .play-button {
+            border: 1px solid #007bff;
+            background-color: #007bff;
+            color: #fff;
         }
         
         .play-button:hover:not(:disabled) {
@@ -245,6 +254,27 @@
             border-color: #555;
             cursor: not-allowed;
         }
+
+        /* Style pour le nouveau bouton Abandonner */
+        .abandon-button {
+            border: 1px solid #dc3545;
+            background-color: #dc3545; 
+            color: #fff;
+        }
+        
+        .abandon-button:hover:not(:disabled) {
+             background-color: #c82333;
+             border-color: #bd2130;
+             box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+        }
+
+        .abandon-button:disabled {
+            background-color: #555;
+            color: #aaa;
+            border-color: #555;
+            cursor: not-allowed;
+        }
+        
 
         /* Responsive pour les petits écrans */
         @media (max-width: 900px) {
@@ -333,6 +363,21 @@
             background-color: #0056b3;
             transform: translateY(-1px);
         }
+        
+        /* Boutons pour la modale de confirmation d'abandon */
+        .modal-buttons-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .modal-buttons-group button {
+            flex: 1;
+            padding: 10px 15px;
+            font-size: 1em;
+        }
+
 
         /* Couleurs contextuelles pour la modale */
         .modal-win #modal-content { 
@@ -391,9 +436,15 @@
         <div class="sidebar">
             <h2>Partie et Historique</h2>
             
-            <button id="play-button" class="play-button" onclick="findOrCreateMatch()">
-                Lancer Partie
-            </button>
+            <div class="button-group">
+                <button id="play-button" class="play-button" onclick="findOrCreateMatch()">
+                    Lancer Partie
+                </button>
+                
+                <button id="abandon-button" class="abandon-button" onclick="showAbandonConfirmation()" disabled>
+                    Abandonner la Partie
+                </button>
+            </div>
             
             <div class="moves-list-container">
                 <h3>Coups Joués</h3>
@@ -490,13 +541,14 @@
         let infoTimeout = null; 
         let pollingInterval = null; 
         
-        // ⭐ NOUVEAU: Historique des coups géré localement (SAN)
+        // ⭐ MODIFIÉ: Historique des coups géré localement (SAN)
         let clientMoveHistory = []; 
 
         // Références DOM globales
         const chessboardEl = document.getElementById('chessboard');
         const infoEl = document.getElementById('info'); // Masqué par CSS
         const playButton = document.getElementById('play-button');
+        const abandonButton = document.getElementById('abandon-button'); // ⭐ NOUVEAU
         const movesListEl = document.getElementById('moves-list');
         const matchStatusEl = document.getElementById('match-status-text');
         const playerWhiteBox = document.getElementById('player-white-box');
@@ -560,6 +612,7 @@
         function updateTurnIndicator() {
             playerWhiteBox.classList.remove('highlight-turn');
             playerBlackBox.classList.remove('highlight-turn');
+            abandonButton.disabled = (!currentGameId || isGameOver || waitingForOpponent); // ⭐ NOUVEAU: Mettre à jour l'état du bouton Abandonner
 
             if (isGameOver || waitingForOpponent || !currentGameId) {
                 return;
@@ -604,8 +657,11 @@
             }
             
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
+            
+            // ⭐ NOUVEAU: Si c'est au tour de l'utilisateur, on ne poll pas le statut du coup, mais on vérifie l'abandon de l'adversaire
             if (!waitingForOpponent && currentTurn === playerColor) { 
-                 stopPolling(); 
+                 // Vérifie l'abandon de l'adversaire même quand c'est notre tour (polling plus long)
+                 checkOpponentGiveUp();
                  return;
             }
             
@@ -670,6 +726,11 @@
                         endGame(data.game_status, winnerColor, false); 
                     }
                     
+                    // ⭐ NOUVEAU: Vérifie l'abandon de l'adversaire à chaque poll s'il n'y a pas eu de mouvement
+                    if (!waitingForOpponent && data.fen === currentFen) {
+                         checkOpponentGiveUp();
+                    }
+                    
                 } else {
                     console.error(`[POLLING ERROR] Réponse serveur non-OK: ${data.error || 'Erreur inconnue.'}`);
                 }
@@ -688,6 +749,7 @@
             }
 
             playButton.disabled = true;
+            abandonButton.disabled = true;
             playButton.textContent = 'Recherche...';
 
             try {
@@ -705,6 +767,7 @@
                     opponentId = data.opponent_id || OPPONENT_NAME;
                     
                     playButton.textContent = 'Partie en Cours';
+                    abandonButton.disabled = false; // Activation du bouton Abandonner
 
                     if (data.status === 'created') {
                         waitingForOpponent = true;
@@ -728,12 +791,14 @@
                     }
                 } else {
                     playButton.disabled = false;
+                    abandonButton.disabled = true;
                     playButton.textContent = 'Lancer Partie';
                     displayInfo(`Erreur lors du matchmaking: ${data.error}`, 'error');
                 }
 
             } catch (e) {
                 playButton.disabled = false;
+                abandonButton.disabled = true;
                 playButton.textContent = 'Lancer Partie';
                 displayInfo("Erreur de connexion au serveur.", 'error');
                 console.error("Erreur Matchmaking:", e);
@@ -807,6 +872,85 @@
             updateBoardState(chessBoard.fen());
             displayInfo("Échec critique de la communication. Coup annulé localement. Veuillez relancer la partie ou vérifier la connexion.", 'error');
         }
+        
+        
+        /**
+         * ⭐ NOUVELLE FONCTION
+         * Gère l'envoi de la requête d'abandon au serveur.
+         */
+        async function giveUpMatch() {
+             if (!currentGameId || isGameOver) {
+                 displayInfo("Pas de partie en cours ou déjà terminée pour abandonner.", 'warning');
+                 return;
+             }
+
+             displayInfo("Envoi de l'abandon au serveur...", 'info');
+             abandonButton.disabled = true; // Désactive immédiatement
+
+             try {
+                 const response = await fetch(`${SERVER_URL}/give_up_chess`, {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ game_uuid: currentGameId, username: USERNAME })
+                 });
+
+                 const data = await response.json();
+
+                 if (response.ok && data.status === 'success') {
+                     // L'abandon a été accepté par le serveur
+                     const winnerColor = data.winner_color;
+                     
+                     // Met fin à la partie côté client (nous sommes le perdant)
+                     endGame('abandoned', winnerColor, true); // true: détruit le match
+
+                 } else {
+                     displayInfo(`Erreur lors de l'abandon: ${data.message || 'Erreur inconnue.'}`, 'error');
+                     abandonButton.disabled = false; // Réactive si l'abandon a échoué
+                 }
+
+             } catch (e) {
+                 displayInfo("Erreur de connexion au serveur lors de l'abandon.", 'error');
+                 console.error("Erreur Abandon:", e);
+                 abandonButton.disabled = false; // Réactive si l'abandon a échoué
+             }
+        }
+        
+        /**
+         * ⭐ NOUVELLE FONCTION
+         * Vérifie si l'adversaire a abandonné (polling du statut d'abandon).
+         */
+         async function checkOpponentGiveUp() {
+            if (!currentGameId || isGameOver || waitingForOpponent) return;
+
+            try {
+                const response = await fetch(`${SERVER_URL}/get_give_up_chess?game_uuid=${currentGameId}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'abandoned') {
+                    // L'adversaire a abandonné
+                    const winnerColor = data.winner_color;
+                    
+                    if (winnerColor === playerColor) {
+                        // C'est nous le gagnant, met fin à la partie et détruit le match
+                        endGame('abandoned', winnerColor, true); 
+                    } else {
+                        // C'est l'adversaire le gagnant (ce qui ne devrait pas arriver ici, mais pour la sécurité)
+                        endGame('abandoned', winnerColor, false); 
+                    }
+                    
+                } else if (!response.ok) {
+                    console.error(`[CHECK GIVE UP ERROR] Réponse serveur non-OK: ${data.error || 'Erreur inconnue.'}`);
+                }
+
+            } catch (e) {
+                console.warn("[CHECK GIVE UP ERROR] Erreur lors de la requête de statut d'abandon :", e);
+            }
+        }
+
 
         /**
          * Réinitialise l'état complet du client (variables et DOM) au statut initial.
@@ -843,6 +987,7 @@
             displayInfo("Cliquez sur \"Lancer Partie\" pour commencer à jouer.", 'info'); 
             playButton.textContent = "Lancer Partie";
             playButton.disabled = false;
+            abandonButton.disabled = true; // ⭐ MODIFIÉ: Désactiver le bouton Abandonner
             matchStatusEl.textContent = "(En attente de connexion)";
             playerWhiteBox.classList.remove('highlight-turn');
             playerBlackBox.classList.remove('highlight-turn');
@@ -889,14 +1034,14 @@
             stopPolling();
             isGameOver = true;
             
-            const isLocalPlayerWinner = (status === 'checkmate' || status === 'abandoned' || status === 'timeout') && (winnerColor === playerColor);
+            const isLocalPlayerWinner = (winnerColor === playerColor);
             
             let message = "La partie est terminée.";
             let modalType = 'draw'; 
             let modalTitle = 'MATCH NUL';
             
             if (status === 'checkmate') {
-                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
+                const winnerName = isLocalPlayerWinner ? USERNAME : opponentId;
                 message = isLocalPlayerWinner ? `Vous avez maté ${opponentId} !` : `${winnerName} vous a maté.`;
                 modalTitle = isLocalPlayerWinner ? 'VICTOIRE PAR MAT' : 'DÉFAITE PAR MAT';
                 modalType = isLocalPlayerWinner ? 'win' : 'loss';
@@ -906,7 +1051,7 @@
                 modalTitle = "MATCH NUL";
                 modalType = 'draw';
             } else if (status === 'abandoned' || status === 'timeout') { 
-                const loserName = (winnerColor === playerColor) ? opponentId : USERNAME;
+                const loserName = isLocalPlayerWinner ? opponentId : USERNAME;
                 message = isLocalPlayerWinner ? `${loserName} a ${status === 'abandoned' ? 'abandonné' : 'perdu au temps'}.` : `Vous avez perdu par ${status === 'abandoned' ? 'abandon' : 'temps'}.`;
                 modalTitle = isLocalPlayerWinner ? 'VICTOIRE PAR FORFAIT' : 'DÉFAITE PAR FORFAIT';
                 modalType = isLocalPlayerWinner ? 'win' : 'loss';
@@ -924,6 +1069,7 @@
             }
             
             playButton.disabled = true;
+            abandonButton.disabled = true; // ⭐ MODIFIÉ: Désactiver le bouton Abandonner
             playButton.textContent = 'Partie Terminée';
             updateTurnIndicator(); 
             
@@ -934,7 +1080,7 @@
         /**
          * Affiche une modale (pop-up) à l'écran.
          */
-        function showModal(title, message, type = 'info') {
+        function showModal(title, message, type = 'info', buttons = null) {
             modalTitle.textContent = title;
             modalMessage.textContent = message;
             
@@ -942,21 +1088,78 @@
             modalContent.className = '';
             modalContent.classList.add('modal-' + type.toLowerCase());
 
-            if (type === 'win' || type === 'loss' || type === 'draw') {
-                modalCloseButton.textContent = "Rejouer";
-                modalCloseButton.onclick = () => {
-                    modalOverlay.style.display = 'none';
-                    findOrCreateMatch(); 
-                };
+            // Suppression des boutons précédents
+            const oldButton = document.getElementById('modal-close-button');
+            if (oldButton) oldButton.remove();
+            document.querySelectorAll('.modal-buttons-group').forEach(el => el.remove());
+            
+            if (buttons) {
+                 // Affichage de boutons personnalisés (pour la confirmation d'abandon)
+                 const buttonsGroup = document.createElement('div');
+                 buttonsGroup.className = 'modal-buttons-group';
+                 buttons.forEach(btn => {
+                     const btnEl = document.createElement('button');
+                     btnEl.textContent = btn.text;
+                     btnEl.className = btn.className || 'play-button';
+                     btnEl.onclick = () => {
+                         modalOverlay.style.display = 'none';
+                         btn.action();
+                     };
+                     buttonsGroup.appendChild(btnEl);
+                 });
+                 modalContent.appendChild(buttonsGroup);
+                
             } else {
-                // Pour les modales d'information (début de partie)
-                modalCloseButton.textContent = "Continuer";
-                modalCloseButton.onclick = () => {
-                    modalOverlay.style.display = 'none';
-                };
+                // Bouton standard (pour fin de partie ou info)
+                const closeButton = document.createElement('button');
+                closeButton.id = 'modal-close-button';
+                
+                if (type === 'win' || type === 'loss' || type === 'draw') {
+                    closeButton.textContent = "Rejouer";
+                    closeButton.onclick = () => {
+                        modalOverlay.style.display = 'none';
+                        findOrCreateMatch(); 
+                    };
+                } else {
+                    // Pour les modales d'information (début de partie)
+                    closeButton.textContent = "Continuer";
+                    closeButton.onclick = () => {
+                        modalOverlay.style.display = 'none';
+                    };
+                }
+                 modalContent.appendChild(closeButton);
             }
 
+
             modalOverlay.style.display = 'flex';
+        }
+        
+        /**
+         * ⭐ NOUVELLE FONCTION
+         * Affiche la modale de confirmation avant d'abandonner.
+         */
+        function showAbandonConfirmation() {
+            if (!currentGameId || isGameOver) return;
+            
+            const buttons = [
+                {
+                    text: "Annuler",
+                    className: "play-button",
+                    action: () => {} // Ne fait rien, ferme la modale
+                },
+                {
+                    text: "Abandonner",
+                    className: "abandon-button",
+                    action: giveUpMatch // Appelle la fonction d'abandon
+                }
+            ];
+
+            showModal(
+                "Confirmation d'Abandon", 
+                "Êtes-vous sûr de vouloir abandonner la partie ? L'abandon entraînera une défaite immédiate.", 
+                'loss', // Utilise le style 'loss' pour plus d'impact
+                buttons
+            );
         }
 
         // displayInfo est maintenant principalement pour le log/feedback non-modal.

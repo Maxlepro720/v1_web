@@ -471,6 +471,10 @@
         const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; 
         
         let chessBoard = new Chess(INITIAL_FEN); 
+        // ⭐ NOUVEAU: Instance temporaire pour la déduction de coup
+        // C'est nécessaire car `chessBoard.load(newFen)` efface l'historique
+        // Nous l'utiliserons dans updateBoardState.
+        let tempChessBoard = new Chess(INITIAL_FEN); 
 
         let currentGameId = null; 
         let playerColor = null; 
@@ -485,6 +489,9 @@
 
         let infoTimeout = null; 
         let pollingInterval = null; 
+        
+        // ⭐ NOUVEAU: Historique des coups géré localement (SAN)
+        let clientMoveHistory = []; 
 
         // Références DOM globales
         const chessboardEl = document.getElementById('chessboard');
@@ -512,12 +519,35 @@
         // --- Fonctions FEN et Mise à Jour du Plateau ---
         
         function updateBoardState(newFen, shouldDraw = true) {
+            
+            // 1. Déduction du coup de l'adversaire (si applicable)
+            if (newFen !== chessBoard.fen() && clientMoveHistory.length > 0) {
+                 try {
+                    // Charger la NOUVELLE FEN sur une instance temporaire pour déduire le coup SAN
+                    const tempGameAfterMove = new Chess(newFen); 
+                    const newHistory = tempGameAfterMove.history();
+                    
+                    // S'assurer qu'un nouveau coup a été joué par l'adversaire
+                    if (newHistory.length > clientMoveHistory.length) {
+                        // Le dernier coup de newHistory est le coup de l'adversaire
+                        const newMove = newHistory[newHistory.length - 1]; 
+                        console.log(`[DECODAGE] Coup de l'adversaire déduit: ${newMove}`);
+                        clientMoveHistory.push(newMove);
+                    }
+                    
+                } catch (e) {
+                    console.error("Erreur lors de la déduction du coup de l'adversaire:", e);
+                }
+            }
+
+            // 2. Mise à jour de l'objet chessBoard principal
             chessBoard.load(newFen); 
             
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             waitingForMove = (currentTurn !== playerColor); 
             
-            updateMovesList(chessBoard.history()); // Appel avec la liste des coups
+            // ⭐ MODIFICATION: Utiliser l'historique locale
+            updateMovesList(clientMoveHistory); 
             
             if (shouldDraw) {
                 drawPieces();
@@ -623,7 +653,9 @@
                                 return; 
                             }
                             
-                            displayInfo(`Coup de l'adversaire joué: ${chessBoard.history().pop()}. À vous de jouer.`, 'info');
+                            // Afficher le dernier coup ajouté à l'historique locale
+                            const lastMove = clientMoveHistory.length > 0 ? clientMoveHistory[clientMoveHistory.length - 1] : "un coup";
+                            displayInfo(`Coup de l'adversaire joué: ${lastMove}. À vous de jouer.`, 'info');
                             
                             if (!waitingForMove) {
                                 stopPolling();
@@ -679,6 +711,7 @@
                         matchStatusEl.textContent = `En attente d'un adversaire... (ID: ${currentGameId})`;
                         displayInfo("Partie créée. En attente de l'adversaire.", 'info'); 
                         setupPlayerAndBoard(playerColor, opponentId);
+                        updateBoardState(data.fen || INITIAL_FEN); // Utilise la FEN du serveur si disponible
                         startPolling(); 
                         
                     } else if (data.status === 'joined') {
@@ -747,6 +780,8 @@
                         if (data.error && data.error.includes("illegal move")) {
                             displayInfo(`Coup rejeté par le serveur: coup illégal. ${data.error}`, 'error');
                             chessBoard.undo();
+                            // ⭐ MODIFICATION: Retirer le coup de l'historique locale si le serveur le rejette
+                            clientMoveHistory.pop(); 
                             updateBoardState(chessBoard.fen());
                             return;
                         }
@@ -767,6 +802,8 @@
 
             console.error("Toutes les tentatives d'envoi du coup ont échoué.");
             chessBoard.undo();
+            // ⭐ MODIFICATION: Retirer le coup de l'historique locale si toutes les tentatives échouent
+            clientMoveHistory.pop(); 
             updateBoardState(chessBoard.fen());
             displayInfo("Échec critique de la communication. Coup annulé localement. Veuillez relancer la partie ou vérifier la connexion.", 'error');
         }
@@ -775,6 +812,9 @@
          * Réinitialise l'état complet du client (variables et DOM) au statut initial.
          */
         function resetClientState() {
+            // ⭐ NOUVEAU: Réinitialisation de l'historique local
+            clientMoveHistory = [];
+            
             // 1. Réinitialisation des variables d'état
             currentGameId = null;
             playerColor = null;
@@ -939,7 +979,6 @@
          * Met à jour la liste des coups joués.
          */
         function updateMovesList(history) {
-            // ✅ NOUVEAU: Ajout d'un diagnostic dans la console
             console.log(`[HISTORIQUE] Tentative de mise à jour avec ${history.length} coups. Contenu:`, history);
             
             movesListEl.innerHTML = '';
@@ -1064,6 +1103,11 @@
                 const moveResult = chessBoard.move(moveAttempt); 
 
                 if (moveResult) {
+                    
+                    // ⭐ NOUVEAU: Ajouter le coup à l'historique locale APRÈS la vérification
+                    clientMoveHistory.push(moveResult.san); 
+                    updateMovesList(clientMoveHistory); // Mettre à jour la liste immédiatement
+
                     let move_uci_correct = moveResult.from + moveResult.to;
                     if (moveResult.promotion) {
                         move_uci_correct += moveResult.promotion;

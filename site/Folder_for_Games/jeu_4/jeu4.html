@@ -656,14 +656,7 @@
                 return;
             }
             
-            const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
-            
-            // ⭐ NOUVEAU: Si c'est au tour de l'utilisateur, on ne poll pas le statut du coup, mais on vérifie l'abandon de l'adversaire
-            if (!waitingForOpponent && currentTurn === playerColor) { 
-                 // Vérifie l'abandon de l'adversaire même quand c'est notre tour (polling plus long)
-                 checkOpponentGiveUp();
-                 return;
-            }
+            const currentFen = chessBoard.fen(); // Déclaration locale de currentFen pour comparaison
             
             try {
                 const response = await fetch(`${SERVER_URL}/get_game_state?game_uuid=${currentGameId}&username=${USERNAME}`, {
@@ -674,6 +667,13 @@
                 const data = await response.json();
 
                 if (response.ok) {
+                    
+                    // ⭐ FIX: Détection immédiate de l'abandon via le statut principal (Pour le joueur gagnant)
+                    if (data.game_status === 'abandoned') {
+                         const winnerColor = playerColor; // Si nous le détectons, nous sommes le gagnant
+                         endGame('abandoned', winnerColor, true); // true: demande la destruction du match
+                         return; // Termine le cycle de polling
+                    }
                     
                     if (waitingForOpponent && data.game_status === 'active') {
                         waitingForOpponent = false; 
@@ -691,11 +691,13 @@
                         showModal(title, message, 'info'); 
                         
                         updateBoardState(data.fen); 
-                        stopPolling(); 
+                        // Si c'est notre tour, on arrête le polling après l'arrivée de l'adversaire.
+                        if (chessBoard.turn() === playerColor[0]) {
+                            stopPolling(); 
+                        }
                     }
                     
                     if (!waitingForOpponent && data.game_status === 'active') {
-                        const currentFen = chessBoard.fen();
                         
                         if (data.fen !== currentFen) {
                             // Mouvement de l'adversaire détecté
@@ -705,7 +707,7 @@
                                 const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
                                 const status = chessBoard.in_checkmate() ? 'checkmate' : 'draw';
                                 
-                                endGame(status, winnerColor, false); 
+                                endGame(status, winnerColor, true); // true: Le joueur qui détecte la fin détruit le match
                                 return; 
                             }
                             
@@ -713,23 +715,22 @@
                             const lastMove = clientMoveHistory.length > 0 ? clientMoveHistory[clientMoveHistory.length - 1] : "un coup";
                             displayInfo(`Coup de l'adversaire joué: ${lastMove}. À vous de jouer.`, 'info');
                             
-                            if (!waitingForMove) {
+                            // Si c'est maintenant notre tour, on arrête le polling
+                            if (chessBoard.turn() === playerColor[0]) {
                                 stopPolling();
                             }
                         }
                     } else if (data.game_status !== 'created' && data.game_status !== 'active') {
-                        // Statut de fin de partie reçu (Confirmation du serveur)
+                        // Statut de fin de partie reçu (Confirmation du serveur: mat, nul, etc.)
                         
                         updateBoardState(data.fen); 
                         
                         const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
-                        endGame(data.game_status, winnerColor, false); 
+                        // La destruction est gérée par le joueur qui détecte la fin (sauf s'il a abandonné lui-même)
+                        endGame(data.game_status, winnerColor, data.game_status !== 'abandoned'); 
                     }
                     
-                    // ⭐ NOUVEAU: Vérifie l'abandon de l'adversaire à chaque poll s'il n'y a pas eu de mouvement
-                    if (!waitingForOpponent && data.fen === currentFen) {
-                         checkOpponentGiveUp();
-                    }
+                    // ⭐ SUPPRIMÉ: La vérification redondante d'abandon, maintenant gérée au début du bloc.
                     
                 } else {
                     console.error(`[POLLING ERROR] Réponse serveur non-OK: ${data.error || 'Erreur inconnue.'}`);
@@ -901,7 +902,7 @@
                      const winnerColor = data.winner_color;
                      
                      // Met fin à la partie côté client (nous sommes le perdant)
-                     endGame('abandoned', winnerColor, false); // true: détruit le match
+                     endGame('abandoned', winnerColor, false); // false: NE détruit PAS le match
 
                  } else {
                      displayInfo(`Erreur lors de l'abandon: ${data.message || 'Erreur inconnue.'}`, 'error');
@@ -918,41 +919,10 @@
         /**
          * ⭐ MODIFICATION APPLIQUÉE
          * Vérifie si l'adversaire a abandonné (polling du statut d'abandon).
+         * NOTE: Cette fonction est désormais obsolète, mais l'utilisateur a demandé de la retirer.
          */
-         async function checkOpponentGiveUp() {
-            if (!currentGameId || isGameOver || waitingForOpponent) return;
-
-            try {
-                const response = await fetch(`${SERVER_URL}/get_give_up_chess?game_uuid=${currentGameId}`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.status === 'abandoned') {
-                    // L'adversaire a abandonné
-                    const winnerColor = data.winner_color;
-                    
-                    // ⭐ CORRECTION: Arrêter le polling immédiatement ici pour éviter une course condition
-                    stopPolling(); 
-
-                    if (winnerColor === playerColor) {
-                        // C'est nous le gagnant, met fin à la partie et détruit le match
-                        endGame('abandoned', winnerColor, true); 
-                    } else {
-                        // C'est l'adversaire le gagnant (ce qui ne devrait pas arriver ici, mais pour la sécurité)
-                        endGame('abandoned', winnerColor, false); 
-                    }
-                    
-                } else if (!response.ok) {
-                    console.error(`[CHECK GIVE UP ERROR] Réponse serveur non-OK: ${data.error || 'Erreur inconnue.'}`);
-                }
-
-            } catch (e) {
-                console.warn("[CHECK GIVE UP ERROR] Erreur lors de la requête de statut d'abandon :", e);
-            }
-        }
+        // SUPPRIMÉ
+        
 
 
         /**
@@ -1269,7 +1239,7 @@
         }
 
         function handleMove(row, col, squareEl) {
-            if (isGameOver || !currentGameId || waitingForOpponent || waitingForMove) {
+            if (isGameOver || !currentGameId || waitingForOpponent || chessBoard.turn() !== playerColor[0]) {
                 const reason = isGameOver ? "Partie terminée." : 
                              !currentGameId ? "Cliquez sur 'Lancer Partie'." :
                              waitingForOpponent ? "En attente de l'adversaire." :

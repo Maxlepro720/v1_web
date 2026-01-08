@@ -529,6 +529,20 @@
                         if (data.fen !== currentFen) {
                             // Mouvement de l'adversaire détecté
                             updateBoardState(data.fen); 
+                            
+                            // *** DÉTECTION LOCALE DE FIN DE PARTIE (Correction de robustesse) ***
+                            if (chessBoard.in_checkmate() || chessBoard.in_draw()) {
+                                // Le client a reçu le coup final par FEN.
+                                // Le gagnant est celui dont ce n'est PAS le tour (l'adversaire).
+                                const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
+                                const status = chessBoard.in_checkmate() ? 'checkmate' : 'draw';
+                                
+                                // Déclenche endGame immédiatement SANS appeler destroyMatch.
+                                endGame(status, winnerColor, false); 
+                                return; 
+                            }
+                            // *** FIN DE LA DÉTECTION LOCALE ***
+                            
                             displayInfo(`Coup de l'adversaire joué: ${chessBoard.history().pop()}. À vous de jouer.`);
                             
                             if (!waitingForMove) {
@@ -536,12 +550,12 @@
                             }
                         }
                     } else if (data.game_status !== 'created' && data.game_status !== 'active') {
-                        // Statut de fin de partie reçu (Checkmate, Draw, Abandoned)
+                        // Statut de fin de partie reçu (Checkmate, Draw, Abandoned) - Confirmation du serveur
                         
-                        // CORRECTION: Assurer la mise à jour finale du FEN pour le client perdant
+                        // Assurer la mise à jour finale du FEN pour le client perdant
                         updateBoardState(data.fen); 
                         
-                        // Le FEN actuel est celui après le dernier coup qui a causé la fin (ex: Mat)
+                        // Le FEN actuel est celui après le dernier coup (turn() est donc la couleur du perdant)
                         const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
                         // Le perdant/l'observateur ne doit PAS appeler destroyMatch()
                         endGame(data.game_status, winnerColor, false); 
@@ -715,7 +729,6 @@
 
 
         /**
-         * ✅ CORRECTION APPLIQUÉE ICI
          * Détruit la partie en utilisant POST et un corps JSON, et gère les erreurs.
          */
         async function destroyMatch() {
@@ -723,40 +736,33 @@
             
             const url = `${SERVER_URL}/destroy_match`;
             
-            // Logique pour trouver l'ID du perdant pour le message (non requis par la route Flask, mais bonne pratique)
-            // const loserID = (chessBoard.turn() === 'w') ? BLACK_PLAYER_ID : WHITE_PLAYER_ID; 
-
             try {
                 const response = await fetch(url, {
-                    method: 'POST', // Utilisation de POST comme requis par la route Flask
+                    method: 'POST', 
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ // Envoi des données dans le corps JSON
+                    body: JSON.stringify({ 
                         game_uuid: currentGameId,
                         username: USERNAME
                     }) 
                 });
                 
-                const responseData = await response.json(); // Tente de lire le corps JSON
+                const responseData = await response.json(); 
 
                 if (response.ok) { // Status 200-299
                     console.log("[DESTROY MATCH] Succès : Partie signalée et détruite sur le serveur.", responseData.message || responseData);
                     
                 } else {
-                    // Gestion de l'erreur 500 ou autre
                     const errorMessage = responseData.error || `Erreur inconnue (Status: ${response.status}).`;
                     console.error(`[DESTROY MATCH] Erreur HTTP: ${response.status}. Impossible de supprimer le match.`, errorMessage);
-                    // On ne fait rien d'autre ici, car endGame a déjà géré l'affichage de la défaite/victoire
                 }
 
             } catch (e) {
-                // Erreur réseau, JSON invalide, etc.
                 console.error("[DESTROY MATCH] Erreur critique (Réseau/JSON) lors de la destruction de partie:", e);
             }
         }
 
 
         /**
-         * ✅ CORRECTION APPLIQUÉE ICI
          * Gère la fin de partie avec un affichage clair (VICTOIRE/DÉFAITE) et réinitialise le client après un délai.
          * @param {string} status - Le statut de fin ('checkmate', 'draw', etc.).
          * @param {string} winnerColor - La couleur du gagnant ('white' ou 'black').
@@ -767,16 +773,15 @@
             isGameOver = true;
             
             // Détermine si le joueur local est le gagnant pour l'affichage
-            // Si le statut est checkmate/abandon/timeout, le gagnant est winnerColor.
             const isLocalPlayerWinner = (status === 'checkmate' || status === 'abandoned' || status === 'timeout') && (winnerColor === playerColor);
             
             let message = "Partie terminée : ";
             
             if (status === 'checkmate') {
                 const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
-                message = isLocalPlayerWinner ? `VICTOIRE ! Vous gagnez par Échec et Mat contre ${opponentId}.` : `DÉFAITE. ${winnerName} vous a maté.`;
+                message = isLocalPlayerWinner ? `VICTOIRE PAR ÉCHEC ET MAT ! Vous gagnez contre ${opponentId}.` : `DÉFAITE. ${winnerName} vous a maté.`;
             } else if (status.includes('draw') || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
-                message = "Match nul.";
+                message = "MATCH NUL. La partie est nulle.";
             } else if (status === 'abandoned' || status === 'timeout') { 
                 const loserName = (winnerColor === playerColor) ? opponentId : USERNAME;
                 message = isLocalPlayerWinner ? `VICTOIRE ! ${loserName} a ${status === 'abandoned' ? 'abandonné' : 'perdu au temps'}.` : `DÉFAITE. Vous avez perdu par ${status === 'abandoned' ? 'abandon' : 'temps'}.`;
@@ -784,7 +789,7 @@
                 message = `Partie terminée: ${status.toUpperCase()}.`;
             }
 
-            // --- CORRECTION CLÉ : AFFICHAGE IMMÉDIAT ---
+            // --- CORRECTION CLÉ : AFFICHAGE IMMÉDIAT ET PERSISTANT ---
             matchStatusEl.textContent = `FIN : ${message}`;
             displayInfo(message, isLocalPlayerWinner ? 'success' : 'error'); // Utilisation de 'error' pour la défaite
 
@@ -803,7 +808,7 @@
             playButton.textContent = 'Partie Terminée';
             updateTurnIndicator(); // Nettoie le highlight
             
-            // CORRECTION: Réinitialisation du client après un délai de 5 secondes pour permettre l'affichage du résultat.
+            // Réinitialisation du client après un délai de 5 secondes
             setTimeout(resetClientState, 5000); 
         }
         
@@ -832,7 +837,6 @@
             // Gère la mise en échec / échec et mat
             if (chessBoard.in_check() || chessBoard.in_checkmate()) {
                 
-                // Correction pour l'erreur TypeError
                 const kingSquare = getKingSquare(chessBoard.turn()); 
 
                 if (kingSquare) {
@@ -842,8 +846,8 @@
                     // Applique le rouge pour échec ou échec et mat
                     if (chessBoard.in_checkmate()) {
                         kingSquareEl.classList.add('checkmated-square');
-                        // La fonction endGame va gérer le message
-                    } else {
+                        // Si c'est échec et mat, on laisse endGame gérer le message pour éviter la confusion.
+                    } else { // C'est juste 'in_check()' et pas 'in_checkmate()'
                         kingSquareEl.classList.add('in-check');
                         if (!isGameOver) {
                              displayInfo("Le roi est en échec !", 'warning'); 
@@ -934,7 +938,7 @@
             infoEl.classList.remove('error', 'warning', 'gameover', 'success');
             if (type === 'error' || type === 'warning' || type === 'gameover' || type === 'success') {
                 // Pour la défaite (gameover) ou une erreur critique, on laisse le message plus longtemps
-                if (type === 'error' || type === 'gameover') {
+                if (type === 'error' || type === 'gameover' || type === 'success') {
                     infoEl.classList.add(type === 'error' ? 'error' : (type === 'success' ? 'success' : 'gameover'));
                     return; // Ne pas effacer le message de fin de partie/erreur critique
                 } else {

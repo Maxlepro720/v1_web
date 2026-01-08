@@ -540,9 +540,7 @@
         const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; 
         
         let chessBoard = new Chess(INITIAL_FEN); 
-        // ⭐ NOUVEAU: Instance temporaire pour la déduction de coup
-        // C'est nécessaire car `chessBoard.load(newFen)` efface l'historique
-        // Nous l'utiliserons dans updateBoardState.
+        // Instance temporaire pour la déduction de coup
         let tempChessBoard = new Chess(INITIAL_FEN); 
 
         let currentGameId = null; 
@@ -559,7 +557,7 @@
         let infoTimeout = null; 
         let pollingInterval = null; 
         
-        // ⭐ MODIFIÉ: Historique des coups géré localement (SAN)
+        // Historique des coups géré localement (SAN)
         let clientMoveHistory = []; 
 
         // Références DOM globales
@@ -580,14 +578,14 @@
         const modalTitle = document.getElementById('modal-title');
         const modalMessage = document.getElementById('modal-message');
         const modalCloseButton = document.getElementById('modal-close-button');
-        // ⭐ NOUVEAU: Référence à la croix
+        // Référence à la croix
         const modalCloseCross = document.getElementById('modal-close-cross'); 
         
         // Attachement initial de l'événement de fermeture de la modale
         const closeModal = () => modalOverlay.style.display = 'none';
 
         modalCloseButton.addEventListener('click', closeModal);
-        modalCloseCross.addEventListener('click', closeModal); // ⭐ NOUVEAU
+        modalCloseCross.addEventListener('click', closeModal); 
 
         // --- Fonctions FEN et Mise à Jour du Plateau ---
         
@@ -596,28 +594,24 @@
             const currentLocalFen = chessBoard.fen(); // Sauvegarder l'état avant la nouvelle FEN
 
             // 1. Déduction/Synchronisation de l'historique (LOGIQUE MISE À JOUR)
-            // On ne fait cela que si la FEN a réellement changé (et non pas quand on reçoit la même FEN)
             if (newFen !== currentLocalFen) { 
                  try {
                     // Charger la NOUVELLE FEN sur une instance temporaire pour obtenir l'historique complet
                     const tempGameAfterMove = new Chess(newFen); 
                     const newHistory = tempGameAfterMove.history();
                     
-                    // Si l'historique du serveur est plus long que le nôtre, nous le synchronisons.
-                    // C'est nécessaire après un coup de l'adversaire ou au début si le match est en cours.
-                    if (newHistory.length > clientMoveHistory.length) {
+                    // ⭐ CORRECTION REQUÊTE 2 : Synchronisation si la longueur de l'historique du serveur diffère de la nôtre
+                    if (newHistory.length !== clientMoveHistory.length) {
                         
-                        // ⭐ CORRECTION: Remplacer l'historique local par l'historique complet du serveur
-                        const newMove = newHistory[newHistory.length - 1]; 
-                        console.log(`[DECODAGE] Coup de l'adversaire déduit: ${newMove}. Synchronisation de l'historique.`);
+                        const syncMessage = newHistory.length > clientMoveHistory.length 
+                            ? `Coup(s) de l'adversaire ou coups initiaux détectés. Synchronisation de l'historique.`
+                            : `[HISTORIQUE DESYNCHRO] L'historique local était incorrect. Réinitialisation.`;
+                            
+                        console.log(`[DECODAGE] ${syncMessage}. Nv coups: ${newHistory.length}, Ancien: ${clientMoveHistory.length}`);
                         
+                        // Remplacer l'historique local par l'historique complet du serveur
                         clientMoveHistory = newHistory; 
                         
-                    } else if (newHistory.length < clientMoveHistory.length) {
-                         // Cas d'erreur: l'historique du serveur est plus court que le nôtre (ex: un coup local était une erreur).
-                         // Nous devons nous synchroniser pour corriger l'affichage.
-                         console.warn("[HISTORIQUE DESYNCHRO] L'historique local était plus long que celui du serveur. Réinitialisation de l'historique.");
-                         clientMoveHistory = newHistory; 
                     }
                     
                 } catch (e) {
@@ -631,7 +625,7 @@
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             waitingForMove = (currentTurn !== playerColor); 
             
-            // ⭐ MODIFICATION: Utiliser l'historique locale
+            // ⭐ ASSURANCE REQUÊTE 2 : Affichage de l'historique
             updateMovesList(clientMoveHistory); 
             
             if (shouldDraw) {
@@ -645,7 +639,7 @@
         function updateTurnIndicator() {
             playerWhiteBox.classList.remove('highlight-turn');
             playerBlackBox.classList.remove('highlight-turn');
-            abandonButton.disabled = (!currentGameId || isGameOver || waitingForOpponent); // ⭐ NOUVEAU: Mettre à jour l'état du bouton Abandonner
+            abandonButton.disabled = (!currentGameId || isGameOver || waitingForOpponent); 
 
             if (isGameOver || waitingForOpponent || !currentGameId) {
                 return;
@@ -694,7 +688,6 @@
         // --- LOGIQUE DE POLLING UNIFIÉE ---
 
         /**
-         * ⭐ NOUVELLE FONCTION
          * Fonction de secours pour vérifier l'abandon via la route dédiée.
          */
         async function checkAbandonStatus() {
@@ -714,10 +707,7 @@
                     // Déterminer la couleur gagnante pour l'affichage
                     const winnerColor = data.winner_color;
                     
-                    // Mettre fin à la partie. Note : false car le serveur n'a pas renvoyé la FEN finale,
-                    // et le joueur adverse (le perdant) est celui qui devrait appeler destroy_match.
-                    // Pour plus de sécurité, on peut appeler destroy_match ici si on est sûr d'être le seul client restant.
-                    endGame('abandoned', winnerColor, true); // true: demander la destruction
+                    endGame('abandoned', winnerColor, true); 
                     return true; // Abandon détecté
                 }
                 
@@ -758,8 +748,7 @@
                     }
                     
                     if (waitingForOpponent && data.game_status === 'active') {
-                        // Logique d'attente d'un adversaire (inchangée)
-                        // ... (reste du code pour 'waitingForOpponent') ...
+                        // Logique d'attente d'un adversaire 
                         waitingForOpponent = false; 
                         
                         if (data.opponent_id && data.opponent_id !== OPPONENT_NAME) {
@@ -779,8 +768,14 @@
                     
                     if (!waitingForOpponent && data.game_status === 'active') {
                         
+                        // ⭐ MODIFICATION REQUÊTE 1 : Vérification explicite d'abandon (toutes les 2s)
+                        const abandoned = await checkAbandonStatus();
+                        if (abandoned) {
+                            return; 
+                        }
+                        
                         if (data.fen !== currentFen) {
-                            // Mouvement de l'adversaire détecté (Logique inchangée)
+                            // Mouvement de l'adversaire détecté 
                             updateBoardState(data.fen); 
                             
                             if (chessBoard.in_checkmate() || chessBoard.in_draw()) {
@@ -795,15 +790,7 @@
                             const lastMove = clientMoveHistory.length > 0 ? clientMoveHistory[clientMoveHistory.length - 1] : "un coup";
                             displayInfo(`Coup de l'adversaire joué: ${lastMove}. À vous de jouer.`, 'info');
                             
-                        } else if (chessBoard.turn() === playerColor[0]) {
-                            // ⭐ NOUVEAU: Si c'est notre tour et que la FEN n'a pas changé, l'adversaire pourrait avoir abandonné.
-                            // Nous lançons la vérification explicite (de secours).
-                            const abandoned = await checkAbandonStatus();
-                            if (abandoned) {
-                                return; // Si abandonné, on quitte le polling après endGame
-                            }
-                            
-                        }
+                        } 
                     } else if (data.game_status !== 'created' && data.game_status !== 'active') {
                         // Statut de fin de partie reçu (Confirmation du serveur: mat, nul, etc.)
                         
@@ -957,7 +944,6 @@
         
         
         /**
-         * ⭐ NOUVELLE FONCTION
          * Gère l'envoi de la requête d'abandon au serveur.
          */
         async function giveUpMatch() {
@@ -1003,7 +989,7 @@
          * Réinitialise l'état complet du client (variables et DOM) au statut initial.
          */
         function resetClientState() {
-            // ⭐ NOUVEAU: Réinitialisation de l'historique local
+            // Réinitialisation de l'historique local
             clientMoveHistory = [];
             
             // 1. Réinitialisation des variables d'état
@@ -1034,7 +1020,7 @@
             displayInfo("Cliquez sur \"Lancer Partie\" pour commencer à jouer.", 'info'); 
             playButton.textContent = "Lancer Partie";
             playButton.disabled = false;
-            abandonButton.disabled = true; // ⭐ MODIFIÉ: Désactiver le bouton Abandonner
+            abandonButton.disabled = true; 
             matchStatusEl.textContent = "(En attente de connexion)";
             playerWhiteBox.classList.remove('highlight-turn');
             playerBlackBox.classList.remove('highlight-turn');
@@ -1063,7 +1049,7 @@
                 if (response.ok) {
                     console.log("[DESTROY MATCH] Succès : Partie signalée et détruite sur le serveur.", responseData.message || responseData);
                     
-                    // ⭐ CORRECTION: Arrêter le polling immédiatement après la destruction réussie.
+                    // Arrêter le polling immédiatement après la destruction réussie.
                     stopPolling(); 
                 } else {
                     const errorMessage = responseData.error || `Erreur inconnue (Status: ${response.status}).`;
@@ -1118,7 +1104,7 @@
             }
             
             playButton.disabled = true;
-            abandonButton.disabled = true; // ⭐ MODIFIÉ: Désactiver le bouton Abandonner
+            abandonButton.disabled = true; 
             playButton.textContent = 'Partie Terminée';
             updateTurnIndicator(); 
             
@@ -1191,7 +1177,6 @@
         }
         
         /**
-         * ⭐ NOUVELLE FONCTION
          * Affiche la modale de confirmation avant d'abandonner.
          */
         function showAbandonConfirmation() {

@@ -539,7 +539,8 @@
                         // Statut de fin de partie reçu (Checkmate, Draw, Abandoned)
                         // Le FEN actuel est celui après le dernier coup qui a causé la fin (ex: Mat)
                         const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
-                        endGame(data.game_status, winnerColor);
+                        // Le perdant/l'observateur ne doit PAS appeler destroyMatch()
+                        endGame(data.game_status, winnerColor, false); 
                     }
                     
                 } else {
@@ -643,7 +644,8 @@
                         
                         if (data.game_status !== 'active') {
                             const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
-                            endGame(data.game_status, winnerColor);
+                            // Le joueur qui a joué le coup gagnant doit appeler destroyMatch()
+                            endGame(data.game_status, winnerColor, true); 
                         } else {
                             waitingForMove = true; 
                             displayInfo("Coup envoyé. En attente du coup de l'adversaire...");
@@ -699,7 +701,13 @@
         }
 
 
-        function endGame(status, winnerColor) {
+        /**
+         * Gère la fin de partie (Mat, Nul, Abandon).
+         * @param {string} status - Le statut de fin ('checkmate', 'draw', etc.).
+         * @param {string} winnerColor - La couleur du gagnant ('white' ou 'black').
+         * @param {boolean} shouldDestroy - Indique si ce client doit appeler destroyMatch().
+         */
+        function endGame(status, winnerColor, shouldDestroy = false) {
             stopPolling();
             isGameOver = true;
             
@@ -725,8 +733,10 @@
             drawPieces();
             drawBoard();
 
-            // APPEL À DESTROY_MATCH
-            destroyMatch(); 
+            // APPEL À DESTROY_MATCH (Conditionnel au fait d'être le joueur qui a causé la fin)
+            if (shouldDestroy) {
+                destroyMatch(); 
+            }
             
             // Bloque le bouton de jeu
             playButton.disabled = true;
@@ -759,7 +769,7 @@
             // Gère la mise en échec / échec et mat
             if (chessBoard.in_check() || chessBoard.in_checkmate()) {
                 
-                // CORRECTION: Utilisation de la nouvelle fonction getKingSquare
+                // Correction pour l'erreur TypeError
                 const kingSquare = getKingSquare(chessBoard.turn()); 
 
                 if (kingSquare) {

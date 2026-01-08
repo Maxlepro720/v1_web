@@ -564,7 +564,7 @@
         const chessboardEl = document.getElementById('chessboard');
         const infoEl = document.getElementById('info'); // Masqué par CSS
         const playButton = document.getElementById('play-button');
-        const abandonButton = document.getElementById('abandon-button'); // ⭐ NOUVEAU
+        const abandonButton = document.getElementById('abandon-button'); 
         const movesListEl = document.getElementById('moves-list');
         const matchStatusEl = document.getElementById('match-status-text');
         const playerWhiteBox = document.getElementById('player-white-box');
@@ -591,28 +591,20 @@
         
         function updateBoardState(newFen, shouldDraw = true) {
             
-            const currentLocalFen = chessBoard.fen(); // Sauvegarder l'état avant la nouvelle FEN
+            const currentLocalFen = chessBoard.fen(); 
 
-            // 1. Déduction/Synchronisation de l'historique (LOGIQUE MISE À JOUR)
+            // 1. Synchronisation de l'historique (LOGIQUE MISE À JOUR)
             if (newFen !== currentLocalFen) { 
                  try {
                     // Charger la NOUVELLE FEN sur une instance temporaire pour obtenir l'historique complet
                     const tempGameAfterMove = new Chess(newFen); 
                     const newHistory = tempGameAfterMove.history();
                     
-                    // ⭐ CORRECTION REQUÊTE 2 : Synchronisation si la longueur de l'historique du serveur diffère de la nôtre
-                    if (newHistory.length !== clientMoveHistory.length) {
-                        
-                        const syncMessage = newHistory.length > clientMoveHistory.length 
-                            ? `Coup(s) de l'adversaire ou coups initiaux détectés. Synchronisation de l'historique.`
-                            : `[HISTORIQUE DESYNCHRO] L'historique local était incorrect. Réinitialisation.`;
-                            
-                        console.log(`[DECODAGE] ${syncMessage}. Nv coups: ${newHistory.length}, Ancien: ${clientMoveHistory.length}`);
-                        
-                        // Remplacer l'historique local par l'historique complet du serveur
-                        clientMoveHistory = newHistory; 
-                        
-                    }
+                    // ⭐ FIX pour la requête 3: Toujours synchroniser l'historique avec la FEN du serveur
+                    // La FEN du serveur est la source de vérité et contient l'historique complet. 
+                    clientMoveHistory = newHistory; 
+                    
+                    console.log(`[DECODAGE] FEN changée. Historique mis à jour. Nv coups: ${newHistory.length}`);
                     
                 } catch (e) {
                     console.error("Erreur lors de la déduction du coup de l'adversaire:", e);
@@ -625,7 +617,7 @@
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             waitingForMove = (currentTurn !== playerColor); 
             
-            // ⭐ ASSURANCE REQUÊTE 2 : Affichage de l'historique
+            // ⭐ AFFICHAGE : Affichage de l'historique avec la version mise à jour
             updateMovesList(clientMoveHistory); 
             
             if (shouldDraw) {
@@ -646,7 +638,7 @@
             }
             
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
-            const isUserTurn = currentTurn === playerColor;
+            const isUserTurn = currentTurn === playerColor[0]; // Vérification par première lettre ('w' ou 'b')
 
             if (isUserTurn) {
                 // Si le joueur local est celui dont c'est le tour (Blanc ou Noir)
@@ -776,6 +768,8 @@
                         
                         if (data.fen !== currentFen) {
                             // Mouvement de l'adversaire détecté 
+                            
+                            // On appelle updateBoardState qui va charger la FEN et synchroniser l'historique
                             updateBoardState(data.fen); 
                             
                             if (chessBoard.in_checkmate() || chessBoard.in_draw()) {
@@ -886,6 +880,9 @@
             };
             const jsonPayload = JSON.stringify(payload);
             
+            // On désactive le polling ici pour éviter des interférences pendant l'envoi.
+            stopPolling(); 
+            
             while (attempt < MAX_RETRIES) {
                 attempt++;
                 displayInfo(`Tentative d'envoi du coup : ${attempt}/${MAX_RETRIES}...`);
@@ -900,6 +897,9 @@
                     const data = await response.json();
 
                     if (response.ok && data.success) {
+                        
+                        // updateBoardState va charger la nouvelle FEN du serveur (source de vérité)
+                        // et va synchroniser l'historique de coups qui est le plus précis.
                         updateBoardState(data.new_fen); 
                         
                         if (data.game_status !== 'active') {
@@ -907,7 +907,6 @@
                             endGame(data.game_status, winnerColor, true); 
                         } else {
                             displayInfo("Coup envoyé. En attente du coup de l'adversaire...");
-                            // Le polling est relancé ici. Il n'est plus arrêté dans pollGameStatus
                             startPolling(); 
                         }
                         return;
@@ -916,8 +915,9 @@
                         if (data.error && data.error.includes("illegal move")) {
                             displayInfo(`Coup rejeté par le serveur: coup illégal. ${data.error}`, 'error');
                             chessBoard.undo();
-                            clientMoveHistory.pop(); 
-                            updateBoardState(chessBoard.fen());
+                            // Pas besoin d'undo sur clientMoveHistory car on l'a pas modifié ici
+                            updateBoardState(chessBoard.fen()); // Re-draw board with previous FEN
+                            startPolling(); // Relance le polling
                             return;
                         }
 
@@ -937,9 +937,10 @@
 
             console.error("Toutes les tentatives d'envoi du coup ont échoué.");
             chessBoard.undo();
-            clientMoveHistory.pop(); 
+            // On ne modifie pas clientMoveHistory ici
             updateBoardState(chessBoard.fen());
             displayInfo("Échec critique de la communication. Coup annulé localement. Veuillez relancer la partie ou vérifier la connexion.", 'error');
+            startPolling(); // Relance le polling même après échec critique
         }
         
         
@@ -1223,7 +1224,7 @@
          * Met à jour la liste des coups joués.
          */
         function updateMovesList(history) {
-            console.log(`[HISTORIQUE] Tentative de mise à jour avec ${history.length} coups. Contenu:`, history);
+            console.log(`[HISTORIQUE] Mise à jour avec ${history.length} coups.`);
             
             movesListEl.innerHTML = '';
             
@@ -1363,14 +1364,15 @@
 
                 if (moveResult) {
                     
-                    // Ajouter le coup du joueur localement
-                    clientMoveHistory.push(moveResult.san); 
-
+                    // ⭐ CHANGEMENT : NE PAS ajouter le coup localement. Attendre la confirmation du serveur.
+                    // clientMoveHistory.push(moveResult.san); // Ligne retirée
+                    
                     let move_uci_correct = moveResult.from + moveResult.to;
                     if (moveResult.promotion) {
                         move_uci_correct += moveResult.promotion;
                     }
                     
+                    // Envoi au serveur. makeMoveServer appellera updateBoardState avec la FEN confirmée.
                     makeMoveServer(move_uci_correct);
                     
                     selectedCoords = null;

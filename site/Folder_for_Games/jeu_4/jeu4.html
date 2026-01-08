@@ -668,7 +668,7 @@
 
                 if (response.ok) {
                     
-                    // ⭐ FIX: Détection immédiate de l'abandon via le statut principal (Pour le joueur gagnant)
+                    // ⭐ CORRECTION CRITIQUE: Détection immédiate de l'abandon via le statut principal (Pour le joueur gagnant)
                     if (data.game_status === 'abandoned') {
                          const winnerColor = playerColor; // Si nous le détectons, nous sommes le gagnant
                          endGame('abandoned', winnerColor, true); // true: demande la destruction du match
@@ -691,10 +691,7 @@
                         showModal(title, message, 'info'); 
                         
                         updateBoardState(data.fen); 
-                        // Si c'est notre tour, on arrête le polling après l'arrivée de l'adversaire.
-                        if (chessBoard.turn() === playerColor[0]) {
-                            stopPolling(); 
-                        }
+                        // L'arrêt du polling est supprimé ici. Le polling continue pour détecter l'abandon ou le timeout.
                     }
                     
                     if (!waitingForOpponent && data.game_status === 'active') {
@@ -715,10 +712,7 @@
                             const lastMove = clientMoveHistory.length > 0 ? clientMoveHistory[clientMoveHistory.length - 1] : "un coup";
                             displayInfo(`Coup de l'adversaire joué: ${lastMove}. À vous de jouer.`, 'info');
                             
-                            // Si c'est maintenant notre tour, on arrête le polling
-                            if (chessBoard.turn() === playerColor[0]) {
-                                stopPolling();
-                            }
+                            // L'arrêt du polling est supprimé ici. Le polling continue pour détecter l'abandon ou le timeout.
                         }
                     } else if (data.game_status !== 'created' && data.game_status !== 'active') {
                         // Statut de fin de partie reçu (Confirmation du serveur: mat, nul, etc.)
@@ -729,8 +723,6 @@
                         // La destruction est gérée par le joueur qui détecte la fin (sauf s'il a abandonné lui-même)
                         endGame(data.game_status, winnerColor, data.game_status !== 'abandoned'); 
                     }
-                    
-                    // ⭐ SUPPRIMÉ: La vérification redondante d'abandon, maintenant gérée au début du bloc.
                     
                 } else {
                     console.error(`[POLLING ERROR] Réponse serveur non-OK: ${data.error || 'Erreur inconnue.'}`);
@@ -838,6 +830,7 @@
                             endGame(data.game_status, winnerColor, true); 
                         } else {
                             displayInfo("Coup envoyé. En attente du coup de l'adversaire...");
+                            // Le polling est relancé ici. Il n'est plus arrêté dans pollGameStatus
                             startPolling(); 
                         }
                         return;
@@ -916,15 +909,7 @@
              }
         }
         
-        /**
-         * ⭐ MODIFICATION APPLIQUÉE
-         * Vérifie si l'adversaire a abandonné (polling du statut d'abandon).
-         * NOTE: Cette fonction est désormais obsolète, mais l'utilisateur a demandé de la retirer.
-         */
-        // SUPPRIMÉ
         
-
-
         /**
          * Réinitialise l'état complet du client (variables et DOM) au statut initial.
          */

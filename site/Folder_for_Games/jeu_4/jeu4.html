@@ -798,10 +798,14 @@
             drawPieces();
             drawBoard();
 
-            // APPEL À DESTROY_MATCH
+            // APPEL À DESTROY_MATCH (AJOUT DU DELAI DE 3 SECONDES)
             if (shouldDestroy) {
-                // Le client qui a joué le coup gagnant appelle la fonction destroyMatch() corrigée
-                destroyMatch(); 
+                // Le client qui a joué le coup gagnant appelle la fonction destroyMatch().
+                // Délai de 3 secondes pour que l'adversaire reçoive la confirmation de fin de partie.
+                console.log("[DESTROY] Planification de la destruction de la partie dans 3 secondes...");
+                setTimeout(() => {
+                    destroyMatch(); 
+                }, 3000); 
             }
             
             // Bloque le bouton de jeu

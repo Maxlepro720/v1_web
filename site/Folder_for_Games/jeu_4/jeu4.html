@@ -747,6 +747,7 @@
                 });
                 
                 const responseData = await response.json(); 
+                console.log(responseData)
 
                 if (response.ok) { // Status 200-299
                     console.log("[DESTROY MATCH] Succès : Partie signalée et détruite sur le serveur.", responseData.message || responseData);

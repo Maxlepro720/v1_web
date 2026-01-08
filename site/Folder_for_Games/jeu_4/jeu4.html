@@ -319,7 +319,7 @@
                         <tr><th>#</th><th>Blanc</th><th>Noir</th></tr>
                     </thead>
                     <tbody id="moves-list">
-                    </tbody>
+                    </tbody >
                 </table>
             </div>
 
@@ -715,43 +715,49 @@
 
 
         /**
-         * CORRECTION: Détruit la partie en utilisant POST et un corps JSON.
+         * ✅ CORRECTION APPLIQUÉE ICI
+         * Détruit la partie en utilisant POST et un corps JSON, et gère les erreurs.
          */
         async function destroyMatch() {
             if (!currentGameId || !USERNAME) return;
             
             const url = `${SERVER_URL}/destroy_match`;
             
+            // Logique pour trouver l'ID du perdant pour le message (non requis par la route Flask, mais bonne pratique)
+            // const loserID = (chessBoard.turn() === 'w') ? BLACK_PLAYER_ID : WHITE_PLAYER_ID; 
+
             try {
                 const response = await fetch(url, {
-                    method: 'POST', // CORRECTION: Utilisation de POST
+                    method: 'POST', // Utilisation de POST comme requis par la route Flask
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ // CORRECTION: Envoi des données dans le corps JSON
+                    body: JSON.stringify({ // Envoi des données dans le corps JSON
                         game_uuid: currentGameId,
                         username: USERNAME
                     }) 
                 });
                 
-                if (response.ok) {
-                    try {
-                        const data = await response.json(); 
-                        console.log("[DESTROY MATCH] Succès/Signalé au serveur.", data);
-                    } catch (e) {
-                        // Le serveur a pu renvoyer une réponse non-JSON (ex: texte 'OK')
-                        console.warn("[DESTROY MATCH] Réponse du serveur non-JSON. La destruction a probablement été signalée.", e);
-                    }
+                const responseData = await response.json(); // Tente de lire le corps JSON
+
+                if (response.ok) { // Status 200-299
+                    console.log("[DESTROY MATCH] Succès : Partie signalée et détruite sur le serveur.", responseData.message || responseData);
+                    
                 } else {
-                    console.error(`[DESTROY MATCH] Erreur HTTP: ${response.status}. Vérifiez le script serveur.`);
+                    // Gestion de l'erreur 500 ou autre
+                    const errorMessage = responseData.error || `Erreur inconnue (Status: ${response.status}).`;
+                    console.error(`[DESTROY MATCH] Erreur HTTP: ${response.status}. Impossible de supprimer le match.`, errorMessage);
+                    // On ne fait rien d'autre ici, car endGame a déjà géré l'affichage de la défaite/victoire
                 }
 
             } catch (e) {
-                console.error("[DESTROY MATCH] Erreur lors de la requête de destruction de partie:", e);
+                // Erreur réseau, JSON invalide, etc.
+                console.error("[DESTROY MATCH] Erreur critique (Réseau/JSON) lors de la destruction de partie:", e);
             }
         }
 
 
         /**
-         * CORRECTION: Gère la fin de partie avec un affichage clair (VICTOIRE/DÉFAITE) et réinitialise le client après un délai.
+         * ✅ CORRECTION APPLIQUÉE ICI
+         * Gère la fin de partie avec un affichage clair (VICTOIRE/DÉFAITE) et réinitialise le client après un délai.
          * @param {string} status - Le statut de fin ('checkmate', 'draw', etc.).
          * @param {string} winnerColor - La couleur du gagnant ('white' ou 'black').
          * @param {boolean} shouldDestroy - Indique si ce client doit appeler destroyMatch().
@@ -761,6 +767,7 @@
             isGameOver = true;
             
             // Détermine si le joueur local est le gagnant pour l'affichage
+            // Si le statut est checkmate/abandon/timeout, le gagnant est winnerColor.
             const isLocalPlayerWinner = (status === 'checkmate' || status === 'abandoned' || status === 'timeout') && (winnerColor === playerColor);
             
             let message = "Partie terminée : ";
@@ -771,22 +778,23 @@
             } else if (status.includes('draw') || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
                 message = "Match nul.";
             } else if (status === 'abandoned' || status === 'timeout') { 
-                const winnerName = (winnerColor === playerColor) ? USERNAME : opponentId;
                 const loserName = (winnerColor === playerColor) ? opponentId : USERNAME;
                 message = isLocalPlayerWinner ? `VICTOIRE ! ${loserName} a ${status === 'abandoned' ? 'abandonné' : 'perdu au temps'}.` : `DÉFAITE. Vous avez perdu par ${status === 'abandoned' ? 'abandon' : 'temps'}.`;
             } else {
                 message = `Partie terminée: ${status.toUpperCase()}.`;
             }
 
+            // --- CORRECTION CLÉ : AFFICHAGE IMMÉDIAT ---
             matchStatusEl.textContent = `FIN : ${message}`;
-            displayInfo(message, 'gameover'); // Affiche le message de victoire/défaite
-            
+            displayInfo(message, isLocalPlayerWinner ? 'success' : 'error'); // Utilisation de 'error' pour la défaite
+
             // Forcer un redessin pour l'effet 'Roi cassé'
             drawPieces();
             drawBoard();
 
             // APPEL À DESTROY_MATCH
             if (shouldDestroy) {
+                // Le client qui a joué le coup gagnant appelle la fonction destroyMatch() corrigée
                 destroyMatch(); 
             }
             
@@ -922,9 +930,22 @@
             
             infoEl.textContent = message;
             
+            // Ajout/retrait de classes pour le style d'information/erreur
+            infoEl.classList.remove('error', 'warning', 'gameover', 'success');
+            if (type === 'error' || type === 'warning' || type === 'gameover' || type === 'success') {
+                // Pour la défaite (gameover) ou une erreur critique, on laisse le message plus longtemps
+                if (type === 'error' || type === 'gameover') {
+                    infoEl.classList.add(type === 'error' ? 'error' : (type === 'success' ? 'success' : 'gameover'));
+                    return; // Ne pas effacer le message de fin de partie/erreur critique
+                } else {
+                    infoEl.classList.add(type);
+                }
+            }
+
             // Réinitialise après 5 secondes
             infoTimeout = setTimeout(() => {
                 infoEl.textContent = !isGameOver ? (waitingForOpponent ? "En attente de l'adversaire..." : (waitingForMove ? "Au tour de l'adversaire" : "À vous de jouer")) : "Partie terminée.";
+                infoEl.classList.remove('error', 'warning', 'gameover', 'success');
             }, 5000);
         }
 

@@ -138,7 +138,7 @@
             position: relative;
             transition: transform 0.5s ease-in-out; 
             border-radius: 4px;
-            overflow: hidden; /* Assure que les coins arrondis du conteneur s'appliquent */
+            overflow: hidden; 
         }
 
         .chessboard.rotated {
@@ -158,17 +158,19 @@
         .light { background-color: var(--board-light); }
         .dark { background-color: var(--board-dark); }
         
+        /* Hover de la case */
         .square:hover {
-            /* Effet de hover élégant */
             background-color: rgba(0, 0, 0, 0.1) !important; 
             box-shadow: inset 0 0 0 3px rgba(0, 123, 255, 0.3);
         }
 
+        /* Case sélectionnée */
         .selected { 
             background-color: var(--selected-color) !important; 
             box-shadow: inset 0 0 0 5px var(--turn-indicator); 
         }
         
+        /* Indicateurs de mouvements */
         .highlight-move::after {
             content: '';
             display: block;
@@ -190,7 +192,7 @@
             box-sizing: border-box;
         }
 
-        /* Échec et Mat (Rouge vif avec lueur) */
+        /* Échec et Mat (Rouge vif) */
         .in-check { 
             background-color: var(--check-color) !important; 
             box-shadow: inset 0 0 20px rgba(255, 0, 0, 0.5);
@@ -201,7 +203,7 @@
             box-shadow: inset 0 0 0 5px darkred, inset 0 0 20px rgba(255, 0, 0, 0.8);
         }
 
-
+        /* --- STYLES DES PIÈCES (REVERTIS) --- */
         .piece {
             position: absolute;
             width: 12.5%; 
@@ -215,17 +217,18 @@
             z-index: 10;
         }
         
-        /* Ombres portées subtiles sur les pièces */
+        /* Retrait de tout text-shadow ou filtre non-essentiel */
         .white-piece {
             color: #ffffff; 
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+            text-shadow: none; 
         }
         .black-piece { 
             color: #000000; 
-            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+            text-shadow: none; 
         }
         
         .checkmated-king {
+            /* Garde l'indicateur visuel de défaite */
             opacity: 0.4;
             filter: grayscale(100%) brightness(0.7);
             text-shadow: none !important; 
@@ -247,7 +250,7 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.5); 
             display: flex;
             flex-direction: column;
-            gap: 15px; 
+            gap: 20px; /* Espace augmenté entre le titre et les boutons */
             height: fit-content; 
         }
         
@@ -320,7 +323,6 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.7);
-            /* Effet de flou sur l'arrière-plan */
             backdrop-filter: blur(5px); 
             -webkit-backdrop-filter: blur(5px); 
             display: flex;
@@ -338,7 +340,6 @@
             max-width: 80vw;
             min-width: 300px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
-            border: none;
             position: relative; 
         }
         
@@ -346,7 +347,7 @@
             position: absolute;
             top: 10px;
             right: 18px;
-            font-size: 3em; /* Plus grande croix */
+            font-size: 3em; 
             font-weight: 300;
             color: #aaa;
             cursor: pointer;
@@ -442,7 +443,7 @@
         </div>
 
         <div class="sidebar">
-            <h2>Partie et Statut</h2>
+            <h2>Partie</h2>
             
             <div class="button-group">
                 <button id="play-button" class="play-button" onclick="findOrCreateMatch()">
@@ -454,11 +455,7 @@
                 </button>
             </div>
             
-            <div class="friends-list">
-                <h3>Statut</h3>
-                <p id="match-status-text">(En attente de connexion)</p>
             </div>
-        </div>
     </div>
     
     <div id="modal-overlay" style="display:none;">
@@ -540,7 +537,8 @@
         const infoEl = document.getElementById('info'); 
         const playButton = document.getElementById('play-button');
         const abandonButton = document.getElementById('abandon-button'); 
-        const matchStatusEl = document.getElementById('match-status-text');
+        // L'élément de statut de la partie a été retiré du DOM
+        // const matchStatusEl = document.getElementById('match-status-text'); 
         const playerWhiteBox = document.getElementById('player-white-box');
         const playerBlackBox = document.getElementById('player-black-box');
         const eloWhiteEl = document.getElementById('elo-white');
@@ -590,19 +588,11 @@
             const isUserTurn = currentTurn === playerColor[0]; 
             
             if (isUserTurn) {
-                // Si c'est votre tour, mettez en surbrillance la boîte qui contient votre couleur (peu importe si haut/bas)
-                if (playerColor === 'white') {
-                    playerWhiteBox.classList.add('highlight-turn');
-                } else {
-                    playerBlackBox.classList.add('highlight-turn');
-                }
+                // Surligne la boîte de l'utilisateur (qui est toujours en bas)
+                playerWhiteBox.classList.add('highlight-turn');
             } else {
-                 // Si c'est le tour de l'adversaire, mettez en surbrillance la boîte qui contient sa couleur
-                if (playerColor === 'white') {
-                    playerBlackBox.classList.add('highlight-turn');
-                } else {
-                    playerWhiteBox.classList.add('highlight-turn');
-                }
+                 // Surligne la boîte de l'adversaire (qui est toujours en haut)
+                playerBlackBox.classList.add('highlight-turn');
             }
         }
 
@@ -686,7 +676,7 @@
                         }
                         
                         setupPlayerAndBoard(playerColor, opponentId); 
-                        matchStatusEl.textContent = `Partie contre ${opponentId} !`;
+                        // matchStatusEl.textContent = `Partie contre ${opponentId} !`; // Supprimé du DOM
                         
                         const title = "Partie Démarrée !";
                         const message = `L'adversaire (${opponentId}) a rejoint la partie ! Vous jouez ${playerColor.toUpperCase()}. Au tour de ${chessBoard.turn() === 'w' ? 'Blanc' : 'Noir'}.`;
@@ -764,7 +754,7 @@
 
                     if (data.status === 'created') {
                         waitingForOpponent = true;
-                        matchStatusEl.textContent = `En attente d'un adversaire... (ID: ${currentGameId})`;
+                        // matchStatusEl.textContent = `En attente d'un adversaire... (ID: ${currentGameId})`; // Supprimé du DOM
                         displayInfo("Partie créée. En attente de l'adversaire.", 'info'); 
                         setupPlayerAndBoard(playerColor, opponentId);
                         updateBoardState(data.fen || INITIAL_FEN); 
@@ -772,7 +762,7 @@
                         
                     } else if (data.status === 'joined') {
                         waitingForMove = true;
-                        matchStatusEl.textContent = `Partie contre ${opponentId} !`;
+                        // matchStatusEl.textContent = `Partie contre ${opponentId} !`; // Supprimé du DOM
                         
                         const title = "Partie Démarrée !";
                         const message = `Vous avez rejoint la partie ! Vous jouez ${playerColor.toUpperCase()} contre ${opponentId}. Au tour de Blanc.`;
@@ -889,7 +879,6 @@
                  if (response.ok && data.status === 'success') {
                      const winnerColor = data.winner_color;
                      
-                     // L'utilisateur local a initié l'abandon, ne pas appeler destroyMatch ici.
                      endGame('abandoned', winnerColor, false); 
 
                  } else {
@@ -932,7 +921,7 @@
             playButton.textContent = "Lancer Partie";
             playButton.disabled = false;
             abandonButton.disabled = true; 
-            matchStatusEl.textContent = "(En attente de connexion)";
+            // matchStatusEl.textContent = "(En attente de connexion)"; // Supprimé du DOM
             playerWhiteBox.classList.remove('highlight-turn');
             playerBlackBox.classList.remove('highlight-turn');
         }
@@ -995,7 +984,7 @@
                 modalType = isLocalPlayerWinner ? 'win' : 'loss';
             }
 
-            matchStatusEl.textContent = `FIN : ${modalTitle}`;
+            // matchStatusEl.textContent = `FIN : ${modalTitle}`; // Supprimé du DOM
             
             showModal(modalTitle, message, modalType); 
 
@@ -1273,6 +1262,7 @@
             
             let transformValue = '';
             
+            // Rotation du symbole pour qu'il apparaisse droit pour le joueur noir
             if (playerColor === 'black' && !isGameOver) {
                 transformValue += 'rotate(180deg)';
             }

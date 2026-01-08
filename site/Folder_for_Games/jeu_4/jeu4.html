@@ -51,18 +51,20 @@
             max-width: 600px; 
             padding: 10px; 
             margin: 5px 0;
-            border-radius: 8px; 
+            border-radius: 8px; /* Effet visuel */
             transition: all 0.3s;
             border: 2px solid transparent; 
-            background-color: #2a2a2a; 
+            background-color: #2a2a2a; /* Fond légèrement plus foncé pour les boîtes */
         }
         
+        /* Indicateur de tour (Carré vert) */
         .player-container.highlight-turn {
             border-color: #28a745; 
-            box-shadow: 0 0 10px rgba(40, 167, 69, 0.7); 
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.7); /* Lueur verte */
         }
 
         .top-player { border-top: 2px solid rgba(255,255,255,0.1); } 
+        /* La classe bottom-player est cruciale pour l'inversion visuelle */
         .bottom-player { flex-direction: row-reverse; } 
         .bottom-player .player-info { text-align: right; } 
 
@@ -94,6 +96,7 @@
             position: relative;
         }
 
+        /* Masque le panneau d'information */
         .info-panel {
             text-align: center;
             margin-bottom: 10px;
@@ -113,7 +116,7 @@
             grid-template-columns: repeat(8, 1fr); 
             grid-template-rows: repeat(8, 1fr);
             border: 4px solid #f0f0f0;
-            box-shadow: 0 0 15px rgba(0,0,0,0.8), 0 0 5px rgba(255, 255, 255, 0.2); 
+            box-shadow: 0 0 15px rgba(0,0,0,0.8), 0 0 5px rgba(255, 255, 255, 0.2); /* Effet visuel */
             position: relative;
             transition: transform 0.5s ease-in-out; 
         }
@@ -158,20 +161,17 @@
             box-sizing: border-box;
         }
 
+        /* Échec (case du roi en rouge) */
         .in-check { 
             background-color: red !important; 
         }
         
+        /* S'assurer que le roi maté a aussi la case rouge */
         .checkmated-square {
             background-color: red !important;
             box-shadow: inset 0 0 0 5px darkred;
         }
 
-        .checkmated-king {
-            opacity: 0.4; 
-            filter: grayscale(100%) brightness(0.7); 
-            text-shadow: none !important; 
-        }
 
         .piece {
             position: absolute;
@@ -181,10 +181,20 @@
             align-items: center;
             justify-content: center;
             font-size: 4.5vw; 
+            /* Transition pour le mouvement des pièces */
             transition: transform 0.3s ease-in-out; 
             pointer-events: none; 
             z-index: 10;
         }
+
+        /* Style pour le Roi mis en échec et mat (cassé/vaincu) */
+        .checkmated-king {
+            /* Simule une pièce cassée ou vaincue */
+            opacity: 0.4; /* Très estompé */
+            filter: grayscale(100%) brightness(0.7); /* Gris foncé et estompé */
+            text-shadow: none !important; 
+        }
+
 
         @media (min-width: 1222px) { 
             .piece {
@@ -209,13 +219,7 @@
             flex-direction: column;
             gap: 15px; 
             height: fit-content; 
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5); 
-        }
-
-        .game-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5); /* Effet visuel */
         }
         
         .play-button {
@@ -227,17 +231,6 @@
             font-weight: bold;
             cursor: pointer;
             transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
-        }
-
-        #give-up-button {
-            background-color: #dc3545; /* Rouge pour l'abandon */
-            border-color: #dc3545;
-        }
-
-        #give-up-button:hover:not(:disabled) {
-            background-color: #c82333;
-            border-color: #c82333;
-            box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
         }
         
         .play-button:hover:not(:disabled) {
@@ -252,7 +245,8 @@
             border-color: #555;
             cursor: not-allowed;
         }
-        
+
+        /* Responsive pour les petits écrans */
         @media (max-width: 900px) {
             .main-container {
                 flex-direction: column;
@@ -340,6 +334,7 @@
             transform: translateY(-1px);
         }
 
+        /* Couleurs contextuelles pour la modale */
         .modal-win #modal-content { 
             border-color: #28a745; 
             box-shadow: 0 0 20px rgba(40, 167, 69, 0.7);
@@ -396,14 +391,13 @@
         <div class="sidebar">
             <h2>Partie et Historique</h2>
             
-            <div class="game-controls">
-                <button id="play-button" class="play-button" onclick="findOrCreateMatch()">
-                    Lancer Partie
-                </button>
-                <button id="give-up-button" class="play-button" onclick="clientGiveUp()" disabled>
-                    Abandonner la Partie
-                </button>
-            </div>
+            <button id="play-button" class="play-button" onclick="findOrCreateMatch()">
+                Lancer Partie
+            </button>
+            
+            <button id="abandon-button" class="play-button" style="background-color: #dc3545; border-color: #dc3545;" onclick="giveUpMatch()">
+                Abandonner la Partie
+            </button>
             
             <div class="moves-list-container">
                 <h3>Coups Joués</h3>
@@ -498,15 +492,17 @@
 
         // Références DOM globales
         const chessboardEl = document.getElementById('chessboard');
-        const infoEl = document.getElementById('info'); 
+        const infoEl = document.getElementById('info'); // Masqué par CSS
         const playButton = document.getElementById('play-button');
-        const giveUpButton = document.getElementById('give-up-button'); // NOUVELLE RÉFÉRENCE
         const movesListEl = document.getElementById('moves-list');
         const matchStatusEl = document.getElementById('match-status-text');
         const playerWhiteBox = document.getElementById('player-white-box');
         const playerBlackBox = document.getElementById('player-black-box');
         const eloWhiteEl = document.getElementById('elo-white');
         const eloBlackEl = document.getElementById('elo-black');
+        
+        // NOUVEAU: Référence au bouton d'abandon
+        const abandonButton = document.getElementById('abandon-button'); 
         
         // Références DOM de la modale
         const modalOverlay = document.getElementById('modal-overlay');
@@ -528,7 +524,7 @@
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             waitingForMove = (currentTurn !== playerColor); 
             
-            updateMovesList(chessBoard.history()); 
+            updateMovesList(chessBoard.history()); // Appel avec la liste des coups
             
             if (shouldDraw) {
                 drawPieces();
@@ -550,17 +546,9 @@
             const isUserTurn = currentTurn === playerColor;
 
             if (isUserTurn) {
-                if (playerColor === 'white') {
-                    playerWhiteBox.classList.add('highlight-turn');
-                } else {
-                    playerBlackBox.classList.add('highlight-turn');
-                }
+                playerWhiteBox.classList.add('highlight-turn');
             } else {
-                if (playerColor === 'white') {
-                    playerBlackBox.classList.add('highlight-turn');
-                } else {
-                    playerWhiteBox.classList.add('highlight-turn');
-                }
+                playerBlackBox.classList.add('highlight-turn');
             }
         }
 
@@ -583,33 +571,6 @@
                 pollingInterval = setInterval(pollGameStatus, 2000); // Poll toutes les 2 secondes
             }, initialDelay);
         }
-        
-        /**
-         * NOUVEAU: Vérifie si l'adversaire a abandonné en utilisant la route dédiée.
-         * @returns {Promise<boolean>} True si la partie est terminée par abandon.
-         */
-        async function checkAbandonmentStatus() {
-            if (!currentGameId || isGameOver) return false;
-
-            try {
-                const response = await fetch(`${SERVER_URL}/get_give_up_chess?game_uuid=${currentGameId}`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.status === 'abandoned') {
-                    // Adversaire a abandonné
-                    const winnerColor = data.winner_color;
-                    endGame('abandoned', winnerColor, false); 
-                    return true; 
-                }
-            } catch (e) {
-                console.warn("[ABANDON CHECK ERROR] Erreur lors de la vérification d'abandon:", e);
-            }
-            return false;
-        }
 
         async function pollGameStatus() { 
             console.log(`\n--- [POLLING] Démarrage du cycle pour ${USERNAME} (${playerColor}) ---`);
@@ -621,17 +582,8 @@
             
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             if (!waitingForOpponent && currentTurn === playerColor) { 
-                 // Si c'est notre tour (et que la partie est active), on vérifie juste l'abandon de l'adversaire
-                 if (await checkAbandonmentStatus()) {
-                     return; 
-                 }
                  stopPolling(); 
                  return;
-            }
-            
-            // Si ce n'est pas notre tour, on vérifie l'abandon ET l'état du jeu
-            if (await checkAbandonmentStatus()) {
-                 return; 
             }
             
             try {
@@ -712,7 +664,7 @@
 
             playButton.disabled = true;
             playButton.textContent = 'Recherche...';
-            giveUpButton.disabled = true; // S'assurer qu'il est désactivé
+            if (abandonButton) abandonButton.disabled = true; // Assurer que le bouton est désactivé pendant la recherche
 
             try {
                 const response = await fetch(`${SERVER_URL}/find_or_create_match`, {
@@ -729,7 +681,7 @@
                     opponentId = data.opponent_id || OPPONENT_NAME;
                     
                     playButton.textContent = 'Partie en Cours';
-                    giveUpButton.disabled = false; // Activation du bouton d'abandon
+                    if (abandonButton) abandonButton.disabled = false; // Activation du bouton d'abandon
                     
                     if (data.status === 'created') {
                         waitingForOpponent = true;
@@ -753,14 +705,14 @@
                 } else {
                     playButton.disabled = false;
                     playButton.textContent = 'Lancer Partie';
-                    giveUpButton.disabled = true; 
+                    if (abandonButton) abandonButton.disabled = true;
                     displayInfo(`Erreur lors du matchmaking: ${data.error}`, 'error');
                 }
 
             } catch (e) {
                 playButton.disabled = false;
                 playButton.textContent = 'Lancer Partie';
-                giveUpButton.disabled = true;
+                if (abandonButton) abandonButton.disabled = true;
                 displayInfo("Erreur de connexion au serveur.", 'error');
                 console.error("Erreur Matchmaking:", e);
             }
@@ -829,22 +781,19 @@
             updateBoardState(chessBoard.fen());
             displayInfo("Échec critique de la communication. Coup annulé localement. Veuillez relancer la partie ou vérifier la connexion.", 'error');
         }
-
-        /**
-         * NOUVEAU: Gère l'abandon local du joueur.
-         */
-        async function clientGiveUp() {
+        
+        // NOUVEAU: Fonction pour abandonner la partie
+        async function giveUpMatch() {
             if (!currentGameId || isGameOver || waitingForOpponent) {
-                displayInfo("Impossible d'abandonner: aucune partie active ou en attente d'adversaire.");
+                displayInfo("Impossible d'abandonner : aucune partie active.", 'warning');
                 return;
             }
-
-            if (!confirm("Êtes-vous sûr de vouloir abandonner la partie ? Cela entraînera une défaite immédiate.")) {
+            
+            if (!confirm("Êtes-vous sûr de vouloir abandonner la partie ?")) {
                 return;
             }
-
-            giveUpButton.disabled = true;
-            displayInfo("Envoi de la demande d'abandon au serveur...");
+            
+            displayInfo("Envoi de la demande d'abandon au serveur...", 'info');
             
             try {
                 const response = await fetch(`${SERVER_URL}/give_up_chess`, {
@@ -855,16 +804,22 @@
 
                 const data = await response.json();
 
-                if (response.ok && data.status === 'success') {
-                    const winnerColor = data.winner_color;
-                    endGame('abandoned', winnerColor, true); // True = appelle destroyMatch()
+                if (response.ok && data.game_status === 'abandoned') {
+                    // L'adversaire (qui n'a pas abandonné) est le gagnant.
+                    const winnerColor = playerColor === 'white' ? 'black' : 'white';
+                    
+                    // La fonction endGame est appelée avec 'abandoned' et la couleur gagnante.
+                    // Destruction immédiate du match car le serveur a validé.
+                    endGame('abandoned', winnerColor, true); 
+                    displayInfo("Partie abandonnée avec succès.", 'success');
+                    
                 } else {
-                    displayInfo(`Échec de l'abandon: ${data.message || 'Erreur inconnue.'}`, 'error');
-                    giveUpButton.disabled = false; 
+                    displayInfo(`Erreur du serveur lors de l'abandon: ${data.error || 'Erreur inconnue.'}`, 'error');
                 }
+
             } catch (e) {
                 displayInfo("Erreur réseau lors de l'abandon.", 'error');
-                giveUpButton.disabled = false; 
+                console.error("Erreur Abandon Match:", e);
             }
         }
 
@@ -895,17 +850,20 @@
             chessboardEl.classList.remove('rotated');
             
             // 4. Réinitialisation de l'état du jeu (FEN initial) et dessin
-            chessBoard.reset();
-            updateBoardState(chessBoard.fen(), true); 
+            updateBoardState(INITIAL_FEN, true); 
 
             // 5. Réinitialisation des messages/boutons
             displayInfo("Cliquez sur \"Lancer Partie\" pour commencer à jouer.", 'info'); 
             playButton.textContent = "Lancer Partie";
             playButton.disabled = false;
-            giveUpButton.disabled = true; // NOUVEAU: Désactiver le bouton d'abandon
             matchStatusEl.textContent = "(En attente de connexion)";
             playerWhiteBox.classList.remove('highlight-turn');
             playerBlackBox.classList.remove('highlight-turn');
+            
+            // NOUVEAU: Réinitialisation du bouton d'abandon
+            if (abandonButton) {
+                abandonButton.disabled = true;
+            }
         }
 
         /**
@@ -949,7 +907,7 @@
             stopPolling();
             isGameOver = true;
             
-            const isLocalPlayerWinner = (winnerColor === playerColor);
+            const isLocalPlayerWinner = (status === 'checkmate' || status === 'abandoned' || status === 'timeout') && (winnerColor === playerColor);
             
             let message = "La partie est terminée.";
             let modalType = 'draw'; 
@@ -967,7 +925,7 @@
                 modalType = 'draw';
             } else if (status === 'abandoned' || status === 'timeout') { 
                 const loserName = (winnerColor === playerColor) ? opponentId : USERNAME;
-                message = isLocalPlayerWinner ? `${loserName} a abandonné !` : `Vous avez perdu par abandon.`;
+                message = isLocalPlayerWinner ? `${loserName} a ${status === 'abandoned' ? 'abandonné' : 'perdu au temps'}.` : `Vous avez perdu par ${status === 'abandoned' ? 'abandon' : 'temps'}.`;
                 modalTitle = isLocalPlayerWinner ? 'VICTOIRE PAR FORFAIT' : 'DÉFAITE PAR FORFAIT';
                 modalType = isLocalPlayerWinner ? 'win' : 'loss';
             }
@@ -980,13 +938,17 @@
             drawBoard();
 
             if (shouldDestroy) {
-                // Seul le joueur qui initie la fin de partie (ex: son propre abandon) appelle destroyMatch()
                 destroyMatch(); 
             }
             
             playButton.disabled = true;
-            giveUpButton.disabled = true; // Désactiver l'abandon à la fin de partie
             playButton.textContent = 'Partie Terminée';
+            
+            // NOUVEAU: Désactivation du bouton d'abandon
+            if (abandonButton) {
+                 abandonButton.disabled = true;
+            }
+            
             updateTurnIndicator(); 
             
             // Réinitialisation du client après un délai de 5 secondes
@@ -1041,7 +1003,8 @@
          * Met à jour la liste des coups joués.
          */
         function updateMovesList(history) {
-            console.log(`[HISTORIQUE] Tentative de mise à jour avec ${history.length} coups. Contenu:`, history);
+            // Rétabli le comportement normal de la fonction, en retirant le diagnostic
+            // console.log(`[HISTORIQUE] Tentative de mise à jour avec ${history.length} coups. Contenu:`, history);
             
             movesListEl.innerHTML = '';
             
@@ -1071,17 +1034,12 @@
             
             const isWhite = color === 'white';
             
-            // Si le joueur est blanc, son nom apparaît en bas (WHITE_BOX)
-            if (isWhite) {
-                document.getElementById('player-white-name').textContent = USERNAME;
-                document.getElementById('player-black-name').textContent = opponentId;
-            } else { // Si le joueur est noir, son nom apparaît en haut (BLACK_BOX)
-                document.getElementById('player-white-name').textContent = opponentId;
-                document.getElementById('player-black-name').textContent = USERNAME;
-            }
-
-            eloWhiteEl.textContent = `[1200 ELO (${isWhite ? playerColor.toUpperCase() : 'NOIR'})]`; 
-            eloBlackEl.textContent = `[1200 ELO (${isWhite ? 'NOIR' : playerColor.toUpperCase()})]`;
+            document.getElementById('player-white-name').textContent = USERNAME;
+            eloWhiteEl.textContent = `[1200 ELO (${playerColor.toUpperCase()})]`;
+            
+            document.getElementById('player-black-name').textContent = opponentId;
+            const opponentColor = isWhite ? 'black' : 'white';
+            eloBlackEl.textContent = `[1200 ELO (${opponentColor.toUpperCase()})]`;
 
             if (isWhite) {
                 chessboardEl.classList.remove('rotated'); 
@@ -1272,6 +1230,11 @@
             
             initBoardSquares(); 
             updateBoardState(chessBoard.fen()); 
+            
+            // NOUVEAU: Désactivation initiale du bouton d'abandon
+            if (abandonButton) {
+                abandonButton.disabled = true;
+            }
         }
 
         document.addEventListener('DOMContentLoaded', initializeGame);

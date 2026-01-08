@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jeu d'Échecs - Multijoueur Avancé</title>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.js"></script>
     
     <style>
         /* --- Styles du jeu --- */
@@ -51,18 +51,20 @@
             max-width: 600px; 
             padding: 10px; 
             margin: 5px 0;
-            border-radius: 8px; 
+            border-radius: 8px; /* Effet visuel */
             transition: all 0.3s;
             border: 2px solid transparent; 
-            background-color: #2a2a2a; 
+            background-color: #2a2a2a; /* Fond légèrement plus foncé pour les boîtes */
         }
         
+        /* Indicateur de tour (Carré vert) */
         .player-container.highlight-turn {
             border-color: #28a745; 
-            box-shadow: 0 0 10px rgba(40, 167, 69, 0.7); 
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.7); /* Lueur verte */
         }
 
         .top-player { border-top: 2px solid rgba(255,255,255,0.1); } 
+        /* La classe bottom-player est cruciale pour l'inversion visuelle */
         .bottom-player { flex-direction: row-reverse; } 
         .bottom-player .player-info { text-align: right; } 
 
@@ -94,6 +96,7 @@
             position: relative;
         }
 
+        /* Masque le panneau d'information */
         .info-panel {
             text-align: center;
             margin-bottom: 10px;
@@ -103,6 +106,7 @@
             color: #fff; 
             max-width: 600px; 
             width: 100%;
+            display: none; 
         }
 
         .chessboard {
@@ -112,7 +116,7 @@
             grid-template-columns: repeat(8, 1fr); 
             grid-template-rows: repeat(8, 1fr);
             border: 4px solid #f0f0f0;
-            box-shadow: 0 0 15px rgba(0,0,0,0.8), 0 0 5px rgba(255, 255, 255, 0.2); 
+            box-shadow: 0 0 15px rgba(0,0,0,0.8), 0 0 5px rgba(255, 255, 255, 0.2); /* Effet visuel */
             position: relative;
             transition: transform 0.5s ease-in-out; 
         }
@@ -157,10 +161,12 @@
             box-sizing: border-box;
         }
 
+        /* Échec (case du roi en rouge) */
         .in-check { 
             background-color: red !important; 
         }
         
+        /* S'assurer que le roi maté a aussi la case rouge */
         .checkmated-square {
             background-color: red !important;
             box-shadow: inset 0 0 0 5px darkred;
@@ -175,10 +181,20 @@
             align-items: center;
             justify-content: center;
             font-size: 4.5vw; 
+            /* Transition pour le mouvement des pièces */
             transition: transform 0.3s ease-in-out; 
             pointer-events: none; 
             z-index: 10;
         }
+
+        /* Style pour le Roi mis en échec et mat (cassé/vaincu) */
+        .checkmated-king {
+            /* Simule une pièce cassée ou vaincue */
+            opacity: 0.4; /* Très estompé */
+            filter: grayscale(100%) brightness(0.7); /* Gris foncé et estompé */
+            text-shadow: none !important; 
+        }
+
 
         @media (min-width: 1222px) { 
             .piece {
@@ -203,24 +219,9 @@
             flex-direction: column;
             gap: 15px; 
             height: fit-content; 
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5); 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5); /* Effet visuel */
         }
         
-        .moves-list-container {
-            background-color: #1a1a1a;
-            padding: 10px;
-            border-radius: 4px;
-            max-height: 250px;
-            overflow-y: auto;
-            border: 1px solid #444;
-        }
-        .moves-table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
-        .moves-table th { text-align: left; padding: 5px 0; border-bottom: 1px solid #444; color: #007bff; }
-        .moves-table td { padding: 5px; color: #f0f0f0; }
-        .moves-table tr:nth-child(even) { background-color: #222; }
-        
-        /* [Reste du CSS non modifié pour la modale et les boutons] */
-
         .play-button {
             padding: 10px 15px;
             border-radius: 6px;
@@ -244,8 +245,39 @@
             border-color: #555;
             cursor: not-allowed;
         }
+
+        /* Responsive pour les petits écrans */
+        @media (max-width: 900px) {
+            .main-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .sidebar {
+                width: 100%;
+                max-width: 600px; 
+                margin-top: 20px;
+                flex-basis: auto;
+            }
+            .game-area {
+                width: 100%;
+            }
+            .piece { font-size: 8vw; } 
+        }
         
-        /* Styles de la modale (Gardés pour la complétude) */
+        .moves-list-container {
+            background-color: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #444;
+        }
+        .moves-table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
+        .moves-table th { text-align: left; padding: 5px 0; border-bottom: 1px solid #444; color: #007bff; }
+        .moves-table td { padding: 5px; color: #f0f0f0; }
+        .moves-table tr:nth-child(even) { background-color: #222; }
+        
+        /* --- Styles de la modale --- */
         #modal-overlay {
             position: fixed;
             top: 0;
@@ -302,6 +334,7 @@
             transform: translateY(-1px);
         }
 
+        /* Couleurs contextuelles pour la modale */
         .modal-win #modal-content { 
             border-color: #28a745; 
             box-shadow: 0 0 20px rgba(40, 167, 69, 0.7);
@@ -324,7 +357,6 @@
             border-color: #007bff; 
             box-shadow: 0 0 20px rgba(0, 123, 255, 0.7);
         }
-
 
     </style>
 </head>
@@ -439,8 +471,7 @@
         const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; 
         
         let chessBoard = new Chess(INITIAL_FEN); 
-        let tempChessBoard = new Chess(INITIAL_FEN); // Nouvelle instance pour la déduction de coup
-        
+
         let currentGameId = null; 
         let playerColor = null; 
         let opponentId = OPPONENT_NAME; 
@@ -454,13 +485,10 @@
 
         let infoTimeout = null; 
         let pollingInterval = null; 
-        
-        // ⭐ NOUVEAU: Historique des coups géré localement (SAN)
-        let clientMoveHistory = []; 
 
         // Références DOM globales
         const chessboardEl = document.getElementById('chessboard');
-        const infoEl = document.getElementById('info'); 
+        const infoEl = document.getElementById('info'); // Masqué par CSS
         const playButton = document.getElementById('play-button');
         const movesListEl = document.getElementById('moves-list');
         const matchStatusEl = document.getElementById('match-status-text');
@@ -476,6 +504,7 @@
         const modalMessage = document.getElementById('modal-message');
         const modalCloseButton = document.getElementById('modal-close-button');
         
+        // Attachement initial de l'événement de fermeture de la modale
         modalCloseButton.addEventListener('click', () => {
             modalOverlay.style.display = 'none';
         });
@@ -483,56 +512,12 @@
         // --- Fonctions FEN et Mise à Jour du Plateau ---
         
         function updateBoardState(newFen, shouldDraw = true) {
-            
-            // 1. Déduction du coup de l'adversaire (si applicable)
-            // On vérifie si la FEN a changé ET si le nombre de coups joués est supérieur.
-            if (newFen !== chessBoard.fen() && clientMoveHistory.length > 0) {
-                 try {
-                    // Utiliser une instance temporaire pour déduire le coup SAN de l'adversaire
-                    tempChessBoard.load(chessBoard.fen()); // Charger l'ancienne FEN (avant le coup de l'adversaire)
-                    
-                    // La fonction `move` de chess.js peut être utilisée pour simuler le coup de l'adversaire en UCI.
-                    // Cependant, pour obtenir le SAN à partir de deux FENs, le plus simple est d'utiliser `history({verbose: true})`
-                    
-                    // Nous devons recharger l'état de la partie, puis déduire la différence.
-                    
-                    // a) Créer une instance temporaire avec l'ancien FEN
-                    const tempGameBeforeMove = new Chess(chessBoard.fen());
-                    
-                    // b) Créer une instance temporaire avec le nouveau FEN
-                    const tempGameAfterMove = new Chess(newFen);
-                    
-                    // c) Jouer les coups de la partie finale sur la partie initiale
-                    // Si on utilise la fonction `move_history` (ou équivalent PGN), c'est plus simple.
-                    // Mais en l'absence de PGN, on utilise l'historique de l'objet temporaire après le load.
-                    
-                    // La méthode la plus simple est de s'assurer que le serveur renvoie l'historique.
-                    // En l'absence de cela, on fait la supposition la plus fiable:
-                    
-                    // On prend la FEN du jeu après le coup adversaire et on lui demande l'historique.
-                    const newHistory = tempGameAfterMove.history();
-                    
-                    if (newHistory.length > clientMoveHistory.length) {
-                        const newMove = newHistory[newHistory.length - 1];
-                        console.log(`[DECODAGE] Coup de l'adversaire déduit: ${newMove}`);
-                        clientMoveHistory.push(newMove);
-                    }
-                    
-                } catch (e) {
-                    console.error("Erreur lors de la déduction du coup de l'adversaire:", e);
-                    // Si la déduction échoue, on continue sans ajouter de coup à l'historique
-                }
-            }
-            
-            // 2. Mise à jour de l'objet chessBoard principal
             chessBoard.load(newFen); 
             
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             waitingForMove = (currentTurn !== playerColor); 
             
-            // ⭐ ANCIEN: updateMovesList(chessBoard.history()); 
-            // ⭐ NOUVEAU: Utilisation de l'historique locale
-            updateMovesList(clientMoveHistory); 
+            updateMovesList(chessBoard.history()); // Appel avec la liste des coups
             
             if (shouldDraw) {
                 drawPieces();
@@ -541,9 +526,7 @@
             
             updateTurnIndicator();
         }
-
-        // [Reste des fonctions (updateTurnIndicator, stopPolling, startPolling, pollGameStatus, makeMoveServer) non modifiées, elles interagissent avec l'API]
-
+        
         function updateTurnIndicator() {
             playerWhiteBox.classList.remove('highlight-turn');
             playerBlackBox.classList.remove('highlight-turn');
@@ -562,6 +545,8 @@
             }
         }
 
+
+        // LOGIQUE DE POLLING UNIFIÉE
         function stopPolling() {
             if (pollingInterval) {
                 clearInterval(pollingInterval);
@@ -576,7 +561,7 @@
             
             setTimeout(() => {
                 pollGameStatus();
-                pollingInterval = setInterval(pollGameStatus, 2000); 
+                pollingInterval = setInterval(pollGameStatus, 2000); // Poll toutes les 2 secondes
             }, initialDelay);
         }
 
@@ -612,7 +597,12 @@
                         }
                         
                         setupPlayerAndBoard(playerColor, opponentId); 
+                        
                         matchStatusEl.textContent = `Partie contre ${opponentId} !`;
+                        
+                        const title = "Partie Démarrée !";
+                        const message = `L'adversaire (${opponentId}) a rejoint la partie ! Vous jouez ${playerColor.toUpperCase()}. À vous de jouer.`;
+                        showModal(title, message, 'info'); 
                         
                         updateBoardState(data.fen); 
                         stopPolling(); 
@@ -622,8 +612,7 @@
                         const currentFen = chessBoard.fen();
                         
                         if (data.fen !== currentFen) {
-                            
-                            // Mouvement de l'adversaire détecté. updateBoardState gère la déduction du coup et l'ajout à clientMoveHistory.
+                            // Mouvement de l'adversaire détecté
                             updateBoardState(data.fen); 
                             
                             if (chessBoard.in_checkmate() || chessBoard.in_draw()) {
@@ -634,15 +623,14 @@
                                 return; 
                             }
                             
-                            // Récupérer le dernier coup ajouté par updateBoardState
-                            const lastMove = clientMoveHistory.length > 0 ? clientMoveHistory[clientMoveHistory.length - 1] : "un coup";
-                            displayInfo(`Coup de l'adversaire joué: ${lastMove}. À vous de jouer.`, 'info');
+                            displayInfo(`Coup de l'adversaire joué: ${chessBoard.history().pop()}. À vous de jouer.`, 'info');
                             
                             if (!waitingForMove) {
                                 stopPolling();
                             }
                         }
                     } else if (data.game_status !== 'created' && data.game_status !== 'active') {
+                        // Statut de fin de partie reçu (Confirmation du serveur)
                         
                         updateBoardState(data.fen); 
                         
@@ -659,6 +647,8 @@
             }
         }
         
+        // --- Fonctions d'API Serveur ---
+
         async function findOrCreateMatch() {
             if (currentGameId) {
                 displayInfo("Partie déjà en cours.");
@@ -683,10 +673,6 @@
                     opponentId = data.opponent_id || OPPONENT_NAME;
                     
                     playButton.textContent = 'Partie en Cours';
-                    
-                    // ⭐ Initialisation de l'historique
-                    // Nous chargeons la FEN initiale. Si elle contient l'historique, il sera déduit dans updateBoardState.
-                    updateBoardState(data.fen || INITIAL_FEN, true); 
 
                     if (data.status === 'created') {
                         waitingForOpponent = true;
@@ -698,7 +684,13 @@
                     } else if (data.status === 'joined') {
                         waitingForMove = true;
                         matchStatusEl.textContent = `Partie contre ${opponentId} !`;
+                        
+                        const title = "Partie Démarrée !";
+                        const message = `Vous avez rejoint la partie ! Vous jouez ${playerColor.toUpperCase()} contre ${opponentId}. Au tour de Blanc.`;
+                        showModal(title, message, 'info'); 
+                        
                         setupPlayerAndBoard(playerColor, opponentId);
+                        updateBoardState(data.fen);
                         startPolling();
                     }
                 } else {
@@ -740,20 +732,12 @@
                     const data = await response.json();
 
                     if (response.ok && data.success) {
-                        
-                        // ⭐ NOUVEAU: Le FEN retourné par le serveur confirmera l'état,
-                        // mais l'historique local a déjà été mis à jour dans handleMove.
-                        // On doit juste s'assurer que l'état du plateau et les indicateurs sont à jour.
-                        chessBoard.load(data.new_fen); 
-                        drawPieces(); // Redessiner les pièces (pour le mouvement de l'adversaire ou la promotion)
-                        drawBoard(); // Redessiner les highlights
-                        updateTurnIndicator(); // Mettre à jour l'indicateur
+                        updateBoardState(data.new_fen); 
                         
                         if (data.game_status !== 'active') {
                             const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
                             endGame(data.game_status, winnerColor, true); 
                         } else {
-                            waitingForMove = true; // On attend le coup de l'adversaire
                             displayInfo("Coup envoyé. En attente du coup de l'adversaire...");
                             startPolling(); 
                         }
@@ -762,9 +746,7 @@
                     } else {
                         if (data.error && data.error.includes("illegal move")) {
                             displayInfo(`Coup rejeté par le serveur: coup illégal. ${data.error}`, 'error');
-                            // Si le coup est illégal, on annule le coup local et l'historique
-                            chessBoard.undo(); 
-                            clientMoveHistory.pop(); 
+                            chessBoard.undo();
                             updateBoardState(chessBoard.fen());
                             return;
                         }
@@ -785,15 +767,15 @@
 
             console.error("Toutes les tentatives d'envoi du coup ont échoué.");
             chessBoard.undo();
-            clientMoveHistory.pop(); // Retirer le coup de l'historique local
             updateBoardState(chessBoard.fen());
             displayInfo("Échec critique de la communication. Coup annulé localement. Veuillez relancer la partie ou vérifier la connexion.", 'error');
         }
 
+        /**
+         * Réinitialise l'état complet du client (variables et DOM) au statut initial.
+         */
         function resetClientState() {
-            // ⭐ Réinitialisation de l'historique local
-            clientMoveHistory = [];
-            
+            // 1. Réinitialisation des variables d'état
             currentGameId = null;
             playerColor = null;
             opponentId = OPPONENT_NAME; 
@@ -805,15 +787,19 @@
 
             stopPolling();
             
+            // 2. Réinitialisation des pseudos/infos dans le DOM (USERNAME reste en bas)
             document.getElementById('player-white-name').textContent = USERNAME; 
             document.getElementById('player-black-name').textContent = OPPONENT_NAME; 
             eloWhiteEl.textContent = `[1200 ELO]`; 
             eloBlackEl.textContent = `[1200 ELO]`;
 
+            // 3. Réinitialisation de la rotation du plateau (Blanc en bas par défaut)
             chessboardEl.classList.remove('rotated');
             
+            // 4. Réinitialisation de l'état du jeu (FEN initial) et dessin
             updateBoardState(INITIAL_FEN, true); 
 
+            // 5. Réinitialisation des messages/boutons
             displayInfo("Cliquez sur \"Lancer Partie\" pour commencer à jouer.", 'info'); 
             playButton.textContent = "Lancer Partie";
             playButton.disabled = false;
@@ -822,6 +808,9 @@
             playerBlackBox.classList.remove('highlight-turn');
         }
 
+        /**
+         * Envoie la requête de destruction/finalisation au serveur.
+         */
         async function destroyMatch() {
             if (!currentGameId || !USERNAME) return;
             
@@ -852,6 +841,10 @@
             }
         }
 
+
+        /**
+         * Gère la fin de partie avec un affichage clair (modale).
+         */
         function endGame(status, winnerColor, shouldDestroy = false) {
             stopPolling();
             isGameOver = true;
@@ -894,13 +887,18 @@
             playButton.textContent = 'Partie Terminée';
             updateTurnIndicator(); 
             
+            // Réinitialisation du client après un délai de 5 secondes
             setTimeout(resetClientState, 5000); 
         }
 
+        /**
+         * Affiche une modale (pop-up) à l'écran.
+         */
         function showModal(title, message, type = 'info') {
             modalTitle.textContent = title;
             modalMessage.textContent = message;
             
+            // Nettoie les classes spécifiques de la modale pour le styling
             modalContent.className = '';
             modalContent.classList.add('modal-' + type.toLowerCase());
 
@@ -911,6 +909,7 @@
                     findOrCreateMatch(); 
                 };
             } else {
+                // Pour les modales d'information (début de partie)
                 modalCloseButton.textContent = "Continuer";
                 modalCloseButton.onclick = () => {
                     modalOverlay.style.display = 'none';
@@ -920,23 +919,28 @@
             modalOverlay.style.display = 'flex';
         }
 
+        // displayInfo est maintenant principalement pour le log/feedback non-modal.
         function displayInfo(message, type = 'info') {
             if (infoTimeout) clearTimeout(infoTimeout);
             
+            // Log dans la console pour le debug
             console.log(`[INFO - ${type.toUpperCase()}] ${message}`); 
-            infoEl.textContent = message;
-            
+
+            if (type === 'error' || type === 'warning' || type === 'gameover' || type === 'success') {
+                 return; 
+            }
+
             infoTimeout = setTimeout(() => {
                 infoEl.classList.remove('error', 'warning', 'gameover', 'success');
-                infoEl.textContent = "Cliquez sur \"Lancer Partie\" pour commencer à jouer.";
             }, 5000);
         }
 
         /**
-         * Met à jour la liste des coups joués en utilisant l'historique locale.
+         * Met à jour la liste des coups joués.
          */
         function updateMovesList(history) {
-            console.log(`[HISTORIQUE] Mise à jour de la liste. ${history.length} coups trouvés. Contenu:`, history);
+            // ✅ NOUVEAU: Ajout d'un diagnostic dans la console
+            console.log(`[HISTORIQUE] Tentative de mise à jour avec ${history.length} coups. Contenu:`, history);
             
             movesListEl.innerHTML = '';
             
@@ -1034,6 +1038,7 @@
             if (!selectedCoords) {
                 if (piece && (piece.color === currentTurn[0])) {
                     selectedCoords = { row, col };
+                    // Obtient les coups légaux en format détaillé
                     legalMoves = chessBoard.moves({ square: square, verbose: true }); 
                     drawBoard(); 
                 }
@@ -1049,6 +1054,7 @@
                     return;
                 }
                 
+                // Promotion par défaut en Dame ('q')
                 const moveAttempt = {
                     from: startCoord,
                     to: endCoord,
@@ -1058,11 +1064,6 @@
                 const moveResult = chessBoard.move(moveAttempt); 
 
                 if (moveResult) {
-                    
-                    // ⭐ NOUVEAU: Ajouter le coup à l'historique locale APRÈS la vérification
-                    clientMoveHistory.push(moveResult.san); 
-                    updateMovesList(clientMoveHistory); // Mettre à jour la liste immédiatement
-                    
                     let move_uci_correct = moveResult.from + moveResult.to;
                     if (moveResult.promotion) {
                         move_uci_correct += moveResult.promotion;
@@ -1164,7 +1165,6 @@
             document.getElementById('player-black-name').textContent = OPPONENT_NAME;
             
             initBoardSquares(); 
-            // La première mise à jour utilise le FEN initial
             updateBoardState(chessBoard.fen()); 
         }
 

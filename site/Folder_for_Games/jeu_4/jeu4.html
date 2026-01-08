@@ -595,20 +595,29 @@
             
             const currentLocalFen = chessBoard.fen(); // Sauvegarder l'état avant la nouvelle FEN
 
-            // 1. Déduction du coup de l'adversaire (si applicable)
+            // 1. Déduction/Synchronisation de l'historique (LOGIQUE MISE À JOUR)
             // On ne fait cela que si la FEN a réellement changé (et non pas quand on reçoit la même FEN)
             if (newFen !== currentLocalFen) { 
                  try {
-                    // Charger la NOUVELLE FEN sur une instance temporaire pour déduire le coup SAN
+                    // Charger la NOUVELLE FEN sur une instance temporaire pour obtenir l'historique complet
                     const tempGameAfterMove = new Chess(newFen); 
                     const newHistory = tempGameAfterMove.history();
                     
-                    // S'assurer qu'un nouveau coup a été joué par l'adversaire (qui n'est pas le nôtre)
+                    // Si l'historique du serveur est plus long que le nôtre, nous le synchronisons.
+                    // C'est nécessaire après un coup de l'adversaire ou au début si le match est en cours.
                     if (newHistory.length > clientMoveHistory.length) {
-                        // Le dernier coup de newHistory est le coup de l'adversaire
+                        
+                        // ⭐ CORRECTION: Remplacer l'historique local par l'historique complet du serveur
                         const newMove = newHistory[newHistory.length - 1]; 
-                        console.log(`[DECODAGE] Coup de l'adversaire déduit: ${newMove}`);
-                        clientMoveHistory.push(newMove);
+                        console.log(`[DECODAGE] Coup de l'adversaire déduit: ${newMove}. Synchronisation de l'historique.`);
+                        
+                        clientMoveHistory = newHistory; 
+                        
+                    } else if (newHistory.length < clientMoveHistory.length) {
+                         // Cas d'erreur: l'historique du serveur est plus court que le nôtre (ex: un coup local était une erreur).
+                         // Nous devons nous synchroniser pour corriger l'affichage.
+                         console.warn("[HISTORIQUE DESYNCHRO] L'historique local était plus long que celui du serveur. Réinitialisation de l'historique.");
+                         clientMoveHistory = newHistory; 
                     }
                     
                 } catch (e) {
@@ -646,9 +655,19 @@
             const isUserTurn = currentTurn === playerColor;
 
             if (isUserTurn) {
-                playerWhiteBox.classList.add('highlight-turn');
+                // Si le joueur local est celui dont c'est le tour (Blanc ou Noir)
+                if (playerColor === 'white') {
+                    playerWhiteBox.classList.add('highlight-turn');
+                } else {
+                    playerBlackBox.classList.add('highlight-turn');
+                }
             } else {
-                playerBlackBox.classList.add('highlight-turn');
+                // Si c'est le tour de l'adversaire
+                if (playerColor === 'white') {
+                    playerBlackBox.classList.add('highlight-turn');
+                } else {
+                    playerWhiteBox.classList.add('highlight-turn');
+                }
             }
         }
 
@@ -772,6 +791,7 @@
                                 return; 
                             }
                             
+                            // Afficher le dernier coup ajouté par la synchronisation
                             const lastMove = clientMoveHistory.length > 0 ? clientMoveHistory[clientMoveHistory.length - 1] : "un coup";
                             displayInfo(`Coup de l'adversaire joué: ${lastMove}. À vous de jouer.`, 'info');
                             
@@ -1248,17 +1268,31 @@
             
             const isWhite = color === 'white';
             
-            document.getElementById('player-white-name').textContent = USERNAME;
-            eloWhiteEl.textContent = `[1200 ELO (${playerColor.toUpperCase()})]`;
+            document.getElementById('player-white-name').textContent = isWhite ? USERNAME : opponentId;
+            const whiteElo = `[1200 ELO (${isWhite ? 'VOUS' : 'ADV'})]`;
+            eloWhiteEl.textContent = whiteElo;
             
-            document.getElementById('player-black-name').textContent = opponentId;
-            const opponentColor = isWhite ? 'black' : 'white';
-            eloBlackEl.textContent = `[1200 ELO (${opponentColor.toUpperCase()})]`;
+            document.getElementById('player-black-name').textContent = isWhite ? opponentId : USERNAME;
+            const blackElo = `[1200 ELO (${isWhite ? 'ADV' : 'VOUS'})]`;
+            eloBlackEl.textContent = blackElo;
 
             if (isWhite) {
                 chessboardEl.classList.remove('rotated'); 
             } else {
                 chessboardEl.classList.add('rotated'); 
+            }
+            
+            // Assurer que le conteneur du joueur local est en bas (s'il est blanc) ou en haut (s'il est noir)
+            if (isWhite) {
+                playerWhiteBox.classList.remove('top-player');
+                playerWhiteBox.classList.add('bottom-player');
+                playerBlackBox.classList.add('top-player');
+                playerBlackBox.classList.remove('bottom-player');
+            } else {
+                playerWhiteBox.classList.add('top-player');
+                playerWhiteBox.classList.remove('bottom-player');
+                playerBlackBox.classList.remove('top-player');
+                playerBlackBox.classList.add('bottom-player');
             }
         }
         
@@ -1313,7 +1347,6 @@
             const piece = chessBoard.get(square);
             
             if (!selectedCoords) {
-                // ⭐ MODIFICATION POUR LE BUG NOIR (Issue 2)
                 // On vérifie si la pièce cliquée est de la couleur du joueur (playerColor)
                 if (piece && (piece.color === playerColor[0])) { 
                     selectedCoords = { row, col };
@@ -1345,7 +1378,7 @@
 
                 if (moveResult) {
                     
-                    // ⭐ CORRECTION DE L'HISTORIQUE (Issue 1) : Ajouter le coup du joueur localement
+                    // Ajouter le coup du joueur localement
                     clientMoveHistory.push(moveResult.san); 
 
                     let move_uci_correct = moveResult.from + moveResult.to;

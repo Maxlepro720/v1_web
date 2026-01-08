@@ -51,18 +51,20 @@
             max-width: 600px; 
             padding: 10px; 
             margin: 5px 0;
-            border-radius: 8px; 
+            border-radius: 8px; /* Effet visuel */
             transition: all 0.3s;
             border: 2px solid transparent; 
-            background-color: #2a2a2a; 
+            background-color: #2a2a2a; /* Fond légèrement plus foncé pour les boîtes */
         }
         
+        /* Indicateur de tour (Carré vert) */
         .player-container.highlight-turn {
             border-color: #28a745; 
-            box-shadow: 0 0 10px rgba(40, 167, 69, 0.7); 
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.7); /* Lueur verte */
         }
 
         .top-player { border-top: 2px solid rgba(255,255,255,0.1); } 
+        /* La classe bottom-player est cruciale pour l'inversion visuelle */
         .bottom-player { flex-direction: row-reverse; } 
         .bottom-player .player-info { text-align: right; } 
 
@@ -94,6 +96,7 @@
             position: relative;
         }
 
+        /* Masque le panneau d'information */
         .info-panel {
             text-align: center;
             margin-bottom: 10px;
@@ -113,7 +116,7 @@
             grid-template-columns: repeat(8, 1fr); 
             grid-template-rows: repeat(8, 1fr);
             border: 4px solid #f0f0f0;
-            box-shadow: 0 0 15px rgba(0,0,0,0.8), 0 0 5px rgba(255, 255, 255, 0.2); 
+            box-shadow: 0 0 15px rgba(0,0,0,0.8), 0 0 5px rgba(255, 255, 255, 0.2); /* Effet visuel */
             position: relative;
             transition: transform 0.5s ease-in-out; 
         }
@@ -158,20 +161,17 @@
             box-sizing: border-box;
         }
 
+        /* Échec (case du roi en rouge) */
         .in-check { 
             background-color: red !important; 
         }
         
+        /* S'assurer que le roi maté a aussi la case rouge */
         .checkmated-square {
             background-color: red !important;
             box-shadow: inset 0 0 0 5px darkred;
         }
 
-        .checkmated-king {
-            opacity: 0.4; 
-            filter: grayscale(100%) brightness(0.7); 
-            text-shadow: none !important; 
-        }
 
         .piece {
             position: absolute;
@@ -181,10 +181,20 @@
             align-items: center;
             justify-content: center;
             font-size: 4.5vw; 
+            /* Transition pour le mouvement des pièces */
             transition: transform 0.3s ease-in-out; 
             pointer-events: none; 
             z-index: 10;
         }
+
+        /* Style pour le Roi mis en échec et mat (cassé/vaincu) */
+        .checkmated-king {
+            /* Simule une pièce cassée ou vaincue */
+            opacity: 0.4; /* Très estompé */
+            filter: grayscale(100%) brightness(0.7); /* Gris foncé et estompé */
+            text-shadow: none !important; 
+        }
+
 
         @media (min-width: 1222px) { 
             .piece {
@@ -209,7 +219,7 @@
             flex-direction: column;
             gap: 15px; 
             height: fit-content; 
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5); 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5); /* Effet visuel */
         }
         
         .play-button {
@@ -235,7 +245,8 @@
             border-color: #555;
             cursor: not-allowed;
         }
-        
+
+        /* Responsive pour les petits écrans */
         @media (max-width: 900px) {
             .main-container {
                 flex-direction: column;
@@ -323,6 +334,7 @@
             transform: translateY(-1px);
         }
 
+        /* Couleurs contextuelles pour la modale */
         .modal-win #modal-content { 
             border-color: #28a745; 
             box-shadow: 0 0 20px rgba(40, 167, 69, 0.7);
@@ -383,8 +395,8 @@
                 Lancer Partie
             </button>
             
-            <button id="give-up-button" class="play-button" onclick="giveUpGame()" disabled>
-                Abandonner la partie
+            <button id="abandon-button" class="play-button" style="background-color: #dc3545; border-color: #dc3545;" onclick="giveUpMatch()" disabled>
+                Abandonner la Partie
             </button>
             
             <div class="moves-list-container">
@@ -463,7 +475,6 @@
         const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; 
         
         let chessBoard = new Chess(INITIAL_FEN); 
-        // let tempChessBoard = new Chess(INITIAL_FEN); // Instance temporaire pour la déduction de coup (SUPPRIMÉE)
 
         let currentGameId = null; 
         let playerColor = null; 
@@ -478,20 +489,20 @@
 
         let infoTimeout = null; 
         let pollingInterval = null; 
-        
-        let clientMoveHistory = []; // Historique des coups géré localement (SAN)
 
         // Références DOM globales
         const chessboardEl = document.getElementById('chessboard');
-        const infoEl = document.getElementById('info'); // Masqué par CSS
+        const infoEl = document.getElementById('info'); 
         const playButton = document.getElementById('play-button');
-        const giveUpButton = document.getElementById('give-up-button'); // NOUVEAU
         const movesListEl = document.getElementById('moves-list');
         const matchStatusEl = document.getElementById('match-status-text');
         const playerWhiteBox = document.getElementById('player-white-box');
         const playerBlackBox = document.getElementById('player-black-box');
         const eloWhiteEl = document.getElementById('elo-white');
         const eloBlackEl = document.getElementById('elo-black');
+        
+        // Référence au bouton d'abandon
+        const abandonButton = document.getElementById('abandon-button'); 
         
         // Références DOM de la modale
         const modalOverlay = document.getElementById('modal-overlay');
@@ -500,34 +511,20 @@
         const modalMessage = document.getElementById('modal-message');
         const modalCloseButton = document.getElementById('modal-close-button');
         
+        // Attachement initial de l'événement de fermeture de la modale
         modalCloseButton.addEventListener('click', () => {
             modalOverlay.style.display = 'none';
         });
 
         // --- Fonctions FEN et Mise à Jour du Plateau ---
         
-        /**
-         * Met à jour l'état du plateau à partir d'une nouvelle FEN et de la liste complète des coups.
-         * @param {string} newFen - La nouvelle FEN
-         * @param {string[]} movesListFromServer - La liste complète des coups en SAN fournie par le serveur
-         * @param {boolean} shouldDraw - Indique s'il faut redessiner le plateau
-         */
-        function updateBoardState(newFen, movesListFromServer = [], shouldDraw = true) {
-            
-            // 1. Mise à jour de l'objet chessBoard principal
-             try {
-                chessBoard.load(newFen); 
-            } catch (e) {
-                console.error("Erreur de chargement de FEN:", newFen, e);
-                return; 
-            }
+        function updateBoardState(newFen, shouldDraw = true) {
+            chessBoard.load(newFen); 
             
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             waitingForMove = (currentTurn !== playerColor); 
             
-            // ⭐ CORRECTION HISTORIQUE : Utilisation de la liste des coups du serveur comme source de vérité
-            clientMoveHistory = movesListFromServer; 
-            updateMovesList(clientMoveHistory); 
+            updateMovesList(chessBoard.history()); // Appel avec la liste des coups
             
             if (shouldDraw) {
                 drawPieces();
@@ -545,31 +542,20 @@
                 return;
             }
             
-            giveUpButton.disabled = isGameOver;
-
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             const isUserTurn = currentTurn === playerColor;
 
             if (isUserTurn) {
-                // Si c'est le tour de l'utilisateur, on met en surbrillance sa couleur
                 if (playerColor === 'white') {
                     playerWhiteBox.classList.add('highlight-turn');
                 } else {
                     playerBlackBox.classList.add('highlight-turn');
                 }
-                waitingForMove = false; // C'est notre tour
-                stopPolling(); 
             } else {
-                // Si c'est le tour de l'adversaire, on met en surbrillance sa couleur
                 if (playerColor === 'white') {
                     playerBlackBox.classList.add('highlight-turn');
                 } else {
                     playerWhiteBox.classList.add('highlight-turn');
-                }
-                waitingForMove = true; // On attend le coup
-                // Démarrer le polling si ce n'est pas déjà fait
-                if (!pollingInterval) {
-                     startPolling(500); // 500ms de délai pour le premier poll
                 }
             }
         }
@@ -585,9 +571,6 @@
         }
 
         function startPolling(initialDelay = 0) {
-            // Empêche le polling si c'est notre tour ou si la partie est terminée
-            if (isGameOver || !currentGameId || !waitingForMove) return;
-            
             stopPolling(); 
             console.log(`-> [POLLING] Démarré, prochaine vérification dans ${initialDelay/1000}s puis toutes les 2s.`);
             
@@ -600,91 +583,83 @@
         async function pollGameStatus() { 
             console.log(`\n--- [POLLING] Démarrage du cycle pour ${USERNAME} (${playerColor}) ---`);
 
-            if (!currentGameId || isGameOver || !waitingForMove) {
+            if (!currentGameId || isGameOver) {
                 stopPolling();
                 return;
             }
             
+            const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
+            if (!waitingForOpponent && currentTurn === playerColor) { 
+                 stopPolling(); 
+                 return;
+            }
+            
             try {
-                // CORRECTION POLLING : Utilisation de POST
-                const response = await fetch(`${SERVER_URL}/get_game_state`, {
-                    method: 'POST',
+                const response = await fetch(`${SERVER_URL}/get_game_state?game_uuid=${currentGameId}&username=${USERNAME}`, {
+                    method: 'GET',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ game_uuid: currentGameId })
                 });
 
                 const data = await response.json();
 
-                if (response.ok && data.status === 'success') {
+                if (response.ok) {
                     
-                    const currentFen = chessBoard.fen();
-                    
-                    if (waitingForOpponent) {
+                    if (waitingForOpponent && data.game_status === 'active') {
+                        waitingForOpponent = false; 
+                        
                         if (data.opponent_id && data.opponent_id !== OPPONENT_NAME) {
                              opponentId = data.opponent_id;
                         }
                         
-                        if (data.fen !== currentFen) { 
-                           // L'adversaire a joué le premier coup !
-                           waitingForOpponent = false; 
-                           setupPlayerAndBoard(playerColor, opponentId); 
-                           matchStatusEl.textContent = `Partie contre ${opponentId} !`;
-                           
-                           const title = "Partie Démarrée !";
-                           const message = `L'adversaire (${opponentId}) a rejoint et a joué son premier coup ! Vous jouez ${playerColor.toUpperCase()}. À vous de jouer.`;
-                           showModal(title, message, 'info'); 
-                           
-                           updateBoardState(data.fen, data.moves_list); 
-                           stopPolling();
-                           return;
-                        }
+                        setupPlayerAndBoard(playerColor, opponentId); 
                         
-                        if (data.game_status === 'active') { 
-                            // L'adversaire a rejoint mais n'a pas encore joué (si nous sommes blancs)
-                            waitingForOpponent = false; 
-                            setupPlayerAndBoard(playerColor, opponentId); 
-                            matchStatusEl.textContent = `Partie contre ${opponentId} !`;
-                            
-                            const title = "Partie Démarrée !";
-                            const message = `L'adversaire (${opponentId}) a rejoint la partie ! Vous jouez ${playerColor.toUpperCase()}. À vous de jouer.`;
-                            showModal(title, message, 'info'); 
-                            
-                            updateBoardState(data.fen, data.moves_list); 
-                            stopPolling(); 
-                            return;
-                        }
-
+                        matchStatusEl.textContent = `Partie contre ${opponentId} !`;
+                        
+                        const title = "Partie Démarrée !";
+                        const message = `L'adversaire (${opponentId}) a rejoint la partie ! Vous jouez ${playerColor.toUpperCase()}. À vous de jouer.`;
+                        showModal(title, message, 'info'); 
+                        
+                        updateBoardState(data.fen); 
+                        stopPolling(); 
                     }
                     
-                    if (!waitingForOpponent) {
+                    if (!waitingForOpponent && data.game_status === 'active') {
+                        const currentFen = chessBoard.fen();
                         
                         if (data.fen !== currentFen) {
                             // Mouvement de l'adversaire détecté
-                            // data.moves_list est la source de vérité
-                            updateBoardState(data.fen, data.moves_list); 
+                            updateBoardState(data.fen); 
                             
-                            if (data.game_over) {
-                                const winnerColor = data.turn === 'w' ? 'black' : 'white';
-                                const status = data.checkmate ? 'checkmate' : data.draw ? 'draw' : 'finished';
+                            if (chessBoard.in_checkmate() || chessBoard.in_draw()) {
+                                const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
+                                const status = chessBoard.in_checkmate() ? 'checkmate' : 'draw';
                                 
                                 endGame(status, winnerColor, false); 
                                 return; 
                             }
                             
-                            // Afficher le dernier coup ajouté à l'historique (qui vient d'être mis à jour)
-                            const lastMove = clientMoveHistory.length > 0 ? clientMoveHistory[clientMoveHistory.length - 1] : "un coup";
-                            displayInfo(`Coup de l'adversaire joué: ${lastMove}. À vous de jouer.`, 'info');
+                            displayInfo(`Coup de l'adversaire joué: ${chessBoard.history().pop()}. À vous de jouer.`, 'info');
                             
-                            // L'appel à updateTurnIndicator() dans updateBoardState() gère l'arrêt du polling
+                            if (!waitingForMove) {
+                                startPolling();
+                            }
                         }
+                    } else if (data.game_status !== 'created' && data.game_status !== 'active') {
+                        // Statut de fin de partie reçu (Y compris 'abandoned' et 'timeout')
+                        
+                        updateBoardState(data.fen); 
+                        
+                        let winnerColor = null;
+                        if (data.game_status === 'abandoned' || data.game_status === 'timeout') {
+                             // Si le jeu se termine par forfait, le gagnant est celui qui n'a pas abandonné (le tour est toujours au perdant)
+                             winnerColor = data.game_status_details.winner_color;
+                        } else {
+                             // Mat ou nul : le tour indique celui qui vient de perdre
+                             winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
+                        }
+                        
+                        endGame(data.game_status, winnerColor, false); 
                     }
-                    
-                } else if (response.ok && (data.result || data.game_status)) {
-                    // Statut de fin de partie reçu (ex: abandon, timeout)
-                    const winnerColor = data.result === '1-0' ? 'white' : (data.result === '0-1' ? 'black' : 'draw');
-                    // On ne peut pas déterminer le statut exact sans plus d'info, on utilise 'finished'
-                    const status = data.game_status || 'finished'; 
-                    endGame(status, winnerColor, false); 
                     
                 } else {
                     console.error(`[POLLING ERROR] Réponse serveur non-OK: ${data.error || 'Erreur inconnue.'}`);
@@ -704,8 +679,8 @@
             }
 
             playButton.disabled = true;
-            giveUpButton.disabled = true;
             playButton.textContent = 'Recherche...';
+            abandonButton.disabled = true;
 
             try {
                 const response = await fetch(`${SERVER_URL}/find_or_create_match`, {
@@ -722,43 +697,38 @@
                     opponentId = data.opponent_id || OPPONENT_NAME;
                     
                     playButton.textContent = 'Partie en Cours';
-                    giveUpButton.disabled = false; // Activation du bouton d'abandon
-
+                    abandonButton.disabled = false; // Activation du bouton d'abandon
+                    
                     if (data.status === 'created') {
                         waitingForOpponent = true;
                         matchStatusEl.textContent = `En attente d'un adversaire... (ID: ${currentGameId})`;
                         displayInfo("Partie créée. En attente de l'adversaire.", 'info'); 
                         setupPlayerAndBoard(playerColor, opponentId);
-                        // Utilise l'historique vide par défaut pour une nouvelle partie
-                        updateBoardState(data.fen || INITIAL_FEN, data.moves_list || []); 
                         startPolling(); 
                         
                     } else if (data.status === 'joined') {
-                        waitingForMove = (data.turn !== playerColor); // Vrai si ce n'est pas son tour (ex: rejoint en tant que Noir)
+                        waitingForMove = true;
                         matchStatusEl.textContent = `Partie contre ${opponentId} !`;
                         
                         const title = "Partie Démarrée !";
-                        const message = `Vous avez rejoint la partie ! Vous jouez ${playerColor.toUpperCase()} contre ${opponentId}. Au tour de ${data.turn.toUpperCase()}.`;
+                        const message = `Vous avez rejoint la partie ! Vous jouez ${playerColor.toUpperCase()} contre ${opponentId}. Au tour de Blanc.`;
                         showModal(title, message, 'info'); 
                         
                         setupPlayerAndBoard(playerColor, opponentId);
-                        // Utilise la FEN et l'historique reçus
-                        updateBoardState(data.fen, data.moves_list);
-                        
-                        // Si ce n'est pas notre tour, démarrer le polling
-                        if (waitingForMove) {
-                           startPolling();
-                        }
+                        updateBoardState(data.fen);
+                        startPolling();
                     }
                 } else {
                     playButton.disabled = false;
                     playButton.textContent = 'Lancer Partie';
+                    abandonButton.disabled = true; 
                     displayInfo(`Erreur lors du matchmaking: ${data.error}`, 'error');
                 }
 
             } catch (e) {
                 playButton.disabled = false;
                 playButton.textContent = 'Lancer Partie';
+                abandonButton.disabled = true;
                 displayInfo("Erreur de connexion au serveur.", 'error');
                 console.error("Erreur Matchmaking:", e);
             }
@@ -778,7 +748,6 @@
             while (attempt < MAX_RETRIES) {
                 attempt++;
                 displayInfo(`Tentative d'envoi du coup : ${attempt}/${MAX_RETRIES}...`);
-                waitingForMove = true; // On bloque les autres coups pendant l'envoi
 
                 try {
                     const response = await fetch(`${SERVER_URL}/make_move`, {
@@ -789,32 +758,24 @@
                     
                     const data = await response.json();
 
-                    if (response.ok && data.status === "success") {
+                    if (response.ok && data.success) {
+                        updateBoardState(data.new_fen); 
                         
-                        // CORRECTION HISTORIQUE: Utiliser la FEN et la liste des coups du serveur comme source de vérité
-                        updateBoardState(data.fen, data.moves_list); 
-                        
-                        if (data.game_over) {
-                            // Le serveur a déterminé une fin de partie par notre coup
-                            const winnerColor = data.turn === 'white' ? 'black' : 'white'; // data.turn est la couleur qui doit jouer (le perdant)
-                            endGame(data.checkmate ? 'checkmate' : data.draw ? 'draw' : 'finished', winnerColor, true); 
+                        if (data.game_status !== 'active') {
+                            const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
+                            endGame(data.game_status, winnerColor, true); 
                         } else {
                             displayInfo("Coup envoyé. En attente du coup de l'adversaire...");
-                            // updateTurnIndicator() (appelé dans updateBoardState) gérera le startPolling
+                            startPolling(); 
                         }
                         return;
 
                     } else {
-                        // Erreur côté serveur (ex: Coup illégal si non détecté côté client, ou problème BDD)
-                        if (data.error) {
-                            // Annuler les modifications locales faites dans handleMove
-                            chessBoard.undo(); 
-                            clientMoveHistory.pop(); 
-                            // Réafficher l'état d'avant la tentative
-                            updateBoardState(chessBoard.fen(), clientMoveHistory); 
-
-                            displayInfo(`Coup rejeté par le serveur: ${data.error}`, 'error');
-                            return; // Arrêter les tentatives
+                        if (data.error && data.error.includes("illegal move")) {
+                            displayInfo(`Coup rejeté par le serveur: coup illégal. ${data.error}`, 'error');
+                            chessBoard.undo();
+                            updateBoardState(chessBoard.fen());
+                            return;
                         }
 
                         console.warn(`[TENTATIVE ${attempt}] Erreur serveur/API: ${data.error || 'Coup rejeté par le serveur.'}`);
@@ -831,25 +792,29 @@
                 }
             }
 
-            // Si toutes les tentatives ont échoué
             console.error("Toutes les tentatives d'envoi du coup ont échoué.");
             chessBoard.undo();
-            clientMoveHistory.pop(); 
-            updateBoardState(chessBoard.fen(), clientMoveHistory);
-            waitingForMove = false;
+            updateBoardState(chessBoard.fen());
             displayInfo("Échec critique de la communication. Coup annulé localement. Veuillez relancer la partie ou vérifier la connexion.", 'error');
         }
 
-        // CORRECTION ABANDON : Ajout de la fonction
-        async function giveUpGame() {
-            if (!currentGameId || isGameOver) return;
+        /**
+         * Gère l'abandon local du joueur.
+         * Le joueur qui abandonne détruit le match pour le serveur s'il réussit.
+         */
+        async function giveUpMatch() {
+            if (!currentGameId || isGameOver || waitingForOpponent) {
+                displayInfo("Impossible d'abandonner: aucune partie active ou en attente d'adversaire.", 'warning');
+                return;
+            }
 
-            const confirmAbandon = confirm("Êtes-vous sûr de vouloir abandonner la partie ? Cela entraînera une défaite.");
-            if (!confirmAbandon) return;
+            if (!confirm("Êtes-vous sûr de vouloir abandonner la partie ? Cela entraînera une défaite immédiate.")) {
+                return;
+            }
 
-            displayInfo("Envoi de la demande d'abandon...", 'warning');
-            giveUpButton.disabled = true;
-
+            abandonButton.disabled = true;
+            displayInfo("Envoi de la demande d'abandon au serveur...", 'info');
+            
             try {
                 const response = await fetch(`${SERVER_URL}/give_up_chess`, {
                     method: 'POST',
@@ -857,31 +822,46 @@
                     body: JSON.stringify({ game_uuid: currentGameId, username: USERNAME })
                 });
 
-                const data = await response.json();
-
-                if (response.ok && data.status === "success") {
-                    // Le serveur a traité l'abandon et a renvoyé le résultat
-                    const gameResult = data.result; // Ex: '0-1' ou '1-0'
-                    const winnerColor = (gameResult === '1-0') ? 'white' : 'black';
-                    
-                    endGame('abandoned', winnerColor, true); 
-                    
-                } else {
-                    giveUpButton.disabled = false;
-                    displayInfo(`Erreur lors de l'abandon: ${data.error || 'Erreur inconnue.'}`, 'error');
+                // --- Gérer la réponse non-JSON (Correction SyntaxError) ---
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    const errorText = await response.text(); 
+                    console.error("[SERVER ERROR RESPONSE]", errorText);
+                    if (response.status === 405) {
+                         throw new Error(`Erreur 405 (Méthode non autorisée). Vérifiez que la route /give_up_chess utilise POST sur le serveur.`);
+                    }
+                    throw new Error(`Le serveur a retourné un format inattendu (Status ${response.status}).`);
                 }
 
+                const data = await response.json();
+                // --- Fin de la gestion non-JSON ---
+
+
+                if (response.ok && data.status === 'success') {
+                    // Le serveur renvoie la couleur gagnante (l'adversaire) dans winner_color.
+                    const winnerColor = data.winner_color;
+                    
+                    // Le joueur qui abandonne est responsable de signaler la fin de partie (shouldDestroy = true).
+                    endGame('abandoned', winnerColor, true); 
+                    displayInfo("Partie abandonnée avec succès.", 'success');
+                    
+                } else {
+                    displayInfo(`Échec de l'abandon: ${data.message || 'Erreur inconnue.'}`, 'error');
+                    abandonButton.disabled = false; // Réactiver si échec
+                }
             } catch (e) {
-                giveUpButton.disabled = false;
-                console.error("Erreur réseau lors de l'abandon:", e);
-                displayInfo("Erreur critique de la communication. Veuillez vérifier la connexion.", 'error');
+                displayInfo(`Erreur réseau lors de l'abandon: ${e.message || e}`, 'error');
+                console.error("Erreur Abandon Match:", e);
+                abandonButton.disabled = false; 
             }
         }
 
 
+        /**
+         * Réinitialise l'état complet du client (variables et DOM) au statut initial.
+         */
         function resetClientState() {
-            clientMoveHistory = [];
-            
+            // 1. Réinitialisation des variables d'état
             currentGameId = null;
             playerColor = null;
             opponentId = OPPONENT_NAME; 
@@ -893,24 +873,35 @@
 
             stopPolling();
             
+            // 2. Réinitialisation des pseudos/infos dans le DOM (USERNAME reste en bas)
             document.getElementById('player-white-name').textContent = USERNAME; 
             document.getElementById('player-black-name').textContent = OPPONENT_NAME; 
             eloWhiteEl.textContent = `[1200 ELO]`; 
             eloBlackEl.textContent = `[1200 ELO]`;
 
+            // 3. Réinitialisation de la rotation du plateau (Blanc en bas par défaut)
             chessboardEl.classList.remove('rotated');
             
-            updateBoardState(INITIAL_FEN, []); // Mise à jour avec historique vide
+            // 4. Réinitialisation de l'état du jeu (FEN initial) et dessin
+            updateBoardState(INITIAL_FEN, true); 
 
+            // 5. Réinitialisation des messages/boutons
             displayInfo("Cliquez sur \"Lancer Partie\" pour commencer à jouer.", 'info'); 
             playButton.textContent = "Lancer Partie";
             playButton.disabled = false;
-            giveUpButton.disabled = true; // Désactivation du bouton d'abandon
             matchStatusEl.textContent = "(En attente de connexion)";
             playerWhiteBox.classList.remove('highlight-turn');
             playerBlackBox.classList.remove('highlight-turn');
+            
+            // Réinitialisation du bouton d'abandon
+            if (abandonButton) {
+                abandonButton.disabled = true;
+            }
         }
 
+        /**
+         * Envoie la requête de destruction/finalisation au serveur.
+         */
         async function destroyMatch() {
             if (!currentGameId || !USERNAME) return;
             
@@ -941,13 +932,15 @@
             }
         }
 
+
+        /**
+         * Gère la fin de partie avec un affichage clair (modale).
+         */
         function endGame(status, winnerColor, shouldDestroy = false) {
             stopPolling();
             isGameOver = true;
             
-            giveUpButton.disabled = true; // Désactivation du bouton d'abandon
-            
-            const isLocalPlayerWinner = (status === 'checkmate' || status === 'abandoned' || status === 'timeout' || status === 'finished') && (winnerColor === playerColor);
+            const isLocalPlayerWinner = (status === 'checkmate' || status === 'abandoned' || status === 'timeout') && (winnerColor === playerColor);
             
             let message = "La partie est terminée.";
             let modalType = 'draw'; 
@@ -963,21 +956,10 @@
                 message = "La partie se termine par un match nul.";
                 modalTitle = "MATCH NUL";
                 modalType = 'draw';
-            } else if (status === 'abandoned' || status === 'timeout' || status === 'finished') { 
-                // 'finished' est utilisé si le serveur ne renvoie qu'une fin de partie sans plus de détails
+            } else if (status === 'abandoned' || status === 'timeout') { 
                 const loserName = (winnerColor === playerColor) ? opponentId : USERNAME;
-                
-                if (status === 'abandoned') {
-                    message = isLocalPlayerWinner ? `${loserName} a abandonné.` : `Vous avez perdu par abandon.`;
-                    modalTitle = isLocalPlayerWinner ? 'VICTOIRE PAR FORFAIT' : 'DÉFAITE PAR FORFAIT';
-                } else if (status === 'timeout') {
-                     message = isLocalPlayerWinner ? `${loserName} a perdu au temps.` : `Vous avez perdu au temps.`;
-                    modalTitle = isLocalPlayerWinner ? 'VICTOIRE PAR TEMPS' : 'DÉFAITE PAR TEMPS';
-                } else {
-                    // Statut générique 'finished' ou autre
-                     message = isLocalPlayerWinner ? `${loserName} a perdu.` : `Vous avez perdu.`;
-                    modalTitle = isLocalPlayerWinner ? 'VICTOIRE' : 'DÉFAITE';
-                }
+                message = isLocalPlayerWinner ? `${loserName} a ${status === 'abandoned' ? 'abandonné' : 'perdu au temps'} (Forfait).` : `Vous avez perdu par ${status === 'abandoned' ? 'abandon' : 'temps'} (Forfait).`;
+                modalTitle = isLocalPlayerWinner ? 'VICTOIRE PAR FORFAIT' : 'DÉFAITE PAR FORFAIT';
                 modalType = isLocalPlayerWinner ? 'win' : 'loss';
             }
 
@@ -988,21 +970,33 @@
             drawPieces();
             drawBoard();
 
-            if (shouldDestroy) {
-                destroyMatch(); 
+            if (isLocalPlayerWinner) {
+                 // Seul le gagnant (y compris par forfait de l'adversaire) est responsable de destroyMatch.
+                 // Le joueur qui abandonne le fait immédiatement après le POST réussi.
+                 destroyMatch(); 
             }
             
             playButton.disabled = true;
             playButton.textContent = 'Partie Terminée';
+            
+            if (abandonButton) {
+                 abandonButton.disabled = true;
+            }
+            
             updateTurnIndicator(); 
             
+            // Réinitialisation du client après un délai de 5 secondes
             setTimeout(resetClientState, 5000); 
         }
 
+        /**
+         * Affiche une modale (pop-up) à l'écran.
+         */
         function showModal(title, message, type = 'info') {
             modalTitle.textContent = title;
             modalMessage.textContent = message;
             
+            // Nettoie les classes spécifiques de la modale pour le styling
             modalContent.className = '';
             modalContent.classList.add('modal-' + type.toLowerCase());
 
@@ -1013,6 +1007,7 @@
                     findOrCreateMatch(); 
                 };
             } else {
+                // Pour les modales d'information (début de partie)
                 modalCloseButton.textContent = "Continuer";
                 modalCloseButton.onclick = () => {
                     modalOverlay.style.display = 'none';
@@ -1022,9 +1017,11 @@
             modalOverlay.style.display = 'flex';
         }
 
+        // displayInfo est maintenant principalement pour le log/feedback non-modal.
         function displayInfo(message, type = 'info') {
             if (infoTimeout) clearTimeout(infoTimeout);
             
+            // Log dans la console pour le debug
             console.log(`[INFO - ${type.toUpperCase()}] ${message}`); 
 
             if (type === 'error' || type === 'warning' || type === 'gameover' || type === 'success') {
@@ -1036,9 +1033,10 @@
             }, 5000);
         }
 
+        /**
+         * Met à jour la liste des coups joués.
+         */
         function updateMovesList(history) {
-            console.log(`[HISTORIQUE] Mise à jour avec ${history.length} coups. Contenu:`, history);
-            
             movesListEl.innerHTML = '';
             
             for (let i = 0; i < history.length; i += 2) {
@@ -1050,7 +1048,7 @@
                 tr.appendChild(tdNum);
                 
                 const tdWhite = document.createElement('td');
-                tdWhite.textContent = history[i] || '';
+                tdWhite.textContent = history[i];
                 tr.appendChild(tdWhite);
                 
                 const tdBlack = document.createElement('td');
@@ -1067,20 +1065,21 @@
             
             const isWhite = color === 'white';
             
-            document.getElementById('player-white-name').textContent = USERNAME;
-            eloWhiteEl.textContent = `[1200 ELO (${playerColor.toUpperCase()})]`;
+            // White player info is always at the bottom (player-white-box)
+            document.getElementById('player-white-name').textContent = isWhite ? USERNAME : opponentId;
+            eloWhiteEl.textContent = `[1200 ELO (${isWhite ? playerColor.toUpperCase() : 'NOIR'})]`; 
             
-            document.getElementById('player-black-name').textContent = opponentId;
+            // Black player info is always at the top (player-black-box)
+            document.getElementById('player-black-name').textContent = isWhite ? opponentId : USERNAME;
             const opponentColor = isWhite ? 'black' : 'white';
-            eloBlackEl.textContent = `[1200 ELO (${opponentColor.toUpperCase()})]`;
+            eloBlackEl.textContent = `[1200 ELO (${isWhite ? 'NOIR' : playerColor.toUpperCase()})]`;
+
 
             if (isWhite) {
                 chessboardEl.classList.remove('rotated'); 
             } else {
                 chessboardEl.classList.add('rotated'); 
             }
-            
-            giveUpButton.disabled = false; // Activation du bouton d'abandon
         }
         
         function drawBoard() {
@@ -1137,6 +1136,7 @@
             if (!selectedCoords) {
                 if (piece && (piece.color === currentTurn[0])) {
                     selectedCoords = { row, col };
+                    // Obtient les coups légaux en format détaillé
                     legalMoves = chessBoard.moves({ square: square, verbose: true }); 
                     drawBoard(); 
                 }
@@ -1152,6 +1152,7 @@
                     return;
                 }
                 
+                // Promotion par défaut en Dame ('q')
                 const moveAttempt = {
                     from: startCoord,
                     to: endCoord,
@@ -1161,10 +1162,6 @@
                 const moveResult = chessBoard.move(moveAttempt); 
 
                 if (moveResult) {
-                    
-                    clientMoveHistory.push(moveResult.san); // Ajout local temporaire
-                    updateMovesList(clientMoveHistory); // Affichage immédiat
-
                     let move_uci_correct = moveResult.from + moveResult.to;
                     if (moveResult.promotion) {
                         move_uci_correct += moveResult.promotion;
@@ -1266,7 +1263,11 @@
             document.getElementById('player-black-name').textContent = OPPONENT_NAME;
             
             initBoardSquares(); 
-            updateBoardState(chessBoard.fen(), []); 
+            updateBoardState(chessBoard.fen()); 
+            
+            if (abandonButton) {
+                abandonButton.disabled = true;
+            }
         }
 
         document.addEventListener('DOMContentLoaded', initializeGame);

@@ -657,7 +657,6 @@
         
         let waitingForOpponent = false; 
         let waitingForMove = false; 
-        let premoveMove = null; // Ajout pour le pré-mouvement
 
         let pollingInterval = null; 
         let notificationTimeout = null;
@@ -774,8 +773,7 @@
 
                 if (response.ok && data.status === 'abandoned') {
                     const winnerColor = data.winner_color;
-                    // L'adversaire est celui qui met fin au jeu côté client, SANS appeler destroyMatch.
-                    endGame('abandoned', winnerColor, false); 
+                    endGame('abandoned', winnerColor, true); 
                     return true; 
                 }
                 
@@ -786,41 +784,6 @@
                 return false;
             }
         }
-        
-        // --- NOUVELLE FONCTION POUR TENTER UN PREMOVE ---
-        function tryPremove() {
-            if (!premoveMove) return false;
-            
-            // Tenter le coup sur le plateau local
-            const moveResult = chessBoard.move(premoveMove);
-            
-            if (moveResult) {
-                // Coup valide, on prépare l'envoi au serveur
-                let move_uci_correct = moveResult.from + moveResult.to;
-                if (moveResult.promotion) {
-                    move_uci_correct += moveResult.promotion;
-                }
-                
-                // Effacer le pré-mouvement et l'envoyer immédiatement
-                premoveMove = null;
-                makeMoveServer(move_uci_correct);
-                return true; 
-                
-            } else {
-                // Coup non valide (ex: échec, pièce déplacée, etc.)
-                console.log("Premove non valide, annulé.");
-                showGameNotification("Premove annulé", true);
-                premoveMove = null;
-                selectedCoords = null; // On réinitialise la sélection
-                legalMoves = [];
-                drawBoard(); 
-                // On reprend le polling si l'envoi du premove n'a pas été fait
-                if (!pollingInterval) startPolling(); 
-                return false;
-            }
-        }
-        
-        // --- FIN NOUVELLE FONCTION POUR TENTER UN PREMOVE ---
 
 
         async function pollGameStatus() { 
@@ -842,9 +805,8 @@
                 if (response.ok) {
                     
                     if (data.game_status === 'abandoned') {
-                         const winnerColor = data.winner_color;
-                         // Celui qui reçoit l'abandon s'arrête sans détruire le match
-                         endGame('abandoned', winnerColor, false); 
+                         const winnerColor = playerColor; 
+                         endGame('abandoned', winnerColor, true); 
                          return; 
                     }
                     
@@ -861,7 +823,7 @@
                         setupPlayerAndBoard(playerColor, opponentId); 
                         
                         const title = "Partie Démarrée !";
-                        const message = `Adversaire rejoint. Vous jouez ${playerColor.toUpperCase()}.`; // Raccourci
+                        const message = `L'adversaire (${opponentId}) a rejoint la partie ! Vous jouez ${playerColor.toUpperCase()}. À vous de jouer.`;
                         showModal(title, message, 'info'); 
                         
                         updateBoardState(data.fen); 
@@ -869,29 +831,18 @@
                     
                     if (!waitingForOpponent && data.game_status === 'active') {
                         
-                        // Le check d'abandon est fait uniquement sur les changements de coup pour éviter trop d'appels.
-                        // const abandoned = await checkAbandonStatus();
-                        // if (abandoned) {
-                        //     return; 
-                        // }
+                        const abandoned = await checkAbandonStatus();
+                        if (abandoned) {
+                            return; 
+                        }
                         
                         if (data.fen !== currentFen) {
-                            
                             updateBoardState(data.fen); 
                             
-                            // Tenter d'appliquer le premove
-                            if (premoveMove && chessBoard.turn() === playerColor[0]) {
-                                if (tryPremove()) {
-                                    // Si le premove a été joué et envoyé, on continue dans makeMoveServer
-                                    return;
-                                }
-                            }
-                            
-                            // Vérification de fin de partie après le coup de l'adversaire
-                            if (chessBoard.in_checkmate() || chessBoard.in_draw() || data.game_status !== 'active') {
+                            if (chessBoard.in_checkmate() || chessBoard.in_draw()) {
                                 const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
-                                const status = chessBoard.in_checkmate() ? 'checkmate' : data.game_status;
-                                // Le gagnant (ou le client qui détecte la fin) détruit le match
+                                const status = chessBoard.in_checkmate() ? 'checkmate' : 'draw';
+                                
                                 endGame(status, winnerColor, true); 
                                 return; 
                             }
@@ -903,8 +854,7 @@
                         updateBoardState(data.fen); 
                         
                         const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
-                        // Le perdant/receveur met fin au jeu local, sans détruire le match (gagnant/créateur s'en occupe)
-                        endGame(data.game_status, winnerColor, false); 
+                        endGame(data.game_status, winnerColor, data.game_status !== 'abandoned'); 
                     }
                     
                 } else {
@@ -949,7 +899,7 @@
                         waitSpinnerEl.style.display = 'flex';
                         
                         // Modale pour informer de l'attente (comme au lancement)
-                        showModal("Partie Créée", "En attente d'adversaire.", "info"); // Raccourci
+                        showModal("Partie Créée", "En attente d'un adversaire...", "info");
                         
                         setupPlayerAndBoard(playerColor, opponentId);
                         updateBoardState(data.fen || INITIAL_FEN); 
@@ -960,7 +910,7 @@
                         waitSpinnerEl.style.display = 'none';
 
                         const title = "Partie Démarrée !";
-                        const message = `Vous avez rejoint. Vous jouez ${playerColor.toUpperCase()}.`; // Raccourci
+                        const message = `Vous avez rejoint la partie ! Vous jouez ${playerColor.toUpperCase()} contre ${opponentId}. Au tour de Blanc.`;
                         showModal(title, message, 'info'); 
                         
                         setupPlayerAndBoard(playerColor, opponentId);
@@ -1014,13 +964,10 @@
                         
                         if (data.game_status !== 'active') {
                             const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
-                            // Si c'est un mat/nul, c'est le gagnant/client qui détecte qui doit détruire
                             endGame(data.game_status, winnerColor, true); 
                         } else {
-                            // Tenter immédiatement un premove s'il existe après l'envoi du coup
-                            if (!tryPremove()) {
-                                startPolling(); // Seulement si pas de premove
-                            }
+                            // Plus de message "Coup envoyé", c'est fluide.
+                            startPolling(); 
                         }
                         return;
 
@@ -1029,7 +976,6 @@
                             showGameNotification("Coup Illégal", true); // Popup rouge
                             chessBoard.undo();
                             updateBoardState(chessBoard.fen()); 
-                            premoveMove = null; // Annuler un premove si le coup précédent était illégal
                             startPolling(); 
                             return;
                         }
@@ -1050,7 +996,7 @@
             console.error("Toutes les tentatives d'envoi du coup ont échoué.");
             chessBoard.undo();
             updateBoardState(chessBoard.fen());
-            showModal("Erreur", "Impossible d'envoyer le coup. Vérifiez votre connexion.", 'loss'); // Raccourci
+            showModal("Erreur de Connexion", "Impossible d'envoyer le coup au serveur. Vérifiez votre connexion.", 'loss');
             startPolling(); 
         }
         
@@ -1074,8 +1020,7 @@
                  if (response.ok && data.status === 'success') {
                      const winnerColor = data.winner_color;
                      
-                     // L'abandonneur doit détruire le match après l'abandon
-                     endGame('abandoned', winnerColor, true); 
+                     endGame('abandoned', winnerColor, false); 
 
                  } else {
                      showGameNotification(`Erreur abandon: ${data.message}`, true);
@@ -1098,12 +1043,11 @@
             isGameOver = false;
             waitingForOpponent = false;
             waitingForMove = false;
-            premoveMove = null; // Reset premove
 
             stopPolling();
             waitSpinnerEl.style.display = 'none'; 
 
-            document.getElementById('player-white-name').textContent = 'Chargement...'; 
+            document.getElementById('player-white-name').textContent = USERNAME; 
             document.getElementById('player-black-name').textContent = OPPONENT_NAME; 
             document.getElementById('elo-white').textContent = `[1200 ELO]`; 
             document.getElementById('elo-black').textContent = `[1200 ELO]`;
@@ -1117,12 +1061,6 @@
             abandonButton.disabled = true; 
             playerWhiteBox.classList.remove('highlight-turn');
             playerBlackBox.classList.remove('highlight-turn');
-            
-            // Réinitialiser les classes top/bottom pour le prochain jeu
-            playerWhiteBox.classList.add('bottom-player');
-            playerWhiteBox.classList.remove('top-player');
-            playerBlackBox.classList.add('top-player');
-            playerBlackBox.classList.remove('bottom-player');
         }
 
         async function destroyMatch() {
@@ -1159,30 +1097,26 @@
             stopPolling();
             isGameOver = true;
             waitSpinnerEl.style.display = 'none'; 
-            premoveMove = null; // Effacer tout premove
-            selectedCoords = null;
-            legalMoves = [];
-            drawBoard();
 
             const isLocalPlayerWinner = (winnerColor === playerColor);
             
-            let message = "Match nul.";
+            let message = "La partie est terminée.";
             let modalType = 'draw'; 
-            let modalTitle = 'NUL'; // Raccourci
+            let modalTitle = 'MATCH NUL';
             
             if (status === 'checkmate') {
                 const winnerName = isLocalPlayerWinner ? USERNAME : opponentId;
-                message = isLocalPlayerWinner ? `Maté ${opponentId} !` : `Maté par ${winnerName}.`; // Raccourci
-                modalTitle = isLocalPlayerWinner ? 'VICTOIRE' : 'DÉFAITE'; // Raccourci
+                message = isLocalPlayerWinner ? `Vous avez maté ${opponentId} !` : `${winnerName} vous a maté.`;
+                modalTitle = isLocalPlayerWinner ? 'VICTOIRE PAR MAT' : 'DÉFAITE PAR MAT';
                 modalType = isLocalPlayerWinner ? 'win' : 'loss';
 
             } else if (status.includes('draw') || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
-                message = "Partie nulle."; // Raccourci
-                modalTitle = "NUL";
+                message = "La partie se termine par un match nul.";
+                modalTitle = "MATCH NUL";
                 modalType = 'draw';
             } else if (status === 'abandoned' || status === 'timeout') { 
                 const loserName = isLocalPlayerWinner ? opponentId : USERNAME;
-                message = isLocalPlayerWinner ? `${loserName} a ${status === 'abandoned' ? 'abandonné' : 'perdu au temps'}.` : `Vous avez perdu par ${status === 'abandoned' ? 'abandon' : 'temps'}.`; // Raccourci
+                message = isLocalPlayerWinner ? `${loserName} a ${status === 'abandoned' ? 'abandonné' : 'perdu au temps'}.` : `Vous avez perdu par ${status === 'abandoned' ? 'abandon' : 'temps'}.`;
                 modalTitle = isLocalPlayerWinner ? 'VICTOIRE PAR FORFAIT' : 'DÉFAITE PAR FORFAIT';
                 modalType = isLocalPlayerWinner ? 'win' : 'loss';
             }
@@ -1190,35 +1124,11 @@
             showModal(modalTitle, message, modalType); 
 
             drawPieces();
-            
-            // Logique de destruction :
-            // - Le joueur qui ABANDONNE détruit le match.
-            // - Le joueur qui GAGNE par MAT ou TEMPS détruit le match.
-            // - Le joueur qui PERD par MAT ou TEMPS/NUL ou qui REÇOIT l'abandon ne détruit pas, il arrête juste le polling.
-            
-            // shouldDestroy est vrai pour: Abandonneur, Gagnant (par mat, temps).
-            // shouldDestroy est faux pour: Perdant (par mat, temps, abandon) ou Match Nul.
-            
-            const isLocalPlayerDestroyer = isLocalPlayerWinner; // Gagnant détruit
-            const isDrawStatus = (status.includes('draw') || status === 'stalemate' || status === 'threefold' || status === 'insufficient');
-            
-            if (status === 'abandoned') {
-                // L'abandonneur DOIT détruire (il a appelé giveUpMatch avec shouldDestroy = true)
-                // L'adversaire NE DOIT PAS détruire.
-                if (shouldDestroy) { // shouldDestroy est vrai si appelé depuis giveUpMatch (l'abandonneur)
-                    destroyMatch();
-                }
-            } else if (isDrawStatus) {
-                // Pour les nuls, on laisse un côté (ex: celui dont c'est le tour) détruire. Pour l'instant, personne ne détruit.
-                // Laisser le match pour que les deux clients voient la FEN finale.
-                // On peut laisser le serveur nettoyer plus tard.
-            } else if (isGameOver && !isDrawStatus && status !== 'abandoned') {
-                 // Mat ou Timeout: Le gagnant détruit.
-                 if (isLocalPlayerWinner) {
-                     destroyMatch();
-                 }
-            }
+            drawBoard();
 
+            if (shouldDestroy) {
+                destroyMatch(); 
+            }
             
             playButton.disabled = true;
             abandonButton.disabled = true; 
@@ -1320,8 +1230,8 @@
             ];
 
             showModal(
-                "Abandon ?", 
-                "Vous perdrez la partie si vous abandonnez.", // Raccourci
+                "Confirmation d'Abandon", 
+                "Êtes-vous sûr de vouloir abandonner la partie ? L'abandon entraînera une défaite immédiate.", 
                 'loss', 
                 buttons
             );
@@ -1333,36 +1243,25 @@
             
             const isWhite = color === 'white';
             
-            // Le joueur local est toujours en bas (bottom-player)
-            const localBox = isWhite ? playerWhiteBox : playerBlackBox;
-            const opponentBox = isWhite ? playerBlackBox : playerWhiteBox;
+            document.getElementById('player-white-name').textContent = USERNAME;
+            const localColor = isWhite ? 'Blanc' : 'Noir';
+            document.getElementById('elo-white').textContent = `[1200 ELO (VOUS / ${localColor})]`;
             
-            localBox.classList.add('bottom-player');
-            localBox.classList.remove('top-player');
-            opponentBox.classList.add('top-player');
-            opponentBox.classList.remove('bottom-player');
-
-            // Mise à jour des noms/ELOs
-            const localNameEl = isWhite ? document.getElementById('player-white-name') : document.getElementById('player-black-name');
-            const localEloEl = isWhite ? document.getElementById('elo-white') : document.getElementById('elo-black');
+            document.getElementById('player-black-name').textContent = opponentId;
+            const opponentColor = isWhite ? 'Noir' : 'Blanc';
+            document.getElementById('elo-black').textContent = `[1200 ELO (ADV / ${opponentColor})]`;
             
-            const opponentNameEl = isWhite ? document.getElementById('player-black-name') : document.getElementById('player-white-name');
-            const opponentEloEl = isWhite ? document.getElementById('elo-black') : document.getElementById('elo-white');
-            
-            localNameEl.textContent = USERNAME;
-            const localColorText = isWhite ? 'Blanc' : 'Noir';
-            localEloEl.textContent = `[1200 ELO (VOUS / ${localColorText})]`;
-            
-            opponentNameEl.textContent = opponentId;
-            const opponentColorText = isWhite ? 'Noir' : 'Blanc';
-            opponentEloEl.textContent = `[1200 ELO (ADV / ${opponentColorText})]`;
-            
-            // Rotation du plateau
             if (isWhite) {
                 chessboardEl.classList.remove('rotated'); 
             } else {
                 chessboardEl.classList.add('rotated'); 
             }
+            
+            playerWhiteBox.classList.remove('top-player');
+            playerWhiteBox.classList.add('bottom-player');
+
+            playerBlackBox.classList.add('top-player');
+            playerBlackBox.classList.remove('bottom-player');
         }
         
         function drawBoard() {
@@ -1403,77 +1302,20 @@
         }
         
         function handleMove(row, col, squareEl) {
-            if (isGameOver || !currentGameId || waitingForOpponent) {
+            if (isGameOver || !currentGameId || waitingForOpponent || chessBoard.turn() !== playerColor[0]) {
                 const reason = isGameOver ? "Partie terminée." : 
                              !currentGameId ? "Cliquez sur 'Lancer Partie' dans le menu." :
                              waitingForOpponent ? "En attente de l'adversaire." :
-                             "Erreur.";
+                             "Veuillez attendre le coup de l'adversaire.";
                 console.log(`Mouvement bloqué. Raison: ${reason}`);
                 
-                // Si l'utilisateur clique quand ce n'est pas son tour, on passe en mode premove.
-                if (currentGameId && !isGameOver && !waitingForOpponent && chessBoard.turn() !== playerColor[0]) {
-                     // Logique de PREMOVE
-                    const square = coordsToSquare(row, col);
-                    const piece = chessBoard.get(square);
-                    
-                    if (!selectedCoords) {
-                        if (piece && (piece.color === playerColor[0])) { 
-                            selectedCoords = { row, col };
-                            legalMoves = chessBoard.moves({ square: square, verbose: true }); 
-                            drawBoard(); 
-                        }
-                    } else {
-                        const startCoord = coordsToSquare(selectedCoords.row, selectedCoords.col);
-                        const endCoord = square;
-                        
-                        if (startCoord === endCoord || (piece && piece.color === playerColor[0])) { 
-                            selectedCoords = (startCoord === endCoord) ? null : { row, col };
-                            legalMoves = selectedCoords ? chessBoard.moves({ square: endCoord, verbose: true }) : [];
-                            drawBoard();
-                            return;
-                        }
-                        
-                        // Tentative de PREMOVE
-                        const moveAttempt = {
-                            from: startCoord,
-                            to: endCoord,
-                            promotion: (chessBoard.get(startCoord).type === 'p' && (row === 0 || row === 7)) ? 'q' : undefined
-                        };
-                        
-                        // Tester si le coup est légal sur la position actuelle (pour la couleur qui joue)
-                        const testChess = new Chess(chessBoard.fen());
-                        const testResult = testChess.move(moveAttempt);
-                        
-                        if (testResult) {
-                            premoveMove = moveAttempt;
-                            selectedCoords = null;
-                            legalMoves = [];
-                            drawBoard();
-                            showGameNotification("Pre-mouvement enregistré", false);
-                        } else {
-                            showGameNotification("Premove illégal", true);
-                            selectedCoords = null;
-                            legalMoves = [];
-                            drawBoard();
-                        }
-                    }
-                }
-                
+                // Optionnel : Petit feedback si l'utilisateur clique alors qu'il ne peut pas
+                // showGameNotification("Pas votre tour", false); 
                 return;
             }
             
-            // Logique de Coup Normal (C'est le tour du joueur)
             const square = coordsToSquare(row, col);
             const piece = chessBoard.get(square);
-            
-            if (premoveMove) {
-                premoveMove = null;
-                showGameNotification("Premove annulé (nouveau coup)", false);
-                selectedCoords = null;
-                legalMoves = [];
-                drawBoard();
-                // Continuer la logique de sélection/mouvement ci-dessous
-            }
             
             if (!selectedCoords) {
                 if (piece && (piece.color === playerColor[0])) { 

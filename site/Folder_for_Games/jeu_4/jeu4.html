@@ -220,11 +220,11 @@
         }
 
         .in-check { 
-            background-color: red !important; 
+            background-color: #f77a64 !important; /* Rouge plus doux */
         }
         
         .checkmated-square {
-            background-color: red !important;
+            background-color: #dc3545 !important; /* Rouge vif pour mat */
             box-shadow: inset 0 0 0 5px darkred;
         }
 
@@ -249,8 +249,9 @@
         @media (max-aspect-ratio: 1/1) { .piece { font-size: 5.8vw; } } /* Augmenté */
 
         .checkmated-king {
-            opacity: 0.4; 
-            filter: grayscale(100%) brightness(0.7);
+            /* Styles pour le roi maté - plus dramatique */
+            opacity: 0.5; 
+            filter: grayscale(100%) brightness(0.5);
             text-shadow: none !important; 
         }
 
@@ -804,9 +805,9 @@
 
                 if (response.ok) {
                     
-                    if (data.game_status === 'abandoned') {
-                         const winnerColor = playerColor; 
-                         endGame('abandoned', winnerColor, true); 
+                    if (data.game_status === 'abandoned' && data.winner_color === playerColor) {
+                         // L'adversaire a abandonné
+                         endGame('abandoned', playerColor, true); 
                          return; 
                     }
                     
@@ -831,17 +832,22 @@
                     
                     if (!waitingForOpponent && data.game_status === 'active') {
                         
-                        const abandoned = await checkAbandonStatus();
-                        if (abandoned) {
-                            return; 
-                        }
+                        // Supprimé l'appel à checkAbandonStatus() car le statut 'abandoned' est maintenant géré plus haut si le joueur local est le gagnant.
                         
                         if (data.fen !== currentFen) {
                             updateBoardState(data.fen); 
                             
-                            if (chessBoard.in_checkmate() || chessBoard.in_draw()) {
+                            // Si l'adversaire a joué un coup et que la partie est terminée
+                            if (chessBoard.in_checkmate() || chessBoard.in_draw() || chessBoard.in_stalemate() || chessBoard.insufficient_material() || chessBoard.three_fold_repetition()) {
+                                // Le tour a déjà changé, donc 'turn()' est la couleur perdante
                                 const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
-                                const status = chessBoard.in_checkmate() ? 'checkmate' : 'draw';
+                                
+                                let status;
+                                if (chessBoard.in_checkmate()) status = 'checkmate';
+                                else if (chessBoard.in_stalemate()) status = 'stalemate';
+                                else if (chessBoard.three_fold_repetition()) status = 'threefold';
+                                else if (chessBoard.insufficient_material()) status = 'insufficient';
+                                else status = 'draw';
                                 
                                 endGame(status, winnerColor, true); 
                                 return; 
@@ -851,9 +857,10 @@
                         } 
                     } else if (data.game_status !== 'created' && data.game_status !== 'active') {
                         
+                        // Cas où le statut final est donné par le serveur mais pas 'abandoned' (ex: timeout)
                         updateBoardState(data.fen); 
                         
-                        const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
+                        const winnerColor = data.winner_color; // Le serveur devrait donner le gagnant
                         endGame(data.game_status, winnerColor, data.game_status !== 'abandoned'); 
                     }
                     
@@ -963,17 +970,22 @@
                         updateBoardState(data.new_fen); 
                         
                         if (data.game_status !== 'active') {
+                            // Le tour a déjà changé (couleur perdante)
                             const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
                             endGame(data.game_status, winnerColor, true); 
                         } else {
-                            // Plus de message "Coup envoyé", c'est fluide.
+                            // Mise à jour de la vérification d'échec après le coup
+                            if (chessBoard.in_check()) {
+                                showGameNotification("ECHEC !", true);
+                            }
+                            
                             startPolling(); 
                         }
                         return;
 
                     } else {
                         if (data.error && data.error.includes("illegal move")) {
-                            showGameNotification("Coup Illégal", true); // Popup rouge
+                            showGameNotification("Coup Illégal (rejeté par le serveur)", true); // Popup rouge
                             chessBoard.undo();
                             updateBoardState(chessBoard.fen()); 
                             startPolling(); 
@@ -1020,15 +1032,16 @@
                  if (response.ok && data.status === 'success') {
                      const winnerColor = data.winner_color;
                      
+                     // L'abandon met à jour l'état du plateau pour montrer la défaite (si nécessaire)
                      endGame('abandoned', winnerColor, false); 
 
                  } else {
-                     showGameNotification(`Erreur abandon: ${data.message}`, true);
+                     showGameNotification(`Erreur abandon: ${data.message || 'Erreur inconnue'}`, true);
                      abandonButton.disabled = false; 
                  }
 
              } catch (e) {
-                 showGameNotification("Erreur de connexion", true);
+                 showGameNotification("Erreur de connexion (Abandon)", true);
                  console.error("Erreur Abandon:", e);
                  abandonButton.disabled = false; 
              }
@@ -1082,7 +1095,7 @@
 
                 if (response.ok) {
                     console.log("[DESTROY MATCH] Succès", responseData.message || responseData);
-                    stopPolling(); 
+                    // On ne stop pas le polling ici, car il est stop dans endGame
                 } else {
                     console.error(`[DESTROY MATCH] Erreur HTTP: ${response.status}.`);
                 }
@@ -1097,6 +1110,8 @@
             stopPolling();
             isGameOver = true;
             waitSpinnerEl.style.display = 'none'; 
+            selectedCoords = null; // Désélectionner
+            legalMoves = []; // Supprimer les coups légaux
 
             const isLocalPlayerWinner = (winnerColor === playerColor);
             
@@ -1104,12 +1119,20 @@
             let modalType = 'draw'; 
             let modalTitle = 'MATCH NUL';
             
+            const losingColorChar = chessBoard.turn();
+            const kingSquare = getKingSquare(losingColorChar);
+
+            // Appliquer les styles de fin de partie avant d'afficher la modale
+            drawPieces();
+            drawBoard();
+
             if (status === 'checkmate') {
                 const winnerName = isLocalPlayerWinner ? USERNAME : opponentId;
                 message = isLocalPlayerWinner ? `Vous avez maté ${opponentId} !` : `${winnerName} vous a maté.`;
                 modalTitle = isLocalPlayerWinner ? 'VICTOIRE PAR MAT' : 'DÉFAITE PAR MAT';
                 modalType = isLocalPlayerWinner ? 'win' : 'loss';
-
+                // La classe checkmated-square est appliquée dans drawBoard
+                
             } else if (status.includes('draw') || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
                 message = "La partie se termine par un match nul.";
                 modalTitle = "MATCH NUL";
@@ -1119,12 +1142,13 @@
                 message = isLocalPlayerWinner ? `${loserName} a ${status === 'abandoned' ? 'abandonné' : 'perdu au temps'}.` : `Vous avez perdu par ${status === 'abandoned' ? 'abandon' : 'temps'}.`;
                 modalTitle = isLocalPlayerWinner ? 'VICTOIRE PAR FORFAIT' : 'DÉFAITE PAR FORFAIT';
                 modalType = isLocalPlayerWinner ? 'win' : 'loss';
+            } else {
+                // Pour tout autre statut non-géré
+                modalTitle = 'PARTIE TERMINÉE';
+                modalType = 'info';
             }
 
             showModal(modalTitle, message, modalType); 
-
-            drawPieces();
-            drawBoard();
 
             if (shouldDestroy) {
                 destroyMatch(); 
@@ -1257,11 +1281,27 @@
                 chessboardEl.classList.add('rotated'); 
             }
             
-            playerWhiteBox.classList.remove('top-player');
-            playerWhiteBox.classList.add('bottom-player');
+            // J'ai inversé ici pour que la couleur locale soit toujours en bas de l'interface
+            if (isWhite) {
+                playerWhiteBox.classList.remove('top-player');
+                playerWhiteBox.classList.add('bottom-player');
 
-            playerBlackBox.classList.add('top-player');
-            playerBlackBox.classList.remove('bottom-player');
+                playerBlackBox.classList.add('top-player');
+                playerBlackBox.classList.remove('bottom-player');
+            } else {
+                 // Si on est Noir, on veut être bottom-player, l'adversaire (Blanc) top-player
+                playerWhiteBox.classList.add('top-player');
+                playerWhiteBox.classList.remove('bottom-player');
+
+                playerBlackBox.classList.remove('top-player');
+                playerBlackBox.classList.add('bottom-player');
+                
+                // On met juste les noms dans la bonne box
+                document.getElementById('player-white-name').textContent = opponentId;
+                document.getElementById('player-black-name').textContent = USERNAME;
+                document.getElementById('elo-white').textContent = `[1200 ELO (ADV / Blanc)]`; 
+                document.getElementById('elo-black').textContent = `[1200 ELO (VOUS / Noir)]`;
+            }
         }
         
         function drawBoard() {
@@ -1289,13 +1329,11 @@
                     const { row, col } = squareToCoords(kingSquare);
                     const kingSquareEl = document.getElementById(`sq-${row}-${col}`);
 
-                    if (chessBoard.in_checkmate()) {
+                    if (chessBoard.in_checkmate() || isGameOver) { // Appliquer le style de mat si la partie est terminée
                         kingSquareEl.classList.add('checkmated-square');
                     } else {
                         kingSquareEl.classList.add('in-check');
-                        if (!isGameOver) {
-                             showGameNotification("ECHEC !", true); // Notification centrale
-                        }
+                        // La notification est gérée soit au coup de l'adversaire (dans pollGameStatus) soit après notre coup (dans makeMoveServer)
                     }
                 }
             }
@@ -1309,8 +1347,6 @@
                              "Veuillez attendre le coup de l'adversaire.";
                 console.log(`Mouvement bloqué. Raison: ${reason}`);
                 
-                // Optionnel : Petit feedback si l'utilisateur clique alors qu'il ne peut pas
-                // showGameNotification("Pas votre tour", false); 
                 return;
             }
             
@@ -1338,7 +1374,7 @@
                 const moveAttempt = {
                     from: startCoord,
                     to: endCoord,
-                    promotion: (chessBoard.get(startCoord).type === 'p' && (row === 0 || row === 7)) ? 'q' : undefined
+                    promotion: (chessBoard.get(startCoord)?.type === 'p' && (row === 0 || row === 7)) ? 'q' : undefined
                 };
                 
                 const moveResult = chessBoard.move(moveAttempt); 
@@ -1350,13 +1386,16 @@
                         move_uci_correct += moveResult.promotion;
                     }
                     
+                    // Si le coup est légal localement mais met son propre roi en échec (ne devrait pas arriver avec chess.js)
+                    // ou est rejeté par le serveur
+                    // makeMoveServer gère la partie illégale et annule le coup
                     makeMoveServer(move_uci_correct);
                     
                     selectedCoords = null;
                     legalMoves = [];
                     
                 } else {
-                    showGameNotification("Coup Impossible", true);
+                    showGameNotification("Coup Impossible (Illégal)", true);
                     selectedCoords = null;
                     legalMoves = [];
                     drawBoard();
@@ -1386,7 +1425,8 @@
         
         function createPieceElement(pieceCode, row, col) {
             const pieceEl = document.createElement('div');
-            pieceEl.className = `piece ${pieceCode.toLowerCase() === pieceCode ? 'black-piece' : 'white-piece'}`;
+            const isBlack = pieceCode.toLowerCase() === pieceCode;
+            pieceEl.className = `piece ${isBlack ? 'black-piece' : 'white-piece'}`;
             pieceEl.textContent = PIECES_SYMBOLS[pieceCode] || '?';
             
             const x_pos = col * 12.5;
@@ -1395,23 +1435,24 @@
             pieceEl.style.left = `${x_pos}%`;
             pieceEl.style.top = `${y_pos}%`;
 
-            if (isGameOver && chessBoard.in_checkmate()) {
-                const isKing = pieceCode.toUpperCase() === 'K';
-                const pieceColorChar = pieceCode === pieceCode.toLowerCase() ? 'b' : 'w';
-                
-                if (isKing && pieceColorChar === chessBoard.turn()) { 
-                    pieceEl.classList.add('checkmated-king');
-                }
-            }
+            const isKing = pieceCode.toUpperCase() === 'K';
             
             let transformValue = '';
             
+            // Si la partie n'est pas terminée ET la couleur est noire, on tourne le plateau et les pièces
             if (playerColor === 'black' && !isGameOver) {
                 transformValue += 'rotate(180deg)';
             }
             
-            if (pieceEl.classList.contains('checkmated-king')) {
-                 transformValue += ' scale(0.7) rotate(15deg)'; 
+            // Si le roi est maté, on applique le style visuel
+            if (isGameOver && chessBoard.in_checkmate() && isKing) {
+                 const losingColorChar = chessBoard.turn(); // La couleur du roi maté est celle dont c'est le tour
+                 const pieceColorChar = isBlack ? 'b' : 'w';
+                 
+                 if (pieceColorChar === losingColorChar) {
+                     pieceEl.classList.add('checkmated-king');
+                     transformValue += ' scale(0.7) rotate(15deg)'; // Style visuel pour le roi maté
+                 }
             }
             
             pieceEl.style.transform = transformValue || 'none'; 

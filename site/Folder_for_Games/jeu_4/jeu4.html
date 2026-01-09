@@ -761,6 +761,7 @@
             }, initialDelay);
         }
 
+
         async function pollGameStatus() { 
             if (!currentGameId || isGameOver) {
                 stopPolling();
@@ -779,11 +780,21 @@
 
                 if (response.ok) {
                     
-                    if (data.game_status === 'abandoned' && data.winner_color === playerColor) {
-                         // L'adversaire a abandonné (ce joueur est le gagnant)
-                         endGame('abandoned', playerColor, true); 
-                         return; 
+                    // --- VÉRIFICATION UNIFIÉE DE FIN DE PARTIE (Abandon, Mat, Nul, Timeout) ---
+                    if (data.game_status !== 'created' && data.game_status !== 'active') {
+                        
+                        updateBoardState(data.fen); 
+                        
+                        const winnerColor = data.winner_color; 
+                        
+                        // Seul le client du joueur gagnant doit appeler destroy_match
+                        const shouldDestroy = (winnerColor === playerColor);
+                        
+                        endGame(data.game_status, winnerColor, shouldDestroy); 
+                        return; // Terminer le traitement après la fin de partie
                     }
+                    // --- FIN VÉRIFICATION UNIFIÉE ---
+                    
                     
                     if (waitingForOpponent && data.game_status === 'active') {
                         waitingForOpponent = false; 
@@ -802,15 +813,15 @@
                         showModal(title, message, 'info'); 
                         
                         updateBoardState(data.fen); 
-                    }
-                    
-                    if (!waitingForOpponent && data.game_status === 'active') {
+                        
+                    } else if (!waitingForOpponent && data.game_status === 'active') {
                         
                         if (data.fen !== currentFen) {
                             updateBoardState(data.fen); 
                             
                             // Si l'adversaire a joué un coup et que la partie est terminée
                             if (chessBoard.in_checkmate() || chessBoard.in_draw() || chessBoard.in_stalemate() || chessBoard.insufficient_material() || chessBoard.three_fold_repetition()) {
+                                
                                 // Le tour a déjà changé, donc 'turn()' est la couleur perdante
                                 const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
                                 
@@ -821,19 +832,12 @@
                                 else if (chessBoard.insufficient_material()) status = 'insufficient';
                                 else status = 'draw';
                                 
-                                endGame(status, winnerColor, true); 
+                                // On ne met pas shouldDestroy=true ici, on laisse le serveur confirmer l'état final via le polling
+                                endGame(status, winnerColor, false); 
                                 return; 
                             }
                         } 
-                    } else if (data.game_status !== 'created' && data.game_status !== 'active') {
-                        
-                        // Cas où le statut final est donné par le serveur 
-                        updateBoardState(data.fen); 
-                        
-                        const winnerColor = data.winner_color; // Le serveur devrait donner le gagnant
-                        // Si l'adversaire apprend la fin par polling (y compris abandon s'il est le perdant), il doit clean
-                        endGame(data.game_status, winnerColor, true); 
-                    }
+                    } 
                     
                 } else {
                     console.error(`[POLLING ERROR] Réponse serveur non-OK: ${data.error || 'Erreur inconnue.'}`);
@@ -943,7 +947,10 @@
                         if (data.game_status !== 'active') {
                             // Le tour a déjà changé (couleur perdante)
                             const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
-                            endGame(data.game_status, winnerColor, true); 
+                            
+                            // Si le serveur dit que c'est terminé, le gagnant appelle destroy.
+                            const shouldDestroy = (winnerColor === playerColor); 
+                            endGame(data.game_status, winnerColor, shouldDestroy); 
                         } else {
                             // Mise à jour de la vérification d'échec après le coup
                             if (chessBoard.in_check()) {
@@ -956,7 +963,6 @@
 
                     } else {
                         
-                        // --- CORRECTIF POUR L'ABANDON (RACE CONDITION) ---
                         // Si le coup échoue (serveur rejette), on force un check de l'état du jeu pour capter un abandon imminent.
                         await pollGameStatus();
                         
@@ -964,7 +970,6 @@
                         if (isGameOver) {
                             return; 
                         }
-                        // --- FIN CORRECTIF ---
                         
                         if (data.error && data.error.includes("illegal move")) {
                             showGameNotification("Coup Illégal (rejeté par le serveur)", true); // Popup rouge
@@ -1014,8 +1019,8 @@
                  if (response.ok && data.status === 'success') {
                      const winnerColor = data.winner_color;
                      
-                     // L'abandon met à jour l'état du plateau pour montrer la défaite 
-                     endGame('abandoned', winnerColor, false); // shouldDestroy=false car le gagnant le fera
+                     // Le joueur abandonne (il est le perdant), donc shouldDestroy = false
+                     endGame('abandoned', winnerColor, false); 
 
                  } else {
                      showGameNotification(`Erreur abandon: ${data.message || 'Erreur inconnue'}`, true);

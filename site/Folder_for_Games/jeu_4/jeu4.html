@@ -9,68 +9,95 @@
     
     <style>
         /* --- Styles du jeu --- */
-        body {
+        html, body {
+            height: 100%; 
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* SUPPRESSION DU SCROLLBAR GLOBAL */
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center; 
-            align-items: flex-start; 
-            min-height: 100vh;
             background-color: #333; 
             color: #fff;
-            margin: 0;
-            padding: 20px;
         }
 
-        .main-container {
+        .app-layout {
             display: flex;
-            width: 95%; 
-            max-width: 1400px;
-            gap: 30px; 
+            height: 100%;
+            padding: 10px; 
+            box-sizing: border-box;
+            gap: 20px; 
+            justify-content: center;
+            align-items: flex-start;
+            position: relative;
+        }
+
+        /* Bouton pour afficher/masquer la sidebar */
+        .toggle-sidebar-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 50;
+            background-color: #444;
+            color: white;
+            border: 1px solid #666;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+        .toggle-sidebar-btn:hover {
+            background-color: #666;
         }
 
         .game-area {
-            flex-grow: 1;
+            flex-grow: 1; 
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 350px;
+            justify-content: center; 
+            min-width: 300px;
+            height: 100%; 
+            overflow: hidden; 
+            padding-right: 5px; 
+            transition: all 0.3s ease; /* Transition douce lors du redimensionnement */
         }
 
         h1 {
             color: #f0f0f0;
-            margin-bottom: 20px;
-            font-size: 1.8em;
+            margin: 5px 0 10px 0; 
+            font-size: 1.5em; 
+            flex-shrink: 0; 
         }
 
-        /* --- 2. Infos Joueur (SANS TIMER) --- */
+        /* --- Infos Joueur --- */
         .player-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            max-width: 600px; 
-            padding: 10px; 
-            margin: 5px 0;
-            border-radius: 8px; /* Effet visuel */
+            max-width: calc(100vh - 200px); 
+            padding: 8px 10px; 
+            margin: 0; 
+            border-radius: 8px;
             transition: all 0.3s;
             border: 2px solid transparent; 
-            background-color: #2a2a2a; /* Fond légèrement plus foncé pour les boîtes */
+            background-color: #2a2a2a;
+            box-sizing: border-box;
+            flex-shrink: 0; 
         }
         
-        /* Indicateur de tour (Carré vert) */
         .player-container.highlight-turn {
             border-color: #28a745; 
-            box-shadow: 0 0 10px rgba(40, 167, 69, 0.7); /* Lueur verte */
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.7);
         }
 
         .top-player { 
             border-top: 2px solid rgba(255,255,255,0.1); 
-            /* S'assurer que la boîte du haut a le texte à gauche */
             flex-direction: row; 
         } 
-        /* La classe bottom-player est cruciale pour l'inversion visuelle */
+        
         .bottom-player { 
-            flex-direction: row-reverse; /* Inverse l'ordre pour mettre l'info à droite */
+            flex-direction: row-reverse;
         } 
         .bottom-player .player-info { 
             text-align: right; 
@@ -79,43 +106,43 @@
         .player-info {
             display: flex;
             flex-direction: column;
-            font-size: 1.1em;
+            font-size: 1em;
             font-weight: bold;
             min-width: 100px; 
             flex-shrink: 1;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            /* Le style par défaut est text-align: left */
         }
 
         .player-elo {
-            font-size: 0.9em;
+            font-size: 0.85em;
             color: #ccc;
             font-weight: normal;
         }
 
 
-        /* --- 3. Styles du Plateau (Responsive & Rotation) --- */
+        /* --- Styles du Plateau (Responsive) --- */
         .chessboard-container {
-            max-width: 600px; 
             width: 100%;
+            height: auto;
+            max-height: calc(100vh - 220px);
+            max-width: calc(100vh - 220px);
             aspect-ratio: 1 / 1; 
             margin: 10px 0;
             position: relative;
+            flex-shrink: 1; 
         }
 
-        /* Masque le panneau d'information */
         .info-panel {
             text-align: center;
-            margin-bottom: 10px;
-            font-size: 1.1em;
+            margin-bottom: 5px;
+            font-size: 1em;
             font-weight: bold;
-            height: 30px; 
+            min-height: 24px; 
             color: #fff; 
-            max-width: 600px; 
             width: 100%;
-            display: none; 
+            flex-shrink: 0;
         }
 
         .chessboard {
@@ -125,9 +152,10 @@
             grid-template-columns: repeat(8, 1fr); 
             grid-template-rows: repeat(8, 1fr);
             border: 4px solid #f0f0f0;
-            box-shadow: 0 0 15px rgba(0,0,0,0.8), 0 0 5px rgba(255, 255, 255, 0.2); /* Effet visuel */
+            box-shadow: 0 0 15px rgba(0,0,0,0.8), 0 0 5px rgba(255, 255, 255, 0.2);
             position: relative;
             transition: transform 0.5s ease-in-out; 
+            box-sizing: border-box; 
         }
 
         .chessboard.rotated {
@@ -170,12 +198,10 @@
             box-sizing: border-box;
         }
 
-        /* Échec (case du roi en rouge) */
         .in-check { 
             background-color: red !important; 
         }
         
-        /* S'assurer que le roi maté a aussi la case rouge */
         .checkmated-square {
             background-color: red !important;
             box-shadow: inset 0 0 0 5px darkred;
@@ -189,37 +215,33 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 4.5vw; 
-            /* Transition pour le mouvement des pièces */
+            font-size: 80%; 
+            font-size: clamp(20px, 4.5cqw, 60px); 
             transition: transform 0.3s ease-in-out; 
             pointer-events: none; 
             z-index: 10;
         }
+        
+        @media (min-aspect-ratio: 1/1) { .piece { font-size: 4.5vh; } }
+        @media (max-aspect-ratio: 1/1) { .piece { font-size: 4.5vw; } }
 
-        /* Style pour le Roi mis en échec et mat (cassé/vaincu) */
         .checkmated-king {
-            /* Simule une pièce cassée ou vaincue */
-            opacity: 0.4; /* Très estompé */
-            filter: grayscale(100%) brightness(0.7); /* Gris foncé et estompé */
+            opacity: 0.4; 
+            filter: grayscale(100%) brightness(0.7);
             text-shadow: none !important; 
         }
 
-
-        @media (min-width: 1222px) { 
-            .piece {
-                font-size: 55px;
-            }
-        }
-        
         .white-piece {
             color: #ffffff; 
             text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
         }
         .black-piece { color: #000000; }
 
-        /* --- 4. Sidebar --- */
+        /* --- 4. Sidebar + Resizer --- */
         .sidebar {
-            flex-basis: 300px; 
+            width: 300px; 
+            min-width: 180px; 
+            max-width: 500px; 
             padding: 20px;
             background-color: #222; 
             border-radius: 8px;
@@ -227,8 +249,67 @@
             display: flex;
             flex-direction: column;
             gap: 15px; 
-            height: fit-content; 
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5); /* Effet visuel */
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            flex-shrink: 0; 
+            overflow-y: auto; 
+            height: 100%; 
+            box-sizing: border-box;
+            transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+        }
+        
+        /* Classe pour cacher la sidebar */
+        .sidebar.hidden {
+            width: 0 !important;
+            min-width: 0 !important;
+            padding: 0 !important;
+            border: none;
+            overflow: hidden;
+            opacity: 0;
+            margin: 0;
+        }
+        
+        /* Styles pour le Spinner (Loading) */
+        .loader-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+            color: #ccc;
+            text-align: center;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3; /* Light grey */
+            border-top: 5px solid #007bff; /* Blue */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        
+        .resizer {
+            width: 10px;
+            cursor: ew-resize;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: background-color 0.2s;
+            height: 100%;
+            flex-shrink: 0;
+        }
+        /* Cacher le resizer si la sidebar est cachée */
+        .sidebar.hidden + .resizer {
+            display: none;
+        }
+
+        .resizer:hover {
+            background-color: #007bff;
         }
         
         .button-group {
@@ -264,7 +345,6 @@
             cursor: not-allowed;
         }
 
-        /* Style pour le nouveau bouton Abandonner */
         .abandon-button {
             border: 1px solid #dc3545;
             background-color: #dc3545; 
@@ -287,20 +367,40 @@
 
         /* Responsive pour les petits écrans */
         @media (max-width: 900px) {
-            .main-container {
+            .app-layout {
                 flex-direction: column;
                 align-items: center;
+                overflow-y: auto; 
+                padding: 5px;
             }
             .sidebar {
                 width: 100%;
                 max-width: 600px; 
-                margin-top: 20px;
+                margin-top: 10px;
                 flex-basis: auto;
+                height: auto; 
+                min-height: auto;
+            }
+            .sidebar.hidden {
+                height: 0;
+                margin: 0;
             }
             .game-area {
                 width: 100%;
+                height: auto; 
             }
-            .piece { font-size: 8vw; } 
+            .chessboard-container {
+                max-height: 60vh; 
+                max-width: 60vh;
+            }
+            .resizer {
+                display: none; 
+            }
+            .toggle-sidebar-btn {
+                position: fixed; /* Fixé sur mobile */
+                top: 10px;
+                left: 10px;
+            }
         }
         
         /* --- Styles de la modale --- */
@@ -331,7 +431,6 @@
             position: relative; 
         }
         
-        /* Styles pour le bouton de fermeture (Croix) */
         #modal-close-cross {
             position: absolute;
             top: 10px;
@@ -344,9 +443,7 @@
             transition: color 0.2s;
         }
 
-        #modal-close-cross:hover {
-            color: #fff; 
-        }
+        #modal-close-cross:hover { color: #fff; }
 
         #modal-title {
             font-size: 2.2em;
@@ -378,7 +475,6 @@
             transform: translateY(-1px);
         }
         
-        /* Boutons pour la modale de confirmation d'abandon */
         .modal-buttons-group {
             display: flex;
             justify-content: center;
@@ -392,8 +488,6 @@
             font-size: 1em;
         }
 
-
-        /* Couleurs contextuelles pour la modale */
         .modal-win #modal-content { 
             border-color: #28a745; 
             box-shadow: 0 0 20px rgba(40, 167, 69, 0.7);
@@ -420,7 +514,9 @@
     </style>
 </head>
 <body>
-    <div class="main-container">
+    <div class="app-layout">
+        <button class="toggle-sidebar-btn" onclick="toggleSidebar()">☰ Menu</button>
+
         <div class="game-area">
             <h1>Jeu d'Échecs</h1>
             
@@ -430,8 +526,6 @@
                     <span class="player-elo" id="elo-black">[1200 ELO]</span>
                 </div>
             </div>
-
-            <div class="info-panel" id="info">Cliquez sur "Lancer Partie" pour commencer à jouer.</div>
             
             <div class="chessboard-container" id="chessboard-container">
                 <div class="chessboard" id="chessboard">
@@ -447,8 +541,10 @@
 
         </div>
 
-        <div class="sidebar">
-            <h2>Partie et Statut</h2>
+        <div class="resizer" id="resizer"></div>
+
+        <div class="sidebar" id="sidebar">
+            <h2>Options</h2>
             
             <div class="button-group">
                 <button id="play-button" class="play-button" onclick="findOrCreateMatch()">
@@ -460,10 +556,11 @@
                 </button>
             </div>
             
-            <div class="friends-list">
-                <h3>Statut</h3>
-                <p id="match-status-text">(En attente de connexion)</p>
+            <div id="wait-spinner" class="loader-container" style="display: none;">
+                <div class="spinner"></div>
+                <p>En attente d'un adversaire...</p>
             </div>
+            
         </div>
     </div>
     
@@ -542,11 +639,14 @@
         let pollingInterval = null; 
 
         // Références DOM globales
+        const appLayoutEl = document.querySelector('.app-layout');
+        const sidebarEl = document.getElementById('sidebar');
+        const resizerEl = document.getElementById('resizer');
         const chessboardEl = document.getElementById('chessboard');
         const infoEl = document.getElementById('info'); 
         const playButton = document.getElementById('play-button');
         const abandonButton = document.getElementById('abandon-button'); 
-        const matchStatusEl = document.getElementById('match-status-text');
+        const waitSpinnerEl = document.getElementById('wait-spinner'); // Nouveau spinner
         const playerWhiteBox = document.getElementById('player-white-box');
         const playerBlackBox = document.getElementById('player-black-box');
         const eloWhiteEl = document.getElementById('elo-white');
@@ -565,6 +665,11 @@
 
         modalCloseButton.addEventListener('click', closeModal);
         modalCloseCross.addEventListener('click', closeModal); 
+        
+        // Toggle Sidebar Fonction
+        function toggleSidebar() {
+            sidebarEl.classList.toggle('hidden');
+        }
 
         // --- Fonctions FEN et Mise à Jour du Plateau ---
         
@@ -595,8 +700,6 @@
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
             const isUserTurn = currentTurn === playerColor[0]; 
             
-            // La logique d'indicateur de tour utilise les IDs des boîtes (white/black) qui représentent
-            // la COULEUR des pièces, indépendamment de la position physique (haut/bas).
             if (isUserTurn) {
                 if (playerColor === 'white') {
                     playerWhiteBox.classList.add('highlight-turn');
@@ -632,11 +735,6 @@
             }, initialDelay);
         }
 
-        // --- LOGIQUE DE POLLING UNIFIÉE ---
-
-        /**
-         * Fonction de secours pour vérifier l'abandon via la route dédiée.
-         */
         async function checkAbandonStatus() {
             if (!currentGameId) return false;
 
@@ -649,10 +747,7 @@
                 const data = await response.json();
 
                 if (response.ok && data.status === 'abandoned') {
-                    console.log(`[ABANDON CHECK] Adversaire a abandonné (Gagnant: ${data.winner_color})`);
-                    
                     const winnerColor = data.winner_color;
-                    
                     endGame('abandoned', winnerColor, true); 
                     return true; 
                 }
@@ -660,15 +755,13 @@
                 return false; 
 
             } catch (e) {
-                console.warn("[ABANDON CHECK ERROR] Erreur lors de la requête de vérification d'abandon :", e);
+                console.warn("[ABANDON CHECK ERROR]", e);
                 return false;
             }
         }
 
 
         async function pollGameStatus() { 
-            console.log(`\n--- [POLLING] Démarrage du cycle pour ${USERNAME} (${playerColor}) ---`);
-
             if (!currentGameId || isGameOver) {
                 stopPolling();
                 return;
@@ -695,13 +788,14 @@
                     if (waitingForOpponent && data.game_status === 'active') {
                         waitingForOpponent = false; 
                         
+                        // Cacher le spinner dès que la partie devient active
+                        waitSpinnerEl.style.display = 'none';
+
                         if (data.opponent_id && data.opponent_id !== OPPONENT_NAME) {
                              opponentId = data.opponent_id;
                         }
                         
                         setupPlayerAndBoard(playerColor, opponentId); 
-                        
-                        matchStatusEl.textContent = `Partie contre ${opponentId} !`;
                         
                         const title = "Partie Démarrée !";
                         const message = `L'adversaire (${opponentId}) a rejoint la partie ! Vous jouez ${playerColor.toUpperCase()}. À vous de jouer.`;
@@ -779,7 +873,9 @@
 
                     if (data.status === 'created') {
                         waitingForOpponent = true;
-                        matchStatusEl.textContent = `En attente d'un adversaire... (ID: ${currentGameId})`;
+                        // AFFICHER LE SPINNER ICI
+                        waitSpinnerEl.style.display = 'flex';
+                        
                         displayInfo("Partie créée. En attente de l'adversaire.", 'info'); 
                         setupPlayerAndBoard(playerColor, opponentId);
                         updateBoardState(data.fen || INITIAL_FEN); 
@@ -787,8 +883,9 @@
                         
                     } else if (data.status === 'joined') {
                         waitingForMove = true;
-                        matchStatusEl.textContent = `Partie contre ${opponentId} !`;
-                        
+                        // CACHER LE SPINNER (pas d'attente)
+                        waitSpinnerEl.style.display = 'none';
+
                         const title = "Partie Démarrée !";
                         const message = `Vous avez rejoint la partie ! Vous jouez ${playerColor.toUpperCase()} contre ${opponentId}. Au tour de Blanc.`;
                         showModal(title, message, 'info'); 
@@ -883,9 +980,6 @@
         }
         
         
-        /**
-         * Gère l'envoi de la requête d'abandon au serveur.
-         */
         async function giveUpMatch() {
              if (!currentGameId || isGameOver) {
                  displayInfo("Pas de partie en cours ou déjà terminée pour abandonner.", 'warning');
@@ -922,10 +1016,6 @@
              }
         }
         
-        
-        /**
-         * Réinitialise l'état complet du client (variables et DOM) au statut initial.
-         */
         function resetClientState() {
             currentGameId = null;
             playerColor = null;
@@ -937,14 +1027,13 @@
             waitingForMove = false;
 
             stopPolling();
-            
-            // Réinitialisation des pseudos/infos dans le DOM (Position par défaut)
+            waitSpinnerEl.style.display = 'none'; // Cacher le spinner au reset
+
             document.getElementById('player-white-name').textContent = USERNAME; 
             document.getElementById('player-black-name').textContent = OPPONENT_NAME; 
             document.getElementById('elo-white').textContent = `[1200 ELO]`; 
             document.getElementById('elo-black').textContent = `[1200 ELO]`;
-
-            // Réinitialisation de la rotation du plateau
+            
             chessboardEl.classList.remove('rotated');
             
             updateBoardState(INITIAL_FEN, true); 
@@ -953,14 +1042,10 @@
             playButton.textContent = "Lancer Partie";
             playButton.disabled = false;
             abandonButton.disabled = true; 
-            matchStatusEl.textContent = "(En attente de connexion)";
             playerWhiteBox.classList.remove('highlight-turn');
             playerBlackBox.classList.remove('highlight-turn');
         }
 
-        /**
-         * Envoie la requête de destruction/finalisation au serveur.
-         */
         async function destroyMatch() {
             if (!currentGameId || !USERNAME) return;
             
@@ -979,27 +1064,23 @@
                 const responseData = await response.json(); 
 
                 if (response.ok) {
-                    console.log("[DESTROY MATCH] Succès : Partie signalée et détruite sur le serveur.", responseData.message || responseData);
-                    
+                    console.log("[DESTROY MATCH] Succès", responseData.message || responseData);
                     stopPolling(); 
                 } else {
-                    const errorMessage = responseData.error || `Erreur inconnue (Status: ${response.status}).`;
-                    console.error(`[DESTROY MATCH] Erreur HTTP: ${response.status}. Impossible de supprimer le match.`, errorMessage);
+                    console.error(`[DESTROY MATCH] Erreur HTTP: ${response.status}.`);
                 }
 
             } catch (e) {
-                console.error("[DESTROY MATCH] Erreur critique (Réseau/JSON) lors de la destruction de partie:", e);
+                console.error("[DESTROY MATCH] Erreur critique", e);
             }
         }
 
 
-        /**
-         * Gère la fin de partie avec un affichage clair (modale).
-         */
         function endGame(status, winnerColor, shouldDestroy = false) {
             stopPolling();
             isGameOver = true;
-            
+            waitSpinnerEl.style.display = 'none'; // S'assurer que le spinner est caché
+
             const isLocalPlayerWinner = (winnerColor === playerColor);
             
             let message = "La partie est terminée.";
@@ -1023,8 +1104,6 @@
                 modalType = isLocalPlayerWinner ? 'win' : 'loss';
             }
 
-            matchStatusEl.textContent = `FIN : ${modalTitle}`;
-            
             showModal(modalTitle, message, modalType); 
 
             drawPieces();
@@ -1039,13 +1118,9 @@
             playButton.textContent = 'Partie Terminée';
             updateTurnIndicator(); 
             
-            // Réinitialisation du client après un délai de 5 secondes
             setTimeout(resetClientState, 5000); 
         }
 
-        /**
-         * Affiche une modale (pop-up) à l'écran.
-         */
         function showModal(title, message, type = 'info', buttons = null) {
             modalTitle.textContent = title;
             modalMessage.textContent = message;
@@ -1057,11 +1132,9 @@
             if (oldButton) oldButton.remove();
             document.querySelectorAll('.modal-buttons-group').forEach(el => el.remove());
             
-            // La croix est visible pour Info, Win, Loss, Draw (y compris Défaite/Abandon)
             modalCloseCross.style.display = buttons ? 'none' : 'block'; 
 
             if (buttons) {
-                 // Affichage de boutons personnalisés (pour la confirmation d'abandon)
                  const buttonsGroup = document.createElement('div');
                  buttonsGroup.className = 'modal-buttons-group';
                  buttons.forEach(btn => {
@@ -1077,7 +1150,6 @@
                  modalContent.appendChild(buttonsGroup);
                 
             } else {
-                // Bouton standard (pour fin de partie ou info)
                 const closeButton = document.createElement('button');
                 closeButton.id = 'modal-close-button';
                 
@@ -1100,9 +1172,6 @@
             modalOverlay.style.display = 'flex';
         }
         
-        /**
-         * Affiche la modale de confirmation avant d'abandonner.
-         */
         function showAbandonConfirmation() {
             if (!currentGameId || isGameOver) return;
             
@@ -1127,58 +1196,45 @@
             );
         }
 
-        // displayInfo est maintenant principalement pour le log/feedback non-modal.
         function displayInfo(message, type = 'info') {
+            infoEl.textContent = message; 
+            infoEl.style.display = 'block'; 
+
             if (infoTimeout) clearTimeout(infoTimeout);
             
             console.log(`[INFO - ${type.toUpperCase()}] ${message}`); 
 
-            if (type === 'error' || type === 'warning' || type === 'gameover' || type === 'success') {
-                 return; 
-            }
-
             infoTimeout = setTimeout(() => {
-                infoEl.classList.remove('error', 'warning', 'gameover', 'success');
+                infoEl.textContent = ""; 
+                infoEl.style.display = 'none'; 
             }, 5000);
         }
         
-        /**
-         * Configure le plateau, la rotation et les informations des joueurs.
-         * Assure que l'utilisateur local est TOUJOURS en bas.
-         */
         function setupPlayerAndBoard(color, opponent) {
             playerColor = color;
             opponentId = opponent;
             
             const isWhite = color === 'white';
             
-            // --- FIX: Assurer que l'utilisateur local est toujours dans la boîte du BAS (player-white-box) ---
-            
-            // La boîte du bas (player-white-box) affiche toujours l'utilisateur local (VOUS)
             document.getElementById('player-white-name').textContent = USERNAME;
             const localColor = isWhite ? 'Blanc' : 'Noir';
             document.getElementById('elo-white').textContent = `[1200 ELO (VOUS / ${localColor})]`;
             
-            // La boîte du haut (player-black-box) affiche toujours l'adversaire (ADV)
             document.getElementById('player-black-name').textContent = opponentId;
             const opponentColor = isWhite ? 'Noir' : 'Blanc';
             document.getElementById('elo-black').textContent = `[1200 ELO (ADV / ${opponentColor})]`;
             
-            // --- FIN FIX ---
-
-            // Rotation du plateau (basée sur la couleur des pièces de l'utilisateur)
             if (isWhite) {
                 chessboardEl.classList.remove('rotated'); 
             } else {
                 chessboardEl.classList.add('rotated'); 
             }
             
-            // Réapplication des classes de position pour les styles (elles sont fixes car le contenu est échangé)
             playerWhiteBox.classList.remove('top-player');
-            playerWhiteBox.classList.add('bottom-player'); // VOUS (boîte du bas)
+            playerWhiteBox.classList.add('bottom-player');
 
             playerBlackBox.classList.add('top-player');
-            playerBlackBox.classList.remove('bottom-player'); // ADV (boîte du haut)
+            playerBlackBox.classList.remove('bottom-player');
         }
         
         function drawBoard() {
@@ -1217,11 +1273,11 @@
                 }
             }
         }
-
+        
         function handleMove(row, col, squareEl) {
             if (isGameOver || !currentGameId || waitingForOpponent || chessBoard.turn() !== playerColor[0]) {
                 const reason = isGameOver ? "Partie terminée." : 
-                             !currentGameId ? "Cliquez sur 'Lancer Partie'." :
+                             !currentGameId ? "Cliquez sur 'Lancer Partie' dans le menu." :
                              waitingForOpponent ? "En attente de l'adversaire." :
                              "Veuillez attendre le coup de l'adversaire.";
                 console.log(`Mouvement bloqué. Raison: ${reason}`);
@@ -1354,9 +1410,40 @@
             }
         }
         
-        function initializeGame() {
+        let isResizing = false;
+        
+        function handleResize(e) {
+            if (!isResizing) return;
             
-            // Positionnement par défaut de l'utilisateur local dans la boîte du bas
+            const minWidth = 180;
+            const maxWidth = 500;
+            const appLayoutRect = appLayoutEl.getBoundingClientRect();
+            
+            const newWidth = appLayoutRect.right - e.clientX - 20; 
+            
+            if (newWidth >= minWidth && newWidth <= maxWidth) {
+                sidebarEl.style.width = `${newWidth}px`;
+            }
+        }
+
+        function stopResizing() {
+            isResizing = false;
+            document.body.style.cursor = 'default';
+            document.removeEventListener('mousemove', handleResize);
+            document.removeEventListener('mouseup', stopResizing);
+        }
+
+        function startResizing(e) {
+            isResizing = true;
+            document.body.style.cursor = 'ew-resize';
+            document.addEventListener('mousemove', handleResize);
+            document.addEventListener('mouseup', stopResizing);
+        }
+
+        resizerEl.addEventListener('mousedown', startResizing);
+
+
+        function initializeGame() {
             document.getElementById('player-white-name').textContent = USERNAME || OPPONENT_NAME;
             document.getElementById('player-black-name').textContent = OPPONENT_NAME;
             

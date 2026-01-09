@@ -761,32 +761,6 @@
             }, initialDelay);
         }
 
-        async function checkAbandonStatus() {
-            if (!currentGameId) return false;
-
-            try {
-                const response = await fetch(`${SERVER_URL}/get_give_up_chess?game_uuid=${currentGameId}`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.status === 'abandoned') {
-                    const winnerColor = data.winner_color;
-                    endGame('abandoned', winnerColor, true); 
-                    return true; 
-                }
-                
-                return false; 
-
-            } catch (e) {
-                console.warn("[ABANDON CHECK ERROR]", e);
-                return false;
-            }
-        }
-
-
         async function pollGameStatus() { 
             if (!currentGameId || isGameOver) {
                 stopPolling();
@@ -806,7 +780,7 @@
                 if (response.ok) {
                     
                     if (data.game_status === 'abandoned' && data.winner_color === playerColor) {
-                         // L'adversaire a abandonné
+                         // L'adversaire a abandonné (ce joueur est le gagnant)
                          endGame('abandoned', playerColor, true); 
                          return; 
                     }
@@ -832,8 +806,6 @@
                     
                     if (!waitingForOpponent && data.game_status === 'active') {
                         
-                        // Supprimé l'appel à checkAbandonStatus() car le statut 'abandoned' est maintenant géré plus haut si le joueur local est le gagnant.
-                        
                         if (data.fen !== currentFen) {
                             updateBoardState(data.fen); 
                             
@@ -852,16 +824,15 @@
                                 endGame(status, winnerColor, true); 
                                 return; 
                             }
-                            
-                            // On ne notifie plus "Coup joué" de manière intrusive (la pièce bouge seule)
                         } 
                     } else if (data.game_status !== 'created' && data.game_status !== 'active') {
                         
-                        // Cas où le statut final est donné par le serveur mais pas 'abandoned' (ex: timeout)
+                        // Cas où le statut final est donné par le serveur 
                         updateBoardState(data.fen); 
                         
                         const winnerColor = data.winner_color; // Le serveur devrait donner le gagnant
-                        endGame(data.game_status, winnerColor, data.game_status !== 'abandoned'); 
+                        // Si l'adversaire apprend la fin par polling (y compris abandon s'il est le perdant), il doit clean
+                        endGame(data.game_status, winnerColor, true); 
                     }
                     
                 } else {
@@ -984,6 +955,17 @@
                         return;
 
                     } else {
+                        
+                        // --- CORRECTIF POUR L'ABANDON (RACE CONDITION) ---
+                        // Si le coup échoue (serveur rejette), on force un check de l'état du jeu pour capter un abandon imminent.
+                        await pollGameStatus();
+                        
+                        // Si pollGameStatus a mis fin à la partie (isGameOver est maintenant vrai), on sort.
+                        if (isGameOver) {
+                            return; 
+                        }
+                        // --- FIN CORRECTIF ---
+                        
                         if (data.error && data.error.includes("illegal move")) {
                             showGameNotification("Coup Illégal (rejeté par le serveur)", true); // Popup rouge
                             chessBoard.undo();
@@ -1032,8 +1014,8 @@
                  if (response.ok && data.status === 'success') {
                      const winnerColor = data.winner_color;
                      
-                     // L'abandon met à jour l'état du plateau pour montrer la défaite (si nécessaire)
-                     endGame('abandoned', winnerColor, false); 
+                     // L'abandon met à jour l'état du plateau pour montrer la défaite 
+                     endGame('abandoned', winnerColor, false); // shouldDestroy=false car le gagnant le fera
 
                  } else {
                      showGameNotification(`Erreur abandon: ${data.message || 'Erreur inconnue'}`, true);
@@ -1119,9 +1101,6 @@
             let modalType = 'draw'; 
             let modalTitle = 'MATCH NUL';
             
-            const losingColorChar = chessBoard.turn();
-            const kingSquare = getKingSquare(losingColorChar);
-
             // Appliquer les styles de fin de partie avant d'afficher la modale
             drawPieces();
             drawBoard();
@@ -1131,7 +1110,6 @@
                 message = isLocalPlayerWinner ? `Vous avez maté ${opponentId} !` : `${winnerName} vous a maté.`;
                 modalTitle = isLocalPlayerWinner ? 'VICTOIRE PAR MAT' : 'DÉFAITE PAR MAT';
                 modalType = isLocalPlayerWinner ? 'win' : 'loss';
-                // La classe checkmated-square est appliquée dans drawBoard
                 
             } else if (status.includes('draw') || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
                 message = "La partie se termine par un match nul.";

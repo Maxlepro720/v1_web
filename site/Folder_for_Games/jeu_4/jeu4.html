@@ -631,6 +631,32 @@
             }
             return null;
         }
+        
+        /**
+         * Vérifie toutes les conditions de fin de partie côté client (Mat, Nul).
+         * @returns {{isOver: boolean, status: string, winner: string|null}} 
+         */
+        function getLocalGameStatus() {
+            if (chessBoard.in_checkmate()) {
+                // Le gagnant est la couleur qui n'est PAS celle dont c'est le tour (le roi maté)
+                const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
+                return { isOver: true, status: 'checkmate', winner: winnerColor };
+            }
+            if (chessBoard.in_stalemate()) {
+                return { isOver: true, status: 'stalemate', winner: 'draw' };
+            }
+            if (chessBoard.in_threefold_repetition()) {
+                return { isOver: true, status: 'threefold_draw', winner: 'draw' };
+            }
+            if (chessBoard.insufficient_material()) {
+                return { isOver: true, status: 'insufficient_material_draw', winner: 'draw' };
+            }
+            // Couvre les cas de nullité générale non couverts ci-dessus (règle des 50 coups si implémentée, etc.)
+            if (chessBoard.in_draw()) {
+                return { isOver: true, status: 'draw', winner: 'draw' };
+            }
+            return { isOver: false, status: 'active', winner: null };
+        }
 
 
         // --- Constantes et État du Jeu ---
@@ -780,20 +806,20 @@
 
                 if (response.ok) {
                     
-                    // --- VÉRIFICATION UNIFIÉE DE FIN DE PARTIE (Abandon, Mat, Nul, Timeout) ---
-                    if (data.game_status !== 'created' && data.game_status !== 'active') {
+                    // --- VÉRIFICATION ABANDON/TIMEOUT PAR LE SERVEUR ---
+                    if (data.game_status === 'abandoned' || data.game_status === 'timeout') {
                         
                         updateBoardState(data.fen); 
                         
                         const winnerColor = data.winner_color; 
                         
-                        // Seul le client du joueur gagnant doit appeler destroy_match
+                        // Seul le client du joueur gagnant appelle destroy_match
                         const shouldDestroy = (winnerColor === playerColor);
                         
                         endGame(data.game_status, winnerColor, shouldDestroy); 
                         return; // Terminer le traitement après la fin de partie
                     }
-                    // --- FIN VÉRIFICATION UNIFIÉE ---
+                    // --- FIN VÉRIFICATION ABANDON/TIMEOUT ---
                     
                     
                     if (waitingForOpponent && data.game_status === 'active') {
@@ -819,22 +845,24 @@
                         if (data.fen !== currentFen) {
                             updateBoardState(data.fen); 
                             
-                            // Si l'adversaire a joué un coup et que la partie est terminée
-                            if (chessBoard.in_checkmate() || chessBoard.in_draw() || chessBoard.in_stalemate() || chessBoard.insufficient_material() || chessBoard.three_fold_repetition()) {
+                            // L'adversaire a joué. VÉRIFICATION DES CONDITIONS DE FIN DE PARTIE CÔTÉ CLIENT.
+                            const localStatus = getLocalGameStatus();
+                            
+                            if (localStatus.isOver) {
+                                // L'adversaire a mis mat ou provoqué un nul.
+                                const winner = localStatus.winner; 
+                                const isDraw = winner === 'draw';
                                 
-                                // Le tour a déjà changé, donc 'turn()' est la couleur perdante
-                                const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
-                                
-                                let status;
-                                if (chessBoard.in_checkmate()) status = 'checkmate';
-                                else if (chessBoard.in_stalemate()) status = 'stalemate';
-                                else if (chessBoard.three_fold_repetition()) status = 'threefold';
-                                else if (chessBoard.insufficient_material()) status = 'insufficient';
-                                else status = 'draw';
-                                
-                                // On ne met pas shouldDestroy=true ici, on laisse le serveur confirmer l'état final via le polling
-                                endGame(status, winnerColor, false); 
-                                return; 
+                                // On détruit seulement si on est le gagnant. Pas de destroy sur un draw ici pour éviter la course.
+                                const shouldDestroy = !isDraw && (winner === playerColor); 
+
+                                endGame(localStatus.status, winner, shouldDestroy); 
+                                return;
+                            }
+                            
+                            // Mise à jour de la vérification d'échec après le coup
+                            if (chessBoard.in_check()) {
+                                showGameNotification("ECHEC !", true);
                             }
                         } 
                     } 
@@ -944,13 +972,19 @@
                         
                         updateBoardState(data.new_fen); 
                         
-                        if (data.game_status !== 'active') {
-                            // Le tour a déjà changé (couleur perdante)
-                            const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
+                        // VÉRIFICATION DES CONDITIONS DE FIN DE PARTIE CÔTÉ CLIENT APRES NOTRE COUP
+                        const localStatus = getLocalGameStatus();
+                        
+                        if (localStatus.isOver) {
                             
-                            // Si le serveur dit que c'est terminé, le gagnant appelle destroy.
-                            const shouldDestroy = (winnerColor === playerColor); 
-                            endGame(data.game_status, winnerColor, shouldDestroy); 
+                            const winner = localStatus.winner; 
+                            const isDraw = winner === 'draw';
+                            
+                            // Si on a gagné (mat), on appelle destroy. Si c'est un draw, on laisse le serveur gérer.
+                            const shouldDestroy = !isDraw; 
+                            
+                            endGame(localStatus.status, winner, shouldDestroy); 
+                            return;
                         } else {
                             // Mise à jour de la vérification d'échec après le coup
                             if (chessBoard.in_check()) {
@@ -963,7 +997,7 @@
 
                     } else {
                         
-                        // Si le coup échoue (serveur rejette), on force un check de l'état du jeu pour capter un abandon imminent.
+                        // Correction: Si le coup échoue, on force un check de l'état du jeu pour capter un abandon imminent.
                         await pollGameStatus();
                         
                         // Si pollGameStatus a mis fin à la partie (isGameOver est maintenant vrai), on sort.
@@ -1019,7 +1053,7 @@
                  if (response.ok && data.status === 'success') {
                      const winnerColor = data.winner_color;
                      
-                     // Le joueur abandonne (il est le perdant), donc shouldDestroy = false
+                     // Le joueur abandonne (il est le perdant), donc shouldDestroy = false (le gagnant le fera)
                      endGame('abandoned', winnerColor, false); 
 
                  } else {

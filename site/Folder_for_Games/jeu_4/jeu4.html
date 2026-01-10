@@ -91,23 +91,20 @@
             box-shadow: 0 0 10px rgba(40, 167, 69, 0.7);
         }
 
-        /* Les classes top-player et bottom-player sont gérées dynamiquement */
+        /* Styles spécifiques aux positions physiques (déterminées par le JS) */
         .top-player { 
+            /* Joueur du haut (toujours l'adversaire) */
             border-top: 2px solid rgba(255,255,255,0.1); 
-            flex-direction: row; 
+            flex-direction: row; /* Nom à gauche */
         } 
         
         .bottom-player { 
-            flex-direction: row-reverse;
+            /* Joueur du bas (toujours le local) */
+            flex-direction: row-reverse; /* Nom à droite */
         } 
         .bottom-player .player-info { 
             text-align: right; 
         } 
-        /* Correction: on s'assure que le bottom-player (local) soit toujours bien orienté, quel que soit l'ordre dans le HTML */
-        #player-white-box:not(.bottom-player) .player-info, 
-        #player-black-box:not(.bottom-player) .player-info {
-            text-align: left;
-        }
 
         .player-info {
             display: flex;
@@ -547,7 +544,7 @@
         <div class="game-area">
             <h1>Jeu d'Échecs</h1>
             
-            <div class="player-container top-player" id="player-black-box">
+            <div class="player-container" id="player-black-box">
                 <div class="player-info">
                     <span id="player-black-name">Adversaire Inconnu</span>
                     <span class="player-elo" id="elo-black">[1200 ELO]</span>
@@ -561,7 +558,7 @@
                 </div>
             </div>
             
-            <div class="player-container bottom-player" id="player-white-box">
+            <div class="player-container" id="player-white-box">
                 <div class="player-info">
                     <span id="player-white-name">Chargement...</span>
                     <span class="player-elo" id="elo-white">[1200 ELO]</span>
@@ -680,8 +677,6 @@
         const waitSpinnerEl = document.getElementById('wait-spinner'); 
         const playerWhiteBox = document.getElementById('player-white-box');
         const playerBlackBox = document.getElementById('player-black-box');
-        const eloWhiteEl = document.getElementById('elo-white');
-        const eloBlackEl = document.getElementById('elo-black');
         
         const boardNotificationEl = document.getElementById('board-notification'); // Nouveau popup central
 
@@ -742,17 +737,14 @@
         }
         
         function updateTurnIndicator() {
-            // Correction des indicateurs de tour
-            playerWhiteBox.classList.remove('highlight-turn', 'top-player', 'bottom-player');
-            playerBlackBox.classList.remove('highlight-turn', 'top-player', 'bottom-player');
-            
-            // On s'assure que le joueur local est en bas (bottom-player) et l'adversaire en haut (top-player)
-            const localBox = playerColor === 'white' ? playerWhiteBox : playerBlackBox;
-            const opponentBox = playerColor === 'white' ? playerBlackBox : playerWhiteBox;
-            
-            localBox.classList.add('bottom-player');
-            opponentBox.classList.add('top-player');
+            // Définition des boîtes physiques (Opponent = Top, Local = Bottom)
+            const physicalTopBox = playerBlackBox;    // Toujours le haut (Adversaire)
+            const physicalBottomBox = playerWhiteBox; // Toujours le bas (Joueur Local)
 
+            // Réinitialisation des surlignages et des classes de position
+            physicalTopBox.classList.remove('highlight-turn');
+            physicalBottomBox.classList.remove('highlight-turn');
+            
             abandonButton.disabled = (!currentGameId || isGameOver || waitingForOpponent); 
 
             if (isGameOver || waitingForOpponent || !currentGameId) {
@@ -763,9 +755,9 @@
             const isUserTurn = currentTurn === playerColor[0]; 
             
             if (isUserTurn) {
-                localBox.classList.add('highlight-turn');
+                physicalBottomBox.classList.add('highlight-turn');
             } else {
-                opponentBox.classList.add('highlight-turn');
+                physicalTopBox.classList.add('highlight-turn');
             }
         }
 
@@ -863,9 +855,6 @@
                                 endGame(status, winnerColor, false); // shouldDestroy=false, endGame décidera
                                 return; 
                             }
-                            
-                            // CORRECTION BUG 3: Suppression de la notification "Coup de l'adversaire"
-                            // showGameNotification("Coup de l'adversaire"); 
                         } 
                     } else if (data.game_status !== 'created' && data.game_status !== 'active' && data.game_status !== 'abandoned') {
                         // Gestion des autres fins de jeu non 'active', 'created', 'abandoned' (ex: timeout)
@@ -1005,7 +994,7 @@
                                 winnerColor = (loserColorLocal === 'white') ? 'black' : 'white'; 
                                 
                                 // Si le serveur a retourné une couleur erronée, on la corrige ici pour l'affichage
-                                if (winnerColor !== playerColor) {
+                                if (data.winner_color && winnerColor !== data.winner_color) {
                                      console.warn(`[CHECKMATE FIX] Correction de winnerColor du serveur (${data.winner_color}) à ${winnerColor}.`);
                                 }
                             }
@@ -1100,7 +1089,8 @@
             stopPolling();
             waitSpinnerEl.style.display = 'none'; 
 
-            document.getElementById('player-white-name').textContent = USERNAME; 
+            // Réinitialisation des noms/ELO par défaut
+            document.getElementById('player-white-name').textContent = 'Chargement...'; 
             document.getElementById('player-black-name').textContent = OPPONENT_NAME; 
             document.getElementById('elo-white').textContent = `[1200 ELO]`; 
             document.getElementById('elo-black').textContent = `[1200 ELO]`;
@@ -1112,12 +1102,12 @@
             playButton.textContent = "Lancer Partie";
             playButton.disabled = false;
             abandonButton.disabled = true; 
-            playerWhiteBox.classList.remove('highlight-turn', 'top-player', 'bottom-player');
-            playerBlackBox.classList.remove('highlight-turn', 'top-player', 'bottom-player');
             
-            // Assurer un état initial correct pour l'affichage des joueurs
+            // On assure un état visuel initial correct (Top: Adversaire, Bottom: Local)
+            playerBlackBox.classList.remove('highlight-turn', 'bottom-player');
             playerBlackBox.classList.add('top-player');
-            playerWhiteBox.classList.add('bottom-player'); 
+            playerWhiteBox.classList.remove('highlight-turn', 'top-player');
+            playerWhiteBox.classList.add('bottom-player');
         }
 
         async function destroyMatch() {
@@ -1184,15 +1174,15 @@
             drawPieces();
             drawBoard();
 
-            // --- Logique de Destruction Corrigée et Confirmée (Bug 1: Perdant détruit) ---
+            // --- Logique de Destruction Corrigée et Confirmée (Perdant par mat détruit) ---
             
             let shouldDestroyNow = false;
             
             if (status === 'abandoned' || status === 'timeout') {
-                // Seul le joueur local GAGNANT doit détruire.
+                // Seul le joueur local GAGNANT détruit.
                 shouldDestroyNow = isLocalPlayerWinner;
             } else if (status === 'checkmate') {
-                // Seul le joueur local PERDANT doit détruire. (Conforme à la demande)
+                // Seul le joueur local PERDANT détruit. (Conforme à la demande)
                 shouldDestroyNow = !isLocalPlayerWinner;
             } else if (status.includes('draw') || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
                 // En cas de nul, les deux détruisent.
@@ -1215,7 +1205,6 @@
         
         /**
          * Affiche un message temporaire au centre du plateau (non bloquant).
-         * Utilisé pour : Check, Coup illégal, Premove, etc.
          */
         function showGameNotification(message, isAlert = false) {
             boardNotificationEl.textContent = message;
@@ -1271,7 +1260,8 @@
                     closeButton.textContent = "Rejouer";
                     closeButton.onclick = () => {
                         modalOverlay.style.display = 'none';
-                        findOrCreateMatch(); 
+                        resetClientState(); // On reset l'état du client
+                        findOrCreateMatch(); // Et on relance la recherche
                     };
                 } else {
                     closeButton.textContent = "Continuer";
@@ -1316,36 +1306,35 @@
             
             const isWhite = color === 'white';
             
-            const localBox = isWhite ? playerWhiteBox : playerBlackBox;
-            const opponentBox = isWhite ? playerBlackBox : playerWhiteBox;
-            
+            // Définition des boîtes physiques (leur position dans le HTML est fixe : black-box est au-dessus)
+            const physicalTopBox = playerBlackBox;    // Toujours le haut (Adversaire)
+            const physicalBottomBox = playerWhiteBox; // Toujours le bas (Joueur Local)
+
+            // Définir la couleur et l'ID du joueur local et de l'adversaire
             const localColorText = isWhite ? 'Blanc' : 'Noir';
             const opponentColorText = isWhite ? 'Noir' : 'Blanc';
-
-            // Mise à jour des noms/ELOs
-            const localNameEl = localBox.querySelector('span:first-child');
-            const localEloEl = localBox.querySelector('.player-elo');
-            localNameEl.textContent = USERNAME; 
-            localEloEl.textContent = `[1200 ELO (VOUS / ${localColorText})]`;
-
-            const opponentNameEl = opponentBox.querySelector('span:first-child');
-            const opponentEloEl = opponentBox.querySelector('.player-elo');
-            opponentNameEl.textContent = opponentId;
-            opponentEloEl.textContent = `[1200 ELO (ADV / ${opponentColorText})]`;
             
-            // Gestion de l'orientation du plateau
+            // --- 1. Mise à jour de la boîte du haut (Adversaire) ---
+            physicalTopBox.querySelector('span:first-child').textContent = opponentId;
+            physicalTopBox.querySelector('.player-elo').textContent = `[1200 ELO (ADV / ${opponentColorText})]`;
+            
+            // --- 2. Mise à jour de la boîte du bas (Joueur Local) ---
+            physicalBottomBox.querySelector('span:first-child').textContent = USERNAME; 
+            physicalBottomBox.querySelector('.player-elo').textContent = `[1200 ELO (VOUS / ${localColorText})]`;
+
+            // --- 3. Mise à jour des classes CSS pour le placement/style ---
+            physicalTopBox.classList.add('top-player');
+            physicalTopBox.classList.remove('bottom-player');
+            
+            physicalBottomBox.classList.add('bottom-player');
+            physicalBottomBox.classList.remove('top-player');
+            
+            // --- 4. Gestion de l'orientation du plateau ---
             if (isWhite) {
                 chessboardEl.classList.remove('rotated'); 
             } else {
                 chessboardEl.classList.add('rotated'); 
             }
-            
-            // Affectation des classes CSS pour le placement
-            localBox.classList.remove('top-player');
-            localBox.classList.add('bottom-player');
-
-            opponentBox.classList.remove('bottom-player');
-            opponentBox.classList.add('top-player');
         }
         
         function drawBoard() {
@@ -1547,7 +1536,8 @@
         
         function createPieceElement(pieceCode, row, col) {
             const pieceEl = document.createElement('div');
-            pieceEl.className = `piece ${pieceCode.toLowerCase() === pieceCode ? 'black-piece' : 'white-piece'}`;
+            const pieceColor = pieceCode.toLowerCase() === pieceCode ? 'black' : 'white';
+            pieceEl.className = `piece ${pieceColor}-piece`;
             pieceEl.textContent = PIECES_SYMBOLS[pieceCode] || '?';
             
             const x_pos = col * 12.5;
@@ -1636,15 +1626,17 @@
 
 
         function initializeGame() {
-            document.getElementById('player-white-name').textContent = USERNAME || OPPONENT_NAME;
-            document.getElementById('player-black-name').textContent = OPPONENT_NAME;
             
             initBoardSquares(); 
             updateBoardState(chessBoard.fen()); 
             
-            // État initial de l'affichage des joueurs (avant qu'une partie ne soit lancée)
+            // Initialisation des classes de position pour les styles CSS
             playerBlackBox.classList.add('top-player');
             playerWhiteBox.classList.add('bottom-player'); 
+            
+            // État initial des pseudos
+            document.getElementById('player-white-name').textContent = USERNAME || 'Chargement...';
+            document.getElementById('player-black-name').textContent = OPPONENT_NAME;
         }
 
         document.addEventListener('DOMContentLoaded', initializeGame);

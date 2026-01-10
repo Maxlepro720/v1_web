@@ -813,7 +813,7 @@
                     // [1] Correction: Si le statut du jeu est 'abandoned' et que l'utilisateur n'est pas celui qui a abandonné
                     if (data.game_status === 'abandoned' && data.winner_color === playerColor) {
                          const winnerColor = playerColor; 
-                         endGame('abandoned', winnerColor, false); // Ne détruit pas le match immédiatement
+                         endGame('abandoned', winnerColor, true); // L'adversaire qui gagne détruit le match
                          return; 
                     }
                     
@@ -1027,7 +1027,7 @@
                  if (response.ok && data.status === 'success') {
                      // L'utilisateur qui abandonne voit la fin de jeu immédiatement
                      const winnerColor = data.winner_color;
-                     endGame('abandoned', winnerColor, true); // [2] L'utilisateur qui abandonne détruit le match
+                     endGame('abandoned', winnerColor, false); // L'utilisateur qui abandonne ne détruit pas le match
                  } else {
                      showGameNotification(`Erreur abandon: ${data.message}`, true);
                      abandonButton.disabled = false; 
@@ -1142,7 +1142,7 @@
             drawBoard();
 
             // [2] Si c'est un checkmate ou une autre fin de partie "naturelle", seul le PERDANT doit détruire le match.
-            // Sauf pour l'abandon (l'abandonneur détruit)
+            // En cas d'abandon, le joueur adverse (gagnant) qui reçoit l'état via polling détruit.
             if (status !== 'abandoned') {
                 const isLoser = (status === 'checkmate' && !isLocalPlayerWinner) || (status === 'timeout' && !isLocalPlayerWinner);
                 shouldDestroy = isLoser || status.includes('draw'); // En cas de nul, les deux le détruisent.
@@ -1613,7 +1613,7 @@
         // [1] Correction du système d'abandon: La fonction `checkAbandonStatus` a été retirée. 
         //     La fonction `pollGameStatus` gère maintenant l'état 'abandoned' tel que retourné par le serveur. 
         // [2] Correction de la suppression de partie (Checkmate): La fonction `endGame` a été modifiée 
-        //     pour que seul le perdant (en cas de checkmate) ou l'abandonneur (en cas d'abandon) appelle `destroyMatch`.
+        //     pour que seul le perdant (en cas de checkmate) ou l'adversaire gagnant (en cas d'abandon) appelle `destroyMatch`.
         // [3] Ajout du Premove:
         //     - La variable `preMove` a été ajoutée.
         //     - `handleMove` contient la logique pour définir `preMove` lorsque ce n'est pas le tour de l'utilisateur.

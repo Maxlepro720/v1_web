@@ -746,6 +746,11 @@
                     // On met à jour l'état local pour simuler le plateau pour les prochains premoves
                     chessBoard.move(moveAttempt);
                     
+                    // Correction de la gestion de selectedCoords à la fin de la file d'attente
+                    if (preMoveQueue.length === 0) {
+                         selectedCoords = null; 
+                    }
+                    
                     // On envoie le coup au serveur
                     makeMoveServer(move_uci_correct);
                     
@@ -1105,7 +1110,7 @@
         }
         
         /**
-         * CORRECTION 1: Réinitialisation complète du client.
+         * Réinitialisation complète du client.
          */
         function resetClientState() {
             currentGameId = null;
@@ -1254,7 +1259,7 @@
         }
 
         /**
-         * CORRECTION 1: Modale avec gestion de la fermeture forcée pour les fins de partie.
+         * Modale avec gestion de la fermeture forcée pour les fins de partie.
          */
         function showModal(title, message, type = 'info', buttons = null) {
             modalTitle.textContent = title;
@@ -1381,10 +1386,9 @@
                  // 1. Surligner le départ du premier Premove comme la case "sélectionnée"
                  const firstMove = preMoveQueue[0];
                  const { row: startRow, col: startCol } = squareToCoords(firstMove.from);
-                 document.getElementById(`sq-${startRow}-${startCol}`).classList.add('selected');
+                 // Note: On ne surligne plus la source initiale, mais la source courante (selectedCoords)
                  
                  // 2. Surligner toutes les cibles de la file d'attente
-                 // Et surligner la case "selectedCoords" (la source du prochain coup)
                  preMoveQueue.forEach((move, index) => {
                      const { row: toRow, col: toCol } = squareToCoords(move.to);
                      const targetEl = document.getElementById(`sq-${toRow}-${toCol}`);
@@ -1447,7 +1451,7 @@
         }
         
         /**
-         * CORRECTION 2: Logique de sélection et de chainage des premoves entièrement revue.
+         * Logique de sélection et de chainage des premoves.
          */
         function handleMove(row, col, squareEl) {
             if (isGameOver || !currentGameId || waitingForOpponent) {
@@ -1478,11 +1482,18 @@
             // ----------------------------------------------------
             if (!isMyTurn) {
                 
-                // 1. Clic sur une pièce amie (Nouvelle sélection ou Annulation de la sélection initiale)
+                // 1. Clic sur une pièce amie (Nouvelle sélection ou Annulation)
                 if (isFriendlyPiece) {
                     
-                    if (selectedCoords && coordsToSquare(selectedCoords.row, selectedCoords.col) === square) {
-                        // Clic sur la même pièce sélectionnée initialement: Annuler tout.
+                    const isChainActive = preMoveQueue.length > 0;
+                    const currentSquare = square;
+                    const selectedSquare = selectedCoords ? coordsToSquare(selectedCoords.row, selectedCoords.col) : null;
+                    // L'initialSource est la case de départ du premier coup de la file d'attente
+                    const initialSource = isChainActive ? preMoveQueue[0].from : null;
+
+                    // A. Clic sur la source de l'étape courante (selectedCoords) OU sur la source de départ initiale (e2)
+                    if (selectedSquare === currentSquare || (isChainActive && currentSquare === initialSource)) {
+                        // Annulation complète de la séquence. (Ceci corrige le bug de reset accidentel de la chaîne)
                         preMoveQueue = [];
                         selectedCoords = null;
                         legalMoves = [];
@@ -1491,7 +1502,8 @@
                         return;
                     }
                     
-                    // Nouvelle sélection de pièce: Annuler la queue existante et recommencer.
+                    // B. Nouvelle sélection de pièce (Pièce complètement différente, ex: g1).
+                    // On annule la file d'attente existante (si elle existe) et on commence une nouvelle sélection.
                     preMoveQueue = []; 
                     selectedCoords = { row, col };
                     legalMoves = chessBoard.moves({ square: square, verbose: true }); 
@@ -1527,7 +1539,7 @@
                     }
                     
                     // B. Annuler toute la chaîne (en cliquant sur la source initiale)
-                    // L'initialStartCoord est toujours le 'from' du premier premove (s'il existe), ou la sélection courante (si c'est le 1er coup).
+                    // Cette logique est redondante mais maintenue par sécurité si un coup est fait sur la case initiale.
                     const initialStartCoord = preMoveQueue.length === 0 ? currentSourceCoord : preMoveQueue[0].from;
                     if (endCoord === initialStartCoord) {
                         preMoveQueue = [];

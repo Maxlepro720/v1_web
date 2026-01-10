@@ -664,8 +664,8 @@
         let pollingInterval = null; 
         let notificationTimeout = null;
         
-        // preMove est désormais un objet simple {from: 'e2', to: 'e4'}
-        let preMove = null; 
+        // MODIFICATION: preMove est maintenant une file d'attente pour le chainage
+        let preMoveQueue = []; 
 
         // Références DOM globales
         const appLayoutEl = document.querySelector('.app-layout');
@@ -703,7 +703,6 @@
         
         function updateBoardState(newFen, shouldDraw = true) {
             
-            const prevTurn = chessBoard.turn();
             chessBoard.load(newFen); 
             
             const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
@@ -717,26 +716,32 @@
             updateTurnIndicator();
             
             // Logique d'exécution du Premove (uniquement quand c'est mon tour)
-            if (!waitingForMove && preMove) {
+            // On exécute uniquement le premier premove de la file d'attente
+            if (!waitingForMove && preMoveQueue.length > 0) {
+                
+                const currentPremove = preMoveQueue[0];
+
+                // Utiliser une copie du jeu pour tester si le coup est légal dans le FEN actuel
+                const tempGame = new Chess(chessBoard.fen()); 
                 
                 const moveAttempt = {
-                    from: preMove.from,
-                    to: preMove.to
+                    from: currentPremove.from,
+                    to: currentPremove.to
                 };
                 
                 // Vérification de la promotion (par défaut 'q' comme sur chess.com si possible)
-                const piece = chessBoard.get(preMove.from);
+                const piece = tempGame.get(currentPremove.from);
                 
                 if (piece && piece.type === 'p') {
-                     const targetRow = preMove.to[1];
+                     const targetRow = currentPremove.to[1];
                      // Si c'est un pion et que la case d'arrivée est la 8ème ou 1ère rangée
                      if ((piece.color === 'w' && targetRow === '8') || (piece.color === 'b' && targetRow === '1')) {
                          moveAttempt.promotion = 'q'; // Promotion par défaut à la Dame
                      }
                 }
 
-                // Tentative d'exécution du premove sur le NOUVEAU FEN
-                const moveResult = chessBoard.move(moveAttempt);
+                // Tentative d'exécution du premove sur le FEN actuel (via tempGame)
+                const moveResult = tempGame.move(moveAttempt);
                 
                 if (moveResult) {
                     let move_uci_correct = moveResult.from + moveResult.to;
@@ -744,13 +749,32 @@
                         move_uci_correct += moveResult.promotion;
                     }
                     console.log("[PREMOVE] Coup auto-joué:", move_uci_correct);
+                    
+                    preMoveQueue.shift(); // Coup valide, on le retire de la file d'attente
+                    
+                    // On met à jour l'état local pour simuler le plateau pour les prochains premoves
+                    // Note: C'est une simulation. La source de vérité reste la réponse du serveur.
+                    chessBoard.move(moveAttempt);
+                    
+                    // On envoie le coup au serveur
                     makeMoveServer(move_uci_correct);
-                    preMove = null; // Exécuté, on le vide
-                    showGameNotification("Premove joué"); 
+                    
+                    // On redessine pour montrer l'état après le premove local et la file d'attente restante
+                    if (shouldDraw) {
+                        drawPieces();
+                        drawBoard();
+                    }
+
                 } else {
-                    console.warn("[PREMOVE] Premove invalide après l'update du FEN. Ignoré.");
-                    preMove = null; // Invalide, on le vide
+                    console.warn("[PREMOVE] Premier Premove invalide après l'update du FEN. File d'attente vidée.");
+                    preMoveQueue = []; // Invalide, on vide tout
                     showGameNotification("Premove annulé (illégal)", true); 
+                    
+                    // On doit redessiner l'état sans le premove
+                    if (shouldDraw) {
+                        drawPieces();
+                        drawBoard();
+                    }
                 }
             }
         }
@@ -865,6 +889,7 @@
                     if (!waitingForOpponent && data.game_status === 'active') {
                         
                         if (data.fen !== currentFen) {
+                            // Si c'est mon tour et qu'il y a des premoves, updateBoardState va exécuter le premove
                             updateBoardState(data.fen); 
                             
                             // Si l'adversaire a joué et que cela met fin à la partie
@@ -911,8 +936,8 @@
                 return;
             }
             
-            // On s'assure de réinitialiser le preMove
-            preMove = null; 
+            // On s'assure de réinitialiser la file d'attente
+            preMoveQueue = []; 
 
             playButton.disabled = true;
             abandonButton.disabled = true;
@@ -1002,35 +1027,29 @@
 
                     if (response.ok && data.success) {
                         
+                        // On recharge le FEN du serveur (qui prend en compte le move joué)
+                        // Si le FEN est inchangé, c'est que le coup a été appliqué et le tour est passé
                         updateBoardState(data.new_fen); 
                         
                         if (data.game_status !== 'active') {
                             let winnerColor = data.winner_color; 
                             
-                            // CORRECTION BUG 2: S'assurer que le gagnant par checkmate voit "Victoire"
+                            // Logique de correction de fin de jeu (Checkmate)
                             if (data.game_status === 'checkmate') {
                                 // Après le coup du joueur local, chessBoard.turn() est la couleur perdante
                                 const loserColorChar = chessBoard.turn();
                                 const loserColorLocal = loserColorChar === 'w' ? 'white' : 'black';
-                                
-                                // Le vainqueur est l'opposé du joueur qui doit jouer
                                 winnerColor = (loserColorLocal === 'white') ? 'black' : 'white'; 
-                                
-                                // Si le serveur a retourné une couleur erronée, on la corrige ici pour l'affichage
-                                if (data.winner_color && winnerColor !== data.winner_color) {
-                                     console.warn(`[CHECKMATE FIX] Correction de winnerColor du serveur (${data.winner_color}) à ${winnerColor}.`);
-                                }
                             }
-                            // FIN CORRECTION BUG 2
 
                             if (winnerColor) {
-                                // shouldDestroy=false, car endGame gère la destruction par le perdant
                                 endGame(data.game_status, winnerColor, false); 
                             } else {
                                 // Cas de nul
                                 endGame(data.game_status, 'none', false); 
                             }
                         } else {
+                            // Le coup a été joué, on reprend le polling pour le tour adverse
                             startPolling(); 
                         }
                         return;
@@ -1038,8 +1057,14 @@
                     } else {
                         if (data.error && data.error.includes("illegal move")) {
                             showGameNotification("Coup Illégal", true); // Popup rouge
-                            chessBoard.undo();
-                            updateBoardState(chessBoard.fen()); 
+                            // Si le coup était un premove, la file d'attente est déjà purgée dans updateBoardState.
+                            // Si c'est un coup normal, il faut l'annuler localement.
+                            if (preMoveQueue.length === 0) {
+                                chessBoard.undo();
+                                updateBoardState(chessBoard.fen()); 
+                            } else {
+                                // Rien à faire, le premove a été annulé avant l'envoi
+                            }
                             startPolling(); 
                             return;
                         }
@@ -1058,8 +1083,11 @@
             }
 
             console.error("Toutes les tentatives d'envoi du coup ont échoué.");
-            chessBoard.undo();
-            updateBoardState(chessBoard.fen());
+            // Si toutes les tentatives échouent, on annule le coup local (si c'est un coup normal)
+            if (preMoveQueue.length === 0) {
+                 chessBoard.undo();
+                 updateBoardState(chessBoard.fen());
+            }
             showModal("Erreur", "Impossible d'envoyer le coup.", 'loss'); 
             startPolling(); 
         }
@@ -1084,7 +1112,6 @@
                  if (response.ok && data.status === 'success') {
                      // L'utilisateur qui abandonne voit la fin de jeu immédiatement
                      const winnerColor = data.winner_color;
-                     // L'abandonneur (perdant) passe shouldDestroy=false. endGame le confirmera et ne détruira pas.
                      endGame('abandoned', winnerColor, false); 
                  } else {
                      showGameNotification(`Erreur abandon: ${data.message}`, true);
@@ -1098,6 +1125,9 @@
              }
         }
         
+        /**
+         * 1) MODIFICATION: Réinitialisation complète du client.
+         */
         function resetClientState() {
             currentGameId = null;
             playerColor = null;
@@ -1107,12 +1137,15 @@
             isGameOver = false;
             waitingForOpponent = false;
             waitingForMove = false;
-            preMove = null; 
+            preMoveQueue = []; // Reset de la file d'attente
 
             stopPolling();
             waitSpinnerEl.style.display = 'none'; 
+            
+            // Re-création de l'objet chess.js
+            chessBoard = new Chess(INITIAL_FEN); 
 
-            // Correction 3: Initialisation du pseudo du joueur local avec USERNAME
+            // Réinitialisation des pseudos et ELOS
             document.getElementById('player-white-name').textContent = USERNAME; 
             document.getElementById('player-black-name').textContent = OPPONENT_NAME; 
             document.getElementById('elo-white').textContent = `[1200 ELO]`; 
@@ -1120,16 +1153,20 @@
             
             chessboardEl.classList.remove('rotated');
             
-            updateBoardState(INITIAL_FEN, true); 
+            // S'assurer que les indicateurs de tour sont nettoyés
+            playerBlackBox.classList.remove('highlight-turn');
+            playerWhiteBox.classList.remove('highlight-turn');
+            
+            updateBoardState(chessBoard.fen(), true); // Dessine le plateau initial propre
 
             playButton.textContent = "Lancer Partie";
             playButton.disabled = false;
             abandonButton.disabled = true; 
             
             // On assure un état visuel initial correct (Top: Adversaire, Bottom: Local)
-            playerBlackBox.classList.remove('highlight-turn', 'bottom-player');
+            playerBlackBox.classList.remove('bottom-player');
             playerBlackBox.classList.add('top-player');
-            playerWhiteBox.classList.remove('highlight-turn', 'top-player');
+            playerWhiteBox.classList.remove('top-player');
             playerWhiteBox.classList.add('bottom-player');
         }
 
@@ -1168,6 +1205,7 @@
             stopPolling();
             isGameOver = true;
             waitSpinnerEl.style.display = 'none'; 
+            preMoveQueue = []; // On vide la file d'attente à la fin du jeu
 
             const isLocalPlayerWinner = (winnerColor === playerColor);
             
@@ -1220,9 +1258,6 @@
             abandonButton.disabled = true; 
             playButton.textContent = 'Partie Terminée';
             updateTurnIndicator(); 
-            
-            // Correction 2: Suppression de l'auto-reset, le bouton "Rejouer" dans la modale le gère désormais
-            // setTimeout(resetClientState, 5000); 
         }
 
         // --- GESTION DES POPUPS ---
@@ -1367,30 +1402,39 @@
                 el.classList.remove('highlight-move', 'highlight-capture', 'selected', 'in-check', 'checkmated-square');
             });
             
-            // Affichage du Premove s'il existe
-            if (preMove) {
-                 const { row: fromRow, col: fromCol } = squareToCoords(preMove.from);
-                 const { row: toRow, col: toCol } = squareToCoords(preMove.to);
+            // Affichage de la file d'attente des Premoves
+            if (preMoveQueue.length > 0) {
                  
+                 // 1. Surligner le départ du premier Premove comme la case "sélectionnée"
+                 const { row: fromRow, col: fromCol } = squareToCoords(preMoveQueue[0].from);
                  document.getElementById(`sq-${fromRow}-${fromCol}`).classList.add('selected');
                  
-                 const targetEl = document.getElementById(`sq-${toRow}-${toCol}`);
+                 // 2. Surligner toutes les cibles de la file d'attente
+                 preMoveQueue.forEach((move, index) => {
+                     const { row: toRow, col: toCol } = squareToCoords(move.to);
+                     const targetEl = document.getElementById(`sq-${toRow}-${toCol}`);
+                     
+                     // Pour le premier coup, on vérifie si la case est occupée dans le FEN actuel
+                     if (index === 0) {
+                          const isCapture = chessBoard.get(move.to) !== null;
+                          if (isCapture) { 
+                              targetEl.classList.add('highlight-capture');
+                          } else {
+                              targetEl.classList.add('highlight-move');
+                          }
+                     } else {
+                         // Pour les suivants, on utilise seulement 'highlight-move'
+                         targetEl.classList.add('highlight-move');
+                     }
+                 });
                  
-                 // Simuler si c'est une capture pour l'affichage (moins précis car non validé, mais pour l'UI)
-                 const isCapture = chessBoard.get(preMove.to) !== null;
-                 
-                 if (isCapture) { 
-                     targetEl.classList.add('highlight-capture');
-                 } else {
-                     targetEl.classList.add('highlight-move');
-                 }
-                 
-                 // On ne sélectionne pas et on n'affiche pas les coups légaux si un Premove est défini
+                 // On ne sélectionne pas et on n'affiche pas les coups légaux si une file de Premoves est définie
                  selectedCoords = null; 
                  legalMoves = [];
                  return;
             }
             
+            // --- Logique pour le jeu normal (ou pour l'aide au premove initial) ---
             if (selectedCoords) {
                 document.getElementById(`sq-${selectedCoords.row}-${selectedCoords.col}`).classList.add('selected');
             }
@@ -1423,6 +1467,9 @@
             }
         }
         
+        /**
+         * 2) MODIFICATION: Logique de sélection pour le chainage de premoves.
+         */
         function handleMove(row, col, squareEl) {
             if (isGameOver || !currentGameId || waitingForOpponent) {
                 const reason = isGameOver ? "Partie terminée." : 
@@ -1436,50 +1483,104 @@
             const square = coordsToSquare(row, col);
             const piece = chessBoard.get(square);
             const isMyTurn = chessBoard.turn() === playerColor[0];
+            const isFriendlyPiece = piece && (piece.color === playerColor[0]);
             
-            // Logique Premove
+            // --- Annulation de la file d'attente si le tour revient au joueur ---
+            if (isMyTurn && preMoveQueue.length > 0) {
+                 preMoveQueue = [];
+                 selectedCoords = null;
+                 legalMoves = [];
+                 drawBoard();
+                 showGameNotification("Premove(s) annulé(s): C'est votre tour !", true);
+            }
+            
+            // ----------------------------------------------------
+            // MODE PREMOVE (Adversaire joue)
+            // ----------------------------------------------------
             if (!isMyTurn) {
                 
-                if (preMove && preMove.from === square) {
-                    preMove = null;
-                    selectedCoords = null;
-                    legalMoves = [];
-                    drawBoard(); 
-                    showGameNotification("Premove annulé"); 
-                    return;
-                }
-                
-                if (piece && (piece.color === playerColor[0])) {
-                    // Sélection de la pièce pour le Premove
+                // 1. Clic sur une pièce amie (Nouvelle sélection ou Annulation)
+                if (isFriendlyPiece) {
+                    if (selectedCoords && coordsToSquare(selectedCoords.row, selectedCoords.col) === square) {
+                        // Clic sur la même pièce sélectionnée: Annuler tout.
+                        preMoveQueue = [];
+                        selectedCoords = null;
+                        legalMoves = [];
+                        drawBoard();
+                        showGameNotification("Premove(s) annulé(s)");
+                        return;
+                    }
+                    
+                    // Nouvelle sélection de pièce: Annuler la queue et recommencer.
+                    preMoveQueue = [];
                     selectedCoords = { row, col };
-                    // Affichage des coups légaux pour l'aide à la saisie du premove
+                    // Affichage des coups légaux pour l'aide à la saisie du premier premove
                     legalMoves = chessBoard.moves({ square: square, verbose: true }); 
-                    drawBoard(); 
+                    drawBoard();
+                    showGameNotification("Séquence de Premove démarrée");
                     return;
                 }
                 
+                // 2. Clic sur une case de destination (Target)
                 if (selectedCoords) {
-                    // Tentative de Premove: on enregistre les coordonnées sans validation immédiate
+                    
                     const startCoord = coordsToSquare(selectedCoords.row, selectedCoords.col);
                     const endCoord = square;
+                    const lastMoveTarget = preMoveQueue.length > 0 ? preMoveQueue[preMoveQueue.length - 1].to : null;
                     
-                    // Stocker le coup simple, la validation et la promotion seront gérées dans updateBoardState
-                    preMove = {
-                        from: startCoord,
+                    // Si l'utilisateur clique sur la dernière cible (pour l'annuler)
+                    if (preMoveQueue.length > 0 && lastMoveTarget === endCoord) {
+                         preMoveQueue.pop();
+                         // La nouvelle sélection est la pièce qui devait jouer (début de la queue) ou la cible du coup précédent.
+                         selectedCoords = (preMoveQueue.length === 0) 
+                             ? { row: squareToCoords(preMoveQueue.length > 0 ? preMoveQueue[0].from : startCoord).row, col: squareToCoords(preMoveQueue.length > 0 ? preMoveQueue[0].from : startCoord).col } // Revenir à la sélection initiale
+                             : squareToCoords(preMoveQueue[preMoveQueue.length - 1].to); // Revenir à la cible précédente
+                         
+                         // Si la file est vide, on réaffiche les coups légaux pour la pièce de départ initiale.
+                         if (preMoveQueue.length === 0) {
+                            legalMoves = chessBoard.moves({ square: coordsToSquare(selectedCoords.row, selectedCoords.col), verbose: true });
+                         } else {
+                            legalMoves = []; 
+                         }
+                         
+                         drawBoard();
+                         showGameNotification("Dernier Premove annulé");
+                         return;
+                    }
+                    
+                    // Création du nouveau Premove
+                    const newMoveFrom = preMoveQueue.length === 0 ? startCoord : lastMoveTarget;
+                    
+                    if (startCoord !== newMoveFrom) {
+                        // Clic sur une case de destination qui n'est ni le début de la chaîne ni la suite
+                        showGameNotification("Coup de Premove hors-chaîne.", true);
+                        return;
+                    }
+
+                    const newPremove = {
+                        from: newMoveFrom, 
                         to: endCoord
                     };
                     
-                    selectedCoords = null; 
-                    legalMoves = [];
-                    drawBoard(); // Redessine pour montrer le premove
-                    showGameNotification("Premove défini"); 
+                    preMoveQueue.push(newPremove);
+                    
+                    // Mettre à jour selectedCoords pour le prochain coup à partir de la nouvelle destination (chainage)
+                    selectedCoords = squareToCoords(endCoord);
+                    
+                    // Vider les coups légaux (car on ne peut plus les calculer sur le FEN actuel)
+                    legalMoves = []; 
+                    
+                    drawBoard(); 
+                    showGameNotification(`Premove ${preMoveQueue.length} enregistré`);
                     return;
                 }
             }
 
 
-            // Logique de jeu normale (C'est mon tour)
-            if (isMyTurn) {
+            // ----------------------------------------------------
+            // MODE JEU NORMAL (C'est mon tour, file vide)
+            // ----------------------------------------------------
+            if (isMyTurn) { 
                 
                 if (!selectedCoords) {
                     if (piece && (piece.color === playerColor[0])) { 

@@ -1482,10 +1482,11 @@
             // ----------------------------------------------------
             if (!isMyTurn) {
                 
+                const isChainActive = preMoveQueue.length > 0;
+                
                 // 1. Clic sur une pièce amie (Nouvelle sélection ou Annulation)
                 if (isFriendlyPiece) {
                     
-                    const isChainActive = preMoveQueue.length > 0;
                     const currentSquare = square;
                     const selectedSquare = selectedCoords ? coordsToSquare(selectedCoords.row, selectedCoords.col) : null;
                     // L'initialSource est la case de départ du premier coup de la file d'attente
@@ -1503,12 +1504,20 @@
                     }
                     
                     // B. Nouvelle sélection de pièce (Pièce complètement différente, ex: g1).
-                    // On annule la file d'attente existante (si elle existe) et on commence une nouvelle sélection.
-                    preMoveQueue = []; 
+                    // On change la pièce de départ sans annuler la file d'attente
+                    
+                    // --- CORRECTION: Ne réinitialiser la file d'attente que si on démarre une nouvelle chaîne ---
+                    if (preMoveQueue.length === 0) {
+                        preMoveQueue = []; // S'assure que si la queue est sale, elle est vide au départ.
+                        showGameNotification("Séquence de Premove démarrée");
+                    } else {
+                        showGameNotification("Pièce de départ pour le prochain Premove changée.");
+                    }
+                    // --- FIN CORRECTION ---
+                    
                     selectedCoords = { row, col };
-                    legalMoves = chessBoard.moves({ square: square, verbose: true }); 
+                    legalMoves = chessBoard.moves({ square: square, verbose: true }); // On calcule les coups légaux pour l'aide visuelle au premier coup
                     drawBoard();
-                    showGameNotification("Séquence de Premove démarrée");
                     return;
                 }
                 
@@ -1517,10 +1526,10 @@
                     
                     const currentSourceCoord = coordsToSquare(selectedCoords.row, selectedCoords.col);
                     const endCoord = square;
-                    const lastMoveTarget = preMoveQueue.length > 0 ? preMoveQueue[preMoveQueue.length - 1].to : null;
+                    const lastMoveTarget = isChainActive ? preMoveQueue[preMoveQueue.length - 1].to : null;
 
                     // A. Annulation du dernier coup de la queue (en cliquant sur la cible du dernier coup)
-                    if (preMoveQueue.length > 0 && lastMoveTarget === endCoord) {
+                    if (isChainActive && lastMoveTarget === endCoord) {
                          preMoveQueue.pop();
                          
                          if (preMoveQueue.length > 0) {
@@ -1529,7 +1538,9 @@
                              legalMoves = []; 
                          } else {
                              // Revenir à la source initiale (celle qui est encore dans selectedCoords)
-                             const initialSource = preMoveQueue.length === 0 ? currentSourceCoord : preMoveQueue[0].from;
+                             const initialSource = currentSourceCoord; // currentSourceCoord est l'origine du move annulé
+                             
+                             // Si on revient à la sélection initiale, on réaffiche les coups légaux pour l'aide
                              selectedCoords = squareToCoords(initialSource); 
                              legalMoves = chessBoard.moves({ square: initialSource, verbose: true });
                          }
@@ -1539,7 +1550,7 @@
                     }
                     
                     // B. Annuler toute la chaîne (en cliquant sur la source initiale)
-                    // Cette logique est redondante mais maintenue par sécurité si un coup est fait sur la case initiale.
+                    // Cette logique est redondante si on a utilisé A (annulation complète) mais on la laisse par sécurité.
                     const initialStartCoord = preMoveQueue.length === 0 ? currentSourceCoord : preMoveQueue[0].from;
                     if (endCoord === initialStartCoord) {
                         preMoveQueue = [];
@@ -1553,7 +1564,7 @@
                     // C. Ajout d'un nouveau Premove
                     
                     // Si c'est le premier premove, il doit être légal dans l'état actuel pour s'afficher
-                    if (preMoveQueue.length === 0) {
+                    if (!isChainActive) {
                         const isLegal = legalMoves.some(m => m.from === currentSourceCoord && m.to === endCoord);
                         if (!isLegal) {
                             showGameNotification("Premier Premove illégal!", true);
@@ -1565,9 +1576,21 @@
                     preMoveQueue.push(newPremove);
                     
                     // Mettre à jour selectedCoords pour le prochain coup à partir de la nouvelle destination (chainage)
-                    selectedCoords = squareToCoords(endCoord);
+                    // Si le coup est "chaîné" on met la cible comme source suivante. Sinon on garde la source initiale
+                    if (isChainActive || currentSourceCoord === newPremove.from) {
+                        selectedCoords = squareToCoords(endCoord);
+                    } else {
+                        // Pour les moves séparés (ex: d2d4 après f2f4) on garde l'origine (d2) comme sélection
+                        // pour permettre l'annulation simple du coup d2d4 sans annuler toute la chaîne.
+                        // On laisse selectedCoords inchangé, le prochain coup devra se faire à partir d'ici.
+                        // Non, il faut définir le point de départ du prochain coup à la destination si c'est un move de la même pièce
+                        // Pour des moves séparés, il faut laisser selectedCoords au point de départ (d2) pour permettre d'ajouter d'autres moves à partir de d2 ou annuler.
+                        // Cependant, pour le chaînage pur, il faut le point d'arrivée. On va faire simple : on garde la sélection si ce n'est pas un coup chaîné.
+                        // On laisse le comportement par défaut de l'ancienne implémentation qui était de mettre la cible comme source suivante.
+                        selectedCoords = squareToCoords(endCoord); 
+                    }
                     
-                    // Vider les coups légaux
+                    // Vider les coups légaux pour le chaînage ou la sélection suivante
                     legalMoves = []; 
                     
                     drawBoard(); 

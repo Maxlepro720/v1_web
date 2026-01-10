@@ -627,6 +627,17 @@
             }
             return null;
         }
+        
+        /**
+         * Fait basculer le tour dans l'objet chess.js (Hack pour la simulation de premove).
+         * @param {Chess} game L'instance de jeu à modifier.
+         */
+        function toggleTurn(game) {
+            const fen = game.fen();
+            const parts = fen.split(' ');
+            parts[1] = (parts[1] === 'w' ? 'b' : 'w'); // Inverse la couleur
+            game.load(parts.join(' ')); 
+        }
 
 
         // --- Constantes et État du Jeu ---
@@ -750,8 +761,6 @@
                     if (preMoveQueue.length === 0) {
                          selectedCoords = null; 
                     } else {
-                         // La nouvelle source pour le premove suivant est la destination du move qui vient d'être joué
-                         // ou la source du premier move restant dans la queue.
                          // On réinitialise selectedCoords à la source du premier coup de la file restante.
                          selectedCoords = squareToCoords(preMoveQueue[0].from);
                          legalMoves = [];
@@ -1399,6 +1408,11 @@
                  const tempGame = new Chess(chessBoard.fen()); 
                  
                  preMoveQueue.forEach((move, index) => {
+                     // S'assurer que le tour est correct pour la simulation de l'affichage
+                     if (tempGame.turn() !== playerColor[0]) {
+                          toggleTurn(tempGame);
+                     }
+                     
                      const { row: toRow, col: toCol } = squareToCoords(move.to);
                      const targetEl = document.getElementById(`sq-${toRow}-${toCol}`);
                      
@@ -1511,6 +1525,7 @@
                     selectedCoords = { row, col };
                     
                     // Calcule les coups légaux pour l'aide visuelle, en utilisant le FEN actuel
+                    // Attention: Ces coups sont techniquement illégaux dans le FEN, mais servent juste d'indicateur
                     legalMoves = chessBoard.moves({ square: currentSquare, verbose: true }); 
                     
                     drawBoard();
@@ -1535,7 +1550,8 @@
                          } else {
                              // Sinon, on retourne à la source initiale (source du premier coup qui vient d'être retiré)
                              selectedCoords = squareToCoords(lastMove.from); 
-                             legalMoves = chessBoard.moves({ square: lastMove.from, verbose: true }); // Affiche les coups légaux de la pièce
+                             // Afficher les coups légaux sur le plateau actuel (même si c'est le tour de l'adversaire)
+                             legalMoves = chessBoard.moves({ square: lastMove.from, verbose: true }); 
                          }
                          drawBoard();
                          showGameNotification("Dernier Premove annulé");
@@ -1544,33 +1560,49 @@
                     
                     // --- Tentative d'ajout du Premove: Simulation de la chaîne ---
                     
+                    const playerColorChar = playerColor[0];
                     const tempGame = new Chess(chessBoard.fen()); 
+
+                    // 0. Forcer le tour de tempGame à la couleur du joueur pour le premier coup de la chaîne
+                    if (tempGame.turn() !== playerColorChar) {
+                         toggleTurn(tempGame); // Force 'w' ou 'b' selon playerColor
+                    }
 
                     // 1. Appliquer les premoves déjà en file d'attente sur l'état temporaire
                     let chainValid = true;
                     for (const move of preMoveQueue) {
                         const moveAttempt = { from: move.from, to: move.to, promotion: move.promotion };
                         
-                        // Si l'application du coup simulé échoue (impossible car le FEN a changé entre-temps)
-                        if (!tempGame.move(moveAttempt)) {
+                        // Si le tour n'est pas notre couleur (il a basculé après le coup précédent), on le remet
+                        if (tempGame.turn() !== playerColorChar) {
+                            toggleTurn(tempGame); 
+                        }
+                        
+                        const result = tempGame.move(moveAttempt);
+                        if (!result) {
                             chainValid = false;
                             break; 
                         }
                     }
 
                     if (!chainValid) {
-                        // Cela ne devrait pas arriver si les règles sont bien suivies, mais est une sécurité.
-                        showGameNotification("Chaîne Premove interne invalide.", true);
-                        preMoveQueue = [];
-                        selectedCoords = null;
-                        legalMoves = [];
-                        drawBoard();
-                        return; 
+                       showGameNotification("Chaîne Premove interne invalide.", true);
+                       preMoveQueue = [];
+                       selectedCoords = null;
+                       legalMoves = [];
+                       drawBoard();
+                       return; 
                     }
                     
                     // 2. Tenter d'appliquer le nouveau coup sur l'état simulé
+                    
+                    // S'assurer que le tour est correct pour le nouveau coup
+                    if (tempGame.turn() !== playerColorChar) {
+                        toggleTurn(tempGame); 
+                    }
+                    
                     const newMoveAttempt = { from: startCoord, to: endCoord };
-                    const pieceToMove = tempGame.get(startCoord);
+                    const pieceToMove = tempGame.get(startCoord); 
                     let promotion = undefined;
                     
                     // Déterminer la promotion pour le nouveau coup
@@ -1599,7 +1631,8 @@
                     } else {
                         // Coup illégal
                         showGameNotification("Premove illégal", true);
-                        legalMoves = chessBoard.moves({ square: startCoord, verbose: true }); // On affiche quand même les coups légaux pour le dernier 'selectedCoords'
+                        // On garde la sélection active pour retenter
+                        legalMoves = chessBoard.moves({ square: startCoord, verbose: true }); 
                         drawBoard();
                     }
                     return;

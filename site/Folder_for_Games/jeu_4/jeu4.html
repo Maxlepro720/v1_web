@@ -718,76 +718,9 @@
             updateTurnIndicator();
             
             // Logique d'exécution du Premove (uniquement quand c'est mon tour)
-            // On exécute uniquement le premier premove de la file d'attente
+            // Si le FEN est celui de mon tour et qu'il y a des premoves en attente
             if (!waitingForMove && preMoveQueue.length > 0) {
-                
-                const currentPremove = preMoveQueue[0];
-
-                // Utiliser une copie du jeu pour tester si le coup est légal dans le FEN actuel
-                const tempGame = new Chess(chessBoard.fen()); 
-                
-                const moveAttempt = {
-                    from: currentPremove.from,
-                    to: currentPremove.to
-                };
-                
-                // Vérification de la promotion (par défaut 'q' comme sur chess.com si possible)
-                const piece = tempGame.get(currentPremove.from);
-                
-                if (piece && piece.type === 'p') {
-                     const targetRow = currentPremove.to[1];
-                     // Si c'est un pion et que la case d'arrivée est la 8ème ou 1ère rangée
-                     if ((piece.color === 'w' && targetRow === '8') || (piece.color === 'b' && targetRow === '1')) {
-                         moveAttempt.promotion = 'q'; // Promotion par défaut à la Dame
-                     }
-                }
-
-                // Tentative d'exécution du premove sur le FEN actuel (via tempGame)
-                const moveResult = tempGame.move(moveAttempt);
-                
-                if (moveResult) {
-                    let move_uci_correct = moveResult.from + moveResult.to;
-                    if (moveResult.promotion) {
-                        move_uci_correct += moveResult.promotion;
-                    }
-                    console.log("[PREMOVE] Coup auto-joué:", move_uci_correct);
-                    
-                    preMoveQueue.shift(); // Coup valide, on le retire du début de la file d'attente
-                    
-                    // On met à jour l'état local pour simuler le plateau pour les prochains premoves
-                    chessBoard.move(moveAttempt);
-                    
-                    // Correction de la gestion de selectedCoords à la fin de la file d'attente
-                    if (preMoveQueue.length === 0) {
-                         selectedCoords = null; 
-                    } else {
-                         // On réinitialise selectedCoords à la source du premier coup de la file restante.
-                         selectedCoords = squareToCoords(preMoveQueue[0].from);
-                         legalMoves = [];
-                    }
-                    
-                    // On envoie le coup au serveur
-                    makeMoveServer(move_uci_correct);
-                    
-                    // On redessine pour montrer l'état après le premove local et la file d'attente restante
-                    if (shouldDraw) {
-                        drawPieces();
-                        drawBoard();
-                    }
-
-                } else {
-                    console.warn("[PREMOVE] Premier Premove invalide après l'update du FEN. File d'attente vidée.");
-                    preMoveQueue = []; // Invalide, on vide tout
-                    selectedCoords = null;
-                    legalMoves = [];
-                    showGameNotification("Premove annulé (illégal)", true); 
-                    
-                    // On doit redessiner l'état sans le premove
-                    if (shouldDraw) {
-                        drawPieces();
-                        drawBoard();
-                    }
-                }
+                 executePremoveChain();
             }
         }
         
@@ -901,7 +834,7 @@
                     if (!waitingForOpponent && data.game_status === 'active') {
                         
                         if (data.fen !== currentFen) {
-                            // Si c'est mon tour et qu'il y a des premoves, updateBoardState va exécuter le premove
+                            // Si c'est mon tour et qu'il y a des premoves, updateBoardState va exécuter la chaîne
                             updateBoardState(data.fen); 
                             
                             // Si l'adversaire a joué et que cela met fin à la partie
@@ -1009,16 +942,126 @@
             }
         }
         
-        async function makeMoveServer(move_uci) {
-            const MAX_RETRIES = 5; 
-            let attempt = 0;
-            
+        /**
+         * Fonction pure pour envoyer un coup au serveur sans gestion de la boucle de jeu.
+         * @param {string} move_uci Coup au format UCI (e.g., 'e2e4', 'a7a8q').
+         * @returns {Promise<Object>} Les données de réponse du serveur.
+         */
+        async function sendMoveToServer(move_uci) {
             const payload = {
                 game_uuid: currentGameId,
                 username: USERNAME,
                 move_uci: move_uci,
             };
-            const jsonPayload = JSON.stringify(payload);
+            
+            const response = await fetch(`${SERVER_URL}/make_move`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok || !data.success) {
+                const error = data.error || 'Coup rejeté par le serveur.';
+                throw new Error(error); 
+            }
+            
+            return data; // Returns { success: true, new_fen: "...", game_status: "..." }
+        }
+
+        /**
+         * Exécute de manière asynchrone toute la chaîne de premoves en attente.
+         */
+        async function executePremoveChain() {
+            stopPolling(); 
+            
+            let moveMade = false;
+
+            // Boucle tant que c'est le tour du joueur ET que la file n'est pas vide
+            while (chessBoard.turn() === playerColor[0] && preMoveQueue.length > 0) {
+                
+                const currentPremove = preMoveQueue[0];
+                const moveAttempt = {
+                    from: currentPremove.from,
+                    to: currentPremove.to,
+                    promotion: currentPremove.promotion 
+                };
+                
+                // 1. Exécution locale du coup pour vérification de légalité et flip de tour
+                const moveResult = chessBoard.move(moveAttempt); 
+
+                if (moveResult) {
+                    let move_uci_correct = moveResult.from + moveResult.to;
+                    if (moveResult.promotion) {
+                        move_uci_correct += moveResult.promotion;
+                    }
+                    
+                    console.log("[PREMOVE CHAIN] Coup auto-joué:", move_uci_correct);
+                    preMoveQueue.shift(); // Retirer le coup de la file d'attente
+                    moveMade = true;
+
+                    // 2. Envoi du coup au serveur (ATTENDRE l'acquittement)
+                    try {
+                        const data = await sendMoveToServer(move_uci_correct);
+                        
+                        // Si le coup a mis fin à la partie (mat, nul), gérer et arrêter la chaîne
+                        if (data.game_status !== 'active') {
+                            let winnerColor = data.winner_color; 
+                            if (data.game_status === 'checkmate') {
+                                // chessBoard.turn() est la couleur perdante après le coup local
+                                const loserColorChar = chessBoard.turn(); 
+                                const loserColorLocal = loserColorChar === 'w' ? 'white' : 'black';
+                                winnerColor = (loserColorLocal === 'white') ? 'black' : 'white'; 
+                            }
+                            endGame(data.game_status, winnerColor, false); 
+                            return; // Sortir de la fonction
+                        }
+
+                    } catch (error) {
+                        // Le serveur a rejeté le coup (e.g., problème de FEN, illégalité cachée)
+                        console.error(`[PREMOVE CHAIN ERROR] Coup rejeté par le serveur (${error.message}). Chaîne annulée.`);
+                        
+                        // Annuler le dernier coup joué localement (celui qui a échoué à être envoyé)
+                        chessBoard.undo();
+                        preMoveQueue = [];
+                        showGameNotification("Premove annulé (Serveur rejeté)", true); 
+                        break; // Arrêter la chaîne
+                    }
+
+                    // Mise à jour de l'UI après chaque coup de la chaîne
+                    if (preMoveQueue.length === 0) {
+                         selectedCoords = null; 
+                    } else {
+                         // Repositionner la sélection sur la source du prochain coup
+                         selectedCoords = squareToCoords(preMoveQueue[0].from);
+                         legalMoves = [];
+                    }
+                    drawPieces();
+                    drawBoard(); 
+
+                } else {
+                    // Coup illégal dans la chaîne (pièce déplacée, auto-échec)
+                    console.warn("[PREMOVE CHAIN] Premove illégal détecté. Chaîne vidée.");
+                    preMoveQueue = []; 
+                    selectedCoords = null;
+                    legalMoves = [];
+                    showGameNotification("Premove annulé (illégal dans la chaîne)", true); 
+                    break; // Arrêter la chaîne
+                }
+            } // Fin de la boucle while
+
+            // Si la partie n'est pas terminée (checkmate/draw détecté à l'intérieur)
+            if (!isGameOver) {
+                // Redémarrer le polling pour attendre l'adversaire
+                startPolling(); 
+            }
+        }
+
+
+        async function makeMoveServer(move_uci) {
+            const MAX_RETRIES = 5; 
+            let attempt = 0;
             
             stopPolling(); 
             
@@ -1026,55 +1069,41 @@
                 attempt++;
 
                 try {
-                    const response = await fetch(`${SERVER_URL}/make_move`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: jsonPayload
-                    });
+                    const data = await sendMoveToServer(move_uci);
+
+                    // Succès: La FEN est mise à jour avec le coup du joueur
+                    updateBoardState(data.new_fen); 
                     
-                    const data = await response.json();
-
-                    if (response.ok && data.success) {
+                    if (data.game_status !== 'active') {
+                        let winnerColor = data.winner_color; 
                         
-                        updateBoardState(data.new_fen); 
-                        
-                        if (data.game_status !== 'active') {
-                            let winnerColor = data.winner_color; 
-                            
-                            if (data.game_status === 'checkmate') {
-                                const loserColorChar = chessBoard.turn();
-                                const loserColorLocal = loserColorChar === 'w' ? 'white' : 'black';
-                                winnerColor = (loserColorLocal === 'white') ? 'black' : 'white'; 
-                            }
+                        if (data.game_status === 'checkmate') {
+                            const loserColorChar = chessBoard.turn();
+                            const loserColorLocal = loserColorChar === 'w' ? 'white' : 'black';
+                            winnerColor = (loserColorLocal === 'white') ? 'black' : 'white'; 
+                        }
 
-                            if (winnerColor) {
-                                endGame(data.game_status, winnerColor, false); 
-                            } else {
-                                endGame(data.game_status, 'none', false); 
-                            }
+                        if (winnerColor) {
+                            endGame(data.game_status, winnerColor, false); 
                         } else {
-                            startPolling(); 
+                            endGame(data.game_status, 'none', false); 
                         }
-                        return;
-
                     } else {
-                        if (data.error && data.error.includes("illegal move")) {
-                            showGameNotification("Coup Illégal", true); 
-                            // Si le coup était un premove, la file d'attente est déjà purgée dans updateBoardState.
-                            // Sinon, on annule le coup normal localement.
-                            if (preMoveQueue.length === 0) {
-                                chessBoard.undo();
-                                updateBoardState(chessBoard.fen()); 
-                            }
-                            startPolling(); 
-                            return;
-                        }
-
-                        console.warn(`[TENTATIVE ${attempt}] Erreur serveur/API: ${data.error || 'Coup rejeté.'}`);
+                        startPolling(); 
                     }
+                    return;
 
-                } catch (e) {
-                    console.error(`[TENTATIVE ${attempt}] Erreur réseau:`, e);
+                } catch (error) {
+                    console.warn(`[TENTATIVE ${attempt}] Erreur serveur/API: ${error.message}`);
+                    
+                    if (error.message && error.message.includes("illegal move")) {
+                        showGameNotification("Coup Illégal", true); 
+                        // Annuler le coup local car il a été rejeté par le serveur
+                        chessBoard.undo();
+                        updateBoardState(chessBoard.fen()); 
+                        startPolling(); 
+                        return;
+                    }
                 }
 
                 if (attempt < MAX_RETRIES) {
@@ -1084,10 +1113,8 @@
             }
 
             console.error("Toutes les tentatives d'envoi du coup ont échoué.");
-            if (preMoveQueue.length === 0) {
-                 chessBoard.undo();
-                 updateBoardState(chessBoard.fen());
-            }
+            chessBoard.undo();
+            updateBoardState(chessBoard.fen()); 
             showModal("Erreur", "Impossible d'envoyer le coup.", 'loss'); 
             startPolling(); 
         }
@@ -1525,7 +1552,6 @@
                     selectedCoords = { row, col };
                     
                     // Calcule les coups légaux pour l'aide visuelle, en utilisant le FEN actuel
-                    // Attention: Ces coups sont techniquement illégaux dans le FEN, mais servent juste d'indicateur
                     legalMoves = chessBoard.moves({ square: currentSquare, verbose: true }); 
                     
                     drawBoard();

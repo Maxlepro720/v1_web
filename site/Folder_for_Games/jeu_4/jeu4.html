@@ -80,21 +80,22 @@
             margin: 0; 
             border-radius: 8px;
             transition: all 0.3s;
-            border: 2px solid transparent; 
+            border: 2px solid #444; /* Nouvelle bordure par défaut */
             background-color: #2a2a2a;
             box-sizing: border-box;
             flex-shrink: 0; 
         }
         
+        /* Correction 1: Rendre le surlignage plus visible */
         .player-container.highlight-turn {
             border-color: #28a745; 
-            box-shadow: 0 0 10px rgba(40, 167, 69, 0.7);
+            border-width: 4px; /* Plus épais */
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.9); /* Ombre plus forte */
         }
 
         /* Styles spécifiques aux positions physiques (déterminées par le JS) */
         .top-player { 
             /* Joueur du haut (toujours l'adversaire) */
-            border-top: 2px solid rgba(255,255,255,0.1); 
             flex-direction: row; /* Nom à gauche */
         } 
         
@@ -241,7 +242,6 @@
             align-items: center;
             justify-content: center;
             /* TAILLE AUGMENTÉE pour être plus visibles */
-            font-size: 85%; 
             font-size: clamp(28px, 5.8cqw, 80px); /* Augmenté de 4.5 à 5.8 */
             transition: transform 0.3s ease-in-out; 
             pointer-events: none; 
@@ -651,7 +651,7 @@
         let chessBoard = new Chess(INITIAL_FEN); 
 
         let currentGameId = null; 
-        let playerColor = null; 
+        let playerColor = null; // 'white' or 'black'
         let opponentId = OPPONENT_NAME; 
         
         let selectedCoords = null;
@@ -691,7 +691,6 @@
         // Attachement initial de l'événement de fermeture de la modale
         const closeModal = () => modalOverlay.style.display = 'none';
 
-        modalCloseButton.addEventListener('click', closeModal);
         modalCloseCross.addEventListener('click', closeModal); 
         
         // Toggle Sidebar Fonction
@@ -736,6 +735,9 @@
             }
         }
         
+        /**
+         * Mise à jour de l'indicateur de tour (bordure verte).
+         */
         function updateTurnIndicator() {
             // Définition des boîtes physiques (Opponent = Top, Local = Bottom)
             const physicalTopBox = playerBlackBox;    // Toujours le haut (Adversaire)
@@ -751,8 +753,9 @@
                 return;
             }
             
-            const currentTurn = chessBoard.turn() === 'w' ? 'white' : 'black';
-            const isUserTurn = currentTurn === playerColor[0]; 
+            // CORRECTION: Utilisation directe du caractère de couleur pour une comparaison plus fiable
+            const userColorChar = playerColor[0]; // 'w' ou 'b'
+            const isUserTurn = chessBoard.turn() === userColorChar; 
             
             if (isUserTurn) {
                 physicalBottomBox.classList.add('highlight-turn');
@@ -1089,8 +1092,8 @@
             stopPolling();
             waitSpinnerEl.style.display = 'none'; 
 
-            // Réinitialisation des noms/ELO par défaut
-            document.getElementById('player-white-name').textContent = 'Chargement...'; 
+            // Correction 3: Initialisation du pseudo du joueur local avec USERNAME
+            document.getElementById('player-white-name').textContent = USERNAME; 
             document.getElementById('player-black-name').textContent = OPPONENT_NAME; 
             document.getElementById('elo-white').textContent = `[1200 ELO]`; 
             document.getElementById('elo-black').textContent = `[1200 ELO]`;
@@ -1182,7 +1185,7 @@
                 // Seul le joueur local GAGNANT détruit.
                 shouldDestroyNow = isLocalPlayerWinner;
             } else if (status === 'checkmate') {
-                // Seul le joueur local PERDANT détruit. (Conforme à la demande)
+                // Seul le joueur local PERDANT détruit.
                 shouldDestroyNow = !isLocalPlayerWinner;
             } else if (status.includes('draw') || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
                 // En cas de nul, les deux détruisent.
@@ -1198,7 +1201,8 @@
             playButton.textContent = 'Partie Terminée';
             updateTurnIndicator(); 
             
-            setTimeout(resetClientState, 5000); 
+            // Correction 2: Suppression de l'auto-reset, le bouton "Rejouer" dans la modale le gère désormais
+            // setTimeout(resetClientState, 5000); 
         }
 
         // --- GESTION DES POPUPS ---
@@ -1257,11 +1261,12 @@
                 closeButton.id = 'modal-close-button';
                 
                 if (type === 'win' || type === 'loss' || type === 'draw') {
+                    // Clic sur "Rejouer" relance une partie
                     closeButton.textContent = "Rejouer";
                     closeButton.onclick = () => {
                         modalOverlay.style.display = 'none';
-                        resetClientState(); // On reset l'état du client
-                        findOrCreateMatch(); // Et on relance la recherche
+                        resetClientState(); 
+                        findOrCreateMatch(); 
                     };
                 } else {
                     closeButton.textContent = "Continuer";
@@ -1634,8 +1639,8 @@
             playerBlackBox.classList.add('top-player');
             playerWhiteBox.classList.add('bottom-player'); 
             
-            // État initial des pseudos
-            document.getElementById('player-white-name').textContent = USERNAME || 'Chargement...';
+            // État initial des pseudos (utilise le USERNAME global)
+            document.getElementById('player-white-name').textContent = USERNAME; // S'assure que le pseudo est là au chargement
             document.getElementById('player-black-name').textContent = OPPONENT_NAME;
         }
 

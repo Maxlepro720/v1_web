@@ -789,15 +789,34 @@
             }, initialDelay);
         }
 
-        // [1] Retire la fonction checkAbandonStatus car la logique a été déplacée dans pollGameStatus pour l'unifier
-        // Le serveur est censé indiquer "abandoned" dans son statut de jeu.
-
         async function pollGameStatus() { 
             if (!currentGameId || isGameOver) {
                 stopPolling();
                 return;
             }
             
+            // --- NOUVEAU: 1. Vérification de l'abandon via la route dédiée (/get_give_up_chess) ---
+            try {
+                const abandonResponse = await fetch(`${SERVER_URL}/get_give_up_chess?game_uuid=${currentGameId}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+
+                const abandonData = await abandonResponse.json();
+
+                if (abandonResponse.ok && abandonData.status === 'abandoned') {
+                    // Si l'abandon est détecté, on met fin à la partie immédiatement.
+                    // On passe shouldDestroy=false, et la fonction endGame décidera si le joueur local est le gagnant et doit détruire.
+                    console.log(`[POLLING] Abandon détecté. Gagnant: ${abandonData.winner_color}`);
+                    endGame('abandoned', abandonData.winner_color, false); 
+                    return; // Arrêter le polling et le reste de la fonction
+                }
+            } catch (e) {
+                console.warn("[POLLING ERROR - Abandon Check] Erreur lors de la requête de statut d'abandon :", e);
+                // Continuer avec le statut normal en cas d'erreur sur la vérification d'abandon
+            }
+
+            // --- 2. Vérification de l'état du jeu normal (/get_game_state) ---
             const currentFen = chessBoard.fen(); 
             
             try {
@@ -809,13 +828,6 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    
-                    // [1] Correction: Si le statut du jeu est 'abandoned' et que l'utilisateur n'est pas celui qui a abandonné
-                    if (data.game_status === 'abandoned' && data.winner_color === playerColor) {
-                         const winnerColor = playerColor; 
-                         endGame('abandoned', winnerColor, true); // L'adversaire qui gagne détruit le match
-                         return; 
-                    }
                     
                     if (waitingForOpponent && data.game_status === 'active') {
                         waitingForOpponent = false; 
@@ -843,10 +855,13 @@
                             
                             // Si l'adversaire a joué et que cela met fin à la partie
                             if (chessBoard.in_checkmate() || chessBoard.in_draw() || chessBoard.in_stalemate()) {
-                                const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
+                                // Attention: chessBoard.turn() est la couleur qui DOIT JOUER, donc la couleur perdante
+                                const loserColor = chessBoard.turn() === 'w' ? 'white' : 'black';
+                                const winnerColor = loserColor === 'white' ? 'black' : 'white';
+                                
                                 const status = chessBoard.in_checkmate() ? 'checkmate' : (chessBoard.in_stalemate() ? 'stalemate' : 'draw');
                                 
-                                endGame(status, winnerColor, false); // Ne détruit pas le match immédiatement
+                                endGame(status, winnerColor, false); // shouldDestroy=false, endGame décidera
                                 return; 
                             }
                             
@@ -857,8 +872,15 @@
                         
                         updateBoardState(data.fen); 
                         
-                        const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
-                        endGame(data.game_status, winnerColor, false); // Ne détruit pas le match immédiatement
+                        // Si le serveur a marqué le jeu comme terminé (ex: timeout), il devrait inclure winner_color
+                        const winnerColor = data.winner_color; 
+                        if (winnerColor) {
+                             endGame(data.game_status, winnerColor, false); // shouldDestroy=false, endGame décidera
+                        } else {
+                             // Fallback pour les cas imprévus
+                             console.warn("[POLLING] Fin de jeu sans vainqueur clair reçue.", data.game_status);
+                             endGame('draw', 'none', false);
+                        }
                     }
                     
                 } else {
@@ -971,8 +993,13 @@
                         updateBoardState(data.new_fen); 
                         
                         if (data.game_status !== 'active') {
-                            const winnerColor = chessBoard.turn() === 'w' ? 'black' : 'white';
-                            endGame(data.game_status, winnerColor, false); // [2] Ne détruit pas le match
+                            const winnerColor = data.winner_color; // Le serveur devrait donner le vainqueur en cas de fin de partie par mat/nul
+                            if (winnerColor) {
+                                endGame(data.game_status, winnerColor, false); // [2] Le perdant ne détruit pas, endGame gère
+                            } else {
+                                // Cas de nul où le serveur ne renvoie pas winner_color, on peut présumer le nul si le statut le dit
+                                endGame(data.game_status, 'none', false); 
+                            }
                         } else {
                             startPolling(); 
                         }
@@ -1027,7 +1054,8 @@
                  if (response.ok && data.status === 'success') {
                      // L'utilisateur qui abandonne voit la fin de jeu immédiatement
                      const winnerColor = data.winner_color;
-                     endGame('abandoned', winnerColor, false); // L'utilisateur qui abandonne ne détruit pas le match
+                     // [2] L'abandonneur (perdant) passe shouldDestroy=false. endGame le confirmera et ne détruira pas.
+                     endGame('abandoned', winnerColor, false); 
                  } else {
                      showGameNotification(`Erreur abandon: ${data.message}`, true);
                      abandonButton.disabled = false; 
@@ -1104,14 +1132,13 @@
         }
 
 
-        // [2] Modification de la logique de destruction de match.
+        // [2] Correction: Logique de destruction ajustée selon la demande: le Vainqueur par abandon/temps détruit.
         function endGame(status, winnerColor, shouldDestroy = false) { 
             stopPolling();
             isGameOver = true;
             waitSpinnerEl.style.display = 'none'; 
 
             const isLocalPlayerWinner = (winnerColor === playerColor);
-            const isLocalPlayerTurn = chessBoard.turn() === playerColor[0];
             
             let message = "Partie terminée.";
             let modalType = 'draw'; 
@@ -1141,14 +1168,22 @@
             drawPieces();
             drawBoard();
 
-            // [2] Si c'est un checkmate ou une autre fin de partie "naturelle", seul le PERDANT doit détruire le match.
-            // En cas d'abandon, le joueur adverse (gagnant) qui reçoit l'état via polling détruit.
-            if (status !== 'abandoned') {
-                const isLoser = (status === 'checkmate' && !isLocalPlayerWinner) || (status === 'timeout' && !isLocalPlayerWinner);
-                shouldDestroy = isLoser || status.includes('draw'); // En cas de nul, les deux le détruisent.
+            // --- Logique de Destruction Unifiée et Corrigée ---
+            
+            let shouldDestroyNow = false;
+            
+            if (status === 'abandoned' || status === 'timeout') {
+                // Seul le joueur local GAGNANT (l'adversaire) doit détruire.
+                shouldDestroyNow = isLocalPlayerWinner;
+            } else if (status === 'checkmate') {
+                // Seul le joueur local PERDANT doit détruire.
+                shouldDestroyNow = !isLocalPlayerWinner;
+            } else if (status.includes('draw') || status === 'stalemate' || status === 'threefold' || status === 'insufficient') {
+                // En cas de nul, les deux détruisent.
+                shouldDestroyNow = true;
             }
             
-            if (shouldDestroy) {
+            if (shouldDestroyNow) {
                 destroyMatch(); 
             }
             
@@ -1610,19 +1645,14 @@
         document.addEventListener('DOMContentLoaded', initializeGame);
 
         // --- NOTE SUR LES CHANGEMENTS APPORTÉS ---
-        // [1] Correction du système d'abandon: La fonction `checkAbandonStatus` a été retirée. 
-        //     La fonction `pollGameStatus` gère maintenant l'état 'abandoned' tel que retourné par le serveur. 
-        // [2] Correction de la suppression de partie (Checkmate): La fonction `endGame` a été modifiée 
-        //     pour que seul le perdant (en cas de checkmate) ou l'adversaire gagnant (en cas d'abandon) appelle `destroyMatch`.
-        // [3] Ajout du Premove:
-        //     - La variable `preMove` a été ajoutée.
-        //     - `handleMove` contient la logique pour définir `preMove` lorsque ce n'est pas le tour de l'utilisateur.
-        //     - `updateBoardState` exécute `preMove` si le tour revient au joueur.
-        //     - `drawBoard` affiche un `preMove` s'il est défini.
-        // [4] Raccourcissement des Popups: Le texte dans `showModal` et `showGameNotification` a été raccourci.
-        // [5] Correction des indicateurs de tour et du placement:
-        //     - `setupPlayerAndBoard` gère maintenant les classes `top-player` et `bottom-player` pour placer le joueur local en bas et l'adversaire en haut, quelle que soit leur couleur.
-        //     - `updateTurnIndicator` utilise les classes `top-player`/`bottom-player` pour appliquer le contour vert au joueur dont c'est le tour.
+        // [1] Correction du système d'abandon: La fonction `pollGameStatus` fait maintenant une requête spécifique 
+        //     à `/get_give_up_chess` pour détecter l'abandon, puis appelle `endGame` si un abandon est trouvé.
+        // [2] Correction de la suppression de partie: La fonction `endGame` a été simplifiée pour que la destruction 
+        //     soit gérée uniquement par le joueur local GAGNANT (en cas d'abandon/timeout) ou par le PERDANT (en cas de mat), 
+        //     ignorant le paramètre `shouldDestroy` pour les cas d'abandon/mat.
+        // [3] Ajout du Premove (inchangé par rapport à la dernière version).
+        // [4] Raccourcissement des Popups (inchangé).
+        // [5] Correction des indicateurs de tour et du placement (inchangé).
         
     </script>
 </body>

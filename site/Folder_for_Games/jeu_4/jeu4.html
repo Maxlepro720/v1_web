@@ -664,6 +664,7 @@
         let pollingInterval = null; 
         let notificationTimeout = null;
         
+        // preMove est désormais un objet simple {from: 'e2', to: 'e4'}
         let preMove = null; 
 
         // Références DOM globales
@@ -715,9 +716,27 @@
             
             updateTurnIndicator();
             
-            // Logique d'exécution du Premove
+            // Logique d'exécution du Premove (uniquement quand c'est mon tour)
             if (!waitingForMove && preMove) {
-                const moveResult = chessBoard.move(preMove);
+                
+                const moveAttempt = {
+                    from: preMove.from,
+                    to: preMove.to
+                };
+                
+                // Vérification de la promotion (par défaut 'q' comme sur chess.com si possible)
+                const piece = chessBoard.get(preMove.from);
+                
+                if (piece && piece.type === 'p') {
+                     const targetRow = preMove.to[1];
+                     // Si c'est un pion et que la case d'arrivée est la 8ème ou 1ère rangée
+                     if ((piece.color === 'w' && targetRow === '8') || (piece.color === 'b' && targetRow === '1')) {
+                         moveAttempt.promotion = 'q'; // Promotion par défaut à la Dame
+                     }
+                }
+
+                // Tentative d'exécution du premove sur le NOUVEAU FEN
+                const moveResult = chessBoard.move(moveAttempt);
                 
                 if (moveResult) {
                     let move_uci_correct = moveResult.from + moveResult.to;
@@ -731,6 +750,7 @@
                 } else {
                     console.warn("[PREMOVE] Premove invalide après l'update du FEN. Ignoré.");
                     preMove = null; // Invalide, on le vide
+                    showGameNotification("Premove annulé (illégal)", true); 
                 }
             }
         }
@@ -1355,7 +1375,11 @@
                  document.getElementById(`sq-${fromRow}-${fromCol}`).classList.add('selected');
                  
                  const targetEl = document.getElementById(`sq-${toRow}-${toCol}`);
-                 if (chessBoard.get(preMove.to)) { // Vérifie si c'est une capture
+                 
+                 // Simuler si c'est une capture pour l'affichage (moins précis car non validé, mais pour l'UI)
+                 const isCapture = chessBoard.get(preMove.to) !== null;
+                 
+                 if (isCapture) { 
                      targetEl.classList.add('highlight-capture');
                  } else {
                      targetEl.classList.add('highlight-move');
@@ -1428,41 +1452,27 @@
                 if (piece && (piece.color === playerColor[0])) {
                     // Sélection de la pièce pour le Premove
                     selectedCoords = { row, col };
+                    // Affichage des coups légaux pour l'aide à la saisie du premove
                     legalMoves = chessBoard.moves({ square: square, verbose: true }); 
                     drawBoard(); 
                     return;
                 }
                 
                 if (selectedCoords) {
-                    // Tentative de Premove
+                    // Tentative de Premove: on enregistre les coordonnées sans validation immédiate
                     const startCoord = coordsToSquare(selectedCoords.row, selectedCoords.col);
                     const endCoord = square;
                     
-                    const moveAttempt = {
+                    // Stocker le coup simple, la validation et la promotion seront gérées dans updateBoardState
+                    preMove = {
                         from: startCoord,
-                        to: endCoord,
-                        promotion: (chessBoard.get(startCoord).type === 'p' && (row === 0 || row === 7)) ? 'q' : undefined
+                        to: endCoord
                     };
-
-                    const tempMove = chessBoard.move(moveAttempt);
-                    
-                    if (tempMove) {
-                        preMove = tempMove;
-                        chessBoard.undo(); // Annuler pour le rétablissement de l'état
-                        selectedCoords = null; 
-                        legalMoves = [];
-                        drawBoard();
-                        showGameNotification("Premove défini"); 
-                    } else {
-                        showGameNotification("Premove Illégal", true); 
-                        selectedCoords = null; 
-                        legalMoves = [];
-                        drawBoard(); 
-                    }
                     
                     selectedCoords = null; 
                     legalMoves = [];
-                    drawBoard();
+                    drawBoard(); // Redessine pour montrer le premove
+                    showGameNotification("Premove défini"); 
                     return;
                 }
             }

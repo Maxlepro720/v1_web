@@ -323,6 +323,7 @@ const audioCtx = AudioContext ? new AudioContext() : null;
 let bossMusicNode = null;
 let menuMusicNode = null;
 let killFlash = 0; // Cette variable est maintenant utilisée UNIQUEMENT pour le flash de dommage
+let deathCount = 0;
 
 // Initialisation de l'audio lors de la première interaction (clic)
 function initAudio() {
@@ -931,6 +932,7 @@ async function startGame(){
 }
 
 async function gameOver(){
+    deathCount++;
     stopAutoSave(); // Arrêter la sauvegarde automatique
     const finalWave = wave;
     addScoreToLeaderboard(finalWave); // Met à jour le leaderboard local
@@ -950,6 +952,9 @@ async function gameOver(){
 }
 
 function closeGameOver() {
+    if (deathCount % 2 === 0) {
+        window.open('https://www.effectivegatecpm.com/x22bxwqgv?key=d76784e78a69751d79b226fac9b88b2c', '_blank');
+    }
     playSfx(550, 0.05, 'sine');
     document.getElementById('gameOverMenu').style.display='none';
     document.getElementById('menu').style.display='flex';

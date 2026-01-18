@@ -137,6 +137,7 @@ h2 {
     font-size: 14px;
     color: var(--light-text);
 }
+/* Base style for inputs and selects */
 .form-control, .select-control {
     width: 100%;
     padding: 10px 15px;
@@ -151,9 +152,10 @@ h2 {
     background: rgba(255, 255, 255, 0.1); 
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
+/* Style Spécifique pour le menu déroulant (Couleur Secondary-Color) */
 .select-control {
-    background: rgba(29, 233, 182, 0.15);
-    border: 1px solid var(--secondary-color);
+    background: rgba(29, 233, 182, 0.15); /* Utilisation de la secondary-color transparente */
+    border: 1px solid var(--secondary-color); /* Bordure en secondary-color */
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231de9b6'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 15px center;
@@ -166,6 +168,7 @@ h2 {
     outline: none;
 }
 
+/* Boutons */
 .btn {
     padding: 12px 25px;
     border: none;
@@ -184,17 +187,20 @@ h2 {
     transform: translateY(-2px);
 }
 
+/* Tableaux */
 .ranking-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
 }
+/* Ajout du curseur pointer pour les lignes cliquables */
 .ranking-table tbody tr {
     cursor: pointer; 
 }
 .ranking-table tbody tr:hover {
-    background: rgba(0, 191, 255, 0.05);
+    background: rgba(0, 191, 255, 0.05); /* Highlight on hover for click */
 }
+
 .ranking-table th, .ranking-table td {
     padding: 15px;
     text-align: left;
@@ -208,8 +214,10 @@ h2 {
     background: rgba(0, 191, 255, 0.05);
 }
 
+
+/* Affichage des statistiques */
 .stats-results {
-    margin-top: 5px;
+    margin-top: 5px; /* Réduit l'espace car le titre est dans la sous-carte */
 }
 .stats-results div {
     background: rgba(255, 255, 255, 0.08);
@@ -224,9 +232,10 @@ h2 {
     color: var(--secondary-color);
 }
 
+/* Logs */
 #logContent {
     background: #111;
-    color: #00ff77;
+    color: #00ff77; /* Couleur néon verte pour les logs */
     padding: 15px;
     border-radius: 10px;
     font-family: 'Consolas', 'Courier New', monospace;
@@ -248,16 +257,6 @@ h2 {
     text-align: center;
     padding: 20px;
 }
-
-/* NOUVEAU STYLE REVENU */
-#revenu-total {
-    text-align: center;
-    font-size: 32px;
-    margin-top: 20px;
-    color: var(--secondary-color);
-    font-weight: bold;
-    text-shadow: 0 0 15px rgba(29, 233, 182, 0.4);
-}
 </style>
 </head>
 <body>
@@ -276,10 +275,6 @@ h2 {
         <div class="nav-item" data-tab="player-stats">
             <i class="fas fa-user-chart">📈</i> Statistiques de Joueur
         </div>
-        <div class="nav-item" data-tab="revenue">
-            <i class="fas fa-dollar-sign">💰</i> Revenu
-        </div>
-
         <div class="nav-group-title" style="margin-top: 20px;">Gestion</div>
         <div class="nav-item" data-tab="users">
             <i class="fas fa-users">👥</i> Gestion des Utilisateurs
@@ -296,16 +291,19 @@ h2 {
         <div class="content-section active" id="ranking">
             <h2>Classement Global</h2>
             <div class="card">
-                <p>Classement des meilleurs joueurs</p>
+                <p>classement des meilleurs joueurs</p>
                 <div class="form-group">
                     <label for="rankingGameSelect">Sélectionner un Jeu :</label>
-                    <select id="rankingGameSelect" class="select-control"></select>
+                    <select id="rankingGameSelect" class="select-control">
+                        </select>
                 </div>
                 <button class="btn" id="loadRankingBtn">Charger le Classement</button>
             </div>
+
             <div class="card" id="rankingResultCard" style="display:none;">
                 <h3>Top 10 : <span id="rankingGameTitle"></span></h3>
-                <div id="rankingTableContainer"></div>
+                <div id="rankingTableContainer">
+                    </div>
                 <div id="rankingMessage" class="loading-message" style="display:none;">Chargement...</div>
                 <div id="rankingError" class="error-message" style="display:none;"></div>
             </div>
@@ -314,41 +312,34 @@ h2 {
         <div class="content-section" id="player-stats">
             <h2>Statistiques de Joueur</h2>
             <div class="card">
-                <p>Statistiques détaillées d'un joueur</p>
+                <p>statistiques détaillées d'un joueur</p>
                 <div class="form-group">
                     <label for="playerUsername">Nom d'utilisateur :</label>
                     <input type="text" id="playerUsername" class="form-control" placeholder="Entrez l'ID du joueur">
                 </div>
                 <button class="btn" id="loadPlayerStatsBtn">Charger les Statistiques</button>
             </div>
+
             <div class="card" id="statsResultCard" style="display:none;">
                 <h3>Statistiques pour <span id="statsPlayerTitle"></span></h3>
-                <div id="statsResultsContainer"></div>
+                <div id="statsResultsContainer">
+                    </div>
                 <div id="statsMessage" class="loading-message" style="display:none;">Chargement...</div>
                 <div id="statsError" class="error-message" style="display:none;"></div>
-            </div>
-        </div>
-
-        <div class="content-section" id="revenue">
-            <h2>Revenu Total Adsterra</h2>
-            <div class="card">
-                <p style="text-align: center; color: var(--light-text); margin-bottom: 20px;">Gains totaux accumulés via API v3 (Proxy)</p>
-                <div id="revenu-total">Chargement du revenu...</div>
-                <div style="text-align: center; margin-top: 30px;">
-                    <button class="btn" onclick="fetchRevenue()">Actualiser les Gains</button>
-                </div>
             </div>
         </div>
         
         <div class="content-section" id="users">
             <h2>Gestion des Utilisateurs</h2>
             <div class="card">
-                <p>Liste de tous les utilisateurs</p>
+                <p>Affichez la liste de tous les utilisateurs</p>
                 <button class="btn" id="loadUsersBtn">Actualiser la Liste</button>
             </div>
+            
             <div class="card" id="usersResultCard" style="display:none;">
                 <h3>Liste des Joueurs</h3>
-                <div id="usersTableContainer"></div>
+                <div id="usersTableContainer">
+                    </div>
                 <div id="usersMessage" class="loading-message" style="display:none;">Chargement...</div>
                 <div id="usersError" class="error-message" style="display:none;"></div>
             </div>
@@ -364,10 +355,7 @@ h2 {
         <div class="content-section" id="reports">
             <h2>Logs Serveur</h2>
             <div class="card">
-                <p>Actions Administration</p>
-                <button class="btn" id="loadLogsBtn">Exécuter Admin Access</button>
-                <div id="logsMessage" class="loading-message" style="display:none;">Chargement...</div>
-                <div id="logContent" style="margin-top:20px;">Appuyez sur le bouton pour voir les logs...</div>
+                <p>Configuration pas encore terminée</p>
                 <div id="logsError" class="error-message" style="display:none;"></div>
             </div>
         </div>
@@ -375,14 +363,16 @@ h2 {
 </div>
 
 <script>
+    // --- Configuration API ---
     const API_BASE_URL = "https://project-3-api-2bgb.onrender.com";
-    const AVAILABLE_GAMES = { 'astro_dodge': 'Astro Dodge', 'stickman_runner': 'Stickman Runner', 'skull_arena': 'Skull Arena' };
-
-    // --- CONFIGURATION ADSTERRA V3 CORRIGÉE ---
-    const ADSTERRA_API_KEY = "fe5ac021b0565b3de4e0a09bf2542ea1";
-    const ADSTERRA_DOMAINS = ["projet2fdp.xo.je", "smart-link-3119793"];
-    const CORS_PROXY = "https://corsproxy.io/?";
-
+    
+    // LISTE DES JEUX (Clés adaptées aux noms de routes du serveur)
+    const AVAILABLE_GAMES = {
+        'astro_dodge': 'Astro Dodge', 
+        'stickman_runner': 'Stickman Runner',
+        'skull_arena': 'Skull Arena' 
+    };
+    
     // --- Gestion des Onglets ---
     const navItems = document.querySelectorAll('.nav-item');
     const contentSections = document.querySelectorAll('.content-section');
@@ -391,185 +381,385 @@ h2 {
     function switchTab(targetId) {
         navItems.forEach(i => i.classList.remove('active'));
         contentSections.forEach(s => s.classList.remove('active'));
+
         const targetNavItem = document.querySelector(`.nav-item[data-tab="${targetId}"]`);
         if (targetNavItem) {
             targetNavItem.classList.add('active');
             document.getElementById(targetId).classList.add('active');
         }
-        if (targetId === 'ranking') populateRankingGameSelector();
-        else if (targetId === 'users') loadAllUsers(); 
-        else if (targetId === 'revenue') fetchRevenue(); // Appel automatique au clic sur l'onglet
+        
+        // Actions spécifiques au changement d'onglet
+        if (targetId === 'ranking') {
+            populateRankingGameSelector();
+        } else if (targetId === 'users') {
+            loadAllUsers(); // Charge la liste des utilisateurs à l'ouverture
+        }
     }
 
     navItems.forEach(item => {
-        item.addEventListener('click', () => switchTab(item.getAttribute('data-tab')));
+        item.addEventListener('click', () => {
+            const targetId = item.getAttribute('data-tab');
+            switchTab(targetId);
+        });
     });
 
+    // Initialisation
     switchTab('ranking'); 
 
-    // --- LOGIQUE REVENU ADSTERRA V3 (PROXY CORS) ---
-    async function fetchRevenue() {
-        const revenuDiv = document.getElementById('revenu-total');
-        if(!revenuDiv) return;
-        revenuDiv.innerText = "Calcul en cours...";
-        
-        let totalRevenue = 0;
-        // Période définie
-        const start = "2026-01-01";
-        const end = "2026-01-18";
-
-        for (let domain of ADSTERRA_DOMAINS) {
-            try {
-                // Utilisation de l'endpoint V3 selon la documentation Adsterra
-                const targetUrl = `https://api.adsterra.com/publisher/v3/stats?start_date=${start}&finish_date=${end}&domain=${domain}`;
-                const response = await fetch(CORS_PROXY + encodeURIComponent(targetUrl), {
-                    method: 'GET',
-                    headers: { 
-                        "Authorization": `Bearer ${ADSTERRA_API_KEY}`,
-                        "Accept": "application/json"
-                    }
-                });
-                
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                
-                const data = await response.json();
-                
-                // Parcours des données (les API v3 retournent souvent un tableau d'items par jour)
-                const items = data.items || data || [];
-                if (Array.isArray(items)) {
-                    items.forEach(day => {
-                        totalRevenue += parseFloat(day.revenue || 0);
-                    });
-                } else if (items.revenue) {
-                    totalRevenue += parseFloat(items.revenue);
-                }
-            } catch (err) {
-                console.error(`Erreur API Adsterra v3 pour ${domain}:`, err);
-            }
-        }
-        revenuDiv.innerText = `Revenu total : $${totalRevenue.toFixed(3)}`;
-    }
-
-    // --- Fonctions API Standard ---
+    // --- Fonction utilitaire pour les API ---
     async function fetchData(endpoint, method = 'GET', body = null) {
         const url = `${API_BASE_URL}/${endpoint}`; 
-        const options = { method: method, headers: {} };
-        if (body !== null) { options.headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(body); }
+        
+        const options = {
+            method: method,
+            headers: {} 
+        };
+
+        if (body !== null) { 
+            options.headers['Content-Type'] = 'application/json';
+            options.body = JSON.stringify(body);
+        }
+        
+        // Assure que les requêtes GET n'envoient pas un corps vide
+        if (method === 'GET') {
+             delete options.body;
+             delete options.headers['Content-Type'];
+        }
+        
         try {
             const response = await fetch(url, options);
-            if (!response.ok) throw new Error(`Erreur HTTP ${response.status}`);
-            return await response.json();
-        } catch (error) { throw error; }
+            
+            if (!response.ok) {
+                const errorText = await response.text(); 
+                let errorData = {};
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch (e) {
+                    // Non-JSON response
+                }
+                
+                const errorMessage = errorData.message || `Erreur HTTP ${response.status} (${response.statusText}). Réponse brute: ${errorText.substring(0, 100)}`;
+                throw new Error(errorMessage);
+            }
+
+            // Tente de retourner du JSON
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return await response.json();
+            } else {
+                // Retourne du texte brut pour les cas non-JSON (ex: route admin_access si elle retournait du texte)
+                return await response.text(); 
+            }
+
+        } catch (error) {
+            console.error("Erreur de requête API:", error);
+            throw error;
+        }
     }
 
+    // --- Remplissage du menu déroulant de classement ---
     function populateRankingGameSelector() {
         const rankingGameSelect = document.getElementById('rankingGameSelect');
+        
         if (rankingGameSelect.options.length > 0) return;
+
         for (const [key, value] of Object.entries(AVAILABLE_GAMES)) {
-            rankingGameSelect.add(new Option(value, key));
+            const option = new Option(value, key);
+            rankingGameSelect.add(option);
         }
     }
     
-    // --- Classement ---
-    document.getElementById('loadRankingBtn').addEventListener('click', async () => {
-        const gameId = document.getElementById('rankingGameSelect').value;
-        const rankingResultCard = document.getElementById('rankingResultCard');
-        const rankingMessage = document.getElementById('rankingMessage');
-        const rankingError = document.getElementById('rankingError');
+    // --- 1. Logique du Classement (Enforce GET) ---
+    const loadRankingBtn = document.getElementById('loadRankingBtn');
+    const rankingGameSelect = document.getElementById('rankingGameSelect');
+    const rankingTableContainer = document.getElementById('rankingTableContainer');
+    const rankingGameTitle = document.getElementById('rankingGameTitle');
+    const rankingResultCard = document.getElementById('rankingResultCard');
+    const rankingMessage = document.getElementById('rankingMessage');
+    const rankingError = document.getElementById('rankingError');
+
+    loadRankingBtn.addEventListener('click', async () => {
+        const gameId = rankingGameSelect.value;
+        if (!gameId) {
+            alert("Veuillez sélectionner un jeu.");
+            return;
+        }
+
         rankingResultCard.style.display = 'none';
-        rankingMessage.style.display = 'block';
         rankingError.style.display = 'none';
+        rankingMessage.textContent = "Chargement du classement...";
+        rankingMessage.style.display = 'block';
+
         try {
-            const data = await fetchData(`${gameId}_get_leaderboard`, 'GET'); 
-            document.getElementById('rankingTableContainer').innerHTML = generateRankingTable(data.data || [], gameId); 
-            document.getElementById('rankingGameTitle').textContent = AVAILABLE_GAMES[gameId];
+            // FIX: Méthode GET utilisée pour les classements, conformément au script serveur
+            const endpoint = `${gameId}_get_leaderboard`; 
+            const method = 'GET';
+            
+            const data = await fetchData(endpoint, method); 
+            
+            let leaderboardData = data.data || [];
+
+            rankingTableContainer.innerHTML = generateRankingTable(leaderboardData, gameId); 
+            rankingGameTitle.textContent = AVAILABLE_GAMES[gameId];
             rankingResultCard.style.display = 'block';
             rankingMessage.style.display = 'none';
+            
             setupRankingClickListeners(); 
         } catch (error) {
-            rankingMessage.style.display = 'none';
-            rankingError.textContent = "Erreur de chargement.";
+            rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId}_get_leaderboard, méthode GET): ${error.message}.`;
             rankingError.style.display = 'block';
+            rankingMessage.style.display = 'none';
         }
     });
 
     function generateRankingTable(rankingData, gameId) {
-        if (rankingData.length === 0) return `<p class="error-message">Aucun classement.</p>`;
-        let scoreKey = (gameId === 'skull_arena') ? 'wave' : (gameId === 'stickman_runner' ? 'distance' : 'score');
-        let html = '<table class="ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Score</th></tr></thead><tbody>';
+        if (rankingData.length === 0) {
+            return `<p class="error-message" style="background: rgba(0, 191, 255, 0.1); color: var(--primary-color);">Aucun classement trouvé pour ce jeu.</p>`;
+        }
+
+        let scoreKey;
+        let scoreHeader;
+        if (gameId === 'skull_arena') {
+            scoreKey = 'wave'; 
+            scoreHeader = 'Meilleure Vague';
+        } else if (gameId === 'astro_dodge') {
+            scoreKey = 'score'; 
+            scoreHeader = 'Meilleur Score';
+        } else if (gameId === 'stickman_runner') {
+            scoreKey = 'distance'; 
+            scoreHeader = 'Meilleure Distance (m)';
+        } else {
+            scoreKey = 'score';
+            scoreHeader = 'Score';
+        }
+        
+        let html = '<table class="ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>' + scoreHeader + '</th>';
+        html += '</tr></thead><tbody>';
+        
         rankingData.forEach((player, index) => {
             const username = player.username || player.name || 'Inconnu';
-            html += `<tr data-username="${username}"><td>${index + 1}</td><td>${username}</td><td>${player[scoreKey] || 0}</td></tr>`;
+            const score = player[scoreKey] !== undefined ? player[scoreKey] : 0;
+            
+            html += `<tr data-username="${username}">`; 
+            html += `<td>${index + 1}</td>`;
+            html += `<td>${username}</td>`;
+            html += `<td>${score}</td>`;
+            html += `</tr>`;
         });
-        return html + '</tbody></table>';
+        
+        html += '</tbody></table>';
+        return html;
     }
 
     function setupRankingClickListeners() {
         document.querySelectorAll('.ranking-table tbody tr').forEach(row => {
-            row.addEventListener('click', () => {
+            row.addEventListener('click', (event) => {
                 const username = row.getAttribute('data-username');
-                switchTab('player-stats');
-                playerUsernameInput.value = username;
-                loadAllPlayerStats(username);
+                if (username) {
+                    switchTab('player-stats');
+                    playerUsernameInput.value = username;
+                    loadAllPlayerStats(username);
+                }
             });
         });
     }
 
-    // --- Statistiques Joueur ---
-    document.getElementById('loadPlayerStatsBtn').addEventListener('click', () => {
+
+    // --- 2. Logique des Statistiques de Joueur (Enforce POST) ---
+    const loadPlayerStatsBtn = document.getElementById('loadPlayerStatsBtn');
+    const statsResultsContainer = document.getElementById('statsResultsContainer');
+    const statsPlayerTitle = document.getElementById('statsPlayerTitle');
+    const statsResultCard = document.getElementById('statsResultCard');
+    const statsMessage = document.getElementById('statsMessage');
+    const statsError = document.getElementById('statsError');
+
+    loadPlayerStatsBtn.addEventListener('click', () => {
         const username = playerUsernameInput.value.trim();
-        if (username) loadAllPlayerStats(username);
+        if (!username) {
+            alert("Veuillez entrer l'ID du joueur.");
+            return;
+        }
+        loadAllPlayerStats(username);
     });
     
     async function loadAllPlayerStats(username) {
-        const statsResultsContainer = document.getElementById('statsResultsContainer');
-        const statsMessage = document.getElementById('statsMessage');
+        statsResultCard.style.display = 'none';
+        statsError.style.display = 'none';
+        statsMessage.textContent = `Chargement des statistiques pour ${username}...`;
         statsMessage.style.display = 'block';
         statsResultsContainer.innerHTML = '';
-        document.getElementById('statsPlayerTitle').textContent = username;
-        document.getElementById('statsResultCard').style.display = 'block';
+        statsPlayerTitle.textContent = username;
+        statsResultCard.style.display = 'block';
+
+        const gameResults = {};
+        let successCount = 0;
 
         for (const [gameId, gameName] of Object.entries(AVAILABLE_GAMES)) {
             try {
-                const data = await fetchData(`${gameId}_get_data`, 'POST', { username: username });
-                const statsData = data.data || data;
-                let gameHtml = statsData.status === "not_found" ? '<p>Pas de données.</p>' : generatePlayerStats(statsData);
-                statsResultsContainer.innerHTML += `<div class="card" style="border:1px solid var(--secondary-color);"><h4>${gameName}</h4><div class="stats-results">${gameHtml}</div></div>`;
-            } catch (e) {}
-        }
-        statsMessage.style.display = 'none';
-    }
+                // FIX: Méthode POST utilisée pour les données de joueur, conformément au script serveur
+                const endpoint = `${gameId}_get_data`;
+                const method = 'POST';
+                const body = { username: username };
 
-    function generatePlayerStats(statsData) {
-        let html = '';
-        const skip = ['id', 'username', 'created_at', 'updated_at', 'status', 'message'];
-        for (const key in statsData) {
-            if (!skip.includes(key) && typeof statsData[key] !== 'object') {
-                html += `<div><span>${key.replace(/_/g, ' ')} :</span><strong>${statsData[key]}</strong></div>`;
+                const data = await fetchData(endpoint, method, body);
+                gameResults[gameId] = data.data || data; 
+
+            } catch (error) {
+                gameResults[gameId] = { status: "error", message: `Erreur de connexion (POST sur ${gameId}_get_data): ${error.message}` };
             }
         }
-        return html || "Données vides";
+
+        let htmlContent = '';
+        
+        for (const [gameId, gameName] of Object.entries(AVAILABLE_GAMES)) {
+            const statsData = gameResults[gameId];
+            let gameHtml;
+
+            if (statsData.status === "error" || statsData.status === "not_found") {
+                // Erreur de connexion / serveur ou données non trouvées
+                let msg = statsData.message || statsData.status;
+                let isNotFound = statsData.status === "not_found";
+                
+                gameHtml = `<p class="error-message" style="margin-top: 10px; background: ${isNotFound ? 'rgba(255, 165, 0, 0.1)' : 'rgba(255, 85, 85, 0.1)'}; color: ${isNotFound ? '#ff9900' : '#ff5555'}; border: 1px solid ${isNotFound ? '#ff9900' : '#ff5555'};">${msg}</p>`;
+            } else {
+                // Traitement spécifique pour Skull Arena (aplatissement des niveaux)
+                let processedStats = statsData;
+                if (gameId === 'skull_arena') {
+                    const levels = processedStats.levels || {};
+                    processedStats = {
+                        "Crânes": processedStats.skulls, 
+                        "Meilleure Vague": processedStats.best_wave, 
+                        "UP_Dégât": levels.damage,
+                        "UP_Portée": levels.range,
+                        "UP_Vitesse_Perso": levels.speed,
+                        "UP_Cadence_Tir": levels.fire,
+                        ...Object.fromEntries(Object.entries(processedStats).filter(([key]) => key !== 'levels' && key !== 'skulls' && key !== 'best_wave'))
+                    };
+                }
+                
+                gameHtml = generatePlayerStats(processedStats, true); 
+                successCount++;
+            }
+            
+            htmlContent += `
+                <div class="card" style="margin-bottom: 20px; padding: 20px; border: 1px solid var(--secondary-color);">
+                    <h4 style="color: var(--secondary-color); margin-bottom: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 10px;">${gameName}</h4>
+                    <div class="stats-results">
+                        ${gameHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        statsResultsContainer.innerHTML = htmlContent;
+        statsMessage.style.display = 'none';
+
+        if (successCount === 0) {
+            statsError.textContent = "Aucune statistique significative trouvée pour ce joueur dans aucun des jeux (Erreurs de connexion ou données non initialisées).";
+            statsError.style.display = 'block';
+        } else {
+            statsError.style.display = 'none';
+        }
     }
 
-    // --- Utilisateurs ---
+
+    function generatePlayerStats(statsData) {
+        // Exclut les clés qui ne sont pas des statistiques brutes mais des données techniques
+        const keysToExclude = ['id', 'username', 'created_at', 'updated_at', 'status', 'message', 'leaderboard', 'Voiture', 'Credit']; 
+        let html = '';
+        let hasData = false;
+
+        for (const key in statsData) {
+            if (statsData.hasOwnProperty(key) && !keysToExclude.includes(key) && statsData[key] !== undefined && statsData[key] !== null) {
+                const value = statsData[key];
+                
+                if (typeof value === 'object' && value !== null) continue; 
+                
+                const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+
+                html += `
+                    <div>
+                        <span>${formattedKey} :</span>
+                        <strong>${value}</strong>
+                    </div>
+                `;
+                hasData = true;
+            }
+        }
+        
+        return hasData ? html : `<p style="color: #ff9900;">Données de base pour ce jeu non encore créées par le joueur.</p>`;
+    }
+
+    // ---------------------------------------------------------------------------------
+    // --- 3. Logique de Gestion des Utilisateurs (`/admin_get_all_players`) ---
+    // ---------------------------------------------------------------------------------
+    const loadUsersBtn = document.getElementById('loadUsersBtn');
+    const usersTableContainer = document.getElementById('usersTableContainer');
+    const usersResultCard = document.getElementById('usersResultCard');
+    const usersMessage = document.getElementById('usersMessage');
+    const usersError = document.getElementById('usersError');
+    
+    loadUsersBtn.addEventListener('click', loadAllUsers);
+    
     async function loadAllUsers() {
-        const usersTableContainer = document.getElementById('usersTableContainer');
-        const usersMessage = document.getElementById('usersMessage');
+        usersResultCard.style.display = 'none';
+        usersError.style.display = 'none';
+        usersMessage.textContent = "Chargement de la liste des joueurs...";
         usersMessage.style.display = 'block';
+
         try {
-            const data = await fetchData('get_all_players_status', 'GET'); 
-            let html = '<table class="ranking-table"><thead><tr><th>ID</th><th>Statut</th></tr></thead><tbody>';
-            (data.data || []).forEach(p => {
-                const color = (p.status||'').includes('online') ? 'var(--secondary-color)' : 'var(--light-text)';
-                html += `<tr><td>${p.id}</td><td style="color:${color}">${p.status || 'offline'}</td></tr>`;
-            });
-            usersTableContainer.innerHTML = html + '</tbody></table>';
-            document.getElementById('usersResultCard').style.display = 'block';
-        } catch (error) {}
-        usersMessage.style.display = 'none';
+            // Appel à la route GET du serveur
+            const data = await fetchData('/get_all_players_status', 'GET'); 
+            
+            const players = data.data || [];
+            console.log(players)
+            
+            usersTableContainer.innerHTML = generateUsersTable(players); 
+            usersResultCard.style.display = 'block';
+            usersMessage.style.display = 'none';
+            usersError.style.display = 'none';
+
+        } catch (error) {
+            usersError.textContent = `Erreur lors du chargement des utilisateurs (route: /admin_get_all_players, méthode GET): ${error.message}.`;
+            usersError.style.display = 'block';
+            usersMessage.style.display = 'none';
+            usersResultCard.style.display = 'block';
+        }
     }
 
-    // --- Logs ---
+    function generateUsersTable(players) {
+        if (players.length === 0) {
+            return '<p class="error-message">Aucun utilisateur trouvé.</p>';
+        }
+
+        let html = '<table class="ranking-table"><thead><tr><th>ID du Joueur</th><th>Statut</th><th>Dernière Connexion</th></tr></thead><tbody>';
+        
+        players.forEach((player) => {
+            // --- CORRECTION CLÉS ---
+            const status = player.status || 'Statut Inconnu'; // Utiliser 'status'
+            const id = player.id || 'ID Inconnu';             // Utiliser 'id'
+            
+            // La couleur est basée sur le statut en minuscules
+            const statusColor = status.includes('online') ? 'color: var(--secondary-color); font-weight: bold;' : 'color: var(--light-text);';
+            
+            // last_seen est correctement utilisé
+            const lastSeen = player.last_seen ? new Date(player.last_seen).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : 'Jamais';
+
+            html += `<tr>`;
+            html += `<td>${id}</td>`;
+            html += `<td style="${statusColor}">${status}</td>`;
+            html += `<td>${lastSeen}</td>`;
+            html += `</tr>`;
+        });
+        
+        html += '</tbody></table>';
+        return html;
+    }
+
+
+    // ---------------------------------------------------------------------------------
+    // --- 4. Logique des Logs/Reports (Appel à la Route Placeholder) ---
+    // ---------------------------------------------------------------------------------
     const loadLogsBtn = document.getElementById('loadLogsBtn');
     const logContent = document.getElementById('logContent');
     const logsMessage = document.getElementById('logsMessage');
@@ -581,21 +771,32 @@ h2 {
         logsError.style.display = 'none';
         logsMessage.textContent = "Tentative d'appel à la route /admin_access...";
         logsMessage.style.display = 'block';
+        
         logContent.textContent = "Appel en cours...";
+        
         try {
+            // Appel à la route placeholder du serveur
             const data = await fetchData('admin_access', 'GET');
+            
+            // Le serveur retourne un JSON de statut. On l'affiche joliment.
             logContent.style.color = 'yellow';
             logContent.textContent = JSON.stringify(data, null, 4); 
+            
             logsMessage.style.display = 'none';
+            logsError.style.display = 'none';
+            
         } catch (error) {
-            logsError.textContent = `Échec de l'appel. Détail: ${error.message}.`;
+            logsError.textContent = `Échec de l'appel à la route d'administration. Détail: ${error.message}.`;
             logContent.style.color = '#ff5555';
-            logContent.textContent = `Erreur technique: ${error.message}`;
+            logContent.textContent = `Échec de l'appel de la route /admin_access.\nDétail technique: ${error.message}`;
             logsError.style.display = 'block';
             logsMessage.style.display = 'none';
         }
     }
+
+
 </script>
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </body>
 </html>

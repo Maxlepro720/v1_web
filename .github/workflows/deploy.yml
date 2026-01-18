@@ -24,7 +24,7 @@ jobs:
         with:
           server: ftpupload.net
           port: 21
-          username: if0_40433041
-          password: Almax1202
+          username: if0_40931294
+          password: Almax120212
           server-dir: /htdocs/
           local-dir: site/

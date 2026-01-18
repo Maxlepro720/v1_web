@@ -294,6 +294,9 @@ let transition = { active: false, alpha: 0, nextState: null, callback: null };
 
 let username = localStorage.getItem("username") || "Invité"; 
 let score=0, bestScore=0, credits=0; 
+// --- COMPTEUR DE MORTS POUR PUB ---
+let deathCount = parseInt(localStorage.getItem("deathCount")) || 0; 
+
 let time=0, spawnTimer=0, asteroids=[], stars=[], coins=[], keys={}, explosion=null, flashAlpha=0;
 let coinFlashAlpha = 0, floatingTexts = [], shopScroll=0;
 let player={x:210,y:560,r:18,type:0,life:1, invulnerable:0, trail:[], angle:0};
@@ -756,6 +759,17 @@ function update(){
                 else {
                     state = STATE.GAMEOVER; flashAlpha = 1; timeScale = 1;
                     AudioSystem.play('crash');
+
+                    // --- AJOUT REDIRECTION PUB TOUTES LES 3 MORTS ---
+                    deathCount++;
+                    localStorage.setItem("deathCount", deathCount);
+                    if(deathCount >= 3) {
+                        localStorage.setItem("deathCount", 0);
+                        setTimeout(() => {
+                            window.location.href = "VOTRE_URL_PUB_ICI"; 
+                        }, 1200);
+                    }
+                    // ------------------------------------------------
                     
                     if(Math.floor(score)>bestScore){ 
                         bestScore=Math.floor(score); 

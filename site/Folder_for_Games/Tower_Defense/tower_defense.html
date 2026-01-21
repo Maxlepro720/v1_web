@@ -79,10 +79,32 @@
 
         #hud {
             position: absolute; top: 0; width: 100%; padding: 10px;
-            display: flex; justify-content: space-around; background: var(--panel);
+            display: flex; justify-content: space-around; align-items: center; background: var(--panel);
             pointer-events: none;
             box-sizing: border-box;
             font-size: clamp(12px, 2vw, 18px);
+        }
+
+        #speed-controls {
+            pointer-events: all;
+            display: flex;
+            gap: 5px;
+        }
+
+        .speed-btn {
+            background: #34495e;
+            color: white;
+            border: 1px solid #7f8c8d;
+            padding: 2px 8px;
+            font-size: 12px;
+            cursor: none;
+            border-radius: 3px;
+        }
+
+        .speed-btn.active {
+            background: var(--gold);
+            color: #000;
+            font-weight: bold;
         }
 
         #shop {
@@ -111,19 +133,19 @@
             z-index: 5;
         }
 
-        /* BOUTON QUITTER */
         #quit-btn {
             position: absolute;
             top: 10px;
             right: 10px;
             z-index: 100;
-            background: #eb61511f;
+            background: #c0392b;
             color: white;
             text-decoration: none;
             padding: 8px 15px;
             border-radius: 5px;
             font-weight: bold;
             font-size: 14px;
+            border: 2px solid white;
             pointer-events: all;
         }
 
@@ -139,6 +161,11 @@
     <canvas id="gameCanvas" width="900" height="600"></canvas>
     
     <div id="hud">
+        <div id="speed-controls">
+            <button class="speed-btn active" onclick="setSpeed(1)">x1</button>
+            <button class="speed-btn" onclick="setSpeed(2)">x2</button>
+            <button class="speed-btn" onclick="setSpeed(3)">x3</button>
+        </div>
         <span>Vie: <b id="hp-val">20</b> ❤️</span>
         <span>Or: <b id="gold-val">500</b> 💰</span>
         <span>Vague: <b id="wave-val">1</b> 🌊</span>
@@ -202,8 +229,15 @@ let game = {
     selectedTower: null, placedTowers: [], enemies: [], projectiles: [],
     currentMap: null, mouse: { x: 0, y: 0 },
     spawnTimer: 0, enemiesToSpawn: 0, selectedPlacedTower: null,
-    isBossWave: false
+    isBossWave: false, speedMultiplier: 1
 };
+
+function setSpeed(s) {
+    game.speedMultiplier = s;
+    document.querySelectorAll('.speed-btn').forEach((btn, idx) => {
+        btn.classList.toggle('active', idx === s - 1);
+    });
+}
 
 class Enemy {
     constructor(path, level, isBoss = false) {
@@ -211,12 +245,9 @@ class Enemy {
         this.id = Math.random(); 
         this.x = path[0].x; this.y = path[0].y;
         this.isBoss = isBoss;
-        
-        // DIFFICULTÉ ACCRUE : Scaling plus rapide des PV
         let baseHp = isBoss ? 400 : 20;
         let hpScaling = isBoss ? 200 : 22; 
         this.maxHp = baseHp + (level * hpScaling) * Math.pow(1.1, level/2);
-        
         this.hp = this.maxHp;
         this.speed = isBoss ? 0.6 : 1 + (level * 0.12);
         this.reward = isBoss ? 150 : 10 + Math.floor(level * 1.5);
@@ -227,13 +258,11 @@ class Enemy {
     update() {
         let currentSpeed = this.speed;
         if (this.slowTimer > 0) { currentSpeed *= 0.5; this.slowTimer--; }
-        
         let target = this.path[this.index + 1];
         if (!target) return true;
         let dx = target.x - this.x; let dy = target.y - this.y;
         let dist = Math.sqrt(dx*dx + dy*dy);
         if (dist < currentSpeed) { this.index++; } else { this.x += (dx/dist) * currentSpeed; this.y += (dy/dist) * currentSpeed; }
-        
         if (this.poisonTimer > 0) { this.hp -= 0.5; this.poisonTimer--; }
         this.frame += 0.2; 
         return false;
@@ -241,31 +270,22 @@ class Enemy {
     draw() {
         const anim = Math.sin(this.frame);
         const squash = 1 + anim * 0.1;
-        const scale = this.isBoss ? 2 : 1; // Double la taille si c'est un boss
-
+        const scale = this.isBoss ? 2 : 1;
         ctx.save();
         ctx.translate(this.x, this.y + (10 * scale));
-        
-        // Ombre / Pied
         ctx.fillStyle = this.isBoss ? "#4a0000" : "#2d5a27"; 
         ctx.beginPath();
         ctx.ellipse(0, -8 * scale, (10 * scale) * (2 - squash), (8 * scale) * squash, 0, 0, Math.PI * 2);
         ctx.fill();
-
-        // Corps
         ctx.fillStyle = this.isBoss ? "#333" : "#eeeeee";
         ctx.beginPath();
         ctx.moveTo(-7 * scale, -10 * scale);
         ctx.quadraticCurveTo(0, (5 * scale) * squash, 7 * scale, -10 * scale);
         ctx.fill();
-
-        // Visage
         ctx.fillStyle = this.isBoss ? "#e74c3c" : "#ffccaa";
         ctx.beginPath();
         ctx.arc(0, -11 * scale, 4 * scale, 0, Math.PI * 2);
         ctx.fill();
-
-        // Chapeau / Tête
         ctx.fillStyle = this.isBoss ? "#000" : "#a31d1d";
         ctx.beginPath();
         ctx.moveTo(-10 * scale, -12 * scale);
@@ -273,16 +293,12 @@ class Enemy {
         ctx.quadraticCurveTo(0, -15 * scale, (2 + (anim * 2)) * scale, -28 * scale);
         ctx.closePath();
         ctx.fill();
-
-        // Yeux
         ctx.fillStyle = this.isBoss ? "#f1c40f" : "#000";
         ctx.beginPath();
         ctx.arc(-3 * scale, -13 * scale, 1.2 * scale, 0, Math.PI * 2);
         ctx.arc(3 * scale, -13 * scale, 1.2 * scale, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
-
-        // Barre de vie
         const barW = 30 * scale;
         ctx.fillStyle = "rgba(0,0,0,0.5)";
         ctx.fillRect(this.x - barW/2, this.y - (25 * scale), barW, 4);
@@ -317,10 +333,8 @@ class Tower {
     update() {
         if (this.cooldown > 0) this.cooldown--;
         if (this.cooldown <= 0) {
-            if (this.type === "mega") {
-                this.shoot(null);
-                this.cooldown = this.fireRate;
-            } else if (this.type === "tesla") {
+            if (this.type === "mega") { this.shoot(null); this.cooldown = this.fireRate; }
+            else if (this.type === "tesla") {
                 let hasEnemy = game.enemies.some(e => Math.sqrt((e.x-this.x)**2 + (e.y-this.y)**2) < this.range);
                 if (hasEnemy) { this.shoot(null); this.cooldown = this.fireRate; }
             } else {
@@ -332,33 +346,24 @@ class Tower {
     findTarget() { return game.enemies.find(e => Math.sqrt((e.x-this.x)**2 + (e.y-this.y)**2) < this.range); }
     shoot(target) {
         if (this.type === "tesla") {
-            game.enemies.forEach(e => {
-                if (Math.sqrt((e.x-this.x)**2 + (e.y-this.y)**2) < this.range) { e.hp -= this.damage; }
-            });
+            game.enemies.forEach(e => { if (Math.sqrt((e.x-this.x)**2 + (e.y-this.y)**2) < this.range) { e.hp -= this.damage; } });
             this.visualEffect = 10;
         } else if (this.type === "mega") {
             let count = this.level >= 3 ? 3 : (this.level >= 2 ? 2 : 1);
             let startNode = game.currentMap.path[game.currentMap.path.length - 1];
             for(let i=0; i<count; i++) {
-                setTimeout(() => {
-                    game.projectiles.push(new Projectile(startNode.x, startNode.y, null, this, "tank"));
-                }, i * 800);
+                setTimeout(() => { game.projectiles.push(new Projectile(startNode.x, startNode.y, null, this, "tank")); }, i * 800 / game.speedMultiplier);
             }
-        } else if (this.type === "poison") {
-             game.projectiles.push(new Projectile(this.x, this.y, target, this, "bottle"));
-        } else {
-            game.projectiles.push(new Projectile(this.x, this.y, target, this, this.type));
-        }
+        } else if (this.type === "poison") { game.projectiles.push(new Projectile(this.x, this.y, target, this, "bottle")); }
+        else { game.projectiles.push(new Projectile(this.x, this.y, target, this, this.type)); }
     }
     getUpgradeCost() { return Math.floor(this.cost * 1.5 * this.level); }
     upgrade() {
         let upgradeCost = this.getUpgradeCost();
         if (game.gold >= upgradeCost) {
-            game.gold -= upgradeCost; this.level++; 
-            this.damage *= 1.4; 
+            game.gold -= upgradeCost; this.level++; this.damage *= 1.4; 
             if(this.type !== "mega") this.range *= 1.1; 
-            this.fireRate *= 0.9;
-            return true;
+            this.fireRate *= 0.9; return true;
         } return false;
     }
 }
@@ -367,53 +372,37 @@ class Projectile {
     constructor(x, y, target, parent, type) {
         this.x = x; this.y = y; this.target = target; 
         this.damage = parent.damage; this.color = parent.color; 
-        this.type = type; 
-        this.pierce = 1; 
-        this.hitList = []; 
-        this.life = 0; 
-        this.angle = 0;
+        this.type = type; this.pierce = 1; this.hitList = []; 
+        this.life = 0; this.angle = 0;
         if (this.type === "line") {
-            this.speed = 12;
-            this.pierce = parent.name === "Laser" ? 8 : 4; 
+            this.speed = 12; this.pierce = parent.name === "Laser" ? 8 : 4; 
             let dx = target.x - x; let dy = target.y - y;
             let dist = Math.sqrt(dx*dx + dy*dy);
-            this.vx = (dx/dist) * this.speed;
-            this.vy = (dy/dist) * this.speed;
+            this.vx = (dx/dist) * this.speed; this.vy = (dy/dist) * this.speed;
         } else if (this.type === "tank") {
-            this.speed = 2; 
-            this.pierce = 5; 
-            this.path = game.currentMap.path;
-            this.pathIndex = this.path.length - 1; 
+            this.speed = 2; this.pierce = 5; 
+            this.path = game.currentMap.path; this.pathIndex = this.path.length - 1; 
         } else if (this.type === "zone") {
-            this.life = 180; 
-            this.damage = parent.damage / 30; 
-            this.radius = 60;
-        } else {
-            this.speed = 7;
-        }
+            this.life = 180; this.damage = parent.damage / 30; this.radius = 60;
+        } else { this.speed = 7; }
     }
-
     update() {
         if (this.type === "zone") {
             this.life--;
-            game.enemies.forEach(e => {
-                if (Math.sqrt((e.x-this.x)**2 + (e.y-this.y)**2) < this.radius) { e.hp -= this.damage; }
-            });
+            game.enemies.forEach(e => { if (Math.sqrt((e.x-this.x)**2 + (e.y-this.y)**2) < this.radius) { e.hp -= this.damage; } });
             return this.life <= 0;
         }
         if (this.type === "tank") {
-            let target = this.path[this.pathIndex - 1];
-            if (!target) return true;
-            let dx = target.x - this.x; let dy = target.y - this.y;
+            let targetNode = this.path[this.pathIndex - 1];
+            if (!targetNode) return true;
+            let dx = targetNode.x - this.x; let dy = targetNode.y - this.y;
             let dist = Math.sqrt(dx*dx + dy*dy);
             this.angle = Math.atan2(dy, dx);
             if (dist < this.speed) { this.pathIndex--; } 
             else { this.x += (dx/dist) * this.speed; this.y += (dy/dist) * this.speed; }
             game.enemies.forEach(e => {
                 if (!this.hitList.includes(e.id) && Math.sqrt((e.x-this.x)**2 + (e.y-this.y)**2) < 25) {
-                    e.hp -= 999; 
-                    this.hitList.push(e.id);
-                    this.pierce--;
+                    e.hp -= 999; this.hitList.push(e.id); this.pierce--;
                 }
             });
             return this.pierce <= 0;
@@ -423,9 +412,7 @@ class Projectile {
             if(this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) return true;
             game.enemies.forEach(e => {
                 if (!this.hitList.includes(e.id) && Math.sqrt((e.x-this.x)**2 + (e.y-this.y)**2) < 20) {
-                    e.hp -= this.damage;
-                    this.hitList.push(e.id);
-                    this.pierce--;
+                    e.hp -= this.damage; this.hitList.push(e.id); this.pierce--;
                 }
             });
             return this.pierce <= 0;
@@ -437,7 +424,6 @@ class Projectile {
         this.x += (dx/dist) * this.speed; this.y += (dy/dist) * this.speed;
         return false;
     }
-
     hit() {
         if (this.type === "splash" || this.type === "bottle") {
             if (this.type === "bottle") {
@@ -451,29 +437,14 @@ class Projectile {
             if (this.type === "slow") this.target.slowTimer = 60;
         }
     }
-
     draw() {
         if (this.type === "zone") {
-            ctx.globalAlpha = 0.4;
-            ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2); ctx.fill();
-            ctx.globalAlpha = 1.0;
+            ctx.globalAlpha = 0.4; ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1.0;
         } else if (this.type === "tank") {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            ctx.rotate(this.angle);
-            ctx.fillStyle = "#1e8449"; 
-            ctx.fillRect(-12, -10, 24, 20);
-            ctx.fillStyle = "#17202a";
-            ctx.fillRect(-12, -14, 24, 4);
-            ctx.fillRect(-12, 10, 24, 4);
-            ctx.fillStyle = "#2ecc71";
-            ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = "#7f8c8d";
-            ctx.fillRect(0, -3, 20, 6);
-            ctx.restore();
-        } else {
-            ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, 5, 0, Math.PI*2); ctx.fill();
-        }
+            ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
+            ctx.fillStyle = "#1e8449"; ctx.fillRect(-12, -10, 24, 20); ctx.fillStyle = "#17202a"; ctx.fillRect(-12, -14, 24, 4); ctx.fillRect(-12, 10, 24, 4);
+            ctx.fillStyle = "#2ecc71"; ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = "#7f8c8d"; ctx.fillRect(0, -3, 20, 6); ctx.restore();
+        } else { ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, 5, 0, Math.PI*2); ctx.fill(); }
     }
 }
 
@@ -491,14 +462,11 @@ function initShop() {
 function selectTower(index) {
     game.selectedTower = TOWER_TYPES[index];
     cursor.innerHTML = game.selectedTower.icon;
-    document.querySelectorAll('.shop-item').forEach((el, i) => {
-        el.classList.toggle('selected', i === index);
-    });
+    document.querySelectorAll('.shop-item').forEach((el, i) => { el.classList.toggle('selected', i === index); });
 }
 
 function deselectTower() {
-    game.selectedTower = null;
-    cursor.innerHTML = "";
+    game.selectedTower = null; cursor.innerHTML = "";
     document.querySelectorAll('.shop-item').forEach(el => el.classList.remove('selected'));
 }
 
@@ -517,52 +485,47 @@ function startGame(mapIndex) {
 
 function nextWave() {
     game.wave++;
-    // BOSS toutes les 5 vagues
-    if (game.wave % 5 === 0) {
-        game.enemiesToSpawn = 1;
-        game.isBossWave = true;
-    } else {
-        game.enemiesToSpawn = 5 + Math.floor(game.wave * 2.5);
-        game.isBossWave = false;
-    }
+    if (game.wave % 5 === 0) { game.enemiesToSpawn = 1; game.isBossWave = true; }
+    else { game.enemiesToSpawn = 5 + Math.floor(game.wave * 2.5); game.isBossWave = false; }
     game.spawnTimer = 0;
     document.getElementById('wave-val').innerText = game.wave;
 }
 
 function gameLoop() {
     if (!game.active) return;
-    ctx.fillStyle = game.currentMap.bg;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Rendu statique du fond
+    ctx.fillStyle = game.currentMap.bg; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = "#95a5a6"; ctx.lineWidth = 40; ctx.lineCap = "round"; ctx.lineJoin = "round";
     ctx.beginPath();
     game.currentMap.path.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
     ctx.stroke();
 
-    if (game.enemiesToSpawn > 0) {
-        game.spawnTimer++;
-        let spawnRate = game.isBossWave ? 120 : 60;
-        if (game.spawnTimer > spawnRate) {
-            game.enemies.push(new Enemy(game.currentMap.path, game.wave, game.isBossWave));
-            game.enemiesToSpawn--; game.spawnTimer = 0;
-        }
-    } else if (game.enemies.length === 0) { nextWave(); }
+    // Boucle de LOGIQUE selon le multiplicateur de vitesse
+    for(let s = 0; s < game.speedMultiplier; s++) {
+        if (game.enemiesToSpawn > 0) {
+            game.spawnTimer++;
+            let spawnRate = game.isBossWave ? 120 : 60;
+            if (game.spawnTimer > spawnRate) {
+                game.enemies.push(new Enemy(game.currentMap.path, game.wave, game.isBossWave));
+                game.enemiesToSpawn--; game.spawnTimer = 0;
+            }
+        } else if (game.enemies.length === 0) { nextWave(); break; }
 
-    for (let i = game.enemies.length - 1; i >= 0; i--) {
-        let e = game.enemies[i];
-        if (e.update()) { 
-            // Les Boss enlèvent 5 vies d'un coup
-            game.hp -= e.isBoss ? 5 : 1; 
-            game.enemies.splice(i, 1); 
-            if (game.hp <= 0) gameOver(); 
+        for (let i = game.enemies.length - 1; i >= 0; i--) {
+            let e = game.enemies[i];
+            if (e.update()) { game.hp -= e.isBoss ? 5 : 1; game.enemies.splice(i, 1); if (game.hp <= 0) { gameOver(); return; } }
+            else if (e.hp <= 0) { game.gold += e.reward; game.enemies.splice(i, 1); }
         }
-        else if (e.hp <= 0) { game.gold += e.reward; game.enemies.splice(i, 1); }
-        else { e.draw(); }
+        game.placedTowers.forEach(t => t.update());
+        for (let i = game.projectiles.length - 1; i >= 0; i--) { if (game.projectiles[i].update()) game.projectiles.splice(i, 1); }
     }
-    game.placedTowers.forEach(t => { t.update(); t.draw(); });
-    for (let i = game.projectiles.length - 1; i >= 0; i--) {
-        let p = game.projectiles[i];
-        if (p.update()) game.projectiles.splice(i, 1); else p.draw();
-    }
+
+    // DESSIN (une seule fois par frame)
+    game.enemies.forEach(e => e.draw());
+    game.placedTowers.forEach(t => t.draw());
+    game.projectiles.forEach(p => p.draw());
+
     if (game.selectedTower) {
         ctx.beginPath(); ctx.arc(game.mouse.x, game.mouse.y, game.selectedTower.range, 0, Math.PI*2);
         ctx.fillStyle = "rgba(255,255,255,0.2)"; ctx.fill();
@@ -582,17 +545,12 @@ function getMousePos(e) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    return {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY
-    };
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
 }
 
 window.addEventListener('mousemove', (e) => {
-    cursor.style.left = e.clientX + 'px';
-    cursor.style.top = e.clientY + 'px';
-    const pos = getMousePos(e);
-    game.mouse.x = pos.x; game.mouse.y = pos.y;
+    cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+    const pos = getMousePos(e); game.mouse.x = pos.x; game.mouse.y = pos.y;
 });
 
 window.addEventListener('contextmenu', (e) => { e.preventDefault(); deselectTower(); });
@@ -600,18 +558,12 @@ window.addEventListener('contextmenu', (e) => { e.preventDefault(); deselectTowe
 canvas.addEventListener('click', (e) => {
     const pos = getMousePos(e);
     if (game.selectedTower) {
-        if (game.gold >= game.selectedTower.cost) {
-            game.placedTowers.push(new Tower(pos.x, pos.y, game.selectedTower));
-            game.gold -= game.selectedTower.cost;
-        }
+        if (game.gold >= game.selectedTower.cost) { game.placedTowers.push(new Tower(pos.x, pos.y, game.selectedTower)); game.gold -= game.selectedTower.cost; }
         return;
     }
     let clickedTower = game.placedTowers.find(t => Math.sqrt((t.x - pos.x)**2 + (t.y - pos.y)**2) < 20);
-    if (clickedTower) {
-        game.selectedPlacedTower = clickedTower; showTowerInfo(clickedTower);
-    } else {
-        game.selectedPlacedTower = null; document.getElementById('tower-info').classList.add('hidden');
-    }
+    if (clickedTower) { game.selectedPlacedTower = clickedTower; showTowerInfo(clickedTower); } 
+    else { game.selectedPlacedTower = null; document.getElementById('tower-info').classList.add('hidden'); }
 });
 
 function showTowerInfo(tower) {
@@ -623,8 +575,7 @@ function showTowerInfo(tower) {
     upBtn.innerText = `Améliorer (${tower.getUpgradeCost()}💰)`;
     upBtn.onclick = () => { if (tower.upgrade()) { showTowerInfo(tower); } else { alert("Pas assez d'or !"); } };
     document.getElementById('sell-btn').onclick = () => {
-        game.gold += Math.floor(tower.cost * 0.7);
-        game.placedTowers = game.placedTowers.filter(t => t !== tower);
+        game.gold += Math.floor(tower.cost * 0.7); game.placedTowers = game.placedTowers.filter(t => t !== tower);
         info.classList.add('hidden'); game.selectedPlacedTower = null;
     };
 }

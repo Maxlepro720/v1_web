@@ -40,7 +40,7 @@
             display: block;
             background: #27ae60;
             max-width: 100%;
-            max-height: 85vh; /* Laisse de la place pour le shop */
+            max-height: 85vh;
             height: auto;
             aspect-ratio: 900 / 600;
         }
@@ -89,7 +89,7 @@
             position: relative; width: 100%; height: 100px;
             background: var(--panel); display: flex; justify-content: flex-start;
             align-items: center; gap: 10px;
-            overflow-x: auto; /* Permet de scroller le shop sur petit écran */
+            overflow-x: auto;
             padding: 0 10px;
             box-sizing: border-box;
         }
@@ -111,12 +111,28 @@
             z-index: 5;
         }
 
-        /* Masquer la barre de défilement du shop */
+        /* BOUTON QUITTER */
+        #quit-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 100;
+            background: #eb61511f;
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 14px;
+            pointer-events: all;
+        }
+
         #shop::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
 
+<a href="../../menu.html" id="quit-btn">QUITTER</a>
 <div id="custom-cursor"></div>
 
 <div id="game-container">
@@ -185,70 +201,93 @@ let game = {
     hp: 20, gold: 600, wave: 0, active: false,
     selectedTower: null, placedTowers: [], enemies: [], projectiles: [],
     currentMap: null, mouse: { x: 0, y: 0 },
-    spawnTimer: 0, enemiesToSpawn: 0, selectedPlacedTower: null
+    spawnTimer: 0, enemiesToSpawn: 0, selectedPlacedTower: null,
+    isBossWave: false
 };
 
 class Enemy {
-    constructor(path, level) {
+    constructor(path, level, isBoss = false) {
         this.path = path; this.index = 0;
         this.id = Math.random(); 
         this.x = path[0].x; this.y = path[0].y;
-        this.speed = 1 + (level * 0.1);
-        this.maxHp = 20 + (level * 15);
+        this.isBoss = isBoss;
+        
+        // DIFFICULTÉ ACCRUE : Scaling plus rapide des PV
+        let baseHp = isBoss ? 400 : 20;
+        let hpScaling = isBoss ? 200 : 22; 
+        this.maxHp = baseHp + (level * hpScaling) * Math.pow(1.1, level/2);
+        
         this.hp = this.maxHp;
-        this.reward = 10 + Math.floor(level * 1.5);
-        this.radius = 12; this.slowTimer = 0; this.poisonTimer = 0;
+        this.speed = isBoss ? 0.6 : 1 + (level * 0.12);
+        this.reward = isBoss ? 150 : 10 + Math.floor(level * 1.5);
+        this.radius = isBoss ? 25 : 12; 
+        this.slowTimer = 0; this.poisonTimer = 0;
         this.frame = 0; 
     }
     update() {
-        if (this.slowTimer > 0) { this.speed *= 0.5; this.slowTimer--; }
+        let currentSpeed = this.speed;
+        if (this.slowTimer > 0) { currentSpeed *= 0.5; this.slowTimer--; }
+        
         let target = this.path[this.index + 1];
         if (!target) return true;
         let dx = target.x - this.x; let dy = target.y - this.y;
         let dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < this.speed) { this.index++; } else { this.x += (dx/dist) * this.speed; this.y += (dy/dist) * this.speed; }
-        if (this.poisonTimer > 0) { this.hp -= 0.5; this.poisonTimer--; }
-        if (this.slowTimer > 0) this.speed = (1 + (game.wave * 0.1)) * 0.5;
-        else this.speed = 1 + (game.wave * 0.1);
+        if (dist < currentSpeed) { this.index++; } else { this.x += (dx/dist) * currentSpeed; this.y += (dy/dist) * currentSpeed; }
         
+        if (this.poisonTimer > 0) { this.hp -= 0.5; this.poisonTimer--; }
         this.frame += 0.2; 
         return false;
     }
     draw() {
         const anim = Math.sin(this.frame);
         const squash = 1 + anim * 0.1;
+        const scale = this.isBoss ? 2 : 1; // Double la taille si c'est un boss
+
         ctx.save();
-        ctx.translate(this.x, this.y + 10);
-        ctx.fillStyle = "#2d5a27"; 
+        ctx.translate(this.x, this.y + (10 * scale));
+        
+        // Ombre / Pied
+        ctx.fillStyle = this.isBoss ? "#4a0000" : "#2d5a27"; 
         ctx.beginPath();
-        ctx.ellipse(0, -8, 10 * (2 - squash), 8 * squash, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, -8 * scale, (10 * scale) * (2 - squash), (8 * scale) * squash, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = "#eeeeee";
+
+        // Corps
+        ctx.fillStyle = this.isBoss ? "#333" : "#eeeeee";
         ctx.beginPath();
-        ctx.moveTo(-7, -10);
-        ctx.quadraticCurveTo(0, 5 * squash, 7, -10);
+        ctx.moveTo(-7 * scale, -10 * scale);
+        ctx.quadraticCurveTo(0, (5 * scale) * squash, 7 * scale, -10 * scale);
         ctx.fill();
-        ctx.fillStyle = "#ffccaa";
+
+        // Visage
+        ctx.fillStyle = this.isBoss ? "#e74c3c" : "#ffccaa";
         ctx.beginPath();
-        ctx.arc(0, -11, 4, 0, Math.PI * 2);
+        ctx.arc(0, -11 * scale, 4 * scale, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = "#a31d1d";
+
+        // Chapeau / Tête
+        ctx.fillStyle = this.isBoss ? "#000" : "#a31d1d";
         ctx.beginPath();
-        ctx.moveTo(-10, -12);
-        ctx.lineTo(10, -12);
-        ctx.quadraticCurveTo(0, -15, 2 + (anim * 2), -28);
+        ctx.moveTo(-10 * scale, -12 * scale);
+        ctx.lineTo(10 * scale, -12 * scale);
+        ctx.quadraticCurveTo(0, -15 * scale, (2 + (anim * 2)) * scale, -28 * scale);
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = "#000";
+
+        // Yeux
+        ctx.fillStyle = this.isBoss ? "#f1c40f" : "#000";
         ctx.beginPath();
-        ctx.arc(-3, -13, 1.2, 0, Math.PI * 2);
-        ctx.arc(3, -13, 1.2, 0, Math.PI * 2);
+        ctx.arc(-3 * scale, -13 * scale, 1.2 * scale, 0, Math.PI * 2);
+        ctx.arc(3 * scale, -13 * scale, 1.2 * scale, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
+
+        // Barre de vie
+        const barW = 30 * scale;
         ctx.fillStyle = "rgba(0,0,0,0.5)";
-        ctx.fillRect(this.x - 15, this.y - 25, 30, 4);
-        ctx.fillStyle = "#2ecc71";
-        ctx.fillRect(this.x - 15, this.y - 25, (this.hp/this.maxHp) * 30, 4);
+        ctx.fillRect(this.x - barW/2, this.y - (25 * scale), barW, 4);
+        ctx.fillStyle = this.isBoss ? "#f1c40f" : "#2ecc71";
+        ctx.fillRect(this.x - barW/2, this.y - (25 * scale), (this.hp/this.maxHp) * barW, 4);
     }
 }
 
@@ -477,7 +516,16 @@ function startGame(mapIndex) {
 }
 
 function nextWave() {
-    game.wave++; game.enemiesToSpawn = 5 + game.wave * 2; game.spawnTimer = 0;
+    game.wave++;
+    // BOSS toutes les 5 vagues
+    if (game.wave % 5 === 0) {
+        game.enemiesToSpawn = 1;
+        game.isBossWave = true;
+    } else {
+        game.enemiesToSpawn = 5 + Math.floor(game.wave * 2.5);
+        game.isBossWave = false;
+    }
+    game.spawnTimer = 0;
     document.getElementById('wave-val').innerText = game.wave;
 }
 
@@ -489,16 +537,24 @@ function gameLoop() {
     ctx.beginPath();
     game.currentMap.path.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
     ctx.stroke();
+
     if (game.enemiesToSpawn > 0) {
         game.spawnTimer++;
-        if (game.spawnTimer > 60) {
-            game.enemies.push(new Enemy(game.currentMap.path, game.wave));
+        let spawnRate = game.isBossWave ? 120 : 60;
+        if (game.spawnTimer > spawnRate) {
+            game.enemies.push(new Enemy(game.currentMap.path, game.wave, game.isBossWave));
             game.enemiesToSpawn--; game.spawnTimer = 0;
         }
     } else if (game.enemies.length === 0) { nextWave(); }
+
     for (let i = game.enemies.length - 1; i >= 0; i--) {
         let e = game.enemies[i];
-        if (e.update()) { game.hp--; game.enemies.splice(i, 1); if (game.hp <= 0) gameOver(); }
+        if (e.update()) { 
+            // Les Boss enlèvent 5 vies d'un coup
+            game.hp -= e.isBoss ? 5 : 1; 
+            game.enemies.splice(i, 1); 
+            if (game.hp <= 0) gameOver(); 
+        }
         else if (e.hp <= 0) { game.gold += e.reward; game.enemies.splice(i, 1); }
         else { e.draw(); }
     }
@@ -515,14 +571,13 @@ function gameLoop() {
         ctx.beginPath(); ctx.arc(game.selectedPlacedTower.x, game.selectedPlacedTower.y, game.selectedPlacedTower.range, 0, Math.PI*2);
         ctx.strokeStyle = "white"; ctx.stroke();
     }
-    document.getElementById('hp-val').innerText = game.hp;
+    document.getElementById('hp-val').innerText = Math.max(0, game.hp);
     document.getElementById('gold-val').innerText = game.gold;
     requestAnimationFrame(gameLoop);
 }
 
 function gameOver() { game.active = false; document.getElementById('game-over').classList.remove('hidden'); }
 
-// --- LOGIQUE DE COORDINATION RESPONSIVE ---
 function getMousePos(e) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;

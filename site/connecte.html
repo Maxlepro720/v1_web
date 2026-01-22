@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex, nofollow">
+<meta name="robots" content="index, follow">
 <title>Connexion</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;}
@@ -45,7 +45,7 @@ p.subtitle{color:#aaa;margin-bottom:30px;font-size:14px;}
 </div>
 
 <div class="container" id="authContainer">
-    <div class="logo">🎮</div>
+    <div class="logo">Projet2fdp</div>
     <h1 id="title">Se connecter</h1>
     <p class="subtitle" id="subtitle">Accédez à votre espace de jeu</p>
 
@@ -101,15 +101,7 @@ async function handleSubmit(){
         return;
     }
     
-    // --- LOGIQUE D'AUTHENTIFICATION ADMIN DÉDIÉE ---
-    // Si l'identifiant et le mot de passe sont '/admin', on ne fait pas de requête et on redirige.
-    if (username === '/admin' && password === '/admin') {
-        console.log("Accès administrateur détecté. Redirection immédiate.");
-        // Redirection vers la page d'administration (j'utilise '/' pour le chemin URL)
-        window.location.href = 'admin/overview.html';
-        return; // Arrête l'exécution de la fonction
-    }
-    // --------------------------------------------------
+   
 
     // Le reste du code (requête API normale) ne s'exécute que si ce n'est PAS l'admin.
     const data={id:username,password};

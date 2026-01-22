@@ -459,17 +459,25 @@
         }
     </style>
 <script>
-    // Vérifie si la publicité a déjà été chargée pour cette session
-    if (!sessionStorage.getItem('ad_loaded')) {
-        var adScript = document.createElement('script');
-        adScript.src = "https://pl28508013.effectivegatecpm.com/ec/2e/43/ec2e438042425905f867b2e1db5a2620.js";
-        
-        // Ajoute le script au document
-        document.head.appendChild(adScript);
-        
-        // Enregistre que la publicité a été affichée
-        sessionStorage.setItem('ad_loaded', 'true');
+    // Fonction pour charger et déclencher la pub au premier clic
+    function initAdOnFirstClick() {
+        if (!sessionStorage.getItem('ad_loaded')) {
+            const loadAd = () => {
+                var adScript = document.createElement('script');
+                adScript.src = "https://pl28508013.effectivegatecpm.com/ec/2e/43/ec2e438042425905f867b2e1db5a2620.js";
+                document.head.appendChild(adScript);
+                
+                sessionStorage.setItem('ad_loaded', 'true');
+                // On retire l'écouteur après le premier clic
+                document.removeEventListener('click', loadAd);
+            };
+            
+            document.addEventListener('click', loadAd);
+        }
     }
+    
+    // On lance l'attente du clic dès que le DOM est prêt
+    document.addEventListener('DOMContentLoaded', initAdOnFirstClick);
 </script>
 </head>
 <body>

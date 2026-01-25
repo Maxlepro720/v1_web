@@ -204,6 +204,10 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const cursor = document.getElementById('custom-cursor');
+const username = localStorage.getItem("username");
+if (!username || username.trim() === "") {
+        window.location.replace("index.html");
+};
 
 const TOWER_TYPES = [
     { name: "Archer", icon: "🏹", color: "#3498db", range: 120, damage: 10, fireRate: 60, cost: 50, desc: "Basique", type: "basic" },

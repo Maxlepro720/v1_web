@@ -556,12 +556,12 @@
     }
     
     const games=[
-        {id:1,title:"Skull Arena",genre:"Survie",link:"Folder_for_Games/jeu_1/game.html",color:"#CF4F5E", img:"Image/Image_Skull_Arena.png"},
-        {id:2,title:"Stickman Runner",genre:"Deathrun",link:"Folder_for_Games/jeu_3/game.html",color:"#63D945", img:"Image/Image_Stickman_Runner.png"}, 
-        {id:3,title:"Astro Dodge",genre:"Infinite",link:"Folder_for_Games/jeu2/game.html",color:"#07a7b3", img:"Image/Image_Astro_Dodge.png"},
-        {id:4,title:"Tower Defense",genre:"Defensif",link:"Folder_for_Games/Tower_Defense/tower_defense.html",color:"#026c02", img:"Image/Image_Tower_Defense.png"},
-        {id:5,title:"Coming Soon...",genre:"Not defined",link:"",color:"#969696"},
-        {id:6,title:"Coming Soon...",genre:"Not defined",link:"",color:"#969696"}
+        {id:1,name:"",title:"Skull Arena",genre:"Survie",link:"Folder_for_Games/jeu_1/game.html",color:"#CF4F5E", img:"Image/Image_Skull_Arena.png"},
+        {id:2,name:"",title:"Stickman Runner",genre:"Deathrun",link:"Folder_for_Games/jeu_3/game.html",color:"#63D945", img:"Image/Image_Stickman_Runner.png"}, 
+        {id:3,name:"",title:"Astro Dodge",genre:"Infinite",link:"Folder_for_Games/jeu2/game.html",color:"#07a7b3", img:"Image/Image_Astro_Dodge.png"},
+        {id:4,name:"",title:"Tower Defense",genre:"Defensif",link:"Folder_for_Games/Tower_Defense/tower_defense.html",color:"#026c02", img:"Image/Image_Tower_Defense.png"},
+        {id:5,name:"",title:"Coming Soon...",genre:"Not defined",link:"",color:"#969696"},
+        {id:6,name:"",title:"Coming Soon...",genre:"Not defined",link:"",color:"#969696"}
     ];
 
     const username=localStorage.getItem("username");
@@ -632,27 +632,36 @@
 
     // Fonction pour récupérer les compteurs depuis le serveur
     async function refreshPlayCounters() {
-        try {
-            const response = await fetch(`${API_URL}/get_play_counter`);
-            const result = await response.json();
-            console.log(result)
-            if (result.status === "success" && result.data) {
-                result.data.forEach(item => {
-                    playCounters[item.name] = item.counter;
-                });
+    try {
+        const response = await fetch(`${API_URL}/get_play_counter`);
+        const result = await response.json();
+        
+        console.log("[DEBUG Server Response]", result);
+
+        if (result.status === "success" && result.data) {
+            // 1. On stocke les nouvelles valeurs du serveur dans l'objet global
+            result.data.forEach(item => {
+                playCounters[item.name] = item.counter;
+            });
+            
+            // 2. On parcourt chaque élément HTML qui affiche les vues
+            document.querySelectorAll('.play-count-text').forEach(p => {
+                // On récupère le titre affiché (Skull Arena, etc.)
+                const cardTitle = p.closest('.card-info').querySelector('.card-title').textContent;
                 
-                // Mise à jour visuelle immédiate des compteurs dans le DOM
-                document.querySelectorAll('.play-count-text').forEach(p => {
-                    const gameName = p.getAttribute('data-game');
-                    if (playCounters[gameName] !== undefined) {
-                        p.textContent = `Vue : ${playCounters[gameName]}`;
-                    }
-                });
-            }
-        } catch (e) {
-            console.error("Erreur fetch compteurs:", e);
+                // On cherche dans votre constante 'games' l'objet qui a ce titre
+                const gameData = games.find(g => g.title === cardTitle);
+                
+                // Si on a trouvé le jeu et qu'on a un score pour son 'name'
+                if (gameData && playCounters[gameData.name] !== undefined) {
+                    p.textContent = `Vue : ${playCounters[gameData.name]}`;
+                }
+            });
         }
+    } catch (e) {
+        console.error("Erreur refreshPlayCounters:", e);
     }
+}
 
     function updateQuote() {
         const quoteDisplay = document.getElementById('quote-display');

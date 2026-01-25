@@ -22,8 +22,8 @@ foreach ($iterator as $file) {
         $path = str_replace($directory, "", $file->getPathname());
         $path = str_replace("\\", "/", $path);
 
-        // Évite sitemap.php, erreurs, etc.
-        if (strpos($path, '.html') === false) continue;
+        // Exclure dossiers sensibles
+        if (str_starts_with($path, "/admin")) continue;
 
         echo "  <url>\n";
         echo "    <loc>$baseUrl$path</loc>\n";
@@ -32,6 +32,7 @@ foreach ($iterator as $file) {
         echo "  </url>\n";
     }
 }
+
 
 echo "</urlset>";
 exit;

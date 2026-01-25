@@ -565,8 +565,9 @@
     ];
 
     const username=localStorage.getItem("username");
+    usernametodisplay=username.toUpperCase()
     const welcomeTitle=document.getElementById("welcomeTitle");
-    if(username){welcomeTitle.textContent=`🎮 ${username}`;}
+    if(usernametodisplay){welcomeTitle.textContent=`🎮 ${username}`;}
 
     // --- LOGIQUE MASQUAGE/DÉMASQUAGE HOTBAR ---
     const mainHeader = document.getElementById('main-header');

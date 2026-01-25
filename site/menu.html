@@ -635,7 +635,7 @@
         try {
             const response = await fetch(`${API_URL}/get_play_counter`);
             const result = await response.json();
-            console.log(response.data)
+            console.log(result)
             if (result.status === "success" && result.data) {
                 result.data.forEach(item => {
                     playCounters[item.name] = item.counter;

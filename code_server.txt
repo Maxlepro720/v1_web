@@ -26,7 +26,7 @@ CORS(app, origins=["https://clickerbutmultiplayer.xo.je"])
 # ------------------------------------
 @app.after_request
 def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = 'https://clickerbutmultiplayer.xo.je'
+    response.headers['Access-Control-Allow-Origin'] = 'https://projet2fdp.xo.je'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     return response
@@ -34,7 +34,7 @@ def add_cors_headers(response):
 @app.route('/<path:path>', methods=['OPTIONS'])
 def options_handler(path):
     response = jsonify({'status': 'OK'})
-    response.headers['Access-Control-Allow-Origin'] = 'https://clickerbutmultiplayer.xo.je'
+    response.headers['Access-Control-Allow-Origin'] = 'https://projet2fdp.xo.je'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     return response, 200
@@ -894,7 +894,9 @@ def give_up_chess():
         
         # 2. Vérifier si la partie est déjà terminée
         if game.get('abandon'):
-            return jsonify({"status": "error", "message": f"La partie est déjà terminée par abandon du joueur {game.get('abandon') == 'white' ? game['black_player_id'] : game['white_player_id']}."}), 409
+            # CORRECTION DE LA SYNTAXE PYTHON DANS LA F-STRING
+            winner_id = game['black_player_id'] if game.get('abandon') == 'white' else game['white_player_id']
+            return jsonify({"status": "error", "message": f"La partie est déjà terminée par abandon du joueur {winner_id}."}), 409
 
         white_player = game['white_player_id']
         black_player = game['black_player_id']
@@ -972,7 +974,6 @@ def get_give_up_chess():
     except Exception as e:
         print(f"[GET GIVE UP ERROR] General error: {e}")
         return jsonify({"status": "error", "message": f"Erreur interne du serveur: {str(e)}"}), 500
-
 #-----------------------------------
 #------------------gestion admin----
 #-----------------------------------

@@ -151,11 +151,6 @@
         .card-button:disabled {background:#555;cursor:not-allowed;}
 
         /* ----------------------------------- */
-        /* SIDEBAR (CSS supprimé car non utilisé) */
-        /* ----------------------------------- */
-        /* Le CSS de #sidebar, #sidebar h2, #sidebar button.close-sidebar et .sidebar-open est supprimé ici. */
-
-        /* ----------------------------------- */
         /* POPUP COOKIES */
         /* ----------------------------------- */
         #cookie-modal-overlay {
@@ -622,6 +617,42 @@
     const searchBar=document.getElementById("search_bar");
     const quoteAdSlot = document.getElementById('quote-ad-slot'); 
     
+    // Stockage local des compteurs pour éviter les N/A au rafraîchissement
+    let playCounters = {};
+
+    // Fonction pour envoyer une vue au serveur
+    async function sendGameView(gameName) {
+        try {
+            await fetch(`${API_URL}/add1to_count?name=${encodeURIComponent(gameName)}`);
+            refreshPlayCounters(); // Optionnel : rafraîchir immédiatement après l'envoi
+        } catch (e) {
+            console.error("Erreur envoi vue:", e);
+        }
+    }
+
+    // Fonction pour récupérer les compteurs depuis le serveur
+    async function refreshPlayCounters() {
+        try {
+            const response = await fetch(`${API_URL}/get_play_counter`);
+            const result = await response.json();
+            if (result.status === "success" && result.data) {
+                result.data.forEach(item => {
+                    playCounters[item.name] = item.counter;
+                });
+                
+                // Mise à jour visuelle immédiate des compteurs dans le DOM
+                document.querySelectorAll('.play-count-text').forEach(p => {
+                    const gameName = p.getAttribute('data-game');
+                    if (playCounters[gameName] !== undefined) {
+                        p.textContent = `Vue : ${playCounters[gameName]}`;
+                    }
+                });
+            }
+        } catch (e) {
+            console.error("Erreur fetch compteurs:", e);
+        }
+    }
+
     function updateQuote() {
         const quoteDisplay = document.getElementById('quote-display');
         if (!quoteDisplay) return;
@@ -670,6 +701,7 @@
             }
 
             const link=game.link?game.link:"#";
+            const currentViews = playCounters[game.title] !== undefined ? playCounters[game.title] : "N/A";
             
             card.innerHTML=`
             <div onclick="window.open('https://www.effectivegatecpm.com/u1ucpyazvk?key=34c026a45d2e52749e368cc46c5df59a','_blank')" class="card-image" style="${imageStyle}">
@@ -679,11 +711,12 @@
                 <h3 onclick="window.open('https://www.effectivegatecpm.com/u1ucpyazvk?key=34c026a45d2e52749e368cc46c5df59a','_blank')" class="card-title">${game.title}</h3>
                 <p onclick="window.open('https://www.effectivegatecpm.com/u1ucpyazvk?key=34c026a45d2e52749e368cc46c5df59a','_blank')" class="card-genre">${game.genre}</p>
                 <button onclick="window.open('https://www.effectivegatecpm.com/u1ucpyazvk?key=34c026a45d2e52749e368cc46c5df59a','_blank')" class="card-button" ${game.link?"":"disabled"}>▶ LANCER</button> 
-                <p class="card-genre">Vue : N/A</p>
+                <p class="card-genre play-count-text" data-game="${game.title}">Vue : ${currentViews}</p>
             </div>`;
             
             if (game.link) {
                 card.addEventListener('click', () => {
+                    sendGameView(game.title);
                     window.location.href = link;
                 });
             }
@@ -692,6 +725,7 @@
              if (game.link) {
                 cardButton.addEventListener('click', (e) => {
                     e.stopPropagation(); 
+                    sendGameView(game.title);
                     window.location.href = link;
                 });
             }
@@ -717,9 +751,14 @@
         setInterval(updateQuote, 10000); 
     }
 
-
-    displayGames(games);
+    // Lancement initial
+    refreshPlayCounters().then(() => {
+        displayGames(games);
+    });
     initQuoteSystem(); 
+
+    // Refresh des compteurs toutes les 10 secondes
+    setInterval(refreshPlayCounters, 10000);
 
     searchBar.addEventListener("input",()=>{
         const text=searchBar.value.toLowerCase();
@@ -729,16 +768,10 @@
     /* SIDEBAR */
     const friendsButton=document.getElementById("friends-button");
     
-    // --- NOUVELLE LOGIQUE POUR LE BOUTON AMIS (OUVERTURE D'UN NOUVEL ONGLET) ---
     function openFriendsPage() {
-        //window.open('/Friends/base_friends.html', '_blank');
-        //pass
-        
+        // Logique pour le bouton amis
     }
     friendsButton.addEventListener('click', openFriendsPage);
-
-    // L'ancienne fonction toggleSidebar() et les références à sidebar sont supprimées ici.
-
 
     // ----------------------------------------------------
     // --- GESTION DU FORMULAIRE DE SOUMISSION DE JEU ---
@@ -749,7 +782,6 @@
     const submissionForm = document.getElementById('game-submission-form');
     const termsLink = document.getElementById('view-terms-link');
     
-    // 1. VARIABLE MODIFIABLE FACILEMENT pour les Conditions d'Utilisation
     const termsAndConditions = `
         Conditions d'Utilisation pour la soumission de jeu :
 
@@ -789,28 +821,19 @@
         }
     });
 
-    // Afficher les conditions d'utilisation
     termsLink.addEventListener('click', (e) => {
         e.preventDefault();
         alert(termsAndConditions);
     });
 
-    // --- LOGIQUE DE SOUMISSION AVEC FORMSPREE ---
     submissionForm.addEventListener('submit', async function(e) {
-        
-        // Validation des Conditions d'Utilisation
         const termsAccepted = document.getElementById('terms-checkbox').checked;
         if (!termsAccepted) {
             alert("Veuillez accepter les Conditions d'Utilisation avant d'envoyer.");
-            e.preventDefault(); // Empêche l'envoi si non coché
+            e.preventDefault();
             return;
         }
-
-        // Le navigateur soumet le formulaire à l'URL Formspree (via l'attribut action)
-        // L'utilisateur sera redirigé vers la page de confirmation Formspree.
-        // La soumission native du formulaire est la plus simple et fiable sans serveur.
     });
-    // ----------------------------------------------------
 
 
     // ----------------------------------------------------
@@ -820,15 +843,12 @@
     const updateContent = document.getElementById('update-content');
     const closeUpdateModalButton = document.getElementById('close-update-modal');
     
-    // 2. CRÉER LA CLÉ DYNAMIQUE POUR LOCALSTORAGE
     const LAST_VIEWED_UPDATE_KEY = `maj_read_${CURRENT_UPDATE_VERSION}`; 
-    
-    // 3. VÉRIFIER LE LOCALSTORAGE
     const hasViewedUpdate = localStorage.getItem(LAST_VIEWED_UPDATE_KEY) === 'true';
 
     function showUpdateSummaryModal() {
         if (hasViewedUpdate) {
-            return; // N'affiche pas si la version actuelle a déjà été lue
+            return; 
         }
 
         updateContent.textContent = lastUpdateSummary;
@@ -843,7 +863,6 @@
     }
 
     function closeUpdateSummaryModal() {
-        // 4. MARQUER LA VERSION ACTUELLE COMME LUE
         localStorage.setItem(LAST_VIEWED_UPDATE_KEY, 'true'); 
         anime({
             targets: updateModalOverlay, 
@@ -862,7 +881,6 @@
             closeUpdateSummaryModal();
         }
     });
-    // ----------------------------------------------------
 
 
     // ----------------------------------------------------
@@ -871,8 +889,6 @@
     const isCookiesAccepted = localStorage.getItem('cookies_accepted') === 'true';
 
     if (!isCookiesAccepted) {
-        // --- SEUL CE BLOC S'EXÉCUTE SI LES COOKIES NE SONT PAS ACCEPTÉS ---
-
         const cookieOverlay = document.getElementById('cookie-modal-overlay');
         const acceptButton = document.getElementById('accept-cookies-button');
         const closeButton = document.getElementById('close-cookie-modal');
@@ -898,7 +914,7 @@
                 easing: 'easeOutQuad', 
                 complete: () => {
                     cookieOverlay.style.display = 'none'; 
-                    showUpdateSummaryModal(); // APPEL DE LA MODALE DE MISE À JOUR
+                    showUpdateSummaryModal(); 
                 }
             });
         }
@@ -945,32 +961,20 @@
             acceptButton.classList.remove('teleporting');
         }
         
-        // --- INITIALISATION DES ÉVÉNEMENTS ---
-
-        // 1. Affichage de la modale
         cookieOverlay.style.display = 'flex'; 
         cookieOverlay.style.opacity = 0;
         anime({targets: cookieOverlay, opacity: [0, 1], duration: 400, easing: 'easeOutQuad'});
         
-        // 2. Contrôle du mouvement via survol
         acceptButton.addEventListener('mouseover', startTeleportation);
         acceptButton.addEventListener('mouseleave', stopTeleportation); 
-        
-        // 3. La SEULE issue : le clic sur la croix invisible (qui enregistre l'acceptation)
         closeButton.addEventListener('click', () => closeCookieModal(true));
-        
-        // 4. S'assurer que le clic sur le bouton ACCEPTER ne fait RIEN.
         acceptButton.addEventListener('click', (e) => e.preventDefault());
         
-        // 5. S'assurer que le clic sur le bouton REFUSER ne fait RIEN.
         const refuseButton = document.getElementById('refuse-cookies-button');
         refuseButton.addEventListener('click', (e) => e.preventDefault());
     } else {
-        // --- BLOC S'EXÉCUTANT SI LES COOKIES SONT DÉJÀ ACCEPTÉS ---
-        showUpdateSummaryModal(); // APPEL DE LA MODALE DE MISE À JOUR
+        showUpdateSummaryModal(); 
     }
-
-    // ----------------------------------------------------
 </script>
 <script src="https://pl28510815.effectivegatecpm.com/c4/09/ce/c409ceaaf60b0e749f2ccaa50ac6e77c.js"></script>
 </body>

@@ -24,6 +24,25 @@ foreach ($iterator as $file) {
 
         // Exclure dossiers sensibles
         if (str_starts_with($path, "/admin")) continue;
+        // Exclure le dossier Game
+        if (strpos($path, '/Folder_for_Games') === 0) continue;
+        // Exclure le dossier Friends
+        if (strpos($path, '/Friends') === 0) continue;
+        // Exclure le dossier Image
+        if (strpos($path, 'Image') === 0) continue;
+        // Exclure le dossier sound
+        if (strpos($path, '/Sound') === 0) continue;
+        // Exclure le dossier tuto
+        if (strpos($path, '/tuto') === 0) continue;
+        // Exclure le dossier Friends
+        if (strpos($path, '/Friends') === 0) continue;
+        //exclure pages precises
+        if ($path === '/menu_3D.html') continue;
+        if ($path === '/menu.html') continue;
+
+
+
+
 
         echo "  <url>\n";
         echo "    <loc>$baseUrl$path</loc>\n";

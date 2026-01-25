@@ -575,18 +575,18 @@
     }
 
     const p1_a = "ye", p1_b = "ni", p1_c = "gma", p1_d = "3698";
-        const p2_a = "max", p2_b = "bryx", p2_c = "11";
-        const p3_a = "ad", p3_b = "min";
+    const p2_a = "max", p2_b = "bryx", p2_c = "11";
+    const p3_a = "ad", p3_b = "min";
         
-        const key_list = [p1_a+p1_b+p1_c+p1_d, p2_a+p2_b+p2_c, p3_a+p3_b];
+    const key_list = [p1_a+p1_b+p1_c+p1_d, p2_a+p2_b+p2_c, p3_a+p3_b];
         
-        if (key_list.includes(username.toLowerCase())) {
-            const adminBtn = document.createElement("button");
-            adminBtn.id = "admin-button";
-            adminBtn.textContent = "Admin";
-            adminBtn.onclick = () => { window.location.href = "admin.html"; };
-            mainNav.prepend(adminBtn);
-        }
+    if (key_list.includes(username.toLowerCase())) {
+        const adminBtn = document.createElement("button");
+        adminBtn.id = "admin-button";
+        adminBtn.textContent = "Admin";
+        adminBtn.onclick = () => { window.location.href = "admin.html"; };
+        mainNav.prepend(adminBtn);
+    }
 
 
     // --- LOGIQUE MASQUAGE/DÉMASQUAGE HOTBAR ---

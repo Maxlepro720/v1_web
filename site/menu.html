@@ -762,11 +762,21 @@
     }
 
     // Lancement initial
-    displayGames(games);
-    refreshPlayCounters();
+    refreshPlayCounters().then(() => {
+        // Tri du tableau 'games' : du plus grand nombre de vues au plus petit
+        games.sort((a, b) => {
+            const viewsA = playCounters[a.name] || 0;
+            const viewsB = playCounters[b.name] || 0;
+            return viewsB - viewsA;
+        });
+
+        // 2. Affichage des jeux triés
+        displayGames(games);
+    });
+
     initQuoteSystem(); 
 
-    // Refresh des compteurs toutes les 10 secondes
+    // 3. On continue de rafraîchir les chiffres toutes les 10s (sans changer l'ordre)
     setInterval(refreshPlayCounters, 10000);
 
     searchBar.addEventListener("input",()=>{

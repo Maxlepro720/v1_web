@@ -460,7 +460,10 @@ window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 
 /* --- DATA & SAVE (LOCAL & SERVER) --- */
 // SEUL le nom d'utilisateur est chargé localement.
-let username = localStorage.getItem('username') || 'ANONYME'; 
+let username = localStorage.getItem('username');
+if (!username || username.trim() === "") {
+        window.location.replace("../../index.html");
+    } 
 function updateUsernameDisplay() {
     const display = document.getElementById('currentUsername');
     if (display) display.textContent = username;

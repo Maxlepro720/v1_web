@@ -292,7 +292,10 @@ let state=STATE.LOADING;
 
 let transition = { active: false, alpha: 0, nextState: null, callback: null };
 
-let username = localStorage.getItem("username") || "Invité"; 
+let username = localStorage.getItem("username");
+if (!username || username.trim() === "") {
+        window.location.replace("../../index.html");
+}  
 let score=0, bestScore=0, credits=0; 
 // --- COMPTEUR DE MORTS POUR PUB ---
 let deathCount = parseInt(localStorage.getItem("deathCount")) || 0; 

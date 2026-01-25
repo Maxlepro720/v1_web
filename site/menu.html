@@ -564,13 +564,16 @@
         {id:6,name:"",title:"Coming Soon...",genre:"Not defined",link:"",color:"#969696"}
     ];
 
-    const username=localStorage.getItem("username");
-    usernametodisplay=username.toUpperCase()
-    const welcomeTitle=document.getElementById("welcomeTitle");
-    if(username){welcomeTitle.textContent=`🎮 ${usernametodisplay}`;}
+    const username = localStorage.getItem("username");
+    const welcomeTitle = document.getElementById("welcomeTitle");
+
     if (!username || username.trim() === "") {
         window.location.replace("index.html");
+    } else {
+        const usernametodisplay = username.toUpperCase();
+        welcomeTitle.textContent = `🎮 ${usernametodisplay}`;
     }
+
 
     // --- LOGIQUE MASQUAGE/DÉMASQUAGE HOTBAR ---
     const mainHeader = document.getElementById('main-header');

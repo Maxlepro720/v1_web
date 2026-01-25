@@ -471,7 +471,10 @@
         let ignoreNextSpaceUp = false; 
         
         // --- DONNÉES DU JOUEUR (Chargement du pseudo depuis localStorage) ---
-        let username = localStorage.getItem('username') || 'Invité Cyber'; 
+        let username = localStorage.getItem('username');
+        if (!username || username.trim() === "") {
+            window.location.replace("index.html");
+        } 
         let currentGradeName = "Poussière"; 
         
         // --- SYSTÈME DE GRADES ---

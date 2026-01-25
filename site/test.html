@@ -15,7 +15,6 @@
     background: #f0f0f0;
   }
 
-  /* Bouton central */
   #toggleBtn {
     padding: 15px 25px;
     font-size: 18px;
@@ -36,36 +35,47 @@
 
 <!-- Script officiel Adsterra Social Bar -->
 <script src="https://pl28510815.effectivegatecpm.com/c4/09/ce/c409ceaaf60b0e749f2ccaa50ac6e77c.js"></script>
+</head>
 <body>
 
-<!-- Bouton central pour activer/désactiver la barre -->
 <button id="toggleBtn">Désactiver la barre</button>
 
 <script>
-  // Fonction toggle pour la social bar
-  const btn = document.getElementById("toggleBtn");
+const btn = document.getElementById("toggleBtn");
+let isActive = true;
+let bar = null;
 
-  let isActive = true; // La barre est visible par défaut
+// Fonction pour détecter la barre Adsterra
+function detectBar() {
+  // Souvent la barre a un style fixed en bas ou un iframe
+  bar = document.querySelector("div[style*='position:fixed'][style*='bottom']") ||
+        document.querySelector("iframe[src*='effectivegatecpm.com']");
 
-  btn.addEventListener("click", () => {
-    // La barre Adsterra est généralement injectée dans un div avec id ou classe inconnue
-    // On essaye de la détecter
-    const bar = document.getElementById("adsterra_social_bar") || 
-                document.querySelector("div[style*='position:fixed'][style*='bottom']");
+  if(bar){
+    console.log("Social bar détectée !");
+    clearInterval(detectInterval); // stop l'intervalle une fois détectée
+  }
+}
 
-    if(bar){
-      if(isActive){
-        bar.style.display = "none";      // désactive la barre
-        btn.textContent = "Activer la barre";
-      } else {
-        bar.style.display = "block";     // active la barre
-        btn.textContent = "Désactiver la barre";
-      }
-      isActive = !isActive;
-    } else {
-      console.log("Social bar non détectée pour l'instant...");
-    }
-  });
+// On répète toutes les 500ms jusqu'à trouver la barre
+const detectInterval = setInterval(detectBar, 500);
+
+// Bouton toggle
+btn.addEventListener("click", () => {
+  if(!bar){
+    console.log("Barre pas encore chargée...");
+    return;
+  }
+
+  if(isActive){
+    bar.style.display = "none";
+    btn.textContent = "Activer la barre";
+  } else {
+    bar.style.display = "block";
+    btn.textContent = "Désactiver la barre";
+  }
+  isActive = !isActive;
+});
 </script>
 
 </body>

@@ -39,6 +39,7 @@ foreach ($iterator as $file) {
         //exclure pages precises
         if ($path === '/menu_3D.html') continue;
         if ($path === '/menu.html') continue;
+        if ($path === '/index2.html') continue;
 
 
 

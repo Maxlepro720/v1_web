@@ -22,9 +22,7 @@ foreach ($iterator as $file) {
         $path = str_replace($directory, "", $file->getPathname());
         $path = str_replace("\\", "/", $path);
 
-        if ($path === '/index.html') {
-            $path = '/';
-
+        
         // Exclure dossiers sensibles
         if (str_starts_with($path, "/admin")) continue;
         // Exclure le dossier Game

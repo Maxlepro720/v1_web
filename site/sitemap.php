@@ -22,7 +22,15 @@ foreach ($iterator as $file) {
         $path = str_replace($directory, "", $file->getPathname());
         $path = str_replace("\\", "/", $path);
 
-        
+        if (basename($path) === "index.html") {
+            // Si index.html est dans la racine
+            if ($path === "/index.html") {
+                $path = "/";
+            } else {
+                // Sinon, si c'est un index dans un sous-dossier, garder le chemin du dossier
+                $path = rtrim(dirname($path), "/") . "/";
+            }
+        }
         // Exclure dossiers sensibles
         if (str_starts_with($path, "/admin")) continue;
         // Exclure le dossier Game

@@ -568,7 +568,9 @@
     usernametodisplay=username.toUpperCase()
     const welcomeTitle=document.getElementById("welcomeTitle");
     if(username){welcomeTitle.textContent=`🎮 ${usernametodisplay}`;}
-    
+    if(username == ""){
+        window.open('index.html','_blank');
+    }
 
     // --- LOGIQUE MASQUAGE/DÉMASQUAGE HOTBAR ---
     const mainHeader = document.getElementById('main-header');

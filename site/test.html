@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Test Social Bar Adsterra</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    background: #f0f0f0;
+  }
+
+  /* Bouton central */
+  #toggleBtn {
+    padding: 15px 25px;
+    font-size: 18px;
+    cursor: pointer;
+    border: none;
+    border-radius: 10px;
+    background: #0066ff;
+    color: white;
+    z-index: 2000;
+    position: relative;
+  }
+
+  #toggleBtn:hover {
+    transform: scale(1.1);
+    background: #004bb5;
+  }
+</style>
+
+<!-- Script officiel Adsterra Social Bar -->
+<script src="https://pl28508013.effectivegatecpm.com/ec/2e/43/ec2e438042425905f867b2e1db5a2620.js"></script>
+</head>
+<body>
+
+<!-- Bouton central pour activer/désactiver la barre -->
+<button id="toggleBtn">Désactiver la barre</button>
+
+<script>
+  // Fonction toggle pour la social bar
+  const btn = document.getElementById("toggleBtn");
+
+  let isActive = true; // La barre est visible par défaut
+
+  btn.addEventListener("click", () => {
+    // La barre Adsterra est généralement injectée dans un div avec id ou classe inconnue
+    // On essaye de la détecter
+    const bar = document.getElementById("adsterra_social_bar") || 
+                document.querySelector("div[style*='position:fixed'][style*='bottom']");
+
+    if(bar){
+      if(isActive){
+        bar.style.display = "none";      // désactive la barre
+        btn.textContent = "Activer la barre";
+      } else {
+        bar.style.display = "block";     // active la barre
+        btn.textContent = "Désactiver la barre";
+      }
+      isActive = !isActive;
+    } else {
+      console.log("Social bar non détectée pour l'instant...");
+    }
+  });
+</script>
+
+</body>
+</html>

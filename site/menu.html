@@ -45,6 +45,26 @@
         #main-nav button::after {content:"";position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,191,255,0.2);opacity:0;transition:0.3s;border-radius:15px;}
         #main-nav button:hover::after {opacity:1;}
         #main-nav button:hover {transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,191,255,0.3);}
+        
+        /* Style spécifique pour le bouton Admin */
+        #admin-button {
+            background: rgba(0, 191, 255, 0.1);
+            color: #00bfff;
+            border: 1px solid #00bfff;
+            padding: 10px 18px;
+            border-radius: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 16px;
+            margin-right: 5px;
+        }
+        #admin-button:hover {
+            background: #00bfff;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 191, 255, 0.5);
+        }
+
         #search_bar {padding:10px 18px;border-radius:15px;border:none;background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);outline:none;color:#eee;transition:0.3s;min-width:180px;}
         #search_bar:focus {background:rgba(0,191,255,0.1);box-shadow:0 0 10px #00bfff66;}
         #logout-button {background:rgba(255,255,255,0.05);backdrop-filter:blur(15px);color:#ff4d6d;border:2px solid #ff4d6d;padding:10px 18px;border-radius:15px;font-weight:bold;cursor:pointer;transition:0.3s;}
@@ -213,7 +233,6 @@
             pointer-events: all !important; 
         }
 
-        /* Style pour le bouton ACCEPTER lorsqu'il est en mode "téléportation" */
         #accept-cookies-button.teleporting {
             position: fixed; 
             z-index: 1002; 
@@ -223,7 +242,6 @@
             width: 165px; 
         }
         
-        /* Style pour le bouton ACCEPTER lorsqu'il est en mode "arrêt/rattrapable" */
         #accept-cookies-button.stopped {
             position: fixed; 
             pointer-events: all !important; 
@@ -231,7 +249,6 @@
             width: 165px; 
         }
 
-        /* Croix : Immobile et presque invisible (CLICABLE) */
         #close-cookie-modal {
             position: absolute; 
             top: 5px; 
@@ -346,7 +363,6 @@
             color: #ff4d6d;
         }
 
-        /* Conditions d'Utilisation */
         #terms-container {
             display: flex;
             align-items: center;
@@ -373,7 +389,7 @@
         }
 
         /* ----------------------------------- */
-        /* POPUP UPDATE - NOUVEAU */
+        /* POPUP UPDATE */
         /* ----------------------------------- */
         #update-modal-overlay {
             display: none; 
@@ -475,7 +491,6 @@
     <div id="quote-display"></div>
 </div>
 
-
 <div id="submit-modal-overlay" style="opacity: 0;">
     <div id="submit-modal">
         <button id="close-submit-modal" title="Fermer">&times;</button>
@@ -499,7 +514,6 @@
         </form>
     </div>
 </div>
-
 
 <div id="cookie-modal-overlay">
     <div id="cookie-modal">
@@ -525,17 +539,14 @@
 <script>
     const API_URL="https://project-3-api-2bgb.onrender.com";
     
-    // Dictionnaire de citations
     const quoteDictionary = [
         { quote: "Un grand poète a dit qui pète plus chie moins", author: "Peter Drucker" },  
         { quote: "Si gagner de l'argent était illegal, je serai en prison pour fetichisme", author: "Victor Hugo" },
         { quote: "Une de perdu, 10 de retrouvée", author: "Jane Austen" },
     ];
     
-    // --- GESTION DES MISES À JOUR (VERSION CLÉ) ---
     const CURRENT_UPDATE_VERSION = 'V0.1_1'; 
 
-    // Détail de la dernière mise à jour
     const lastUpdateSummary = `
 [SYS-UPDATE: V0.1 - 20/12/2025]
         
@@ -549,7 +560,6 @@
 * Correction coté server.
     `;
 
-    // Fonction pour obtenir une citation aléatoire
     function getRandomQuote() {
         const randomIndex = Math.floor(Math.random() * quoteDictionary.length);
         return quoteDictionary[randomIndex];
@@ -566,16 +576,25 @@
 
     const username = localStorage.getItem("username");
     const welcomeTitle = document.getElementById("welcomeTitle");
+    const mainNav = document.getElementById("main-nav");
 
     if (!username || username.trim() === "") {
         window.location.replace("index.html");
     } else {
         const usernametodisplay = username.toUpperCase();
         welcomeTitle.textContent = `🎮 ${usernametodisplay}`;
+
+        // LOGIQUE BOUTON ADMIN
+        const admins = ["yenigma3698", "maxbryx11", "admin"];
+        if (admins.includes(username.toLowerCase())) {
+            const adminBtn = document.createElement("button");
+            adminBtn.id = "admin-button";
+            adminBtn.textContent = "Admin";
+            adminBtn.onclick = () => { window.location.href = "admin.html"; };
+            mainNav.prepend(adminBtn);
+        }
     }
 
-
-    // --- LOGIQUE MASQUAGE/DÉMASQUAGE HOTBAR ---
     const mainHeader = document.getElementById('main-header');
     const DETECTION_ZONE_HEIGHT = 50; 
 
@@ -589,9 +608,7 @@
             mainHeader.classList.remove('show');
         }
     });
-    // ------------------------------------------
 
-    // --- LOGIQUE LOGOUT ---
     let isLoggingOut=false;
 
     async function handleLogoutAndRedirect(){
@@ -601,7 +618,6 @@
         localStorage.removeItem("username");
         localStorage.removeItem("cookies_accepted"); 
         
-        // Supprimer toutes les clés de mise à jour lues pour un "logout propre"
         Object.keys(localStorage).forEach(key => {
             if (key.startsWith('maj_read_')) {
                 localStorage.removeItem(key);
@@ -619,56 +635,40 @@
     }
     window.addEventListener('beforeunload',()=>logoutSilently());
 
-    // --- LOGIQUE AFFICHAGE DES JEUX ET INSERTION DE LA CITATION ---
     const grid=document.getElementById("gameGrid");
     const searchBar=document.getElementById("search_bar");
     const quoteAdSlot = document.getElementById('quote-ad-slot'); 
-    
-    // Stockage local des compteurs pour éviter les N/A au rafraîchissement
     let playCounters = {};
 
-    // Fonction pour envoyer une vue au serveur
     async function sendGameView(gameName) {
         try {
             await fetch(`${API_URL}/add1to_count?name=${encodeURIComponent(gameName)}`);
-            refreshPlayCounters(); // Optionnel : rafraîchir immédiatement après l'envoi
+            refreshPlayCounters();
         } catch (e) {
             console.error("Erreur envoi vue:", e);
         }
     }
 
-    // Fonction pour récupérer les compteurs depuis le serveur
     async function refreshPlayCounters() {
-    try {
-        const response = await fetch(`${API_URL}/get_play_counter`);
-        const result = await response.json();
-        
-        console.log("[DEBUG Server Response]", result);
-
-        if (result.status === "success" && result.data) {
-            // 1. On stocke les nouvelles valeurs du serveur dans l'objet global
-            result.data.forEach(item => {
-                playCounters[item.name] = item.counter;
-            });
-            
-            // 2. On parcourt chaque élément HTML qui affiche les vues
-            document.querySelectorAll('.play-count-text').forEach(p => {
-                // On récupère le titre affiché (Skull Arena, etc.)
-                const cardTitle = p.closest('.card-info').querySelector('.card-title').textContent;
-                
-                // On cherche dans votre constante 'games' l'objet qui a ce titre
-                const gameData = games.find(g => g.title === cardTitle);
-                
-                // Si on a trouvé le jeu et qu'on a un score pour son 'name'
-                if (gameData && playCounters[gameData.name] !== undefined) {
-                    p.textContent = `Vue : ${playCounters[gameData.name]}`;
-                }
-            });
+        try {
+            const response = await fetch(`${API_URL}/get_play_counter`);
+            const result = await response.json();
+            if (result.status === "success" && result.data) {
+                result.data.forEach(item => {
+                    playCounters[item.name] = item.counter;
+                });
+                document.querySelectorAll('.play-count-text').forEach(p => {
+                    const cardTitle = p.closest('.card-info').querySelector('.card-title').textContent;
+                    const gameData = games.find(g => g.title === cardTitle);
+                    if (gameData && playCounters[gameData.name] !== undefined) {
+                        p.textContent = `Vue : ${playCounters[gameData.name]}`;
+                    }
+                });
+            }
+        } catch (e) {
+            console.error("Erreur refreshPlayCounters:", e);
         }
-    } catch (e) {
-        console.error("Erreur refreshPlayCounters:", e);
     }
-}
 
     function updateQuote() {
         const quoteDisplay = document.getElementById('quote-display');
@@ -697,33 +697,20 @@
 
     function displayGames(filteredGames){
         grid.innerHTML="";
-        
         const gamesPerAdRow = 4;
         let quoteInserted = false;
         
         filteredGames.forEach((game, index) => {
             const card=document.createElement("div");
             card.className="card";
-            
-            if (!game.link) {
-                card.classList.add('disabled');
-            }
-
-            let imageStyle = `background-color: ${game.color};`; 
-            let iconHtml = '<div class="game-icon">🎮</div>'; 
-
-            if (game.img) {
-                imageStyle = `background-image: url('${game.img}');`;
-                iconHtml = ''; 
-            }
-
+            if (!game.link) card.classList.add('disabled');
+            let imageStyle = game.img ? `background-image: url('${game.img}');` : `background-color: ${game.color};`; 
+            let iconHtml = game.img ? '' : '<div class="game-icon">🎮</div>'; 
             const link=game.link?game.link:"#";
             const currentViews = playCounters[game.title] !== undefined ? playCounters[game.title] : "N/A";
             
             card.innerHTML=`
-            <div class="card-image" style="${imageStyle}">
-                ${iconHtml}
-            </div>
+            <div class="card-image" style="${imageStyle}">${iconHtml}</div>
             <div class="card-info">
                 <h3 class="card-title">${game.title}</h3>
                 <p class="card-genre">${game.genre}</p>
@@ -732,262 +719,83 @@
             </div>`;
             
             if (game.link) {
-                card.addEventListener('click', () => {
-                    sendGameView(game.name);
-                    window.location.href = link;
-                });
-            }
-            
-            const cardButton = card.querySelector('.card-button');
-             if (game.link) {
-                cardButton.addEventListener('click', (e) => {
-                    e.stopPropagation(); 
-                    sendGameView(game.title);
-                    window.location.href = link;
-                });
+                card.onclick = () => { sendGameView(game.name); window.location.href = link; };
+                card.querySelector('.card-button').onclick = (e) => { e.stopPropagation(); sendGameView(game.title); window.location.href = link; };
             }
 
             grid.appendChild(card);
-            
             if (index + 1 === gamesPerAdRow && filteredGames.length >= 5) {
                 grid.appendChild(quoteAdSlot);
                 quoteAdSlot.style.display = 'flex'; 
                 quoteInserted = true;
             }
         });
-        
-        if (!quoteInserted && quoteAdSlot.parentNode === grid) {
-             quoteAdSlot.remove();
-        }
-        
+        if (!quoteInserted && quoteAdSlot.parentNode === grid) quoteAdSlot.remove();
         anime({targets:'.card, .ad-card-container',opacity:[0,1],translateY:[30,0],delay:anime.stagger(100),duration:600,easing:'easeOutQuad'});
     }
     
-    function initQuoteSystem() {
-        updateQuote(); 
-        setInterval(updateQuote, 10000); 
-    }
-
-    // Lancement initial
     displayGames(games);
-    refreshPlayCounters()
-    initQuoteSystem(); 
-
-    // Refresh des compteurs toutes les 10 secondes
+    refreshPlayCounters();
+    updateQuote(); 
+    setInterval(updateQuote, 10000); 
     setInterval(refreshPlayCounters, 10000);
 
-    searchBar.addEventListener("input",()=>{
+    searchBar.oninput = () => {
         const text=searchBar.value.toLowerCase();
         displayGames(games.filter(g=>g.title.toLowerCase().startsWith(text))); 
-    });
+    };
 
-    /* SIDEBAR */
-    const friendsButton=document.getElementById("friends-button");
-    
-    function openFriendsPage() {
-        // Logique pour le bouton amis
-    }
-    friendsButton.addEventListener('click', openFriendsPage);
+    document.getElementById("friends-button").onclick = () => { /* Logique amis */ };
 
-    // ----------------------------------------------------
-    // --- GESTION DU FORMULAIRE DE SOUMISSION DE JEU ---
-    // ----------------------------------------------------
-    const submitGameButton = document.getElementById('submit-game-button');
     const submitModalOverlay = document.getElementById('submit-modal-overlay');
-    const closeSubmitModalButton = document.getElementById('close-submit-modal');
-    const submissionForm = document.getElementById('game-submission-form');
-    const termsLink = document.getElementById('view-terms-link');
-    
-    const termsAndConditions = `
-        Conditions d'Utilisation pour la soumission de jeu :
-
-        1. Propriété intellectuelle : En soumettant votre jeu, vous confirmez être le créateur et détenir tous les droits sur le contenu.
-        2. Modification : Vous accepter la modification et la perte de détention de ce jeu.
-        3. Licence : Vous accordez une licence non exclusive et gratuite pour tester et évaluer votre jeu.
-        4. Fichiers : Le lien de téléchargement fourni doit mener à un fichier exempt de virus et de logiciels malveillants.
-        5. Contact : Nous vous recontacterons via l'email fourni.
-
-        Merci d'avoir lu.
-    `;
-
-
-    function openSubmitModal() {
+    document.getElementById('submit-game-button').onclick = () => {
         submitModalOverlay.style.display = 'flex';
         anime({targets: submitModalOverlay, opacity: [0, 1], duration: 300, easing: 'easeOutQuad'});
-    }
+    };
+    document.getElementById('close-submit-modal').onclick = () => {
+        anime({targets: submitModalOverlay, opacity: [1, 0], duration: 300, easing: 'easeOutQuad', complete: () => { submitModalOverlay.style.display = 'none'; }});
+    };
 
-    function closeSubmitModal() {
-        anime({
-            targets: submitModalOverlay, 
-            opacity: [1, 0], 
-            duration: 300, 
-            easing: 'easeOutQuad', 
-            complete: () => {
-                submitModalOverlay.style.display = 'none';
-                submissionForm.reset(); 
-            }
-        });
-    }
+    document.getElementById('view-terms-link').onclick = (e) => { e.preventDefault(); alert("Conditions d'Utilisation..."); };
 
-    submitGameButton.addEventListener('click', openSubmitModal);
-    closeSubmitModalButton.addEventListener('click', closeSubmitModal);
-    submitModalOverlay.addEventListener('click', (e) => {
-        if (e.target === submitModalOverlay) {
-            closeSubmitModal();
-        }
-    });
-
-    termsLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        alert(termsAndConditions);
-    });
-
-    submissionForm.addEventListener('submit', async function(e) {
-        const termsAccepted = document.getElementById('terms-checkbox').checked;
-        if (!termsAccepted) {
-            alert("Veuillez accepter les Conditions d'Utilisation avant d'envoyer.");
-            e.preventDefault();
-            return;
-        }
-    });
-
-
-    // ----------------------------------------------------
-    // --- GESTION DU POPUP DE MISE À JOUR (VERSIONNÉE) ---
-    // ----------------------------------------------------
     const updateModalOverlay = document.getElementById('update-modal-overlay');
-    const updateContent = document.getElementById('update-content');
-    const closeUpdateModalButton = document.getElementById('close-update-modal');
-    
-    const LAST_VIEWED_UPDATE_KEY = `maj_read_${CURRENT_UPDATE_VERSION}`; 
-    const hasViewedUpdate = localStorage.getItem(LAST_VIEWED_UPDATE_KEY) === 'true';
-
+    const hasViewedUpdate = localStorage.getItem(`maj_read_${CURRENT_UPDATE_VERSION}`) === 'true';
     function showUpdateSummaryModal() {
-        if (hasViewedUpdate) {
-            return; 
-        }
-
-        updateContent.textContent = lastUpdateSummary;
+        if (hasViewedUpdate) return;
+        document.getElementById('update-content').textContent = lastUpdateSummary;
         updateModalOverlay.style.display = 'flex';
-        
-        anime({
-            targets: updateModalOverlay, 
-            opacity: [0, 1], 
-            duration: 500, 
-            easing: 'easeOutQuad'
-        });
+        anime({targets: updateModalOverlay, opacity: [0, 1], duration: 500, easing: 'easeOutQuad'});
     }
+    document.getElementById('close-update-modal').onclick = () => {
+        localStorage.setItem(`maj_read_${CURRENT_UPDATE_VERSION}`, 'true'); 
+        anime({targets: updateModalOverlay, opacity: [1, 0], duration: 400, easing: 'easeOutQuad', complete: () => { updateModalOverlay.style.display = 'none'; }});
+    };
 
-    function closeUpdateSummaryModal() {
-        localStorage.setItem(LAST_VIEWED_UPDATE_KEY, 'true'); 
-        anime({
-            targets: updateModalOverlay, 
-            opacity: [1, 0], 
-            duration: 400, 
-            easing: 'easeOutQuad', 
-            complete: () => {
-                updateModalOverlay.style.display = 'none';
-            }
-        });
-    }
-
-    closeUpdateModalButton.addEventListener('click', closeUpdateSummaryModal);
-    updateModalOverlay.addEventListener('click', (e) => {
-        if (e.target === updateModalOverlay) {
-            closeUpdateSummaryModal();
-        }
-    });
-
-
-    // ----------------------------------------------------
-    // --- GESTION DES COOKIES (AVEC VÉRIFICATION) ---
-    // ----------------------------------------------------
-    const isCookiesAccepted = localStorage.getItem('cookies_accepted') === 'true';
-
-    if (!isCookiesAccepted) {
+    if (localStorage.getItem('cookies_accepted') !== 'true') {
         const cookieOverlay = document.getElementById('cookie-modal-overlay');
         const acceptButton = document.getElementById('accept-cookies-button');
-        const closeButton = document.getElementById('close-cookie-modal');
-        
-        const MOVEMENT_INTERVAL = 50; 
         let teleportIntervalId = null;
-
-        function closeCookieModal(accept = false) {
-            if (accept) {
-                localStorage.setItem('cookies_accepted', 'true');
-            }
-            
-            if (teleportIntervalId) {
-                clearInterval(teleportIntervalId);
-                teleportIntervalId = null;
-            }
-            acceptButton.classList.remove('teleporting', 'stopped'); 
-            
-            anime({
-                targets: cookieOverlay, 
-                opacity: [1, 0], 
-                duration: 400, 
-                easing: 'easeOutQuad', 
-                complete: () => {
-                    cookieOverlay.style.display = 'none'; 
-                    showUpdateSummaryModal(); 
-                }
-            });
-        }
-
         function teleportButton() {
-            if (!acceptButton.classList.contains('teleporting')) {
-                return;
-            }
-
-            const buttonWidth = acceptButton.offsetWidth;
-            const buttonHeight = acceptButton.offsetHeight;
-            
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-
-            const xMax = Math.max(0, viewportWidth - buttonWidth);
-            const yMax = Math.max(0, viewportHeight - buttonHeight);
-
-            const newX = Math.random() * xMax;
-            const newY = Math.random() * yMax;
-
-            acceptButton.style.left = `${newX}px`;
-            acceptButton.style.top = `${newY}px`;
-            acceptButton.style.transform = 'none';
+            const xMax = window.innerWidth - acceptButton.offsetWidth;
+            const yMax = window.innerHeight - acceptButton.offsetHeight;
+            acceptButton.style.left = `${Math.random() * xMax}px`;
+            acceptButton.style.top = `${Math.random() * yMax}px`;
         }
-        
-        function startTeleportation() {
-            acceptButton.classList.remove('stopped'); 
+        acceptButton.onmouseover = () => {
             acceptButton.classList.add('teleporting');
-            
-            if (!teleportIntervalId) {
-                teleportIntervalId = setInterval(teleportButton, MOVEMENT_INTERVAL);
-                teleportButton(); 
-            }
-        }
-        
-        function stopTeleportation() {
-            if (teleportIntervalId) {
-                clearInterval(teleportIntervalId);
-                teleportIntervalId = null;
-            }
-            
-            acceptButton.classList.add('stopped');
-            acceptButton.classList.remove('teleporting');
-        }
-        
-        cookieOverlay.style.display = 'flex'; 
-        cookieOverlay.style.opacity = 0;
-        anime({targets: cookieOverlay, opacity: [0, 1], duration: 400, easing: 'easeOutQuad'});
-        
-        acceptButton.addEventListener('mouseover', startTeleportation);
-        acceptButton.addEventListener('mouseleave', stopTeleportation); 
-        closeButton.addEventListener('click', () => closeCookieModal(true));
-        acceptButton.addEventListener('click', (e) => e.preventDefault());
-        
-        const refuseButton = document.getElementById('refuse-cookies-button');
-        refuseButton.addEventListener('click', (e) => e.preventDefault());
+            if (!teleportIntervalId) teleportIntervalId = setInterval(teleportButton, 50);
+        };
+        acceptButton.onmouseleave = () => {
+            clearInterval(teleportIntervalId);
+            teleportIntervalId = null;
+            acceptButton.classList.replace('teleporting', 'stopped');
+        };
+        document.getElementById('close-cookie-modal').onclick = () => {
+            localStorage.setItem('cookies_accepted', 'true');
+            anime({targets: cookieOverlay, opacity: [1, 0], duration: 400, complete: () => { cookieOverlay.style.display = 'none'; showUpdateSummaryModal(); }});
+        };
+        cookieOverlay.style.display = 'flex';
+        anime({targets: cookieOverlay, opacity: [0, 1], duration: 400});
     } else {
         showUpdateSummaryModal(); 
     }

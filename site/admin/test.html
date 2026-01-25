@@ -43,39 +43,34 @@
 <script>
 const btn = document.getElementById("toggleBtn");
 let isActive = true;
-let bar = null;
 
 // Fonction pour détecter la barre Adsterra
 function detectBar() {
-  // Souvent la barre a un style fixed en bas ou un iframe
-  bar = document.querySelector("div[style*='position:fixed'][style*='bottom']") ||
-        document.querySelector("iframe[src*='effectivegatecpm.com']");
+  // Adsterra injecte généralement un div ou un iframe fixed en bas
+  const bar = document.querySelector("div[style*='position:fixed'][style*='bottom']") ||
+              document.querySelector("iframe[src*='effectivegatecpm.com']");
 
   if(bar){
     console.log("Social bar détectée !");
-    clearInterval(detectInterval); // stop l'intervalle une fois détectée
+    
+    // Bouton toggle
+    btn.onclick = () => {
+      if(isActive){
+        bar.style.display = "none";  // cache la barre
+        btn.textContent = "Activer la barre";
+      } else {
+        bar.style.display = "";      // réaffiche la barre (style original)
+        btn.textContent = "Désactiver la barre";
+      }
+      isActive = !isActive;
+    };
+
+    clearInterval(detectInterval); // stop la détection
   }
 }
 
-// On répète toutes les 500ms jusqu'à trouver la barre
+// Vérifie toutes les 500ms jusqu’à ce que la barre soit chargée
 const detectInterval = setInterval(detectBar, 500);
-
-// Bouton toggle
-btn.addEventListener("click", () => {
-  if(!bar){
-    console.log("Barre pas encore chargée...");
-    return;
-  }
-
-  if(isActive){
-    bar.style.display = "none";
-    btn.textContent = "Activer la barre";
-  } else {
-    bar.style.display = "block";
-    btn.textContent = "Désactiver la barre";
-  }
-  isActive = !isActive;
-});
 </script>
 
 </body>

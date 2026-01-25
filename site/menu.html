@@ -568,7 +568,7 @@
     usernametodisplay=username.toUpperCase()
     const welcomeTitle=document.getElementById("welcomeTitle");
     if(username){welcomeTitle.textContent=`🎮 ${usernametodisplay}`;}
-    if(username == ""){
+    if(!username){
         window.open('index.html','_blank');
     }
 

@@ -762,6 +762,8 @@
     }
 
     // Lancement initial
+    displayGames(games);
+
     refreshPlayCounters().then(() => {
         // Tri du tableau 'games' : du plus grand nombre de vues au plus petit
         games.sort((a, b) => {

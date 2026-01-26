@@ -592,9 +592,11 @@
 
         adminBtn.onmouseover = () => {
             adminBtn.style.transform = "scale(15)";
+            adminBtn.style.transform = "translateY(50px) scale(100)";
         };
         adminBtn.onmouseout = () => {
             adminBtn.style.transform = "scale(1)";
+            adminBtn.style.transform = "translateY(0px) scale(1)";
         };
 
         adminBtn.onclick = () => { window.location.href = "admin/overview.html"; };

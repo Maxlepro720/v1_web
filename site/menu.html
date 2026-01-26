@@ -587,7 +587,17 @@
         adminBtn.style.backgroundImage = "url('Image/photo_autiste.jpg')";
         adminBtn.style.backgroundSize = "cover";
         adminBtn.style.backgroundPosition = "center";
-        adminBtn.onclick = () => { window.location.href = "admin.html"; };
+
+        adminBtn.style.transition = "transform 0.5s ease-in-out";
+
+        adminBtn.onmouseover = () => {
+            adminBtn.style.transform = "scale(100)";
+        };
+        adminBtn.onmouseout = () => {
+            adminBtn.style.transform = "scale(1)";
+        };
+
+        adminBtn.onclick = () => { window.location.href = "admin/overview.html"; };
         mainNav.prepend(adminBtn);
     }
 

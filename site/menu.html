@@ -459,12 +459,12 @@
 <body>
 
 <header id="main-header">
-    <h1 id="welcomeTitle">Accueil</h1>
     <div class="money-container">
         <span class="currency-icon">🪙</span>
         <span id="money-amount"></span>1000</span>
         <button class="add-money-btn" title="Ajouter des fonds">+</button>
     </div>
+    <h1 id="welcomeTitle">Accueil</h1>
     <nav id="main-nav">
         <button id="submit-game-button">📧 Soumettre un jeu</button> 
         <input id="search_bar" placeholder="🔍 Rechercher un jeu...">
@@ -575,9 +575,6 @@
 
     if (!username || username.trim() === "") {
         window.location.replace("index.html");
-    } else {
-        const usernametodisplay = username.toUpperCase();
-        welcomeTitle.textContent = `🎮 ${usernametodisplay}`;
     }
     const mainNav = document.getElementById("main-nav");
     const p1_a = "ye", p1_b = "ni", p1_c = "gma", p1_d = "3698";

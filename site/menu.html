@@ -453,6 +453,50 @@
             box-shadow: 0 0 20px rgba(255,77,109,0.5);
             transform: scale(1.05);
         }
+        .money-container {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.08); /* Fond translucide comme tes boutons */
+            padding: 5px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 215, 0, 0.3); /* Bordure dorée subtile */
+            gap: 8px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .currency-icon {
+            font-size: 18px;
+            filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+        }
+
+        #money-amount {
+            color: #ffd700; /* Couleur or */
+            font-weight: bold;
+            font-size: 16px;
+            min-width: 30px;
+        }
+
+        .add-money-btn {
+            background: #63D945 !important; /* Vert pour l'ajout */
+            color: #000 !important;
+            border: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 6px !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0 !important; /* Reset du padding des autres boutons */
+            transition: 0.2s;
+        }
+
+        .add-money-btn:hover {
+            transform: scale(1.1);
+            background: #46b32b !important;
+        }
     </style>
     <script src="https://pl28508013.effectivegatecpm.com/ec/2e/43/ec2e438042425905f867b2e1db5a2620.js"></script>
 </head>
@@ -464,7 +508,6 @@
         <span id="money-amount"></span>1000</span>
         <button class="add-money-btn" title="Ajouter des fonds">+</button>
     </div>
-    <h1 id="welcomeTitle">Accueil</h1>
     <nav id="main-nav">
         <button id="submit-game-button">📧 Soumettre un jeu</button> 
         <input id="search_bar" placeholder="🔍 Rechercher un jeu...">

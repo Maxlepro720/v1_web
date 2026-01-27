@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Dash - Hardcore Mystery</title>
+    <style>
+        body { margin: 0; background-color: #050505; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        #game-container { position: relative; border: 2px solid #222; transition: filter 0.3s; overflow: hidden; }
+        canvas { display: block; background-color: #000; cursor: none; }
+        #ui { position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 5; }
+        .stat { font-size: 22px; font-weight: bold; color: #0ff; text-shadow: 0 0 10px #0ff; margin-bottom: 5px; }
+        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(0, 0, 0, 0.95); padding: 30px; border-radius: 15px; border: 1px solid #0ff; width: 340px; z-index: 100; }
+        h1 { color: #0ff; text-shadow: 0 0 15px #0ff; margin: 0 0 20px 0; letter-spacing: 2px; }
+        .btn-group { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 20px; }
+        button { background: transparent; color: #0ff; border: 2px solid #0ff; padding: 12px 20px; font-size: 16px; cursor: pointer; transition: 0.3s; width: 220px; font-weight: bold; }
+        button:hover { background: #0ff; color: #000; box-shadow: 0 0 20px #0ff; }
+        .exit-btn { border-color: #ff4444; color: #ff4444; }
+        .exit-btn:hover { background: #ff4444; color: #fff; box-shadow: 0 0 20px #ff4444; }
+        #status-msg { position: absolute; bottom: 50px; width: 100%; text-align: center; font-weight: bold; pointer-events: none; font-size: 24px; text-transform: uppercase; z-index: 5; height: 30px; }
+        
+        /* Effets Visuels */
+        .blur-effect { filter: blur(10px); }
+        #flashlight { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, transparent 10%, rgba(0,0,0,0.98) 25%);
+            display: none; pointer-events: none; z-index: 4;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="flashlight"></div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <div id="score" class="stat">Score: 0</div>
+            <div id="health" class="stat" style="color: #f0f;">Vie: 3</div>
+        </div>
+        <div id="status-msg"></div>
+
+        <div id="menu">
+            <h1 id="menu-title">NEON DASH</h1>
+            <p id="final-score" style="display:none; margin-bottom: 20px; font-size: 18px;"></p>
+            <div class="btn-group">
+                <button id="start-btn">JOUER</button>
+                <button id="exit-btn" class="exit-btn">QUITTER LE JEU</button>
+            </div>
+            <p style="font-size: 11px; color: #555; margin-top: 20px;">
+                11 Effets Mystères (Bonus & Malus)<br>Serez-vous assez chanceux ?
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const container = document.getElementById('game-container');
+        const flashlight = document.getElementById('flashlight');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('start-btn');
+        const exitBtn = document.getElementById('exit-btn');
+        const menu = document.getElementById('menu');
+        const statusMsg = document.getElementById('status-msg');
+
+        canvas.width = 800; canvas.height = 600;
+
+        let gameActive = false, isGameOver = false;
+        let score = 0, health = 3, frameCount = 0;
+        
+        let player = { 
+            x: 400, y: 300, radius: 12, 
+            speedMult: 1, inverted: false, 
+            visualRadius: 12, gravity: 0, scoreMult: 1
+        };
+        
+        let mouse = { x: 400, y: 300 };
+        let entities = [];
+        let globalEnemySpeedMult = 1;
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            let tx = e.clientX - rect.left;
+            let ty = e.clientY - rect.top;
+            if(player.inverted) {
+                mouse.x = canvas.width - tx;
+                mouse.y = canvas.height - ty;
+            } else {
+                mouse.x = tx;
+                mouse.y = ty;
+            }
+        });
+
+        class Entity {
+            constructor(type) {
+                this.type = type;
+                this.radius = type === 'enemy' ? Math.random() * 10 + 10 : 10;
+                this.spawn();
+                this.color = type === 'enemy' ? '#ff4444' : '#0ff';
+            }
+            spawn() {
+                if (Math.random() < 0.5) {
+                    this.x = Math.random() < 0.5 ? -30 : canvas.width + 30;
+                    this.y = Math.random() * canvas.height;
+                } else {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() < 0.5 ? -30 : canvas.height + 30;
+                }
+                this.updateVelocity();
+            }
+            updateVelocity() {
+                const angle = Math.atan2(player.y - this.y, player.x - this.x);
+                const baseSpeed = (this.type === 'enemy') ? 2.2 + (score/1500) : 1.8;
+                const finalSpeed = baseSpeed * (this.type === 'enemy' ? globalEnemySpeedMult : 1);
+                this.vx = Math.cos(angle) * finalSpeed;
+                this.vy = Math.sin(angle) * finalSpeed;
+            }
+            update() { this.x += this.vx; this.y += this.vy; }
+            draw() {
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
+                ctx.fillStyle = this.color; ctx.shadowBlur = 15; ctx.shadowColor = this.color;
+                ctx.fill(); ctx.shadowBlur = 0;
+            }
+        }
+
+        function applyEffect() {
+            const effects = [
+                // BONUS
+                { name: "SCORE +100", type: "bonus", action: () => { score += 100; }},
+                { name: "VITESSE RAPIDE", type: "bonus", action: () => { 
+                    player.speedMult = 2; setTimeout(() => player.speedMult = 1, 10000); 
+                }},
+                { name: "PETITE TAILLE", type: "bonus", action: () => { 
+                    player.visualRadius = 6; player.radius = 6; 
+                    setTimeout(() => { player.visualRadius = 12; player.radius = 12; }, 10000); 
+                }},
+                // MALUS ORIGINAUX
+                { name: "ÉCRAN FLOU", type: "malus", action: () => { 
+                    container.classList.add('blur-effect'); setTimeout(() => container.classList.remove('blur-effect'), 10000); 
+                }},
+                { name: "VITESSE RALENTIE", type: "malus", action: () => { 
+                    player.speedMult = 0.4; setTimeout(() => player.speedMult = 1, 10000); 
+                }},
+                { name: "COMMANDES INVERSÉES", type: "malus", action: () => { 
+                    player.inverted = true; setTimeout(() => player.inverted = false, 10000); 
+                }},
+                // NOUVEAUX MALUS (5)
+                { name: "BLACKOUT", type: "malus", action: () => { 
+                    flashlight.style.display = 'block'; setTimeout(() => flashlight.style.display = 'none', 10000); 
+                }},
+                { name: "GRAVITÉ INVERSÉE", type: "malus", action: () => { 
+                    player.gravity = -2; setTimeout(() => player.gravity = 0, 10000); 
+                }},
+                { name: "TAILLE GÉANTE", type: "malus", action: () => { 
+                    player.visualRadius = 40; player.radius = 35; 
+                    setTimeout(() => { player.visualRadius = 12; player.radius = 12; }, 10000); 
+                }},
+                { name: "ENNEMIS ENRAGÉS", type: "malus", action: () => { 
+                    globalEnemySpeedMult = 2.5; entities.forEach(e => e.updateVelocity());
+                    setTimeout(() => { globalEnemySpeedMult = 1; entities.forEach(e => e.updateVelocity()); }, 10000); 
+                }},
+                { name: "SCORE NÉGATIF", type: "malus", action: () => { 
+                    player.scoreMult = -2; setTimeout(() => player.scoreMult = 1, 10000); 
+                }}
+            ];
+
+            const effect = effects[Math.floor(Math.random() * effects.length)];
+            const color = effect.type === "bonus" ? "#0f0" : "#ff8800";
+            statusMsg.innerText = effect.name;
+            statusMsg.style.color = color;
+            effect.action();
+            setTimeout(() => { if(statusMsg.innerText === effect.name) statusMsg.innerText = ""; }, 2500);
+        }
+
+        function init() {
+            score = 0; health = 3; entities = []; frameCount = 0;
+            player.speedMult = 1; player.inverted = false; player.radius = 12; 
+            player.visualRadius = 12; player.gravity = 0; player.scoreMult = 1;
+            globalEnemySpeedMult = 1;
+            container.classList.remove('blur-effect');
+            flashlight.style.display = 'none';
+            isGameOver = false; gameActive = true;
+            menu.style.display = 'none';
+            animate();
+        }
+
+        function gameOver() {
+            gameActive = false; isGameOver = true;
+            menu.style.display = 'block';
+            document.getElementById('menu-title').innerText = "DÉFAITE";
+            document.getElementById('final-score').innerText = `SCORE FINAL : ${Math.floor(score)}`;
+            document.getElementById('final-score').style.display = 'block';
+            startBtn.innerText = "RETOUR MENU";
+            exitBtn.innerText = "QUITTER";
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Flashlight suit le joueur
+            if(flashlight.style.display === 'block') {
+                flashlight.style.background = `radial-gradient(circle at ${player.x}px ${player.y}px, transparent 8%, rgba(0,0,0,0.98) 20%)`;
+            }
+
+            // Mouvement
+            player.x += (mouse.x - player.x) * (0.15 * player.speedMult);
+            player.y += (mouse.y - player.y) * (0.15 * player.speedMult) + player.gravity;
+            
+            // Limites écran
+            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+
+            ctx.beginPath(); ctx.arc(player.x, player.y, player.visualRadius, 0, Math.PI*2);
+            ctx.fillStyle = '#fff'; ctx.shadowBlur = 15; ctx.shadowColor = '#fff';
+            ctx.fill(); ctx.shadowBlur = 0;
+
+            frameCount++;
+            if (frameCount % 35 === 0) entities.push(new Entity('enemy'));
+            if (frameCount % 180 === 0) entities.push(new Entity('mystery'));
+
+            entities.forEach((en, i) => {
+                en.update(); en.draw();
+                const dist = Math.hypot(player.x - en.x, player.y - en.y);
+                if (dist < player.radius + en.radius) {
+                    if (en.type === 'enemy') {
+                        health--; if (health <= 0) gameOver();
+                    } else {
+                        applyEffect();
+                    }
+                    entities.splice(i, 1);
+                }
+                if(en.x < -100 || en.x > canvas.width+100 || en.y < -100 || en.y > canvas.height+100) entities.splice(i, 1);
+            });
+
+            score += (0.1 * player.scoreMult);
+            if (score < 0) score = 0;
+            document.getElementById('score').innerText = `Score: ${Math.floor(score)}`;
+            document.getElementById('health').innerText = `Vie: ${health}`;
+        }
+
+        startBtn.addEventListener('click', () => {
+            if (isGameOver) {
+                isGameOver = false;
+                document.getElementById('menu-title').innerText = "NEON DASH";
+                document.getElementById('final-score').style.display = 'none';
+                startBtn.innerText = "JOUER";
+                exitBtn.innerText = "QUITTER LE JEU";
+            } else {
+                init();
+            }
+        });
+
+        exitBtn.addEventListener('click', () => {
+            if (isGameOver) window.location.reload();
+            else window.location.href = "../../menu.html";
+        });
+    </script>
+</body>
+</html>

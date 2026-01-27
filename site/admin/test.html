@@ -463,14 +463,14 @@ const MAPS = [
 ];
 
 const TOWER_TYPES = [
-    { name:"Canon", icon:"🔫", cost:100, damage:20, range:120, rate:30, color:"#e74c3c", type:"normal" },
-    { name:"Sniper", icon:"🎯", cost:200, damage:50, range:200, rate:90, color:"#3498db", type:"sniper" },
+    { name:"Canon", icon:"🔫", cost:50, damage:20, range:120, rate:30, color:"#e74c3c", type:"normal" },
+    { name:"Sniper", icon:"🎯", cost:200, damage:50, range:2000, rate:90, color:"#3498db", type:"sniper" },
     { name:"Splash", icon:"💣", cost:250, damage:30, range:100, rate:60, color:"#e67e22", type:"splash" },
     { name:"Slow", icon:"❄️", cost:150, damage:1, range:150, rate:20, color:"#9b59b6", type:"slow" },
     { name:"Mitrail", icon:"🔥", cost:180, damage:5, range:110, rate:5, color:"#c0392b", type:"normal" },
     { name:"Laser", icon:"⚡", cost:300, damage:15, range:180, rate:3, color:"#f1c40f", type:"line" },
     { name:"Poison", icon:"🧪", cost:350, damage:30, range:140, rate:120, color:"#1abc9c", type:"bottle" },
-    { name:"Tank", icon:"🛡️", cost:500, damage:50, range:0, rate:999, color:"#2ecc71", type:"tank" }
+    { name:"Tank", icon:"🛡️", cost:1500, damage:500, range:0, rate:300, color:"#2ecc71", type:"tank" }
 ];
 
 let game = {
@@ -509,10 +509,10 @@ class Enemy {
         this.x = path[0].x;
         this.y = path[0].y;
         this.isBoss = isBoss;
-        this.maxHp = isBoss ? 1000 + wave * 250 + wave * wave * 50 : 80 + wave * 25 + wave * wave * 5;
+        this.maxHp = isBoss ? 2000 + wave * 400 + wave * wave * 100 : 120 + wave * 40 + wave * wave * 10;
         this.hp = this.maxHp;
-        this.speed = isBoss ? 1.0 + wave * 0.05 : 1.8 + wave * 0.1;
-        this.reward = isBoss ? 300 + wave * 50 : 30 + wave * 5;
+        this.speed = isBoss ? 1.2 + wave * 0.08 : 2.0 + wave * 0.15;
+        this.reward = Math.round((isBoss ? 200 + wave * 40 : 20 + wave * 4)/6);
         this.slowTimer = 0;
         this.size = isBoss ? 25 : 12;
         this.color = isBoss ? "#8e44ad" : "#e74c3c";
@@ -639,7 +639,7 @@ class Tower {
     }
 
     getUpgradeCost() {
-        return Math.floor(this.cost * 0.5 * this.level);
+        return Math.floor(this.cost * 1.5 * this.level);
     }
 
     upgrade() {
@@ -710,13 +710,15 @@ class Tower {
         if (this.type === "tank") {
             const tankCount = this.level;
             for (let i = 0; i < tankCount; i++) {
-                const startPoint = game.currentMap.path[game.currentMap.path.length - 1];
-                game.projectiles.push(new Projectile(startPoint.x, startPoint.y, null, {
-                    damage: this.damage,
-                    color: this.color,
-                    path: game.currentMap.path,
-                    speed: 2
-                }, "tank"));
+                setTimeout(() => {
+                    const startPoint = game.currentMap.path[game.currentMap.path.length - 1];
+                    game.projectiles.push(new Projectile(startPoint.x, startPoint.y, null, {
+                        damage: this.damage,
+                        color: this.color,
+                        path: game.currentMap.path,
+                        speed: 2
+                    }, "tank"));
+                }, i * 800);
             }
         } else if (this.type === "sniper") {
             const angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
@@ -787,7 +789,7 @@ class Tower {
         ctx.restore();
         
         // Level indicator
-        if (this.level > 1) {
+        if (this.level > 2) {
             ctx.fillStyle = '#f1c40f';
             ctx.font = 'bold 14px Arial';
             ctx.textAlign = 'center';
@@ -1045,12 +1047,12 @@ function startGame(mapIndex) {
 function nextWave() {
     game.wave++;
     if (game.wave % 5 === 0) {
-        // Boss waves - 3 bosses au lieu de 1
-        game.enemiesToSpawn = 3;
+        // Boss waves - 5 bosses au lieu de 3
+        game.enemiesToSpawn = 5;
         game.isBossWave = true;
     } else {
-        // Regular waves - beaucoup plus d'ennemis avec progression exponentielle
-        game.enemiesToSpawn = 10 + Math.floor(game.wave * 5) + Math.floor(game.wave * game.wave * 0.5);
+        // Regular waves - progression exponentielle très agressive
+        game.enemiesToSpawn = 15 + Math.floor(game.wave * 8) + Math.floor(game.wave * game.wave * 1);
         game.isBossWave = false;
     }
     game.spawnTimer = 0;
@@ -1123,7 +1125,7 @@ function gameLoop() {
     for (let s = 0; s < game.speedMultiplier; s++) {
         if (game.enemiesToSpawn > 0) {
             game.spawnTimer++;
-            let spawnRate = game.isBossWave ? 120 : 60;
+            let spawnRate = game.isBossWave ? 100 : 40;
             if (game.spawnTimer > spawnRate) {
                 game.enemies.push(new Enemy(game.currentMap.path, game.wave, game.isBossWave));
                 game.enemiesToSpawn--;

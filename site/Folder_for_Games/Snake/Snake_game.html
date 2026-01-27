@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Snake</title>
+    <style>
+        :root { --primary: #2ed573; --bg: #0f172a; --gold: #f1c40f; --accent: #3498db; --dark: #1e293b; }
+        body {
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; margin: 0; background: var(--bg);
+            color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden;
+        }
+        #game-container { position: relative; width: 400px; height: 400px; }
+        
+        canvas { 
+            border: 4px solid var(--dark); 
+            border-radius: 12px; 
+            display: none; 
+            background: #000;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transition: box-shadow 0.5s ease;
+        }
+        
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.98); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; border-radius: 12px;
+            z-index: 10; padding: 20px; box-sizing: border-box;
+        }
+        
+        h1 { font-size: 2.8em; margin: 0 0 10px 0; color: var(--primary); text-shadow: 0 0 15px rgba(46, 213, 115, 0.4); }
+        .menu-buttons { display: flex; flex-direction: column; gap: 12px; width: 220px; }
+        
+        button {
+            border: none; padding: 14px; color: white; font-weight: bold; 
+            border-radius: 10px; cursor: pointer; transition: all 0.2s;
+            font-size: 1em; text-transform: uppercase;
+        }
+        
+        .btn-play { background: var(--primary); box-shadow: 0 4px 0 #26af5f; }
+        .btn-shop { background: var(--accent); box-shadow: 0 4px 0 #2980b9; }
+        .btn-quit { background: #e74c3c; box-shadow: 0 4px 0 #c0392b; }
+        .btn-back { background: #e74c3c; width: 100%; margin-top: 10px; box-shadow: 0 4px 0 #c0392b; }
+        
+        button:active { transform: translateY(2px); box-shadow: none; }
+
+        .tabs { display: flex; gap: 8px; margin-bottom: 15px; width: 100%; }
+        .tab-btn { flex: 1; padding: 10px; font-size: 0.7em; background: var(--dark); border-radius: 8px; cursor: pointer; border: none; color: white; }
+        .tab-btn.active { background: var(--accent); }
+
+        .shop-list { width: 100%; max-height: 200px; overflow-y: auto; margin-bottom: 5px; padding-right: 5px; }
+        .shop-item { 
+            background: #161e2e; padding: 12px; margin-bottom: 8px; border-radius: 10px;
+            display: flex; justify-content: space-between; align-items: center; border: 1px solid #334155;
+        }
+
+        .buy-btn { width: 100px; padding: 10px; font-size: 0.75em; border-radius: 8px; background: #34495e; color: white; border: none; cursor: pointer; font-weight: bold; }
+        .buy-btn.equipped { background: var(--gold); color: black; }
+
+        .hidden { display: none !important; }
+        
+        .stats-bar { 
+            position: absolute; top: -70px; width: 100%; 
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--dark); padding: 12px 20px; border-radius: 12px; box-sizing: border-box;
+            border-bottom: 3px solid rgba(255,255,255,0.1);
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div class="stats-bar">
+            <span>SCORE: <b id="score" style="color:var(--primary)">0</b></span>
+            <span>🏆 MEILLEUR: <b id="best-display" style="color:var(--accent)">0</b></span>
+            <span style="color:var(--primary)">SESSION UNIQUE</span>
+        </div>
+
+        <div id="main-menu" class="overlay">
+            <h1>SNAKE PRO</h1>
+            <div class="menu-buttons">
+                <button class="btn-play" onclick="startGame()">JOUER</button>
+                <button class="btn-shop" onclick="showSection('shop-menu')">APPARENCE</button>
+                <button class="btn-quit" onclick="window.open('../../menu.html','_self')">QUITTER</button>
+            </div>
+        </div>
+
+        <div id="shop-menu" class="overlay hidden">
+            <h2 style="margin-top:0">PERSONNALISER</h2>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="changeTab('food')">POMMES</button>
+                <button class="tab-btn" onclick="changeTab('snake')">SERPENTS</button>
+                <button class="tab-btn" onclick="changeTab('bg')">FONDS</button>
+            </div>
+            <div class="shop-list" id="shop-items"></div>
+            <button class="btn-back" onclick="showSection('main-menu')">RETOUR</button>
+        </div>
+
+        <canvas id="game" width="400" height="400"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("game");
+        const ctx = canvas.getContext("2d");
+
+        // Suppression de toute logique localStorage
+        let record = 0;
+        let equipped = { food: 0, snake: 10, bg: 20 };
+        let currentTab = 'food';
+        let particles = [];
+        let gameRunning = false;
+        let deathAnimation = false;
+
+        const inventory = [
+            { id: 0, cat: 'food', name: "Rouge", color: "#ff4757" },
+            { id: 1, cat: 'food', name: "Bleue", color: "#3498db" },
+            { id: 2, cat: 'food', name: "Émeraude", color: "#2ecc71" },
+            { id: 3, cat: 'food', name: "Dorée", color: "#f1c40f" },
+            { id: 4, cat: 'food', name: "Magma", color: "#e67e22" },
+            { id: 5, cat: 'food', name: "Néon", color: "#ff00ff" },
+            { id: 10, cat: 'snake', name: "Vert Classique", color: "#2ed573" },
+            { id: 11, cat: 'snake', name: "Bleu Nuit", color: "#1e3799" },
+            { id: 12, cat: 'snake', name: "Or Royal", color: "#f1c40f" },
+            { id: 13, cat: 'snake', name: "Fantôme", color: "#ecf0f1" },
+            { id: 14, cat: 'snake', name: "Cyber", color: "#00d2ff" },
+            { id: 15, cat: 'snake', name: "Rubis", color: "#d31027" },
+            { id: 20, cat: 'bg', name: "Abysse", color: "#000000" },
+            { id: 21, cat: 'bg', name: "Béton", color: "#1a1a1a" },
+            { id: 22, cat: 'bg', name: "Nébuleuse", color: "#2c003e" },
+            { id: 23, cat: 'bg', name: "Forêt", color: "#0a2f1f" },
+            { id: 24, cat: 'bg', name: "Océan", color: "#002b36" },
+            { id: 25, cat: 'bg', name: "Solaire", color: "#3e1f00" }
+        ];
+
+        function showSection(id) {
+            document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            if(id === 'shop-menu') renderShop();
+            updateUI();
+        }
+
+        function changeTab(cat) {
+            currentTab = cat;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            renderShop();
+        }
+
+        function renderShop() {
+            const container = document.getElementById("shop-items");
+            container.innerHTML = "";
+            inventory.filter(i => i.cat === currentTab).forEach(item => {
+                const isEquipped = equipped[item.cat] === item.id;
+                let btnText = isEquipped ? "ÉQUIPÉ" : "CHOISIR";
+                let btnClass = "buy-btn" + (isEquipped ? " equipped" : "");
+                
+                container.innerHTML += `
+                    <div class="shop-item">
+                        <div style="display:flex; flex-direction:column; text-align:left;">
+                            <span style="color:#ffffff; font-weight:bold; font-size:15px;">${item.name}</span>
+                        </div>
+                        <button class="${btnClass}" onclick="handleItem(${item.id})">${btnText}</button>
+                    </div>`;
+            });
+        }
+
+        function handleItem(id) {
+            const item = inventory.find(i => i.id === id);
+            equipped[item.cat] = id; 
+            renderShop(); 
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById("best-display").innerText = record;
+            const snkColor = inventory.find(i => i.id === equipped.snake).color;
+            canvas.style.boxShadow = `0 0 30px ${snkColor}44`;
+            canvas.style.borderColor = snkColor;
+        }
+
+        function createParticles(x, y, color, count = 8, speed = 10) {
+            for(let i=0; i<count; i++) {
+                particles.push({
+                    x: x, y: y, vx: (Math.random()-0.5)*speed, vy: (Math.random()-0.5)*speed, life: 1.0, color: color
+                });
+            }
+        }
+
+        let snake = [{x: 10, y: 10}], food = {x: 5, y: 5}, inputDirection = {x: 1, y: 0}, lastDir = {x: 1, y: 0}, score = 0, lastRender = 0;
+        
+        window.addEventListener("keydown", e => {
+            if(e.key === "ArrowUp" && lastDir.y === 0) inputDirection = {x:0, y:-1};
+            if(e.key === "ArrowDown" && lastDir.y === 0) inputDirection = {x:0, y:1};
+            if(e.key === "ArrowLeft" && lastDir.x === 0) inputDirection = {x:-1, y:0};
+            if(e.key === "ArrowRight" && lastDir.x === 0) inputDirection = {x:1, y:0};
+        });
+
+        function startGame() {
+            document.getElementById("main-menu").classList.add("hidden");
+            canvas.style.display = "block";
+            gameRunning = true; deathAnimation = false; score = 0; 
+            snake = [{x: 10, y: 10}];
+            inputDirection = {x: 1, y: 0};
+            document.getElementById("score").innerText = "0";
+            updateUI();
+            requestAnimationFrame(main);
+        }
+
+        function main(t) {
+            if(!gameRunning && !deathAnimation) return;
+            window.requestAnimationFrame(main);
+            if(deathAnimation) { updateParticlesOnly(); draw(); return; }
+            if((t - lastRender) / 1000 < 1/10) return;
+            lastRender = t; update(); draw();
+        }
+
+        function updateParticlesOnly() {
+            particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.02; });
+            particles = particles.filter(p => p.life > 0);
+            if(particles.length === 0) {
+                deathAnimation = false;
+                showSection('main-menu');
+                canvas.style.display = "none";
+            }
+        }
+
+        function update() {
+            lastDir = inputDirection;
+            const head = {x: snake[0].x + inputDirection.x, y: snake[0].y + inputDirection.y};
+            const hitWall = head.x<0 || head.x>=20 || head.y<0 || head.y>=20;
+            const hitSelf = snake.some((s, index) => index !== 0 && s.x === head.x && s.y === head.y);
+
+            if(hitWall || hitSelf){ gameOver(); return; }
+
+            snake.unshift(head);
+            if(head.x===food.x && head.y===food.y){
+                score++; 
+                createParticles(food.x*20+10, food.y*20+10, inventory.find(i=>i.id===equipped.food).color);
+                document.getElementById("score").innerText = score;
+                food = {x: Math.floor(Math.random()*20), y: Math.floor(Math.random()*20)};
+            } else { snake.pop(); }
+            
+            particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= 0.1; });
+            particles = particles.filter(p => p.life > 0);
+        }
+
+        function draw() {
+            const bg = inventory.find(i => i.id === equipped.bg).color;
+            const snk = inventory.find(i => i.id === equipped.snake).color;
+            const fd = inventory.find(i => i.id === equipped.food).color;
+            ctx.fillStyle = bg;
+            ctx.fillRect(0,0,400,400);
+
+            if(deathAnimation) {
+                ctx.fillStyle = "rgba(231, 76, 60, 0.4)";
+                ctx.fillRect(0,0,400,400);
+            }
+
+            ctx.strokeStyle = "rgba(255,255,255,0.03)";
+            for(let i=0; i<400; i+=20) {
+                ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,400); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(400,i); ctx.stroke();
+            }
+            
+            if(!deathAnimation) {
+                ctx.shadowBlur = 15; ctx.shadowColor = fd; ctx.fillStyle = fd;
+                ctx.beginPath(); ctx.arc(food.x*20+10, food.y*20+10, 8, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0;
+
+                snake.forEach((s, i) => {
+                    ctx.fillStyle = snk;
+                    ctx.globalAlpha = (i === 0) ? 1.0 : 0.6;
+                    if(i===0) { ctx.shadowBlur = 10; ctx.shadowColor = snk; }
+                    ctx.beginPath(); ctx.roundRect(s.x*20+1, s.y*20+1, 18, 18, 5); ctx.fill();
+                    ctx.shadowBlur = 0; ctx.globalAlpha = 1.0;
+                });
+            }
+
+            particles.forEach(p => {
+                ctx.fillStyle = p.color; ctx.globalAlpha = p.life;
+                ctx.fillRect(p.x, p.y, 4, 4);
+            });
+            ctx.globalAlpha = 1.0;
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            deathAnimation = true;
+            const snkColor = inventory.find(i => i.id === equipped.snake).color;
+            createParticles(snake[0].x*20+10, snake[0].y*20+10, "#ffffff", 30, 15);
+            createParticles(snake[0].x*20+10, snake[0].y*20+10, snkColor, 30, 10);
+            
+            if(score > record) { record = score; }
+            updateUI();
+        }
+        updateUI();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyseur de Conscience V3</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Creepster&family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --paradise-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --paradise-light: #a8edea;
+            --paradise-glow: rgba(102, 126, 234, 0.5);
+            
+            --hell-red: #8B0000;
+            --hell-black: #0a0000;
+            --blood-drip: #660000;
+            --glitch-green: #00ff41;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background 0.8s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ===== MENU PRINCIPAL (MYSTÉRIEUX ET ÉLÉGANT) ===== */
+        body.menu-mode {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 20s ease infinite;
+            overflow: hidden;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* Effet de brouillard */
+        body.menu-mode::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at 20% 30%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(139, 0, 0, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            animation: fogMove 30s ease-in-out infinite;
+        }
+
+        @keyframes fogMove {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-20px, 20px); }
+        }
+
+        #app-card {
+            width: 90%;
+            max-width: 850px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            padding: 50px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 10;
+        }
+
+        .menu-card {
+            background: linear-gradient(135deg, rgba(15, 32, 39, 0.98) 0%, rgba(32, 58, 67, 0.98) 50%, rgba(44, 83, 100, 0.98) 100%) !important;
+            color: white;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            box-shadow: 
+                0 40px 100px rgba(0, 0, 0, 0.6),
+                0 0 100px rgba(102, 126, 234, 0.2),
+                inset 0 0 80px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .menu-card h1 {
+            font-size: 3.5rem;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            font-weight: 900;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            animation: shimmer 3s linear infinite;
+            text-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+            font-family: 'Playfair Display', serif;
+        }
+
+        @keyframes shimmer {
+            to { background-position: 200% center; }
+        }
+
+        .menu-card p {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #c0d0e0;
+            margin-bottom: 50px;
+            line-height: 1.8;
+            font-weight: 300;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .menu-card p strong {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .btn-start-normal {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px;
+            font-weight: 700;
+            width: 100%;
+            padding: 25px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-top: 20px;
+            font-size: 1.2rem;
+            box-shadow: 
+                0 15px 40px rgba(102, 126, 234, 0.4),
+                0 0 20px rgba(102, 126, 234, 0.2);
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .btn-start-normal::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-start-normal:hover::before {
+            width: 500px;
+            height: 500px;
+        }
+
+        .btn-start-normal:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 
+                0 20px 60px rgba(102, 126, 234, 0.6),
+                0 0 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-start-normal:active {
+            transform: translateY(-2px) scale(0.98);
+        }
+
+        .btn-start-hard {
+            background: linear-gradient(135deg, rgba(139, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.8) 100%);
+            color: #ff4444;
+            border: 3px solid #660000;
+            padding: 25px;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: 700;
+            margin-top: 20px;
+            font-size: 1.15rem;
+            border-radius: 16px;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            box-shadow: 
+                0 10px 30px rgba(139, 0, 0, 0.3),
+                inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-start-hard::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 0, 0, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-start-hard:hover::before {
+            left: 100%;
+        }
+
+        .btn-start-hard:hover {
+            background: linear-gradient(135deg, rgba(139, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.9) 100%);
+            color: #ff0000;
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 
+                0 15px 50px rgba(255, 0, 0, 0.6),
+                0 0 60px rgba(255, 0, 0, 0.4),
+                inset 0 0 30px rgba(139, 0, 0, 0.3);
+            border-color: #ff0000;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        .btn-start-hard:active {
+            transform: translateY(-2px) scale(0.98);
+        }
+
+        /* ===== MODE NORMAL (PARADIS) ===== */
+        body.mode-normal {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            animation: paradiseFloat 20s ease infinite;
+        }
+
+        @keyframes paradiseFloat {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* Particules flottantes */
+        .paradise-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: radial-gradient(circle, rgba(255,255,255,0.8), transparent);
+            border-radius: 50%;
+            animation: float 10s infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); }
+            25% { transform: translateY(-100px) translateX(50px); }
+            50% { transform: translateY(-200px) translateX(-30px); }
+            75% { transform: translateY(-100px) translateX(40px); }
+        }
+
+        .ui-normal {
+            background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%) !important;
+            box-shadow: 0 40px 100px var(--paradise-glow), 0 0 80px rgba(168, 237, 234, 0.3) !important;
+            border: 3px solid rgba(102, 126, 234, 0.2) !important;
+        }
+
+        .ui-normal h1 {
+            color: #667eea;
+            font-size: 2.8rem;
+            text-align: center;
+            font-family: 'Playfair Display', serif;
+            text-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .ui-normal h2 {
+            color: #764ba2;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .ui-normal .option-btn {
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            transition: all 0.3s;
+            color: #333;
+        }
+
+        .ui-normal .option-btn:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        /* ===== MODE HARD (ENFER) ===== */
+        body.mode-hard {
+            background: var(--hell-black);
+            cursor: crosshair;
+            animation: backgroundPulse 3s infinite;
+        }
+
+        @keyframes backgroundPulse {
+            0%, 100% { background-color: #0a0000; }
+            50% { background-color: #140000; }
+        }
+
+        /* Effet de grain/static */
+        body.mode-hard::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,0,0,.03) 2px, rgba(255,0,0,.03) 4px);
+            pointer-events: none;
+            z-index: 1;
+            animation: scanlines 0.1s linear infinite;
+        }
+
+        @keyframes scanlines {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(4px); }
+        }
+
+        /* Glitch overlay */
+        .glitch-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+            mix-blend-mode: overlay;
+            opacity: 0;
+        }
+
+        .glitch-active {
+            animation: glitchFlash 0.3s infinite;
+        }
+
+        @keyframes glitchFlash {
+            0%, 100% { opacity: 0; }
+            10%, 30%, 50%, 70%, 90% { 
+                opacity: 1;
+                background: linear-gradient(90deg, 
+                    transparent 0%, 
+                    rgba(255,0,0,0.1) 25%, 
+                    transparent 50%, 
+                    rgba(0,255,0,0.1) 75%, 
+                    transparent 100%);
+            }
+        }
+
+        .ui-hard {
+            background: #000000 !important;
+            color: #8B0000 !important;
+            border: 3px solid var(--blood-drip) !important;
+            box-shadow: 
+                0 0 80px rgba(139, 0, 0, 0.6),
+                inset 0 0 50px rgba(0, 0, 0, 0.8) !important;
+            font-family: 'Courier New', monospace;
+            position: relative;
+            animation: cardShake 0.5s infinite;
+        }
+
+        @keyframes cardShake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            10% { transform: translate(-2px, -2px) rotate(-0.5deg); }
+            20% { transform: translate(2px, 2px) rotate(0.5deg); }
+            30% { transform: translate(-2px, 2px) rotate(-0.5deg); }
+            40% { transform: translate(2px, -2px) rotate(0.5deg); }
+            50% { transform: translate(-2px, -2px) rotate(-0.5deg); }
+            60% { transform: translate(2px, 2px) rotate(0.5deg); }
+            70% { transform: translate(-2px, 2px) rotate(-0.5deg); }
+            80% { transform: translate(2px, -2px) rotate(0.5deg); }
+            90% { transform: translate(-2px, -2px) rotate(-0.5deg); }
+        }
+
+        .ui-hard h1 {
+            color: #ff0000;
+            text-shadow: 
+                0 0 10px #ff0000,
+                0 0 20px #ff0000,
+                0 0 30px #8B0000;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            text-align: center;
+            font-family: 'Creepster', cursive;
+            font-size: 3rem;
+            animation: textGlitch 0.3s infinite;
+        }
+
+        @keyframes textGlitch {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); text-shadow: 2px -2px 0 #00ff00, -2px 2px 0 #ff0000; }
+            40% { transform: translate(-2px, -2px); text-shadow: 2px 2px 0 #00ff00, -2px -2px 0 #ff0000; }
+            60% { transform: translate(2px, 2px); text-shadow: -2px -2px 0 #00ff00, 2px 2px 0 #ff0000; }
+            80% { transform: translate(2px, -2px); text-shadow: -2px 2px 0 #00ff00, 2px -2px 0 #ff0000; }
+        }
+
+        .ui-hard h2 {
+            color: #ff0000;
+            font-family: 'Courier New', monospace;
+        }
+
+        .ui-hard .option-btn {
+            background: #0a0000;
+            border: 2px solid #660000;
+            color: #8B0000;
+            font-family: 'Courier New', monospace;
+            transition: all 0.2s;
+        }
+
+        .ui-hard .option-btn:hover {
+            background: #660000;
+            border-color: #ff0000;
+            color: #ff0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+            transform: scale(1.05);
+        }
+
+        /* Screamer - Image qui apparaît */
+        .screamer {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            width: 90vw;
+            height: 90vh;
+            max-width: 800px;
+            max-height: 800px;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            border: 8px solid #ff0000;
+            box-shadow: 0 0 150px rgba(255, 0, 0, 1), inset 0 0 100px rgba(0, 0, 0, 0.8);
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .screamer.active {
+            animation: screamerAppear 0.1s forwards, screamerShake 0.5s infinite;
+        }
+
+        @keyframes screamerAppear {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1.1) rotate(0deg); opacity: 1; }
+        }
+
+        @keyframes screamerShake {
+            0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+            10% { transform: translate(-48%, -52%) rotate(-5deg); }
+            20% { transform: translate(-52%, -48%) rotate(5deg); }
+            30% { transform: translate(-49%, -51%) rotate(-3deg); }
+            40% { transform: translate(-51%, -49%) rotate(3deg); }
+            50% { transform: translate(-50%, -50%) rotate(0deg); }
+            60% { transform: translate(-52%, -51%) rotate(-4deg); }
+            70% { transform: translate(-48%, -49%) rotate(4deg); }
+            80% { transform: translate(-51%, -50%) rotate(-2deg); }
+            90% { transform: translate(-49%, -50%) rotate(2deg); }
+        }
+
+        .screamer svg {
+            width: 100%;
+            height: 100%;
+            filter: contrast(1.5) brightness(1.2);
+            animation: pulse 0.1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { filter: contrast(1.5) brightness(1.2) hue-rotate(0deg); }
+            50% { filter: contrast(2) brightness(0.8) hue-rotate(10deg); }
+        }
+
+        /* ===== ÉLÉMENTS COMMUNS ===== */
+        .hidden { display: none; }
+        
+        .progress-container {
+            width: 100%;
+            background: #1a1a1a;
+            height: 8px;
+            border-radius: 10px;
+            margin: 25px 0;
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        #progress-bar {
+            height: 100%;
+            width: 0%;
+            transition: width 0.4s ease;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .question-box h2 {
+            font-size: 1.5rem;
+            min-height: 80px;
+            text-align: center;
+            margin-bottom: 30px;
+            line-height: 1.4;
+        }
+
+        .options-grid {
+            display: grid;
+            gap: 14px;
+        }
+
+        .option-btn {
+            padding: 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.05rem;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        #result-screen {
+            text-align: center;
+            animation: fadeIn 1.5s;
+        }
+
+        .result-title {
+            font-size: 3rem;
+            margin: 30px 0;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #btn-back {
+            margin-top: 20px;
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        #btn-back:hover {
+            opacity: 1;
+        }
+
+        /* Blood drip effect for hard mode */
+        .blood-drip {
+            position: fixed;
+            top: -50px;
+            width: 2px;
+            height: 50px;
+            background: linear-gradient(to bottom, transparent, #8B0000);
+            opacity: 0;
+            animation: drip 2s infinite;
+        }
+
+        @keyframes drip {
+            0% { top: -50px; opacity: 1; }
+            100% { top: 100vh; opacity: 0; }
+        }
+    </style>
+</head>
+<body class="menu-mode">
+
+<!-- Overlay pour les glitches -->
+<div class="glitch-overlay" id="glitchOverlay"></div>
+
+<!-- Screamer (tête de monstre) -->
+<div class="screamer" id="screamer">
+    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <!-- Fond sanglant -->
+        <rect width="400" height="400" fill="#0a0000"/>
+        
+        <!-- Tête déformée -->
+        <ellipse cx="200" cy="200" rx="120" ry="140" fill="#1a3d1a" stroke="#000" stroke-width="3"/>
+        <ellipse cx="200" cy="200" rx="110" ry="130" fill="#2d5a2d"/>
+        
+        <!-- Texture peau pourrie -->
+        <circle cx="160" cy="180" r="15" fill="#1a2a1a" opacity="0.7"/>
+        <circle cx="240" cy="190" r="12" fill="#1a2a1a" opacity="0.7"/>
+        <circle cx="200" cy="160" r="10" fill="#0d1a0d" opacity="0.8"/>
+        <circle cx="180" cy="220" r="14" fill="#1a2a1a" opacity="0.6"/>
+        
+        <!-- Yeux exorbités ÉNORMES -->
+        <ellipse cx="165" cy="170" rx="35" ry="45" fill="#fff" stroke="#000" stroke-width="3"/>
+        <ellipse cx="235" cy="170" rx="35" ry="45" fill="#fff" stroke="#000" stroke-width="3"/>
+        
+        <!-- Pupilles dilatées folles -->
+        <circle cx="165" cy="175" r="25" fill="#000"/>
+        <circle cx="235" cy="175" r="25" fill="#000"/>
+        
+        <!-- Reflets de folie -->
+        <circle cx="172" cy="168" r="8" fill="#ff0000" opacity="0.8"/>
+        <circle cx="242" cy="168" r="8" fill="#ff0000" opacity="0.8"/>
+        <circle cx="160" cy="165" r="4" fill="#fff"/>
+        <circle cx="230" cy="165" r="4" fill="#fff"/>
+        
+        <!-- Veines rouges dans les yeux -->
+        <line x1="145" y1="160" x2="155" y2="170" stroke="#8B0000" stroke-width="2"/>
+        <line x1="185" y1="155" x2="175" y2="165" stroke="#8B0000" stroke-width="2"/>
+        <line x1="215" y1="160" x2="225" y2="170" stroke="#8B0000" stroke-width="2"/>
+        <line x1="255" y1="155" x2="245" y2="165" stroke="#8B0000" stroke-width="2"/>
+        
+        <!-- Nez arraché/trou béant -->
+        <ellipse cx="200" cy="210" rx="15" ry="20" fill="#000"/>
+        <ellipse cx="195" cy="208" rx="8" ry="10" fill="#4a0000"/>
+        <ellipse cx="205" cy="208" rx="8" ry="10" fill="#4a0000"/>
+        
+        <!-- Bouche déchirée IMMENSE -->
+        <path d="M 140 250 Q 200 300, 260 250" stroke="#000" stroke-width="4" fill="none"/>
+        <path d="M 140 250 Q 200 295, 260 250 Q 200 280, 140 250" fill="#1a0000"/>
+        
+        <!-- Dents pourries -->
+        <rect x="145" y="245" width="8" height="20" fill="#fff8dc" stroke="#000"/>
+        <rect x="158" y="248" width="8" height="18" fill="#fff8dc" stroke="#000"/>
+        <rect x="171" y="250" width="8" height="16" fill="#8B4513" stroke="#000"/>
+        <rect x="184" y="252" width="8" height="20" fill="#fff8dc" stroke="#000"/>
+        <rect x="197" y="252" width="8" height="18" fill="#fff8dc" stroke="#000"/>
+        <rect x="210" y="250" width="8" height="16" fill="#8B4513" stroke="#000"/>
+        <rect x="223" y="248" width="8" height="19" fill="#fff8dc" stroke="#000"/>
+        <rect x="236" y="246" width="8" height="21" fill="#fff8dc" stroke="#000"/>
+        <rect x="249" y="245" width="8" height="20" fill="#8B4513" stroke="#000"/>
+        
+        <!-- Langue pendante -->
+        <ellipse cx="200" cy="280" rx="20" ry="30" fill="#8B0000"/>
+        <ellipse cx="200" cy="285" rx="18" ry="25" fill="#a00000"/>
+        
+        <!-- Sang qui coule -->
+        <path d="M 150 265 L 148 285 L 152 285 Z" fill="#8B0000"/>
+        <path d="M 180 268 L 178 295 L 182 295 Z" fill="#660000"/>
+        <path d="M 220 270 L 218 300 L 222 300 Z" fill="#8B0000"/>
+        <path d="M 250 266 L 248 290 L 252 290 Z" fill="#660000"/>
+        
+        <!-- Cicatrices et blessures -->
+        <line x1="130" y1="190" x2="150" y2="200" stroke="#660000" stroke-width="3"/>
+        <line x1="250" y1="195" x2="270" y2="185" stroke="#660000" stroke-width="3"/>
+        <line x1="180" y1="140" x2="200" y2="150" stroke="#4a0000" stroke-width="2"/>
+        
+        <!-- Asticots -->
+        <ellipse cx="145" cy="185" rx="3" ry="6" fill="#f0e68c"/>
+        <ellipse cx="255" cy="192" rx="3" ry="6" fill="#f0e68c"/>
+        
+        <!-- Texte DÉMENT -->
+        <text x="200" y="360" font-family="Creepster, cursive" font-size="40" fill="#ff0000" text-anchor="middle" style="filter: blur(1px);">REGARDE-MOI</text>
+    </svg>
+</div>
+
+<div id="app-card" class="menu-card">
+    <div id="screen-welcome">
+        <h1>Analyseur de Conscience</h1>
+        <p>Deux protocoles. Deux dimensions. <strong>Un seul choix vous définira.</strong><br>
+        Quelle vérité êtes-vous prêt à découvrir ?</p>
+        <button class="btn-start-normal" onclick="playTransitionSound(); setTimeout(() => startTest('normal'), 200)">✨ Protocole Lumière</button>
+        <button class="btn-start-hard" onclick="playDarkTransitionSound(); setTimeout(() => startTest('hard'), 200)">⚠ Protocole Interdit</button>
+    </div>
+
+    <div id="screen-quiz" class="hidden">
+        <div class="progress-container"><div id="progress-bar"></div></div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; opacity: 0.6; margin-bottom: 15px;">
+            <span id="label-step">Question 1/30</span>
+            <span id="label-mode">SYSTÈME: ACTIF</span>
+        </div>
+        <div class="question-box">
+            <h2 id="question-text">Préparation des données...</h2>
+            <div class="options-grid" id="options-list">
+                <button class="option-btn" onclick="submitAnswer(2)">Totalement d'accord</button>
+                <button class="option-btn" onclick="submitAnswer(1)">Plutôt d'accord</button>
+                <button class="option-btn" onclick="submitAnswer(0)">Neutre / Incertain</button>
+                <button class="option-btn" onclick="submitAnswer(-1)">Plutôt en désaccord</button>
+                <button class="option-btn" onclick="submitAnswer(-2)">Absolument pas</button>
+            </div>
+        </div>
+        <button id="btn-back" onclick="if(modeActuel === 'hard') playDarkClickSound(); else playClickSound(); previousQuestion();" style="visibility:hidden;">← Retour</button>
+    </div>
+
+    <div id="result-screen" class="hidden">
+        <h3 id="res-header" style="font-size: 1.3rem; margin-bottom: 10px;">ANALYSE COMPLÈTE</h3>
+        <div class="result-title" id="res-name">PROFIL</div>
+        <p id="res-desc" style="line-height: 1.8; max-width: 650px; margin: 20px auto; font-size: 1.1rem;"></p>
+        <button class="btn-start-normal" onclick="location.reload()" style="max-width:320px; margin-top: 30px;">Recommencer l'analyse</button>
+    </div>
+</div>
+
+<script>
+    const PAGE_ID = "9700"; 
+
+    (async function() {
+        const API_URL_verif_version = "https://project-3-api-2bgb.onrender.com/get_latest_version";
+        console.log('[verif version] Demarrage')
+        try {
+            // 1. Appel de la nouvelle route optimisée
+            const response = await fetch(API_URL_verif_version);
+            const result = await response.json();
+            
+            // On vérifie que la requête a réussi et qu'on a une donnée
+            if (result.status !== "success" || !result.data) return;
+
+            const latestVersion = String(result.data.Version);
+            const savedVersion = localStorage.getItem(`version_${PAGE_ID}`);
+
+            // Première visite : on enregistre la version actuelle sans bloquer
+            if (!savedVersion) {
+                localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
+                return;
+            }
+
+            // Comparaison
+            if (savedVersion !== latestVersion) {
+                // Sécurité pour Ctrl+R / F5
+                window.onbeforeunload = function() {
+                    localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
+                };
+
+                // Écran noir bloquant
+                document.body.innerHTML = `
+                    <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:black;color:white;display:flex;justify-content:center;align-items:center;z-index:1000000;flex-direction:column;font-family:sans-serif;text-align:center;padding:20px;">
+                        <h1 style="font-size:32px;margin-bottom:15px;color:#00bfff;">Mise à jour requise</h1>
+                        <p style="color:#aaa;max-width:500px;line-height:1.6;">La version ${latestVersion} est disponible. Veuillez recharger la page pour appliquer les changements.</p>
+                        <button id="btn-update-now" style="margin-top:30px;padding:15px 40px;cursor:pointer;background:#00bfff;border:none;color:white;font-weight:bold;border-radius:12px;font-size:16px;box-shadow: 0 10px 20px rgba(0,191,255,0.3);">
+                            Mettre à jour et Recharger
+                        </button>
+                    </div>`;
+                
+                document.getElementById('btn-update-now').addEventListener('click', function() {
+                    localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
+                    window.location.reload(true);
+                });
+
+                throw new Error("Mise à jour bloquante");
+            }
+        } catch (error) {
+            if (error.message !== "Mise à jour bloquante") console.error("Erreur version:", error);
+        }
+    })();
+    // --- DONNÉES ---
+    const qNormal = [
+        "Vous trouvez facile de rester concentré même sous pression.",
+        "Vous préférez avoir un plan détaillé plutôt que d'improviser.",
+        "Aider les autres vous procure un sentiment de satisfaction profonde.",
+        "Vous aimez analyser les choses sous tous leurs angles avant d'agir.",
+        "Le succès pour vous passe avant tout par l'harmonie sociale.",
+        "Vous êtes souvent celui qui prend les décisions dans un groupe.",
+        "Vous vous considérez plus comme un rêveur que comme un réaliste.",
+        "Vous avez besoin de moments de solitude pour recharger vos batteries.",
+        "L'ordre et la propreté sont essentiels pour votre bien-être.",
+        "Vous faites plus confiance à votre intuition qu'aux statistiques.",
+        "Vous gardez votre calme face aux conflits.",
+        "Vous vous adaptez facilement aux changements imprévus.",
+        "Vous cherchez souvent le sens profond des choses.",
+        "Vous êtes motivé par des objectifs à long terme.",
+        "Vous avez tendance à éviter les confrontations directes.",
+        "Vous êtes attentif aux détails.",
+        "Vous aimez apprendre de nouvelles compétences.",
+        "Vous remettez régulièrement vos choix en question.",
+        "Vous ressentez facilement la pression sociale.",
+        "Vous vous fiez à votre expérience passée pour décider.",
+        "Vous êtes à l'aise pour exprimer vos émotions.",
+        "Vous valorisez la stabilité plus que l'aventure.",
+        "Vous prenez le temps de réfléchir avant de parler.",
+        "Vous aimez comprendre le fonctionnement des autres.",
+        "Vous êtes sensible aux critiques.",
+        "Vous aimez travailler en équipe.",
+        "Vous êtes persévérant face à l'échec.",
+        "Vous avez une forte conscience morale.",
+        "Vous aimez structurer votre quotidien.",
+        "Vous êtes curieux de nature.",
+        "Vous cherchez à vous améliorer constamment.",
+        "Vous êtes à l'écoute de vos besoins émotionnels.",
+        "Vous préférez la coopération à la compétition.",
+        "Vous êtes influencé par l'ambiance autour de vous.",
+        "Vous avez une bonne maîtrise de vous-même.",
+        "Vous acceptez facilement vos erreurs.",
+        "Vous êtes optimiste concernant l'avenir.",
+        "Vous accordez de l'importance à l'équilibre personnel.",
+        "Vous vous sentez responsable de vos choix.",
+        "Vous cherchez à comprendre avant de juger."
+    ];
+
+    const qHard = [
+        "La souffrance d'un ennemi est une forme de justice légitime.",
+        "Vous seriez prêt à sacrifier l'humanité pour votre propre survie.",
+        "Les lois ne sont que des suggestions pour ceux qui ont le pouvoir.",
+        "Le chaos est la seule vérité absolue dans cet univers.",
+        "Vous éprouvez du mépris pour la faiblesse émotionnelle des autres.",
+        "La fin justifie toujours les moyens, peu importe la morale.",
+        "Vous vous sentez déconnecté de l'espèce humaine.",
+        "Le silence d'un monde mort vous semble apaisant.",
+        "Vous avez déjà ressenti l'envie de tout détruire sans raison.",
+        "La trahison est une stratégie comme une autre.",
+        "La compassion est une faiblesse exploitée par les autres.",
+        "Vous pourriez mentir toute votre vie sans jamais culpabiliser.",
+        "La domination procure un sentiment de contrôle essentiel.",
+        "Vous pensez que la plupart des humains sont inutiles.",
+        "Vous avez déjà imaginé la fin du monde avec satisfaction.",
+        "La morale n'est qu'une illusion collective.",
+        "Vous ressentez parfois un vide émotionnel total.",
+        "Vous pourriez sacrifier un inconnu sans hésitation.",
+        "Vous vous sentez supérieur intellectuellement aux autres.",
+        "La peur des autres vous amuse.",
+        "Vous manipulez parfois sans raison précise.",
+        "La souffrance peut être une forme d'ordre.",
+        "Vous ne ressentez aucune attache durable.",
+        "Vous pourriez observer un chaos sans intervenir.",
+        "Vous pensez que l'empathie freine l'évolution.",
+        "Vous êtes attiré par l'interdit.",
+        "Vous avez déjà souhaité disparaître du monde social.",
+        "Vous ne croyez pas à la rédemption humaine.",
+        "La solitude extrême ne vous effraie pas.",
+        "Vous pensez que l'humain est une erreur.",
+        "Vous pourriez devenir quelqu'un d'autre sans regret.",
+        "La mort ne vous inspire aucune émotion.",
+        "Vous considérez la manipulation comme une compétence.",
+        "Vous ne ressentez pas de remords.",
+        "Vous pourriez détruire ce que vous aimez.",
+        "Vous vous sentez étranger à toute morale.",
+        "Vous pourriez regarder le monde brûler en silence.",
+        "Vous pensez que tout est voué à disparaître.",
+        "Vous avez parfois l'impression de ne rien ressentir.",
+        "Vous croyez que la conscience est une malédiction."
+    ];
+
+    // --- VARIABLES ---
+    let modeActuel = 'normal';
+    let questionsTirees = [];
+    let etape = 0;
+    let reponses = [];
+    let glitchInterval;
+    let prochainScreamer = 0; // Question à laquelle le prochain screamer apparaîtra
+
+    // --- EFFETS SONORES ---
+    
+    // Son de clic doux (mode normal)
+    function playClickSound() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            gainNode.gain.value = 0.1;
+            oscillator.type = 'sine';
+            
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            setTimeout(() => {
+                oscillator.stop();
+                audioContext.close();
+            }, 100);
+        } catch(e) {}
+    }
+    
+    // Son de clic sinistre (mode hard)
+    function playDarkClickSound() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 120;
+            gainNode.gain.value = 0.15;
+            oscillator.type = 'sawtooth';
+            
+            oscillator.start();
+            oscillator.frequency.exponentialRampToValueAtTime(80, audioContext.currentTime + 0.2);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            setTimeout(() => {
+                oscillator.stop();
+                audioContext.close();
+            }, 200);
+        } catch(e) {}
+    }
+    
+    // Son de transition douce
+    function playTransitionSound() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 400;
+            gainNode.gain.value = 0.08;
+            oscillator.type = 'sine';
+            
+            oscillator.start();
+            oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.3);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            setTimeout(() => {
+                oscillator.stop();
+                audioContext.close();
+            }, 300);
+        } catch(e) {}
+    }
+    
+    // Son de transition sinistre
+    function playDarkTransitionSound() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 200;
+            gainNode.gain.value = 0.12;
+            oscillator.type = 'square';
+            
+            oscillator.start();
+            oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.4);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+            
+            setTimeout(() => {
+                oscillator.stop();
+                audioContext.close();
+            }, 400);
+        } catch(e) {}
+    }
+    
+    // Son de succès/résultat (mode normal)
+    function playSuccessSound() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Premier ton
+            const osc1 = audioContext.createOscillator();
+            const gain1 = audioContext.createGain();
+            osc1.connect(gain1);
+            gain1.connect(audioContext.destination);
+            osc1.frequency.value = 523.25; // C5
+            gain1.gain.value = 0.15;
+            osc1.type = 'sine';
+            
+            // Deuxième ton
+            const osc2 = audioContext.createOscillator();
+            const gain2 = audioContext.createGain();
+            osc2.connect(gain2);
+            gain2.connect(audioContext.destination);
+            osc2.frequency.value = 659.25; // E5
+            gain2.gain.value = 0.15;
+            osc2.type = 'sine';
+            
+            osc1.start();
+            osc2.start(audioContext.currentTime + 0.1);
+            
+            gain1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+            gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            setTimeout(() => {
+                osc1.stop();
+                osc2.stop();
+                audioContext.close();
+            }, 500);
+        } catch(e) {}
+    }
+    
+    // Son de résultat sinistre (mode hard)
+    function playDarkResultSound() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 100;
+            gainNode.gain.value = 0.2;
+            oscillator.type = 'sawtooth';
+            
+            oscillator.start();
+            
+            // Créer un effet de montée sinistre
+            oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.5);
+            oscillator.frequency.exponentialRampToValueAtTime(80, audioContext.currentTime + 1);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
+            
+            setTimeout(() => {
+                oscillator.stop();
+                audioContext.close();
+            }, 1000);
+        } catch(e) {}
+    }
+    
+    // Ambiance douce continue (mode normal)
+    let normalAmbiance = null;
+    function startNormalAmbiance() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 220; // A3
+            gainNode.gain.value = 0.03;
+            oscillator.type = 'sine';
+            
+            oscillator.start();
+            
+            normalAmbiance = { oscillator, gainNode, audioContext };
+        } catch(e) {}
+    }
+    
+    function stopNormalAmbiance() {
+        if(normalAmbiance) {
+            try {
+                normalAmbiance.oscillator.stop();
+                normalAmbiance.audioContext.close();
+                normalAmbiance = null;
+            } catch(e) {}
+        }
+    }
+    
+    // Ambiance inquiétante (mode hard)
+    let darkAmbiance = null;
+    function startDarkAmbiance() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 60;
+            gainNode.gain.value = 0.05;
+            oscillator.type = 'sawtooth';
+            
+            oscillator.start();
+            
+            // Oscillation lente
+            setInterval(() => {
+                if(oscillator.frequency) {
+                    oscillator.frequency.setValueAtTime(
+                        60 + Math.random() * 20,
+                        audioContext.currentTime
+                    );
+                }
+            }, 2000);
+            
+            darkAmbiance = { oscillator, gainNode, audioContext };
+        } catch(e) {}
+    }
+    
+    function stopDarkAmbiance() {
+        if(darkAmbiance) {
+            try {
+                darkAmbiance.oscillator.stop();
+                darkAmbiance.audioContext.close();
+                darkAmbiance = null;
+            } catch(e) {}
+        }
+    }
+    
+    // --- FONCTIONS PRINCIPALES ---
+    
+    // Planifier le prochain screamer (entre 3 et 5 questions)
+    function planifierProchainScreamer() {
+        const intervalle = 3 + Math.floor(Math.random() * 3); // Entre 3 et 5
+        prochainScreamer = etape + intervalle;
+    }
+    
+    function startTest(choix) {
+        modeActuel = choix;
+        const source = (modeActuel === 'normal') ? qNormal : qHard;
+        
+        questionsTirees = [...source].sort(() => Math.random() - 0.5).slice(0, 30);
+        
+        const card = document.getElementById('app-card');
+        const body = document.body;
+        
+        if(modeActuel === 'hard') {
+            body.className = 'mode-hard';
+            card.className = 'ui-hard';
+            document.getElementById('label-mode').innerText = "SYSTEM: CORRUPTION DETECTED";
+            document.getElementById('progress-bar').style.background = 'linear-gradient(90deg, #8B0000, #ff0000)';
+            
+            // Démarrer les effets de glitch
+            startGlitchEffects();
+            
+            // Gouttes de sang
+            createBloodDrips();
+            
+            // Planifier le premier screamer
+            planifierProchainScreamer();
+            
+            // Ambiance sonore
+            setTimeout(() => startDarkAmbiance(), 500);
+            
+        } else {
+            body.className = 'mode-normal';
+            card.className = 'ui-normal';
+            document.getElementById('label-mode').innerText = "SYSTÈME: HARMONIE";
+            document.getElementById('progress-bar').style.background = 'linear-gradient(90deg, #667eea, #764ba2)';
+            
+            // Particules paradisiaques
+            createParadiseParticles();
+            
+            // Ambiance sonore
+            setTimeout(() => startNormalAmbiance(), 500);
+        }
+
+        document.getElementById('screen-welcome').classList.add('hidden');
+        document.getElementById('screen-quiz').classList.remove('hidden');
+        updateScreen();
+    }
+
+    function updateScreen() {
+        document.getElementById('question-text').innerText = questionsTirees[etape];
+        document.getElementById('label-step').innerText = `Question ${etape + 1} / 30`;
+        document.getElementById('progress-bar').style.width = `${(etape / 30) * 100}%`;
+        document.getElementById('btn-back').style.visibility = (etape > 0) ? 'visible' : 'hidden';
+    }
+
+    function submitAnswer(v) {
+        // Son de clic
+        if(modeActuel === 'hard') {
+            playDarkClickSound();
+        } else {
+            playClickSound();
+        }
+        
+        reponses[etape] = v;
+        etape++;
+        
+        // Déclencher le screamer si on atteint la question prévue (mode hard uniquement)
+        if(modeActuel === 'hard' && etape === prochainScreamer && etape < 30) {
+            triggerScreamer();
+            planifierProchainScreamer(); // Planifier le prochain
+        }
+        
+        if(etape < 30) {
+            updateScreen();
+        } else {
+            showResults();
+        }
+    }
+
+    function previousQuestion() {
+        if(etape > 0) { 
+            etape--; 
+            updateScreen(); 
+        }
+    }
+
+    function showResults() {
+        // Arrêter les effets
+        if(glitchInterval) clearInterval(glitchInterval);
+        
+        // Arrêter les ambiances sonores
+        stopNormalAmbiance();
+        stopDarkAmbiance();
+        
+        // Son de résultat
+        if(modeActuel === 'hard') {
+            playDarkResultSound();
+        } else {
+            playSuccessSound();
+        }
+        
+        document.getElementById('screen-quiz').classList.add('hidden');
+        const screenRes = document.getElementById('result-screen');
+        screenRes.classList.remove('hidden');
+
+        const scoreTotal = reponses.reduce((a, b) => a + b, 0);
+        
+        if(modeActuel === 'normal') {
+            const types = [
+                {n: "L'Architecte de Paix", d: "Votre esprit est une oasis de calme et de sérénité. Vous voyez le monde comme un puzzle harmonieux où chaque pièce a sa place. Votre présence apaise, votre sagesse guide, et votre compassion inspire. Vous êtes la lumière dans l'obscurité."},
+                {n: "L'Éclaireur Empathe", d: "Vous ressentez les émotions avant même qu'elles ne soient exprimées. Votre cœur est un radar d'humanité. Votre force réside dans votre connexion profonde aux autres, votre capacité à comprendre sans juger, à soutenir sans attendre en retour."},
+                {n: "Le Rationaliste Pur", d: "La logique est votre armure, la raison votre épée. Vous transformez le chaos en chiffres, les problèmes en solutions. Votre esprit analytique découpe la réalité avec une précision chirurgicale. Vous êtes l'équilibre entre émotion et raison."}
+            ];
+            let res = types[Math.abs(scoreTotal) % types.length];
+            document.getElementById('res-name').innerText = res.n;
+            document.getElementById('res-desc').innerText = res.d;
+            document.getElementById('res-name').style.color = "#667eea";
+        } else {
+            const types = [
+                {
+                    n: "L'ENTITÉ NIHILISTE",
+                    d: "Toute notion de bien ou de mal vous semble artificielle. Vous percevez l'existence comme un accident cosmique sans valeur intrinsèque. Rien ne vous choque. Rien ne vous retient. Vous flottez dans le vide absolu de la signification."
+                },
+                {
+                    n: "LE PRÉDATEUR COGNITIF",
+                    d: "Vous analysez les humains comme des ressources à exploiter. Les émotions sont des outils, la morale un simple décor social. Vous comprenez les règles uniquement pour mieux les contourner. Le monde est un échiquier, et vous jouez toujours pour gagner."
+                },
+                {
+                    n: "L'ESPRIT DISSOCIÉ",
+                    d: "Votre conscience flotte hors du cadre humain. Vous observez le monde avec un détachement clinique, comme si vous n'en faisiez déjà plus partie. L'humanité vous est devenue étrangère. Vous êtes un fantôme dans une machine de chair."
+                },
+                {
+                    n: "L'ARCHITECTE DU CHAOS",
+                    d: "Vous acceptez la destruction comme une nécessité naturelle. L'ordre n'est qu'une illusion fragile, et vous en voyez déjà les fissures. Vous ne cherchez pas le chaos - vous le reconnaissez comme la seule vérité constante."
+                },
+                {
+                    n: "LE VIDE ABSOLU",
+                    d: "Il ne reste plus rien à analyser. Ni peur, ni désir, ni attache. Votre esprit est un espace neutre où même le sens s'effondre. Vous n'êtes ni bon ni mauvais. Vous êtes l'absence elle-même."
+                }
+            ];
+
+            let res = types[Math.abs(scoreTotal) % types.length];
+            document.getElementById('res-name').innerText = res.n;
+            document.getElementById('res-desc').innerText = res.d;
+            document.getElementById('res-name').style.color = "#ff0000";
+            document.getElementById('res-header').style.color = "#8B0000";
+        }
+    }
+
+    // --- EFFETS VISUELS ---
+
+    // Particules pour le mode normal
+    function createParadiseParticles() {
+        const container = document.createElement('div');
+        container.className = 'paradise-particles';
+        document.body.appendChild(container);
+
+        for(let i = 0; i < 30; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 10 + 's';
+            particle.style.animationDuration = (8 + Math.random() * 4) + 's';
+            container.appendChild(particle);
+        }
+    }
+
+    // Effets de glitch pour le mode hard
+    function startGlitchEffects() {
+        const overlay = document.getElementById('glitchOverlay');
+        
+        glitchInterval = setInterval(() => {
+            if(Math.random() < 0.3) {
+                overlay.classList.add('glitch-active');
+                setTimeout(() => {
+                    overlay.classList.remove('glitch-active');
+                }, 300);
+            }
+        }, 2000);
+    }
+
+    // Screamer déclenché toutes les 5 questions
+    function triggerScreamer() {
+        const screamer = document.getElementById('screamer');
+        screamer.classList.add('active');
+        
+        // Son de screamer (note aiguë désagréable)
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800; // Fréquence aiguë
+            gainNode.gain.value = 0.3;
+            
+            oscillator.start();
+            
+            // Moduler la fréquence pour un effet plus terrifiant
+            setTimeout(() => oscillator.frequency.value = 1200, 100);
+            setTimeout(() => oscillator.frequency.value = 600, 200);
+            setTimeout(() => oscillator.frequency.value = 1000, 300);
+            
+            setTimeout(() => {
+                oscillator.stop();
+                audioContext.close();
+            }, 500);
+        } catch(e) {
+            // Si le son ne fonctionne pas, continuer sans
+        }
+        
+        // Disparaît après exactement 0.5 secondes
+        setTimeout(() => {
+            screamer.classList.remove('active');
+        }, 500);
+    }
+
+    // Gouttes de sang
+    function createBloodDrips() {
+        setInterval(() => {
+            const drip = document.createElement('div');
+            drip.className = 'blood-drip';
+            drip.style.left = Math.random() * 100 + '%';
+            drip.style.animationDuration = (1 + Math.random()) + 's';
+            document.body.appendChild(drip);
+            
+            setTimeout(() => {
+                drip.remove();
+            }, 2000);
+        }, 800);
+    }
+</script>
+
+</body>
+</html>

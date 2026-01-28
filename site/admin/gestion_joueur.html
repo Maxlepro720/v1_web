@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration Joueurs - Dashboard</title>
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-card: #1e1e1e;
+            --bg-hover: #2a2a2a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-color: #3b82f6; /* Bleu pro */
+            --danger-color: #ef4444; /* Rouge ban */
+            --success-color: #10b981; /* Vert unban */
+            --border-radius: 8px;
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            background: #333;
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+
+        /* Liste des joueurs */
+        .player-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .player-card {
+            background-color: var(--bg-card);
+            border: 1px solid #333;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .player-card:hover {
+            transform: translateY(-4px);
+            background-color: var(--bg-hover);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            border-color: var(--accent-color);
+        }
+
+        .player-name {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .online { background-color: var(--success-color); box-shadow: 0 0 5px var(--success-color); }
+        .offline { background-color: #666; }
+
+        /* Indicateur visuel si banni dans la liste */
+        .is-banned-marker {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            color: var(--danger-color);
+            font-size: 0.8rem;
+            font-weight: bold;
+            border: 1px solid var(--danger-color);
+            padding: 2px 6px;
+            border-radius: 4px;
+            opacity: 0.8;
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid #444;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 1rem;
+        }
+
+        .btn-cancel {
+            background: #333;
+            color: var(--text-primary);
+        }
+        .btn-cancel:hover { background: #444; }
+
+        .btn-ban {
+            background: var(--danger-color);
+            color: white;
+        }
+        .btn-ban:hover { background: #dc2626; }
+
+        .btn-unban {
+            background: var(--success-color);
+            color: white;
+        }
+        .btn-unban:hover { background: #059669; }
+
+        .loader {
+            border: 3px solid #333;
+            border-top: 3px solid var(--accent-color);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #error-msg {
+            color: var(--danger-color);
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Gestion Joueurs</h1>
+            <div id="loading-indicator" class="status-badge"><span class="loader"></span> Chargement...</div>
+        </header>
+
+        <div id="error-msg">Erreur de connexion au serveur.</div>
+        
+        <div id="player-list" class="player-grid">
+            </div>
+    </div>
+
+    <div id="modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-player-name" class="modal-title">Joueur</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 10px;">Gérer les sanctions pour cet utilisateur.</p>
+            
+            <div id="current-status-text" style="font-weight: bold; margin-bottom: 1rem;"></div>
+
+            <div class="modal-actions">
+                <button class="btn btn-cancel" onclick="closeModal()">Annuler</button>
+                <button id="action-btn" class="btn">Action</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://project-3-api-2bgb.onrender.com";
+        let allPlayers = [];
+        let bannedPlayersIds = new Set();
+        let selectedPlayerId = null;
+        let fetchInterval = null;
+
+        // Éléments du DOM
+        const playerListEl = document.getElementById('player-list');
+        const modalEl = document.getElementById('modal');
+        const modalNameEl = document.getElementById('modal-player-name');
+        const actionBtnEl = document.getElementById('action-btn');
+        const statusTextEl = document.getElementById('current-status-text');
+        const loadingEl = document.getElementById('loading-indicator');
+        const errorEl = document.getElementById('error-msg');
+
+        // --- FONCTIONS DE RÉCUPÉRATION ---
+
+        async function fetchData() {
+            try {
+                // 1. Récupérer tous les joueurs
+                const playersRes = await fetch(`${API_URL}/get_all_players_status`);
+                if (!playersRes.ok) throw new Error("Erreur players");
+                const playersData = await playersRes.json();
+                allPlayers = playersData.data || [];
+
+                // 2. Récupérer les bannis pour comparer
+                const banRes = await fetch(`${API_URL}/get_all_ban`);
+                if (!banRes.ok) throw new Error("Erreur bans");
+                const banData = await banRes.json();
+                
+                // Créer un Set des ID bannis pour un accès rapide
+                bannedPlayersIds = new Set((banData.data || []).map(p => p.ID));
+
+                renderPlayers();
+                
+                loadingEl.innerHTML = `Live • ${allPlayers.length} Joueurs`;
+                loadingEl.style.color = "#10b981";
+                errorEl.style.display = 'none';
+
+            } catch (error) {
+                console.error("Erreur Fetch:", error);
+                loadingEl.innerHTML = "Déconnecté";
+                loadingEl.style.color = "#ef4444";
+                errorEl.style.display = 'block';
+            }
+        }
+
+        // --- AFFICHAGE ---
+
+        function renderPlayers() {
+            playerListEl.innerHTML = '';
+
+            if (allPlayers.length === 0) {
+                playerListEl.innerHTML = '<p style="color:#666; grid-column: 1/-1; text-align:center;">Aucun joueur trouvé.</p>';
+                return;
+            }
+
+            allPlayers.forEach(player => {
+                const isOnline = player.status.includes('online');
+                const isBanned = bannedPlayersIds.has(player.id);
+
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.onclick = () => openModal(player.id, isBanned);
+
+                // Construction du HTML de la carte
+                let htmlContent = `
+                    <div style="display:flex; align-items:center; margin-bottom:5px;">
+                        <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span>
+                        <div class="player-name">${player.id}</div>
+                    </div>
+                `;
+
+                if (isBanned) {
+                    htmlContent += `<div class="is-banned-marker">BAN</div>`;
+                    card.style.borderColor = "var(--danger-color)";
+                    card.style.opacity = "0.7";
+                }
+
+                card.innerHTML = htmlContent;
+                playerListEl.appendChild(card);
+            });
+        }
+
+        // --- MODAL & ACTIONS ---
+
+        function openModal(playerId, isBanned) {
+            selectedPlayerId = playerId;
+            modalNameEl.innerText = playerId;
+
+            if (isBanned) {
+                statusTextEl.innerText = "Statut actuel: BANNI 🚫";
+                statusTextEl.style.color = "var(--danger-color)";
+                actionBtnEl.innerText = "DÉBANNIR";
+                actionBtnEl.className = "btn btn-unban";
+                actionBtnEl.onclick = () => performAction('/remove_sanction');
+            } else {
+                statusTextEl.innerText = "Statut actuel: NORMAL ✅";
+                statusTextEl.style.color = "var(--success-color)";
+                actionBtnEl.innerText = "BANNIR";
+                actionBtnEl.className = "btn btn-ban";
+                actionBtnEl.onclick = () => performAction('/do_ban');
+            }
+
+            modalEl.classList.add('active');
+        }
+
+        function closeModal() {
+            modalEl.classList.remove('active');
+            selectedPlayerId = null;
+        }
+
+        // Fermer le modal si on clique en dehors
+        modalEl.addEventListener('click', (e) => {
+            if (e.target === modalEl) closeModal();
+        });
+
+        async function performAction(endpoint) {
+            if (!selectedPlayerId) return;
+
+            // Feedback visuel immédiat sur le bouton
+            const originalText = actionBtnEl.innerText;
+            actionBtnEl.innerText = "...";
+            actionBtnEl.disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: selectedPlayerId })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    closeModal();
+                    fetchData(); // Rafraîchir immédiatement la liste
+                } else {
+                    alert("Erreur: " + (result.message || "Action échouée"));
+                }
+            } catch (error) {
+                alert("Erreur réseau: " + error.message);
+            } finally {
+                actionBtnEl.innerText = originalText;
+                actionBtnEl.disabled = false;
+            }
+        }
+
+        // --- INITIALISATION ---
+
+        // Premier chargement
+        fetchData();
+
+        // Rafraichissement automatique toutes les 5 secondes
+        fetchInterval = setInterval(fetchData, 5000);
+
+    </script>
+</body>
+</html>

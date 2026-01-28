@@ -559,7 +559,7 @@ h2 {
         let successCount = 0;
         for (const [gameId, gameName] of Object.entries(AVAILABLE_GAMES)) {
             try {
-                const data = await fetchData(`${gameId}_get_data`, 'POST', { username: username });
+                const data = await fetchData(`${gameId}_get_data?admin=true`, 'POST', { username: username });
                 const statsData = data.data || data;
                 if (statsData.status !== "error" && statsData.status !== "not_found") {
                     statsResultsContainer.innerHTML += `<div class="card"><h4>${gameName}</h4><div class="stats-results">${generatePlayerStats(statsData)}</div></div>`;

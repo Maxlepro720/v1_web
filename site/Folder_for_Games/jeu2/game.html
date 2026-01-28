@@ -42,8 +42,6 @@ canvas {
 <body>
 <canvas id="game"></canvas> 
 <script>
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
     const PAGE_ID = "9200"; 
 
     (async function() {
@@ -94,6 +92,8 @@ const ctx=canvas.getContext("2d");
             if (error.message !== "Mise à jour bloquante") console.error("Erreur version:", error);
         }
     })();
+    const canvas=document.getElementById("game");
+    const ctx=canvas.getContext("2d");
 
 // --- DÉTECTION MOBILE/TACTILE ---
 const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0);

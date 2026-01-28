@@ -44,6 +44,56 @@ canvas {
 <script>
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
+    const PAGE_ID = "9200"; 
+
+    (async function() {
+        const API_URL_verif_version = "https://project-3-api-2bgb.onrender.com/get_latest_version";
+        console.log('[verif version] Demarrage')
+        try {
+            // 1. Appel de la nouvelle route optimisée
+            const response = await fetch(API_URL_verif_version);
+            const result = await response.json();
+            
+            // On vérifie que la requête a réussi et qu'on a une donnée
+            if (result.status !== "success" || !result.data) return;
+
+            const latestVersion = String(result.data.Version);
+            const savedVersion = localStorage.getItem(`version_${PAGE_ID}`);
+
+            // Première visite : on enregistre la version actuelle sans bloquer
+            if (!savedVersion) {
+                localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
+                return;
+            }
+
+            // Comparaison
+            if (savedVersion !== latestVersion) {
+                // Sécurité pour Ctrl+R / F5
+                window.onbeforeunload = function() {
+                    localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
+                };
+
+                // Écran noir bloquant
+                document.body.innerHTML = `
+                    <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:black;color:white;display:flex;justify-content:center;align-items:center;z-index:1000000;flex-direction:column;font-family:sans-serif;text-align:center;padding:20px;">
+                        <h1 style="font-size:32px;margin-bottom:15px;color:#00bfff;">Mise à jour requise</h1>
+                        <p style="color:#aaa;max-width:500px;line-height:1.6;">La version ${latestVersion} est disponible. Veuillez recharger la page pour appliquer les changements.</p>
+                        <button id="btn-update-now" style="margin-top:30px;padding:15px 40px;cursor:pointer;background:#00bfff;border:none;color:white;font-weight:bold;border-radius:12px;font-size:16px;box-shadow: 0 10px 20px rgba(0,191,255,0.3);">
+                            Mettre à jour et Recharger
+                        </button>
+                    </div>`;
+                
+                document.getElementById('btn-update-now').addEventListener('click', function() {
+                    localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
+                    window.location.reload(true);
+                });
+
+                throw new Error("Mise à jour bloquante");
+            }
+        } catch (error) {
+            if (error.message !== "Mise à jour bloquante") console.error("Erreur version:", error);
+        }
+    })();
 
 // --- DÉTECTION MOBILE/TACTILE ---
 const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0);

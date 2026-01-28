@@ -279,6 +279,9 @@ h2 {
         <div class="nav-item" data-tab="users">
             <i class="fas fa-users">👥</i> Gestion des Utilisateurs
         </div>
+        <div class="nav-item" data-tab="versions">
+            <i class="fas fa-code-branch">🚀</i> Versions / MAJ
+        </div>
         <div class="nav-item" data-tab="content">
             <i class="fas fa-cogs">⚙️</i> Paramètres
         </div>
@@ -344,6 +347,32 @@ h2 {
                 <div id="usersError" class="error-message" style="display:none;"></div>
             </div>
         </div>
+
+        <div class="content-section" id="versions">
+            <h2>Gestion des Versions</h2>
+            <div class="card">
+                <h3>Ajouter une Mise à Jour</h3>
+                <div class="form-group">
+                    <label for="vNumber">Numéro de Version (Entier) :</label>
+                    <input type="number" id="vNumber" class="form-control" placeholder="Ex: 1">
+                </div>
+                <div class="form-group">
+                    <label for="vTitle">Titre :</label>
+                    <input type="text" id="vTitle" class="form-control" placeholder="Nom de la MAJ">
+                </div>
+                <div class="form-group">
+                    <label for="vDesc">Description :</label>
+                    <textarea id="vDesc" class="form-control" style="height: 80px;" placeholder="Détails de la mise à jour..."></textarea>
+                </div>
+                <button class="btn" id="submitVersionBtn">Publier la Version</button>
+            </div>
+
+            <div class="card">
+                <h3>Historique des Versions</h3>
+                <div id="versionsListContainer"></div>
+                <div id="versionsMessage" class="loading-message" style="display:none;">Chargement...</div>
+            </div>
+        </div>
         
         <div class="content-section" id="content">
             <h2>Paramètres</h2>
@@ -392,7 +421,9 @@ h2 {
         if (targetId === 'ranking') {
             populateRankingGameSelector();
         } else if (targetId === 'users') {
-            loadAllUsers(); // Charge la liste des utilisateurs à l'ouverture
+            loadAllUsers(); 
+        } else if (targetId === 'versions') {
+            loadAllVersions();
         }
     }
 
@@ -408,22 +439,17 @@ h2 {
 
     // --- Fonction utilitaire pour les API ---
     async function fetchData(endpoint, method = 'GET', body = null) {
-        const url = `${API_BASE_URL}/${endpoint}`; 
+        // Gestion propre des paramètres GET si endpoint contient déjà des query params
+        const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}/${endpoint}`; 
         
         const options = {
             method: method,
             headers: {} 
         };
 
-        if (body !== null) { 
+        if (body !== null && method !== 'GET') { 
             options.headers['Content-Type'] = 'application/json';
             options.body = JSON.stringify(body);
-        }
-        
-        // Assure que les requêtes GET n'envoient pas un corps vide
-        if (method === 'GET') {
-             delete options.body;
-             delete options.headers['Content-Type'];
         }
         
         try {
@@ -432,22 +458,15 @@ h2 {
             if (!response.ok) {
                 const errorText = await response.text(); 
                 let errorData = {};
-                try {
-                    errorData = JSON.parse(errorText);
-                } catch (e) {
-                    // Non-JSON response
-                }
-                
-                const errorMessage = errorData.message || `Erreur HTTP ${response.status} (${response.statusText}). Réponse brute: ${errorText.substring(0, 100)}`;
+                try { errorData = JSON.parse(errorText); } catch (e) {}
+                const errorMessage = errorData.message || `Erreur HTTP ${response.status}`;
                 throw new Error(errorMessage);
             }
 
-            // Tente de retourner du JSON
             const contentType = response.headers.get("content-type");
             if (contentType && contentType.indexOf("application/json") !== -1) {
                 return await response.json();
             } else {
-                // Retourne du texte brut pour les cas non-JSON (ex: route admin_access si elle retournait du texte)
                 return await response.text(); 
             }
 
@@ -460,16 +479,14 @@ h2 {
     // --- Remplissage du menu déroulant de classement ---
     function populateRankingGameSelector() {
         const rankingGameSelect = document.getElementById('rankingGameSelect');
-        
         if (rankingGameSelect.options.length > 0) return;
-
         for (const [key, value] of Object.entries(AVAILABLE_GAMES)) {
             const option = new Option(value, key);
             rankingGameSelect.add(option);
         }
     }
     
-    // --- 1. Logique du Classement (Enforce GET) ---
+    // --- 1. Logique du Classement ---
     const loadRankingBtn = document.getElementById('loadRankingBtn');
     const rankingGameSelect = document.getElementById('rankingGameSelect');
     const rankingTableContainer = document.getElementById('rankingTableContainer');
@@ -480,80 +497,39 @@ h2 {
 
     loadRankingBtn.addEventListener('click', async () => {
         const gameId = rankingGameSelect.value;
-        if (!gameId) {
-            alert("Veuillez sélectionner un jeu.");
-            return;
-        }
-
+        if (!gameId) return;
         rankingResultCard.style.display = 'none';
         rankingError.style.display = 'none';
-        rankingMessage.textContent = "Chargement du classement...";
         rankingMessage.style.display = 'block';
-
         try {
-            // FIX: Méthode GET utilisée pour les classements, conformément au script serveur
-            const endpoint = `${gameId}_get_leaderboard`; 
-            const method = 'GET';
-            
-            const data = await fetchData(endpoint, method); 
-            
+            const data = await fetchData(`${gameId}_get_leaderboard`, 'GET'); 
             let leaderboardData = data.data || [];
-
             rankingTableContainer.innerHTML = generateRankingTable(leaderboardData, gameId); 
             rankingGameTitle.textContent = AVAILABLE_GAMES[gameId];
             rankingResultCard.style.display = 'block';
             rankingMessage.style.display = 'none';
-            
             setupRankingClickListeners(); 
         } catch (error) {
-            rankingError.textContent = `Erreur lors du chargement du classement (route: ${gameId}_get_leaderboard, méthode GET): ${error.message}.`;
+            rankingError.textContent = `Erreur: ${error.message}`;
             rankingError.style.display = 'block';
             rankingMessage.style.display = 'none';
         }
     });
 
     function generateRankingTable(rankingData, gameId) {
-        if (rankingData.length === 0) {
-            return `<p class="error-message" style="background: rgba(0, 191, 255, 0.1); color: var(--primary-color);">Aucun classement trouvé pour ce jeu.</p>`;
-        }
-
-        let scoreKey;
-        let scoreHeader;
-        if (gameId === 'skull_arena') {
-            scoreKey = 'wave'; 
-            scoreHeader = 'Meilleure Vague';
-        } else if (gameId === 'astro_dodge') {
-            scoreKey = 'score'; 
-            scoreHeader = 'Meilleur Score';
-        } else if (gameId === 'stickman_runner') {
-            scoreKey = 'distance'; 
-            scoreHeader = 'Meilleure Distance (m)';
-        } else {
-            scoreKey = 'score';
-            scoreHeader = 'Score';
-        }
-        
-        let html = '<table class="ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>' + scoreHeader + '</th>';
-        html += '</tr></thead><tbody>';
-        
+        if (rankingData.length === 0) return `<p class="error-message">Aucun classement trouvé.</p>`;
+        let scoreKey = (gameId === 'skull_arena') ? 'wave' : (gameId === 'stickman_runner' ? 'distance' : 'score');
+        let html = '<table class="ranking-table"><thead><tr><th>#</th><th>Joueur</th><th>Score</th></tr></thead><tbody>';
         rankingData.forEach((player, index) => {
             const username = player.username || player.name || 'Inconnu';
-            const score = player[scoreKey] !== undefined ? player[scoreKey] : 0;
-            
-            html += `<tr data-username="${username}">`; 
-            html += `<td>${index + 1}</td>`;
-            html += `<td>${username}</td>`;
-            html += `<td>${score}</td>`;
-            html += `</tr>`;
+            html += `<tr data-username="${username}"><td>${index + 1}</td><td>${username}</td><td>${player[scoreKey] || 0}</td></tr>`;
         });
-        
-        html += '</tbody></table>';
-        return html;
+        return html + '</tbody></table>';
     }
 
     function setupRankingClickListeners() {
         document.querySelectorAll('.ranking-table tbody tr').forEach(row => {
-            row.addEventListener('click', (event) => {
+            row.addEventListener('click', () => {
                 const username = row.getAttribute('data-username');
                 if (username) {
                     switchTab('player-stats');
@@ -564,236 +540,126 @@ h2 {
         });
     }
 
-
-    // --- 2. Logique des Statistiques de Joueur (Enforce POST) ---
+    // --- 2. Logique des Statistiques de Joueur ---
     const loadPlayerStatsBtn = document.getElementById('loadPlayerStatsBtn');
     const statsResultsContainer = document.getElementById('statsResultsContainer');
-    const statsPlayerTitle = document.getElementById('statsPlayerTitle');
     const statsResultCard = document.getElementById('statsResultCard');
     const statsMessage = document.getElementById('statsMessage');
     const statsError = document.getElementById('statsError');
 
     loadPlayerStatsBtn.addEventListener('click', () => {
         const username = playerUsernameInput.value.trim();
-        if (!username) {
-            alert("Veuillez entrer l'ID du joueur.");
-            return;
-        }
-        loadAllPlayerStats(username);
+        if (username) loadAllPlayerStats(username);
     });
     
     async function loadAllPlayerStats(username) {
-        statsResultCard.style.display = 'none';
-        statsError.style.display = 'none';
-        statsMessage.textContent = `Chargement des statistiques pour ${username}...`;
+        statsResultCard.style.display = 'block';
         statsMessage.style.display = 'block';
         statsResultsContainer.innerHTML = '';
-        statsPlayerTitle.textContent = username;
-        statsResultCard.style.display = 'block';
-
-        const gameResults = {};
         let successCount = 0;
-
         for (const [gameId, gameName] of Object.entries(AVAILABLE_GAMES)) {
             try {
-                // FIX: Méthode POST utilisée pour les données de joueur, conformément au script serveur
-                const endpoint = `${gameId}_get_data`;
-                const method = 'POST';
-                const body = { username: username };
-
-                const data = await fetchData(endpoint, method, body);
-                gameResults[gameId] = data.data || data; 
-
-            } catch (error) {
-                gameResults[gameId] = { status: "error", message: `Erreur de connexion (POST sur ${gameId}_get_data): ${error.message}` };
-            }
-        }
-
-        let htmlContent = '';
-        
-        for (const [gameId, gameName] of Object.entries(AVAILABLE_GAMES)) {
-            const statsData = gameResults[gameId];
-            let gameHtml;
-
-            if (statsData.status === "error" || statsData.status === "not_found") {
-                // Erreur de connexion / serveur ou données non trouvées
-                let msg = statsData.message || statsData.status;
-                let isNotFound = statsData.status === "not_found";
-                
-                gameHtml = `<p class="error-message" style="margin-top: 10px; background: ${isNotFound ? 'rgba(255, 165, 0, 0.1)' : 'rgba(255, 85, 85, 0.1)'}; color: ${isNotFound ? '#ff9900' : '#ff5555'}; border: 1px solid ${isNotFound ? '#ff9900' : '#ff5555'};">${msg}</p>`;
-            } else {
-                // Traitement spécifique pour Skull Arena (aplatissement des niveaux)
-                let processedStats = statsData;
-                if (gameId === 'skull_arena') {
-                    const levels = processedStats.levels || {};
-                    processedStats = {
-                        "Crânes": processedStats.skulls, 
-                        "Meilleure Vague": processedStats.best_wave, 
-                        "UP_Dégât": levels.damage,
-                        "UP_Portée": levels.range,
-                        "UP_Vitesse_Perso": levels.speed,
-                        "UP_Cadence_Tir": levels.fire,
-                        ...Object.fromEntries(Object.entries(processedStats).filter(([key]) => key !== 'levels' && key !== 'skulls' && key !== 'best_wave'))
-                    };
+                const data = await fetchData(`${gameId}_get_data`, 'POST', { username: username });
+                const statsData = data.data || data;
+                if (statsData.status !== "error" && statsData.status !== "not_found") {
+                    statsResultsContainer.innerHTML += `<div class="card"><h4>${gameName}</h4><div class="stats-results">${generatePlayerStats(statsData)}</div></div>`;
+                    successCount++;
                 }
-                
-                gameHtml = generatePlayerStats(processedStats, true); 
-                successCount++;
-            }
-            
-            htmlContent += `
-                <div class="card" style="margin-bottom: 20px; padding: 20px; border: 1px solid var(--secondary-color);">
-                    <h4 style="color: var(--secondary-color); margin-bottom: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 10px;">${gameName}</h4>
-                    <div class="stats-results">
-                        ${gameHtml}
-                    </div>
-                </div>
-            `;
+            } catch (e) {}
         }
-
-        statsResultsContainer.innerHTML = htmlContent;
         statsMessage.style.display = 'none';
-
-        if (successCount === 0) {
-            statsError.textContent = "Aucune statistique significative trouvée pour ce joueur dans aucun des jeux (Erreurs de connexion ou données non initialisées).";
-            statsError.style.display = 'block';
-        } else {
-            statsError.style.display = 'none';
-        }
+        if (successCount === 0) statsResultsContainer.innerHTML = '<p class="error-message">Aucune donnée trouvée.</p>';
     }
-
 
     function generatePlayerStats(statsData) {
-        // Exclut les clés qui ne sont pas des statistiques brutes mais des données techniques
-        const keysToExclude = ['id', 'username', 'created_at', 'updated_at', 'status', 'message', 'leaderboard', 'Voiture', 'Credit']; 
+        const keysToExclude = ['id', 'username', 'created_at', 'updated_at', 'status', 'message', 'leaderboard']; 
         let html = '';
-        let hasData = false;
-
         for (const key in statsData) {
-            if (statsData.hasOwnProperty(key) && !keysToExclude.includes(key) && statsData[key] !== undefined && statsData[key] !== null) {
-                const value = statsData[key];
-                
-                if (typeof value === 'object' && value !== null) continue; 
-                
-                const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
-
-                html += `
-                    <div>
-                        <span>${formattedKey} :</span>
-                        <strong>${value}</strong>
-                    </div>
-                `;
-                hasData = true;
+            if (!keysToExclude.includes(key) && typeof statsData[key] !== 'object') {
+                html += `<div><span>${key.replace(/_/g, ' ')} :</span><strong>${statsData[key]}</strong></div>`;
             }
         }
-        
-        return hasData ? html : `<p style="color: #ff9900;">Données de base pour ce jeu non encore créées par le joueur.</p>`;
+        return html || "Pas de stats.";
     }
 
-    // ---------------------------------------------------------------------------------
-    // --- 3. Logique de Gestion des Utilisateurs (`/admin_get_all_players`) ---
-    // ---------------------------------------------------------------------------------
-    const loadUsersBtn = document.getElementById('loadUsersBtn');
-    const usersTableContainer = document.getElementById('usersTableContainer');
-    const usersResultCard = document.getElementById('usersResultCard');
-    const usersMessage = document.getElementById('usersMessage');
-    const usersError = document.getElementById('usersError');
-    
-    loadUsersBtn.addEventListener('click', loadAllUsers);
-    
+    // --- 3. Gestion des Utilisateurs ---
     async function loadAllUsers() {
-        usersResultCard.style.display = 'none';
-        usersError.style.display = 'none';
-        usersMessage.textContent = "Chargement de la liste des joueurs...";
-        usersMessage.style.display = 'block';
-
+        const usersTableContainer = document.getElementById('usersTableContainer');
+        const usersResultCard = document.getElementById('usersResultCard');
+        usersResultCard.style.display = 'block';
+        document.getElementById('usersMessage').style.display = 'block';
         try {
-            // Appel à la route GET du serveur
-            const data = await fetchData('/get_all_players_status', 'GET'); 
-            
+            const data = await fetchData('get_all_players_status', 'GET'); 
             const players = data.data || [];
-            console.log(players)
-            
-            usersTableContainer.innerHTML = generateUsersTable(players); 
-            usersResultCard.style.display = 'block';
-            usersMessage.style.display = 'none';
-            usersError.style.display = 'none';
-
-        } catch (error) {
-            usersError.textContent = `Erreur lors du chargement des utilisateurs (route: /admin_get_all_players, méthode GET): ${error.message}.`;
-            usersError.style.display = 'block';
-            usersMessage.style.display = 'none';
-            usersResultCard.style.display = 'block';
+            let html = '<table class="ranking-table"><thead><tr><th>ID</th><th>Statut</th><th>Dernière connexion</th></tr></thead><tbody>';
+            players.forEach(p => {
+                const color = p.status?.includes('online') ? 'var(--secondary-color)' : 'var(--light-text)';
+                html += `<tr><td>${p.id}</td><td style="color:${color}">${p.status}</td><td>${p.last_seen || 'Jamais'}</td></tr>`;
+            });
+            usersTableContainer.innerHTML = html + '</tbody></table>';
+        } catch (e) {
+            document.getElementById('usersError').textContent = e.message;
+            document.getElementById('usersError').style.display = 'block';
         }
+        document.getElementById('usersMessage').style.display = 'none';
     }
+    document.getElementById('loadUsersBtn').addEventListener('click', loadAllUsers);
 
-    function generateUsersTable(players) {
-        if (players.length === 0) {
-            return '<p class="error-message">Aucun utilisateur trouvé.</p>';
-        }
+    // --- 4. NOUVEAU : Logique des Versions ---
+    const submitVersionBtn = document.getElementById('submitVersionBtn');
+    const versionsListContainer = document.getElementById('versionsListContainer');
+    const versionsMessage = document.getElementById('versionsMessage');
 
-        let html = '<table class="ranking-table"><thead><tr><th>ID du Joueur</th><th>Statut</th><th>Dernière Connexion</th></tr></thead><tbody>';
-        
-        players.forEach((player) => {
-            // --- CORRECTION CLÉS ---
-            const status = player.status || 'Statut Inconnu'; // Utiliser 'status'
-            const id = player.id || 'ID Inconnu';             // Utiliser 'id'
-            
-            // La couleur est basée sur le statut en minuscules
-            const statusColor = status.includes('online') ? 'color: var(--secondary-color); font-weight: bold;' : 'color: var(--light-text);';
-            
-            // last_seen est correctement utilisé
-            const lastSeen = player.last_seen ? new Date(player.last_seen).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : 'Jamais';
-
-            html += `<tr>`;
-            html += `<td>${id}</td>`;
-            html += `<td style="${statusColor}">${status}</td>`;
-            html += `<td>${lastSeen}</td>`;
-            html += `</tr>`;
-        });
-        
-        html += '</tbody></table>';
-        return html;
-    }
-
-
-    // ---------------------------------------------------------------------------------
-    // --- 4. Logique des Logs/Reports (Appel à la Route Placeholder) ---
-    // ---------------------------------------------------------------------------------
-    const loadLogsBtn = document.getElementById('loadLogsBtn');
-    const logContent = document.getElementById('logContent');
-    const logsMessage = document.getElementById('logsMessage');
-    const logsError = document.getElementById('logsError');
-
-    loadLogsBtn.addEventListener('click', loadServerLogs);
-
-    async function loadServerLogs() {
-        logsError.style.display = 'none';
-        logsMessage.textContent = "Tentative d'appel à la route /admin_access...";
-        logsMessage.style.display = 'block';
-        
-        logContent.textContent = "Appel en cours...";
-        
+    async function loadAllVersions() {
+        versionsMessage.style.display = 'block';
+        versionsListContainer.innerHTML = '';
         try {
-            // Appel à la route placeholder du serveur
-            const data = await fetchData('admin_access', 'GET');
-            
-            // Le serveur retourne un JSON de statut. On l'affiche joliment.
-            logContent.style.color = 'yellow';
-            logContent.textContent = JSON.stringify(data, null, 4); 
-            
-            logsMessage.style.display = 'none';
-            logsError.style.display = 'none';
-            
-        } catch (error) {
-            logsError.textContent = `Échec de l'appel à la route d'administration. Détail: ${error.message}.`;
-            logContent.style.color = '#ff5555';
-            logContent.textContent = `Échec de l'appel de la route /admin_access.\nDétail technique: ${error.message}`;
-            logsError.style.display = 'block';
-            logsMessage.style.display = 'none';
-        }
+            const res = await fetchData('get_all_versions', 'GET');
+            const list = res.data || [];
+            if (list.length === 0) {
+                versionsListContainer.innerHTML = '<p>Aucune version enregistrée.</p>';
+            } else {
+                list.forEach(v => {
+                    versionsListContainer.innerHTML += `
+                        <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-bottom:10px; border-left: 4px solid var(--secondary-color);">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                                <strong style="color:var(--primary-color)">v${v.Version} - ${v.Title}</strong>
+                                <small style="color:var(--light-text)">${v.created_at ? new Date(v.created_at).toLocaleDateString() : ''}</small>
+                            </div>
+                            <p style="font-size:14px; color: #ccc;">${v.Description || 'Pas de description.'}</p>
+                        </div>`;
+                });
+            }
+        } catch (e) { console.error(e); }
+        versionsMessage.style.display = 'none';
     }
 
+    submitVersionBtn.addEventListener('click', async () => {
+        const ver = document.getElementById('vNumber').value;
+        const title = document.getElementById('vTitle').value;
+        const desc = document.getElementById('vDesc').value;
+
+        if (!ver || !title) return alert("Version et Titre requis");
+
+        submitVersionBtn.disabled = true;
+        submitVersionBtn.textContent = "Publication...";
+
+        try {
+            // Utilisation des query params pour add_version selon votre code serveur
+            const query = `add_version?version=${ver}&title=${encodeURIComponent(title)}&description=${encodeURIComponent(desc)}`;
+            await fetchData(query, 'GET');
+            alert("Version ajoutée !");
+            document.getElementById('vNumber').value = '';
+            document.getElementById('vTitle').value = '';
+            document.getElementById('vDesc').value = '';
+            loadAllVersions();
+        } catch (e) {
+            alert("Erreur: " + e.message);
+        } finally {
+            submitVersionBtn.disabled = false;
+            submitVersionBtn.textContent = "Publier la Version";
+        }
+    });
 
 </script>
 

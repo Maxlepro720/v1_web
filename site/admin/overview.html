@@ -594,7 +594,11 @@ h2 {
             let html = '<table class="ranking-table"><thead><tr><th>ID</th><th>Statut</th><th>Dernière connexion</th></tr></thead><tbody>';
             players.forEach(p => {
                 const color = p.status?.includes('online') ? 'var(--secondary-color)' : 'var(--light-text)';
-                html += `<tr><td>${p.id}</td><td style="color:${color}">${p.status}</td><td>${p.last_seen || 'Jamais'}</td></tr>`;
+                
+                // Modification pour l'heure de Paris
+                const parisTime = p.last_seen ? new Date(p.last_seen).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }) : 'Jamais';
+                
+                html += `<tr><td>${p.id}</td><td style="color:${color}">${p.status}</td><td>${parisTime}</td></tr>`;
             });
             usersTableContainer.innerHTML = html + '</tbody></table>';
         } catch (e) {
@@ -605,7 +609,7 @@ h2 {
     }
     document.getElementById('loadUsersBtn').addEventListener('click', loadAllUsers);
 
-    // --- 4. NOUVEAU : Logique des Versions ---
+    // --- 4. Logique des Versions ---
     const submitVersionBtn = document.getElementById('submitVersionBtn');
     const versionsListContainer = document.getElementById('versionsListContainer');
     const versionsMessage = document.getElementById('versionsMessage');
@@ -659,6 +663,17 @@ h2 {
             submitVersionBtn.disabled = false;
             submitVersionBtn.textContent = "Publier la Version";
         }
+    });
+
+    // LOGS
+    document.getElementById('loadLogsBtn')?.addEventListener('click', async () => {
+        const logContent = document.getElementById('logContent');
+        document.getElementById('logsMessage').style.display = 'block';
+        try {
+            const data = await fetchData('admin_access', 'GET');
+            logContent.textContent = JSON.stringify(data, null, 4); 
+        } catch (error) { logContent.textContent = "Erreur: " + error.message; }
+        document.getElementById('logsMessage').style.display = 'none';
     });
 
 </script>

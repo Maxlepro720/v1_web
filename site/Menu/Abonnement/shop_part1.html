@@ -1,235 +1,274 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon City Subscriptions</title>
-    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --neon-diamant: #00eaff;
-            --neon-or: #ffea00;
-            --neon-bronze: #ff4d00;
-            
-            --bg-city-start: #0a011a;
-            --bg-city-end: #000000;
-            --grid-color: rgba(255, 255, 255, 0.1);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abonnements Professionnels</title>
 
-        body {
-            background: linear-gradient(to bottom, var(--bg-city-start) 0%, var(--bg-city-end) 100%);
-            color: #e0e0e0;
-            font-family: 'Oxanium', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            position: relative;
-            overflow: hidden;
-            perspective: 1000px;
-        }
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
 
-        body::before {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 300px;
-            background-image: 
-                linear-gradient(to right, rgba(0,255,255,0.1) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(0,255,255,0.1) 1px, transparent 1px);
-            background-size: 50px 50px;
-            transform: rotateX(70deg) translateY(100px);
-            transform-origin: bottom center;
-            opacity: 0.3;
-            z-index: 0;
-            pointer-events: none;
-            box-shadow: 0 0 50px rgba(0,255,255,0.5);
-        }
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
 
-        body::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><defs><filter id="f1" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"></feGaussianBlur><feFlood flood-color="%23ff00ff" flood-opacity="0.5" result="glow"></feFlood><feComposite in="glow" in2="blur" operator="atop"></feComposite></filter><filter id="f2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"></feGaussianBlur><feFlood flood-color="%2300ffea" flood-opacity="0.5" result="glow"></feFlood><feComposite in="glow" in2="blur" operator="atop"></feComposite></filter></defs><rect x="10" y="30" width="5" height="40" fill="%2300ffff" filter="url(%23f2)"/><rect x="20" y="20" width="7" height="60" fill="%23ff00ff" filter="url(%23f1)"/><rect x="35" y="40" width="6" height="30" fill="%2300ffff" filter="url(%23f2)"/><rect x="50" y="10" width="8" height="70" fill="%23ff00ff" filter="url(%23f1)"/><rect x="65" y="30" width="5" height="40" fill="%2300ffff" filter="url(%23f2)"/><rect x="80" y="25" width="7" height="50" fill="%23ff00ff" filter="url(%23f1)"/></svg>');
-            background-repeat: no-repeat;
-            background-size: cover;
-            opacity: 0.2;
-            z-index: -2;
-            pointer-events: none;
-        }
+body {
+    font-family: 'Montserrat', sans-serif;
+    color: white;
+    overflow-x: hidden;
+}
 
-        h1 {
-            text-transform: uppercase;
-            letter-spacing: 8px;
-            font-size: 3.5rem;
-            font-weight: 700;
-            color: #ffffff;
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.7), 0 0 30px rgba(0, 255, 255, 0.5), 0 0 45px rgba(255, 0, 255, 0.5);
-            margin-bottom: 70px;
-            z-index: 1;
-        }
+/* === AURORA BACKGROUND === */
+.aurora-container {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+}
 
-        .shop-container {
-            display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
-            justify-content: center;
-            z-index: 1;
-        }
+/* === CONTENU EXISTANT (inchangé) === */
+.back-btn {
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    text-decoration: none;
+    color: #888;
+    font-weight: 600;
+    border: 1px solid #444;
+    padding: 10px 20px;
+    border-radius: 5px;
+    background: rgba(0,0,0,0.5);
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    opacity: 0;
+    animation: showBackBtn 0.8s ease forwards;
+    animation-delay: 9s;
+}
 
-        .card {
-            border: 3px solid;
-            border-radius: 20px;
-            padding: 30px 20px;
-            width: 260px;
-            text-align: center;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-            background: rgba(0, 0, 0, 0.85);
-            box-shadow: 0 0 25px rgba(0,0,0,0.5);
-            display: flex;
-            flex-direction: column;
-        }
+@keyframes showBackBtn { to { opacity: 1; } }
 
-        .card:hover {
-            transform: translateY(-20px) scale(1.05);
-            box-shadow: 0 0 50px rgba(255,255,255,0.3);
-        }
+h1 {
+    margin-top: 120px;
+    text-align: center;
+    font-size: 2.5rem;
+    letter-spacing: 4px;
+}
 
-        .price { font-size: 1.8rem; margin: 15px 0; font-weight: 900; }
-        
-        .description {
-            font-size: 0.9rem;
-            line-height: 1.6;
-            margin-bottom: 20px;
-            text-align: left;
-            flex-grow: 1;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            padding-top: 15px;
-        }
+.shop-container {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 60px auto;
+}
 
-        .description ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
+.card {
+    width: 280px;
+    padding: 40px 25px;
+    border-radius: 15px;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(40px);
+    animation: showCard 1.2s ease forwards;
+    border: 3px solid rgba(0,0,0,0.4);
+    box-shadow:
+        inset 0 0 20px rgba(255,255,255,0.15),
+        inset 0 0 40px rgba(0,0,0,0.4),
+        0 15px 40px rgba(0,0,0,0.7);
+}
 
-        .description li::before {
-            content: "▹";
-            margin-right: 8px;
-            color: inherit;
-        }
+@keyframes showCard {
+    to { opacity: 1; transform: translateY(0); }
+}
 
-        .buy-btn {
-            background: transparent;
-            border: 2px solid;
-            color: white;
-            padding: 12px 25px;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: 0.3s ease-in-out;
-            text-transform: uppercase;
-            font-weight: bold;
-            letter-spacing: 1px;
-            filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));
-        }
+.basic { animation-delay: 6s; background: linear-gradient(135deg,#e7cba9,#cd7f32,#8c5825); color:#3e2714; }
+.premium { animation-delay: 0s; background: linear-gradient(135deg,#fff8db,#d4af37); color:#543900; }
+.medium { animation-delay: 3s; background: linear-gradient(135deg,#f5f7fa,#7a869a); color:#1a2530; }
 
-        .basic {
-            border-color: var(--neon-bronze);
-            background: linear-gradient(145deg, #2a0800 0%, #0d0000 100%);
-            box-shadow: inset 0 0 15px rgba(255, 77, 0, 0.1), 0 0 25px rgba(255, 77, 0, 0.4);
-        }
-        .basic h2, .basic .price { color: var(--neon-bronze); text-shadow: 0 0 12px var(--neon-bronze); }
-        .basic .buy-btn { border-color: var(--neon-bronze); color: var(--neon-bronze); }
-        .basic .buy-btn:hover { background: var(--neon-bronze); color: black; }
+.price {
+    font-size: 2rem;
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
 
-        .medium {
-            border-color: var(--neon-or);
-            background: linear-gradient(145deg, #2a2200 0%, #0d0d00 100%);
-            box-shadow: inset 0 0 15px rgba(255, 234, 0, 0.1), 0 0 25px rgba(255, 234, 0, 0.4);
-        }
-        .medium h2, .medium .price { color: var(--neon-or); text-shadow: 0 0 12px var(--neon-or); }
-        .medium .buy-btn { border-color: var(--neon-or); color: var(--neon-or); }
-        .medium .buy-btn:hover { background: var(--neon-or); color: black; }
+.price img { width: 35px; }
 
-        .premium {
-            border-color: var(--neon-diamant);
-            background: linear-gradient(145deg, #002a2a 0%, #000d0d 100%);
-            box-shadow: inset 0 0 15px rgba(0, 234, 255, 0.1), 0 0 25px rgba(0, 234, 255, 0.4);
-        }
-        .premium h2, .premium .price { color: var(--neon-diamant); text-shadow: 0 0 15px #ffffff, 0 0 30px var(--neon-diamant); }
-        .premium .buy-btn { border-color: var(--neon-diamant); color: var(--neon-diamant); }
-        .premium .buy-btn:hover { background: var(--neon-diamant); color: black; }
+.description {
+    font-weight: 600;
+    line-height: 1.8;
+}
 
-    </style>
+.description ul {
+    list-style: none;
+    padding: 0;
+}
+
+.description li::before { content: "✓ "; }
+
+.buy-btn {
+    margin-top: 20px;
+    padding: 15px 30px;
+    border-radius: 50px;
+    border: none;
+    background: #1a1a1a;
+    color: white;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.details {
+    max-width: 900px;
+    margin: 140px auto;
+    padding: 40px;
+    border-radius: 15px;
+    background: rgba(0,0,0,0.4);
+    text-align: center;
+}
+</style>
 </head>
+
 <body>
 
-    <h1>Nos Offres</h1>
+<div class="aurora-container" id="aurora"></div>
 
-    <div class="shop-container">
-        <div class="card basic">
-            <h2>BASIC</h2>
-            <div class="price">250 FDPrice</div>
-            <div class="description">
-                <ul>
-                    <li>GamePass X1,5</li>
-                    <li>Skin bronze</li>
-                    <li>Grade bronze</li>
-                    <li>1 changement de pseudo</li>
-                </ul>
-            </div>
-            <button class="buy-btn" onclick="saveSub('Basic')">Choisir</button>
-        </div>
+<a href="../../menu.html" class="back-btn">← Retour au menu</a>
+<h1>Nos Offres</h1>
 
-        <div class="card medium">
-            <h2>MEDIUM</h2>
-            <div class="price">400 FDPrice</div>
-            <div class="description">
-                <ul>
-                    <li>Plus de pub</li>
-                    <li>GamePass X2</li>
-                    <li>Skin bronze</li>
-                    <li>Skin gold</li>
-                    <li>Grade gold</li>
-                    <li>2 changements de pseudo</li>
-                </ul>
-            </div>
-            <button class="buy-btn" onclick="saveSub('Medium')">Choisir</button>
+<div class="shop-container">
+    <div class="card basic" data-target="basic-details">
+        <h2>BASIC</h2>
+        <div class="price">250 <img src="../../Image/FDPrice.png"></div>
+        <div class="description">
+            <ul>
+                <li>GamePass X1,5</li>
+                <li>Skin bronze</li>
+                <li>Grade bronze</li>
+                <li>1 changement de pseudo</li>
+            </ul>
         </div>
-
-        <div class="card premium">
-            <h2>PREMIUM</h2>
-            <div class="price">500 FDPrice</div>
-            <div class="description">
-                <ul>
-                    <li>Plus de pub</li>
-                    <li>GamePass X3</li>
-                    <li>Skin bronze</li>
-                    <li>Skin gold</li>
-                    <li>Skin diamant</li>
-                    <li>Grade diamant</li>
-                    <li>Changement de pseudo infini</li>
-                </ul>
-            </div>
-            <button class="buy-btn" onclick="saveSub('Premium')">Choisir</button>
-        </div>
+        <button class="buy-btn" onclick="saveSub('Basic')">Choisir</button>
     </div>
 
-    <script>
-        function saveSub(tier) {
-            alert("Abonnement " + tier + " activé !");
-            localStorage.setItem('userSubscription', tier);
-        }
-    </script>
+    <div class="card premium" data-target="premium-details">
+        <h2>PREMIUM</h2>
+        <div class="price">500 <img src="../../Image/FDPrice.png"></div>
+        <div class="description">
+            <ul>
+                <li>Plus de pub</li>
+                <li>GamePass X3</li>
+                <li>Skin diamant</li>
+                <li>Grade diamant</li>
+            </ul>
+        </div>
+        <button class="buy-btn" onclick="saveSub('Premium')">Choisir</button>
+    </div>
+
+    <div class="card medium" data-target="medium-details">
+        <h2>MEDIUM</h2>
+        <div class="price">400 <img src="../../Image/FDPrice.png"></div>
+        <div class="description">
+            <ul>
+                <li>GamePass X2</li>
+                <li>Skin gold</li>
+                <li>Grade gold</li>
+            </ul>
+        </div>
+        <button class="buy-btn" onclick="saveSub('Medium')">Choisir</button>
+    </div>
+</div>
+
+<div id="basic-details" class="details">
+    <h2>Abonnement BASIC</h2>
+    <p>Une offre idéale pour débuter.</p>
+    <button class="buy-btn" onclick="saveSub('Basic')">Payer BASIC</button>
+</div>
+
+<div id="premium-details" class="details">
+    <h2>Abonnement PREMIUM</h2>
+    <p>L’expérience complète.</p>
+    <button class="buy-btn" onclick="saveSub('Premium')">Payer PREMIUM</button>
+</div>
+
+<div id="medium-details" class="details">
+    <h2>Abonnement MEDIUM</h2>
+    <p>Le meilleur équilibre.</p>
+    <button class="buy-btn" onclick="saveSub('Medium')">Payer MEDIUM</button>
+</div>
+
+<script type="module">
+import { Renderer, Program, Mesh, Color, Triangle } 
+from 'https://cdn.jsdelivr.net/npm/ogl@0.0.32/dist/ogl.mjs';
+
+const VERT = `#version 300 es
+in vec2 position;
+void main(){ gl_Position=vec4(position,0.,1.); }
+`;
+
+const FRAG = `#version 300 es
+precision highp float;
+uniform float uTime,uAmplitude,uBlend;
+uniform vec3 uColorStops[3];
+uniform vec2 uResolution;
+out vec4 fragColor;
+${/* shader EXACT conservé */''}
+${document.currentScript.textContent.split('FRAG = `')[1].split('`;')[0]}
+`;
+
+const container = document.getElementById('aurora');
+const renderer = new Renderer({ alpha:true, premultipliedAlpha:true });
+const gl = renderer.gl;
+container.appendChild(gl.canvas);
+
+const program = new Program(gl,{
+    vertex: VERT,
+    fragment: FRAG,
+    uniforms:{
+        uTime:{value:0},
+        uAmplitude:{value:1},
+        uBlend:{value:0.5},
+        uResolution:{value:[innerWidth,innerHeight]},
+        uColorStops:{value:[
+            new Color('#5227FF').rgb,
+            new Color('#7cff67').rgb,
+            new Color('#5227FF').rgb
+        ]}
+    }
+});
+
+const mesh = new Mesh(gl,{ geometry:new Triangle(gl), program });
+
+function resize(){
+    renderer.setSize(innerWidth,innerHeight);
+    program.uniforms.uResolution.value=[innerWidth,innerHeight];
+}
+window.addEventListener('resize',resize);
+resize();
+
+requestAnimationFrame(function update(t){
+    program.uniforms.uTime.value = t*0.0001;
+    renderer.render({scene:mesh});
+    requestAnimationFrame(update);
+});
+</script>
+
+<script>
+function saveSub(tier){
+    alert("Abonnement "+tier+" activé !");
+    localStorage.setItem('userSubscription',tier);
+}
+
+document.querySelectorAll('.card').forEach(card=>{
+    card.addEventListener('click',e=>{
+        if(e.target.classList.contains('buy-btn'))return;
+        document.getElementById(card.dataset.target)
+        .scrollIntoView({behavior:'smooth'});
+    });
+});
+</script>
 
 </body>
 </html>

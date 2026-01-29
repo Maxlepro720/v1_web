@@ -9,7 +9,7 @@ if (!PLAYER_ID) {
         try {
             const response = await fetch(`${API_URL}/get_ban?id=${PLAYER_ID}`);
             const data = await response.json();
-            print(data)
+            console.log(data)
             if (data.status === "success" && data.is_banned === true) {
                 alert("Vous avez été banni. L'onglet va se fermer.");
                 window.close();

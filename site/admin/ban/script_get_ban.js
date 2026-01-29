@@ -11,17 +11,33 @@ if (!PLAYER_ID) {
             const data = await response.json();
             console.log(data)
             if (data.status === "success" && data.is_banned === true) {
-                alert("Vous avez été banni. L'onglet va se fermer.");
-                window.close();
+
+                document.body.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        inset: 0;
+                        background: black;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 120px;
+                        font-weight: 900;
+                        font-family: Arial Black, Impact, sans-serif;
+                        color: white;
+                        letter-spacing: 8px;
+                    ">
+                        BANNIS
+                    </div>
+                `;
             }
         } catch (error) {
             console.error("Erreur lors de la vérification du ban :", error);
         }
     }
 
-        // Vérification immédiate au chargement
+    // Vérification immédiate au chargement
     checkBan();
 
-        // Vérification toutes les 30 secondes
+    // Vérification toutes les 30 secondes
     setInterval(checkBan, 30000);
 }

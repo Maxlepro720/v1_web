@@ -1,4 +1,4 @@
-const API_URL = "https://project-3-api-2bgb.onrender.com";
+const API_URL_2 = "https://project-3-api-2bgb.onrender.com";
 const PLAYER_ID = localStorage.getItem("username"); // ou remplace par ton système
 console.log("start_ban_verification")
 
@@ -7,7 +7,7 @@ if (!PLAYER_ID) {
 } else {
     async function checkBan() {
         try {
-            const response = await fetch(`${API_URL}/get_ban?id=${PLAYER_ID}`);
+            const response = await fetch(`${API_URL_2}/get_ban?id=${PLAYER_ID}`);
             const data = await response.json();
             console.log(data)
             if (data.status === "success" && data.is_banned === true) {

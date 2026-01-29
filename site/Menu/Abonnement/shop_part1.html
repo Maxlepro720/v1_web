@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Abonnements Professionnels</title>
-
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
 
 <style>
@@ -21,13 +20,14 @@ body {
 }
 
 /* === AURORA BACKGROUND === */
-.aurora-container {
+#aurora-bg {
     position: fixed;
     inset: 0;
-    z-index: -1;
+    z-index: -2;
+    background: #0b0b0f;
 }
 
-/* === CONTENU EXISTANT (inchangé) === */
+/* === CONTENU === */
 .back-btn {
     position: absolute;
     top: 30px;
@@ -94,19 +94,13 @@ h1 {
     justify-content: center;
     gap: 10px;
 }
-
 .price img { width: 35px; }
 
 .description {
     font-weight: 600;
     line-height: 1.8;
 }
-
-.description ul {
-    list-style: none;
-    padding: 0;
-}
-
+.description ul { list-style: none; padding: 0; }
 .description li::before { content: "✓ "; }
 
 .buy-btn {
@@ -130,10 +124,9 @@ h1 {
 }
 </style>
 </head>
-
 <body>
 
-<div class="aurora-container" id="aurora"></div>
+<div id="aurora-bg"></div>
 
 <a href="../../menu.html" class="back-btn">← Retour au menu</a>
 <h1>Nos Offres</h1>
@@ -200,59 +193,60 @@ h1 {
 </div>
 
 <script type="module">
-import { Renderer, Program, Mesh, Color, Triangle } 
-from 'https://cdn.jsdelivr.net/npm/ogl@0.0.32/dist/ogl.mjs';
+import { Renderer, Program, Mesh, Color, Triangle } from 'https://cdn.skypack.dev/ogl';
 
-const VERT = `#version 300 es
-in vec2 position;
-void main(){ gl_Position=vec4(position,0.,1.); }
+const VERT = `
+attribute vec2 position;
+void main() {
+  gl_Position = vec4(position,0.0,1.0);
+}
 `;
 
-const FRAG = `#version 300 es
+const FRAG = `
 precision highp float;
-uniform float uTime,uAmplitude,uBlend;
-uniform vec3 uColorStops[3];
+uniform float uTime;
 uniform vec2 uResolution;
-out vec4 fragColor;
-${/* shader EXACT conservé */''}
-${document.currentScript.textContent.split('FRAG = `')[1].split('`;')[0]}
+float noise(vec2 p){ return sin(p.x)*sin(p.y); }
+void main(){
+  vec2 uv = gl_FragCoord.xy / uResolution;
+  float t = uTime * 0.15;
+  float y = uv.y + noise(uv*3.0+t)*0.15;
+  vec3 col = mix(vec3(0.32,0.15,0.9), vec3(0.4,1.0,0.45), smoothstep(0.2,0.7,y));
+  float alpha = smoothstep(0.1,0.5,y);
+  gl_FragColor = vec4(col*alpha, alpha);
+}
 `;
 
-const container = document.getElementById('aurora');
-const renderer = new Renderer({ alpha:true, premultipliedAlpha:true });
+const container = document.getElementById('aurora-bg');
+const renderer = new Renderer({ alpha:true });
 const gl = renderer.gl;
 container.appendChild(gl.canvas);
 
+const geometry = new Triangle(gl);
 const program = new Program(gl,{
     vertex: VERT,
     fragment: FRAG,
     uniforms:{
         uTime:{value:0},
-        uAmplitude:{value:1},
-        uBlend:{value:0.5},
-        uResolution:{value:[innerWidth,innerHeight]},
-        uColorStops:{value:[
-            new Color('#5227FF').rgb,
-            new Color('#7cff67').rgb,
-            new Color('#5227FF').rgb
-        ]}
+        uResolution:{value:[innerWidth,innerHeight]}
     }
 });
 
-const mesh = new Mesh(gl,{ geometry:new Triangle(gl), program });
+const mesh = new Mesh(gl,{ geometry, program });
 
 function resize(){
     renderer.setSize(innerWidth,innerHeight);
     program.uniforms.uResolution.value=[innerWidth,innerHeight];
 }
-window.addEventListener('resize',resize);
+window.addEventListener('resize', resize);
 resize();
 
-requestAnimationFrame(function update(t){
-    program.uniforms.uTime.value = t*0.0001;
-    renderer.render({scene:mesh});
+function update(t){
     requestAnimationFrame(update);
-});
+    program.uniforms.uTime.value = t*0.001;
+    renderer.render({scene:mesh});
+}
+update();
 </script>
 
 <script>
@@ -263,7 +257,7 @@ function saveSub(tier){
 
 document.querySelectorAll('.card').forEach(card=>{
     card.addEventListener('click',e=>{
-        if(e.target.classList.contains('buy-btn'))return;
+        if(e.target.classList.contains('buy-btn')) return;
         document.getElementById(card.dataset.target)
         .scrollIntoView({behavior:'smooth'});
     });

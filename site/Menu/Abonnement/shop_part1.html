@@ -19,12 +19,11 @@ body {
     overflow-x: hidden;
 }
 
-/* === AURORA BACKGROUND === */
-#aurora-bg {
+/* === VANTA BIRDS BACKGROUND === */
+#vanta-bg {
     position: fixed;
     inset: 0;
     z-index: -2;
-    background: #0b0b0f;
 }
 
 /* === CONTENU === */
@@ -126,7 +125,7 @@ h1 {
 </head>
 <body>
 
-<div id="aurora-bg"></div>
+<div id="vanta-bg"></div>
 
 <a href="../../menu.html" class="back-btn">← Retour au menu</a>
 <h1>Nos Offres</h1>
@@ -192,61 +191,24 @@ h1 {
     <button class="buy-btn" onclick="saveSub('Medium')">Payer MEDIUM</button>
 </div>
 
-<script type="module">
-import { Renderer, Program, Mesh, Color, Triangle } from 'https://cdn.skypack.dev/ogl';
-
-const VERT = `
-attribute vec2 position;
-void main() {
-  gl_Position = vec4(position,0.0,1.0);
-}
-`;
-
-const FRAG = `
-precision highp float;
-uniform float uTime;
-uniform vec2 uResolution;
-float noise(vec2 p){ return sin(p.x)*sin(p.y); }
-void main(){
-  vec2 uv = gl_FragCoord.xy / uResolution;
-  float t = uTime * 0.15;
-  float y = uv.y + noise(uv*3.0+t)*0.15;
-  vec3 col = mix(vec3(0.32,0.15,0.9), vec3(0.4,1.0,0.45), smoothstep(0.2,0.7,y));
-  float alpha = smoothstep(0.1,0.5,y);
-  gl_FragColor = vec4(col*alpha, alpha);
-}
-`;
-
-const container = document.getElementById('aurora-bg');
-const renderer = new Renderer({ alpha:true });
-const gl = renderer.gl;
-container.appendChild(gl.canvas);
-
-const geometry = new Triangle(gl);
-const program = new Program(gl,{
-    vertex: VERT,
-    fragment: FRAG,
-    uniforms:{
-        uTime:{value:0},
-        uResolution:{value:[innerWidth,innerHeight]}
-    }
-});
-
-const mesh = new Mesh(gl,{ geometry, program });
-
-function resize(){
-    renderer.setSize(innerWidth,innerHeight);
-    program.uniforms.uResolution.value=[innerWidth,innerHeight];
-}
-window.addEventListener('resize', resize);
-resize();
-
-function update(t){
-    requestAnimationFrame(update);
-    program.uniforms.uTime.value = t*0.001;
-    renderer.render({scene:mesh});
-}
-update();
+<!-- VANTA.JS -->
+<script src="three.r134.min.js"></script>
+<script src="vanta.birds.min.js"></script>
+<script>
+VANTA.BIRDS({
+  el: "#vanta-bg",
+  mouseControls: true,
+  touchControls: true,
+  gyroControls: false,
+  minHeight: 200.00,
+  minWidth: 200.00,
+  scale: 1.00,
+  scaleMobile: 1.00,
+  backgroundColor: 0x7080aa, // violet pastel
+  color1: 0x6b00ff,
+  color2: 0xbb33ff,
+  quantity: 3
+})
 </script>
 
 <script>

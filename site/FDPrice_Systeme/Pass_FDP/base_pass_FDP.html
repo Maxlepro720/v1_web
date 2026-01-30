@@ -851,7 +851,8 @@ setTimeout(() => {
 // =======================
 // TEST (à décommenter pour tester)
 // =======================
-setInterval(() => {heures = window.elapsedTime}, 3000);
+// heures entières
+setInterval(() => {const heure = Math.floor(window.elapsedTime / 3600); heures = heure}, 3000);
 </script>
 
 </body>

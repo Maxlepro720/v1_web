@@ -1,6 +1,7 @@
 (() => {
     const SERVER_URL = "https://project-3-api-2bgb.onrender.com"; // <-- change avec ton endpoint Flask
     const USERNAME = localStorage.getItem('username'); // <-- change dynamiquement si besoin
+    console.log("start du script")
 
     let hudVisible = false;
     let startTime = Date.now();
@@ -74,6 +75,7 @@
                 body: JSON.stringify({ username: USERNAME })
             });
             const data = await res.json();
+            console.log(data)
             elapsedTime = data.Time || 0;
             fdPiece = data.FDPiece || 0;
             updateHUD();

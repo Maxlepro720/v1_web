@@ -122,6 +122,7 @@
         // Tick chaque seconde pour incrémenter le temps
         tickIntervalID = setInterval(() => {
             elapsedTime += 1;
+            window.elapsedTime = elapsedTime;
             updateHUD();
         }, 1000);
 

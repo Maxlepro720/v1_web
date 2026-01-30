@@ -446,8 +446,8 @@ html, body {
 <!-- NAVBAR -->
 <div class="navbar">
   <div class="title-section">
-    <div class="title">BATTLE PASS</div>
-    <div class="subtitle">Season 1 • Chapter 1</div>
+    <div class="title">TIME PASS</div>
+    <div class="subtitle">TIME -> FDPièces</div>
   </div>
   <div class="stats">
     <div class="stat-box">
@@ -558,7 +558,6 @@ async function sendFDPrice(username, value) {
     });
     argent = value;
     moneyUI.textContent = argent.toLocaleString();
-    showNotification(`+${value} FDPrice récupérées !`, '💰');
   } catch (err) {
     console.error('Erreur send FDPrice:', err);
   }

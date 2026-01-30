@@ -1,13 +1,13 @@
 (() => {
-    const SERVER_URL = "https://project-3-api-2bgb.onrender.com"; // <-- change avec ton endpoint Flask
-    const USERNAME = localStorage.getItem('username'); // <-- change dynamiquement si besoin
-    console.log("start du script")
+    const SERVER_URL = "https://project-3-api-2bgb.onrender.com";
+    const USERNAME = localStorage.getItem('username');
+    console.log("start du script");
 
     let hudVisible = false;
-    let startTime = Date.now();
     let elapsedTime = 0; // en secondes
     let fdPiece = 0;
-    let intervalID;
+    let sendIntervalID;
+    let tickIntervalID;
 
     // Création HUD
     const hud = document.createElement("div");
@@ -32,7 +32,10 @@
         <div>Argent: <span id="hudFD">0</span></div>
     `;
 
-    document.body.appendChild(hud);
+    document.addEventListener("DOMContentLoaded", () => {
+        document.body.appendChild(hud);
+        initHUD();
+    });
 
     const hudTime = hud.querySelector("#hudTime");
     const hudFD = hud.querySelector("#hudFD");
@@ -66,7 +69,6 @@
         hud.style.display = hudVisible ? "block" : "none";
     }
 
-    // Récupération initiale depuis le serveur
     async function fetchData() {
         try {
             const res = await fetch(`${SERVER_URL}/get_time_FDPrice`, {
@@ -75,7 +77,7 @@
                 body: JSON.stringify({ username: USERNAME })
             });
             const data = await res.json();
-            console.log(data)
+            console.log(data);
             elapsedTime = data.Time || 0;
             fdPiece = data.FDPiece || 0;
             updateHUD();
@@ -96,11 +98,8 @@
         return `${h}h ${m}m ${s}s`;
     }
 
-    // Envoi au serveur toutes les 30s
     async function sendData() {
         try {
-            elapsedTime += 30; // incrément temps écoulé
-            updateHUD();
             await fetch(`${SERVER_URL}/send_time`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -111,14 +110,23 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username: USERNAME, FDPiece: fdPiece })
             });
+            console.log("Données envoyées au serveur");
         } catch(e){
             console.error("Erreur envoi FDPiece:", e);
         }
     }
 
-    // Lancement
-    fetchData();
-    intervalID = setInterval(sendData, 30000);
+    function initHUD() {
+        fetchData();
+
+        // Tick chaque seconde pour incrémenter le temps
+        tickIntervalID = setInterval(() => {
+            elapsedTime += 1;
+            updateHUD();
+        }, 1000);
+
+        // Envoi toutes les 30 secondes
+        sendIntervalID = setInterval(sendData, 30000);
+    }
 
 })();
-

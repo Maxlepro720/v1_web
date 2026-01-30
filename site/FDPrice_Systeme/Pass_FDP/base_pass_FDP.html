@@ -568,7 +568,7 @@ async function sendFDPrice(username, value) {
 // DÉFINITION DES RÉCOMPENSES PAR NIVEAU
 // =======================
 const LEVEL_REWARDS = [
-  { level: 1, icon: '⭐', name: '10 FDPièces', value: 10, onClaim: function() { showNotification('+10 FDPièces récupérées !', '⭐'); sendFDPrice(username, 10); } },
+  { level: 1, icon: '⭐', name: '10 FDPièces', value: 10, onClaim: function() { showNotification('+10 FDPièces récupérées !', '⭐'); sendFDPrice(username, 10); sendClaimedLevel(username, 1) } },
   { level: 2, icon: '⭐', name: '10 FDPièces', value: 10, onClaim: function() { showNotification('+10 FDPièces récupérées !', '⭐'); sendFDPrice(username, 10); } },
   { level: 3, icon: '⭐', name: '10 FDPièces', value: 10, onClaim: function() { showNotification('+10 FDPièces récupérées !', '⭐'); sendFDPrice(username, 10); } },
   { level: 4, icon: '⭐', name: '10 FDPièces', value: 10, onClaim: function() { argent += 750; moneyUI.textContent = argent.toLocaleString(); showNotification('+750💰 Gemmes récupérées !', '💎'); } },

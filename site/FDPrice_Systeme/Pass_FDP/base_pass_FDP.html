@@ -508,6 +508,7 @@ VANTA.WAVES({
 // VARIABLES
 // =======================
 let heures = 0;
+URL_SERVER ="https://project-3-api-2bgb.onrender.com"
 const username = localStorage.getItem('username');
 let argent = 2500;
 let lastClaimedLevel = 0; // <-- dernière récompense récupérée
@@ -539,7 +540,7 @@ async function fetchLastClaimed(username) {
 // =======================
 async function sendClaimedLevel(username, level) {
   try {
-    await fetch('/set_evo_pass', {
+      await fetch(`${URL_SERVER}/set_evo_pass`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, Pass: level })
@@ -550,13 +551,14 @@ async function sendClaimedLevel(username, level) {
 }
 async function sendFDPrice(username, value) {
   try {
-    await fetch('/send_FDPrice', {
+    await fetch(`${URL_SERVER}/send_FDPrice`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, FDPiece: value })
     });
     argent = value;
     moneyUI.textContent = argent.toLocaleString();
+    showNotification(`+${value} FDPrice récupérées !`, '💰');
   } catch (err) {
     console.error('Erreur send FDPrice:', err);
   }

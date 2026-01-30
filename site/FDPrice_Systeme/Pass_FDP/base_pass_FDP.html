@@ -543,7 +543,7 @@ async function sendClaimedLevel(username, level) {
       await fetch(`${URL_SERVER}/set_evo_pass`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, Pass: level })
+      body: JSON.stringify({ username : username, Pass: level })
     });
   } catch (err) {
     console.error('Erreur send claimed level:', err);

@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Time Pass</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Poppins', sans-serif;
+  color: #fff;
+  overflow: hidden;
+}
+
+#vanta-bg {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* ===== NAVBAR PREMIUM ===== */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(180deg, rgba(10, 15, 35, 0.95), rgba(5, 10, 25, 0.85));
+  backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  z-index: 10;
+  border-bottom: 2px solid rgba(255, 215, 0, 0.2);
+}
+
+.navbar .title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navbar .title {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, #FFD700, #FFA500, #FF6B6B);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+}
+
+.navbar .subtitle {
+  font-size: 11px;
+  color: #8B9DC3;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.navbar .stats {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.stat-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 165, 0, 0.15));
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 215, 0, 0.4);
+  padding: 10px 18px;
+  border-radius: 20px;
+  font-weight: 900;
+  font-size: 16px;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3),
+              inset 0 2px 5px rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.stat-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+}
+
+.stat-icon {
+  font-size: 20px;
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
+}
+
+/* ===== PROGRESS BAR ===== */
+.progress-container {
+  position: fixed;
+  top: 80px;
+  left: 0;
+  right: 0;
+  padding: 20px 30px;
+  background: linear-gradient(180deg, rgba(10, 15, 35, 0.9), transparent);
+  backdrop-filter: blur(10px);
+  z-index: 9;
+}
+
+.progress-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #B0C4DE;
+}
+
+.progress-bar-bg {
+  height: 12px;
+  background: rgba(20, 25, 45, 0.8);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FFD700, #FFA500, #FF6B6B);
+  border-radius: 8px;
+  width: 0%;
+  transition: width 0.5s ease;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* ===== CONTAINER ===== */
+.container {
+  position: absolute;
+  top: 160px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  overflow-y: auto;
+  padding: 20px 20px 40px;
+  z-index: 1;
+}
+
+.container::-webkit-scrollbar {
+  width: 10px;
+}
+
+.container::-webkit-scrollbar-track {
+  background: rgba(10, 15, 35, 0.5);
+}
+
+.container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #FFD700, #FFA500);
+  border-radius: 10px;
+}
+
+/* ===== PASS LEVELS ===== */
+.pass {
+  max-width: 900px;
+  margin: auto;
+  display: grid;
+  gap: 16px;
+}
+
+.level {
+  background: linear-gradient(145deg, rgba(25, 35, 60, 0.9), rgba(15, 25, 50, 0.95));
+  backdrop-filter: blur(15px);
+  border-radius: 20px;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 2px solid rgba(100, 120, 180, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.level::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.level:hover::before {
+  left: 100%;
+}
+
+.level:hover {
+  transform: translateX(8px) scale(1.02);
+  border-color: rgba(255, 215, 0, 0.5);
+  box-shadow: 0 12px 40px rgba(255, 215, 0, 0.3);
+}
+
+.level.locked {
+  opacity: 0.4;
+  filter: grayscale(0.8);
+}
+
+.level.locked::after {
+  content: '🔒';
+  position: absolute;
+  right: 24px;
+  font-size: 32px;
+  opacity: 0.3;
+}
+
+.level.unlocked {
+  border-color: rgba(255, 215, 0, 0.6);
+  box-shadow: 0 8px 32px rgba(255, 215, 0, 0.2);
+  opacity: 1;
+}
+
+.level.unlock-effect {
+  animation: unlockPulse 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes unlockPulse {
+  0% { 
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7);
+  }
+  50% { 
+    transform: scale(1.08);
+    box-shadow: 0 0 40px 20px rgba(255, 215, 0, 0.4);
+  }
+  100% { 
+    transform: scale(1);
+    box-shadow: 0 8px 32px rgba(255, 215, 0, 0.2);
+  }
+}
+
+.level-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.level-number {
+  font-size: 32px;
+  font-weight: 900;
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  min-width: 60px;
+  text-align: center;
+}
+
+.level-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.level-title {
+  font-weight: 700;
+  font-size: 16px;
+  color: #E8F0FF;
+}
+
+.level-hours {
+  font-size: 12px;
+  color: #8B9DC3;
+  font-weight: 600;
+}
+
+.reward {
+  background: linear-gradient(135deg, #FFD700, #FFA500, #FF6B6B);
+  color: #1a1a2e;
+  padding: 12px 24px;
+  border-radius: 16px;
+  font-weight: 900;
+  font-size: 15px;
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4),
+              inset 0 2px 5px rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  position: relative;
+}
+
+.reward:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.6);
+}
+
+.reward.claimed {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
+  cursor: default;
+}
+
+.reward.claimed::after {
+  content: '✓';
+  position: absolute;
+  right: -8px;
+  top: -8px;
+  background: #fff;
+  color: #27ae60;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.reward.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.reward-claim-effect {
+  animation: claimReward 0.6s ease-out;
+}
+
+@keyframes claimReward {
+  0% { 
+    transform: scale(1) rotate(0deg);
+  }
+  25% { 
+    transform: scale(1.2) rotate(-5deg);
+  }
+  50% { 
+    transform: scale(1.3) rotate(5deg);
+  }
+  75% { 
+    transform: scale(1.1) rotate(-2deg);
+  }
+  100% { 
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.reward-icon {
+  font-size: 18px;
+}
+
+/* Milestones spéciaux */
+.level[data-milestone="true"] {
+  background: linear-gradient(145deg, rgba(138, 43, 226, 0.3), rgba(75, 0, 130, 0.4));
+  border: 3px solid rgba(186, 85, 211, 0.6);
+}
+
+.level[data-milestone="true"] .level-number {
+  background: linear-gradient(135deg, #DA70D6, #BA55D3);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.level[data-milestone="true"] .reward {
+  background: linear-gradient(135deg, #DA70D6, #BA55D3, #9370DB);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 15px;
+    height: 70px;
+  }
+  
+  .navbar .title {
+    font-size: 20px;
+  }
+  
+  .stat-box {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  .level {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  
+  .reward {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- VANTA BACKGROUND -->
+<div id="vanta-bg"></div>
+
+<!-- NAVBAR -->
+<div class="navbar">
+  <div class="title-section">
+    <div class="title">BATTLE PASS</div>
+    <div class="subtitle">Season 1 • Chapter 1</div>
+  </div>
+  <div class="stats">
+    <div class="stat-box">
+      <span class="stat-icon">💰</span>
+      <span id="money">0</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-icon">⏱️</span>
+      <span id="hours-display">0h</span>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS BAR -->
+<div class="progress-container">
+  <div class="progress-wrapper">
+    <div class="progress-info">
+      <span>Niveau <span id="current-level">0</span> / <span id="total-levels">90</span></span>
+      <span id="progress-percent">0%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="container" id="container">
+  <div class="pass" id="pass"></div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js"></script>
+
+<script>
+// =======================
+// VANTA.JS BACKGROUND
+// =======================
+VANTA.WAVES({
+  el: "#vanta-bg",
+  mouseControls: true,
+  touchControls: true,
+  gyroControls: false,
+  minHeight: 200.00,
+  minWidth: 200.00,
+  scale: 1.00,
+  scaleMobile: 1.00,
+  color: 0x1a1f3a,
+  shininess: 40.00,
+  waveHeight: 15.00,
+  waveSpeed: 0.75,
+  zoom: 0.65
+});
+
+// =======================
+// VARIABLES
+// =======================
+let heures = 0;
+let argent = 2500;
+
+const TOTAL_LEVELS = 90;
+const HOURS_PER_LEVEL = 1;
+
+// =======================
+// DÉFINITION DES RÉCOMPENSES PAR NIVEAU
+// =======================
+const LEVEL_REWARDS = [
+  // Niveaux 1-10
+  { level: 1, icon: '💎', name: 'Gemmes', value: 50, onClaim: function() { argent += 500; moneyUI.textContent = argent.toLocaleString(); showNotification('+500💰 Gemmes récupérées !', '💎'); } },
+  { level: 2, icon: '⭐', name: 'Étoiles', value: 25, onClaim: function() { argent += 200; moneyUI.textContent = argent.toLocaleString(); showNotification('+200💰 Étoiles récupérées !', '⭐'); } },
+  { level: 3, icon: '🏆', name: 'Trophée', value: 100, onClaim: function() { argent += 500; moneyUI.textContent = argent.toLocaleString(); showNotification('+500💰 Trophée récupéré !', '🏆'); } },
+  { level: 4, icon: '💎', name: 'Gemmes', value: 75, onClaim: function() { argent += 750; moneyUI.textContent = argent.toLocaleString(); showNotification('+750💰 Gemmes récupérées !', '💎'); } },
+  { level: 5, icon: '🎁', name: 'Coffre', value: 1, onClaim: function() { argent += 1000; moneyUI.textContent = argent.toLocaleString(); showNotification('Coffre ouvert ! +1000💰', '🎁'); } },
+  { level: 6, icon: '⭐', name: 'Étoiles', value: 50, onClaim: function() { argent += 400; moneyUI.textContent = argent.toLocaleString(); showNotification('+400💰 Étoiles récupérées !', '⭐'); } },
+  { level: 7, icon: '🔥', name: 'Boost XP', value: 2, onClaim: function() { showNotification('Boost XP x2 activé !', '🔥'); console.log('Boost XP activé'); } },
+  { level: 8, icon: '💎', name: 'Gemmes', value: 100, onClaim: function() { argent += 1000; moneyUI.textContent = argent.toLocaleString(); showNotification('+1000💰 Gemmes récupérées !', '💎'); } },
+  { level: 9, icon: '🎯', name: 'Badge', value: 1, onClaim: function() { showNotification('Badge "Novice" débloqué !', '🎯'); console.log('Badge Novice débloqué'); } },
+  { level: 10, icon: '👑', name: 'Récompense Légendaire', value: 1000, onClaim: function() { argent += 5000; moneyUI.textContent = argent.toLocaleString(); showNotification('LÉGENDAIRE ! +5000💰', '👑'); } },
+  
+  // Niveaux 11-20
+  { level: 11, icon: '🛡️', name: 'Bouclier', value: 1, onClaim: function() { showNotification('Bouclier équipé !', '🛡️'); console.log('Bouclier équipé'); } },
+  { level: 12, icon: '💎', name: 'Gemmes', value: 150, onClaim: function() { argent += 1500; moneyUI.textContent = argent.toLocaleString(); showNotification('+1500💰 Gemmes récupérées !', '💎'); } },
+  { level: 13, icon: '⭐', name: 'Étoiles', value: 75, onClaim: function() { argent += 600; moneyUI.textContent = argent.toLocaleString(); showNotification('+600💰 Étoiles récupérées !', '⭐'); } },
+  { level: 14, icon: '🏆', name: 'Trophée', value: 150, onClaim: function() { argent += 750; moneyUI.textContent = argent.toLocaleString(); showNotification('+750💰 Trophée récupéré !', '🏆'); } },
+  { level: 15, icon: '🎁', name: 'Coffre Rare', value: 1, onClaim: function() { argent += 2000; moneyUI.textContent = argent.toLocaleString(); showNotification('Coffre Rare ouvert ! +2000💰', '🎁'); } },
+  { level: 16, icon: '⚔️', name: 'Épée', value: 1, onClaim: function() { showNotification('Épée équipée !', '⚔️'); console.log('Épée équipée'); } },
+  { level: 17, icon: '💎', name: 'Gemmes', value: 200, onClaim: function() { argent += 2000; moneyUI.textContent = argent.toLocaleString(); showNotification('+2000💰 Gemmes récupérées !', '💎'); } },
+  { level: 18, icon: '🔥', name: 'Boost XP', value: 3, onClaim: function() { showNotification('Boost XP x3 activé !', '🔥'); console.log('Boost XP x3 activé'); } },
+  { level: 19, icon: '⭐', name: 'Étoiles', value: 100, onClaim: function() { argent += 800; moneyUI.textContent = argent.toLocaleString(); showNotification('+800💰 Étoiles récupérées !', '⭐'); } },
+  { level: 20, icon: '🏆', name: 'Trophée', value: 200, onClaim: function() { argent += 1000; moneyUI.textContent = argent.toLocaleString(); showNotification('+1000💰 Trophée récupéré !', '🏆'); } },
+  
+  // Niveaux 21-25
+  { level: 21, icon: '💎', name: 'Gemmes', value: 250, onClaim: function() { argent += 2500; moneyUI.textContent = argent.toLocaleString(); showNotification('+2500💰 Gemmes récupérées !', '💎'); } },
+  { level: 22, icon: '🎯', name: 'Badge', value: 1, onClaim: function() { showNotification('Badge "Expert" débloqué !', '🎯'); console.log('Badge Expert débloqué'); } },
+  { level: 23, icon: '🎁', name: 'Coffre', value: 1, onClaim: function() { argent += 2500; moneyUI.textContent = argent.toLocaleString(); showNotification('Coffre ouvert ! +2500💰', '🎁'); } },
+  { level: 24, icon: '⭐', name: 'Étoiles', value: 125, onClaim: function() { argent += 1000; moneyUI.textContent = argent.toLocaleString(); showNotification('+1000💰 Étoiles récupérées !', '⭐'); } },
+  { level: 25, icon: '👑', name: 'Récompense Légendaire', value: 2500, onClaim: function() { argent += 10000; moneyUI.textContent = argent.toLocaleString(); showNotification('LÉGENDAIRE ! +10000💰', '👑'); } },
+  
+  // Niveaux 26-50
+  { level: 26, icon: '💎', name: 'Gemmes', value: 300, onClaim: function() { argent += 3000; moneyUI.textContent = argent.toLocaleString(); showNotification('+3000💰 Gemmes récupérées !', '💎'); } },
+  { level: 27, icon: '🏆', name: 'Trophée', value: 250, onClaim: function() { argent += 1250; moneyUI.textContent = argent.toLocaleString(); showNotification('+1250💰 Trophée récupéré !', '🏆'); } },
+  { level: 28, icon: '🔥', name: 'Boost XP', value: 4, onClaim: function() { showNotification('Boost XP x4 activé !', '🔥'); console.log('Boost XP x4 activé'); } },
+  { level: 29, icon: '⭐', name: 'Étoiles', value: 150, onClaim: function() { argent += 1200; moneyUI.textContent = argent.toLocaleString(); showNotification('+1200💰 Étoiles récupérées !', '⭐'); } },
+  { level: 30, icon: '🎁', name: 'Coffre Épique', value: 1, onClaim: function() { argent += 5000; moneyUI.textContent = argent.toLocaleString(); showNotification('Coffre Épique ouvert ! +5000💰', '🎁'); } },
+  { level: 31, icon: '💎', name: 'Gemmes', value: 350, onClaim: function() { argent += 3500; moneyUI.textContent = argent.toLocaleString(); showNotification('+3500💰 Gemmes récupérées !', '💎'); } },
+  { level: 32, icon: '🛡️', name: 'Bouclier Rare', value: 1, onClaim: function() { showNotification('Bouclier Rare équipé !', '🛡️'); console.log('Bouclier Rare équipé'); } },
+  { level: 33, icon: '⭐', name: 'Étoiles', value: 175, onClaim: function() { argent += 1400; moneyUI.textContent = argent.toLocaleString(); showNotification('+1400💰 Étoiles récupérées !', '⭐'); } },
+  { level: 34, icon: '💎', name: 'Gemmes', value: 400, onClaim: function() { argent += 4000; moneyUI.textContent = argent.toLocaleString(); showNotification('+4000💰 Gemmes récupérées !', '💎'); } },
+  { level: 35, icon: '🏆', name: 'Trophée', value: 300, onClaim: function() { argent += 1500; moneyUI.textContent = argent.toLocaleString(); showNotification('+1500💰 Trophée récupéré !', '🏆'); } },
+  { level: 36, icon: '⚔️', name: 'Épée Rare', value: 1, onClaim: function() { showNotification('Épée Rare équipée !', '⚔️'); console.log('Épée Rare équipée'); } },
+  { level: 37, icon: '💎', name: 'Gemmes', value: 450, onClaim: function() { argent += 4500; moneyUI.textContent = argent.toLocaleString(); showNotification('+4500💰 Gemmes récupérées !', '💎'); } },
+  { level: 38, icon: '🔥', name: 'Boost XP', value: 5, onClaim: function() { showNotification('Boost XP x5 activé !', '🔥'); console.log('Boost XP x5 activé'); } },
+  { level: 39, icon: '⭐', name: 'Étoiles', value: 200, onClaim: function() { argent += 1600; moneyUI.textContent = argent.toLocaleString(); showNotification('+1600💰 Étoiles récupérées !', '⭐'); } },
+  { level: 40, icon: '🎁', name: 'Coffre', value: 1, onClaim: function() { argent += 6000; moneyUI.textContent = argent.toLocaleString(); showNotification('Coffre ouvert ! +6000💰', '🎁'); } },
+  { level: 41, icon: '💎', name: 'Gemmes', value: 500, onClaim: function() { argent += 5000; moneyUI.textContent = argent.toLocaleString(); showNotification('+5000💰 Gemmes récupérées !', '💎'); } },
+  { level: 42, icon: '🎯', name: 'Badge', value: 1, onClaim: function() { showNotification('Badge "Maître" débloqué !', '🎯'); console.log('Badge Maître débloqué'); } },
+  { level: 43, icon: '⭐', name: 'Étoiles', value: 225, onClaim: function() { argent += 1800; moneyUI.textContent = argent.toLocaleString(); showNotification('+1800💰 Étoiles récupérées !', '⭐'); } },
+  { level: 44, icon: '💎', name: 'Gemmes', value: 550, onClaim: function() { argent += 5500; moneyUI.textContent = argent.toLocaleString(); showNotification('+5500💰 Gemmes récupérées !', '💎'); } },
+  { level: 45, icon: '🏆', name: 'Trophée', value: 400, onClaim: function() { argent += 2000; moneyUI.textContent = argent.toLocaleString(); showNotification('+2000💰 Trophée récupéré !', '🏆'); } },
+  { level: 46, icon: '💎', name: 'Gemmes', value: 600, onClaim: function() { argent += 6000; moneyUI.textContent = argent.toLocaleString(); showNotification('+6000💰 Gemmes récupérées !', '💎'); } },
+  { level: 47, icon: '🔥', name: 'Boost XP', value: 6, onClaim: function() { showNotification('Boost XP x6 activé !', '🔥'); console.log('Boost XP x6 activé'); } },
+  { level: 48, icon: '⭐', name: 'Étoiles', value: 250, onClaim: function() { argent += 2000; moneyUI.textContent = argent.toLocaleString(); showNotification('+2000💰 Étoiles récupérées !', '⭐'); } },
+  { level: 49, icon: '🎁', name: 'Coffre', value: 1, onClaim: function() { argent += 7500; moneyUI.textContent = argent.toLocaleString(); showNotification('Coffre ouvert ! +7500💰', '🎁'); } },
+  { level: 50, icon: '👑', name: 'Récompense Légendaire', value: 5000, onClaim: function() { argent += 25000; moneyUI.textContent = argent.toLocaleString(); showNotification('LÉGENDAIRE ! +25000💰', '👑'); } },
+  
+  // Niveaux 51-75
+  { level: 51, icon: '💎', name: 'Gemmes', value: 700, onClaim: function() { argent += 7000; moneyUI.textContent = argent.toLocaleString(); showNotification('+7000💰 Gemmes récupérées !', '💎'); } },
+  { level: 52, icon: '🏆', name: 'Trophée', value: 500, onClaim: function() { argent += 2500; moneyUI.textContent = argent.toLocaleString(); showNotification('+2500💰 Trophée récupéré !', '🏆'); } },
+  { level: 53, icon: '⭐', name: 'Étoiles', value: 300, onClaim: function() { argent += 2400; moneyUI.textContent = argent.toLocaleString(); showNotification('+2400💰 Étoiles récupérées !', '⭐'); } },
+  { level: 54, icon: '💎', name: 'Gemmes', value: 800, onClaim: function() { argent += 8000; moneyUI.textContent = argent.toLocaleString(); showNotification('+8000💰 Gemmes récupérées !', '💎'); } },
+  { level: 55, icon: '🎁', name: 'Coffre Légendaire', value: 1, onClaim: function() { argent += 15000; moneyUI.textContent = argent.toLocaleString(); showNotification('Coffre Légendaire ouvert ! +15000💰', '🎁'); } },
+  { level: 56, icon: '🛡️', name: 'Bouclier Épique', value: 1, onClaim: function() { showNotification('Bouclier Épique équipé !', '🛡️'); console.log('Bouclier Épique équipé'); } },
+  { level: 57, icon: '💎', name: 'Gemmes', value: 900, onClaim: function() { argent += 9000; moneyUI.textContent = argent.toLocaleString(); showNotification('+9000💰 Gemmes récupérées !', '💎'); } },
+  { level: 58, icon: '⚔️', name: 'Épée Épique', value: 1, onClaim: function() { showNotification('Épée Épique équipée !', '⚔️'); console.log('Épée Épique équipée'); } },
+  { level: 59, icon: '⭐', name: 'Étoiles', value: 350, onClaim: function() { argent += 2800; moneyUI.textContent = argent.toLocaleString(); showNotification('+2800💰 Étoiles récupérées !', '⭐'); } },
+  { level: 60, icon: '🏆', name: 'Trophée', value: 600, onClaim: function() { argent += 3000; moneyUI.textContent = argent.toLocaleString(); showNotification('+3000💰 Trophée récupéré !', '🏆'); } },
+  { level: 61, icon: '💎', name: 'Gemmes', value: 1000, onClaim: function() { argent += 10000; moneyUI.textContent = argent.toLocaleString(); showNotification('+10000💰 Gemmes récupérées !', '💎'); } },
+  { level: 62, icon: '🔥', name: 'Boost XP', value: 7, onClaim: function() { showNotification('Boost XP x7 activé !', '🔥'); console.log('Boost XP x7 activé'); } },
+  { level: 63, icon: '⭐', name: 'Étoiles', value: 400, onClaim: function() { argent += 3200; moneyUI.textContent = argent.toLocaleString(); showNotification('+3200💰 Étoiles récupérées !', '⭐'); } },
+  { level: 64, icon: '💎', name: 'Gemmes', value: 1100, onClaim: function() { argent += 11000; moneyUI.textContent = argent.toLocaleString(); showNotification('+11000💰 Gemmes récupérées !', '💎'); } },
+  { level: 65, icon: '🎁', name: 'Coffre', value: 1, onClaim: function() { argent += 18000; moneyUI.textContent = argent.toLocaleString(); showNotification('Coffre ouvert ! +18000💰', '🎁'); } },
+  { level: 66, icon: '🎯', name: 'Badge', value: 1, onClaim: function() { showNotification('Badge "Légende" débloqué !', '🎯'); console.log('Badge Légende débloqué'); } },
+  { level: 67, icon: '💎', name: 'Gemmes', value: 1200, onClaim: function() { argent += 12000; moneyUI.textContent = argent.toLocaleString(); showNotification('+12000💰 Gemmes récupérées !', '💎'); } },
+  { level: 68, icon: '⭐', name: 'Étoiles', value: 450, onClaim: function() { argent += 3600; moneyUI.textContent = argent.toLocaleString(); showNotification('+3600💰 Étoiles récupérées !', '⭐'); } },
+  { level: 69, icon: '🏆', name: 'Trophée', value: 700, onClaim: function() { argent += 3500; moneyUI.textContent = argent.toLocaleString(); showNotification('+3500💰 Trophée récupéré !', '🏆'); } },
+  { level: 70, icon: '💎', name: 'Gemmes', value: 1300, onClaim: function() { argent += 13000; moneyUI.textContent = argent.toLocaleString(); showNotification('+13000💰 Gemmes récupérées !', '💎'); } },
+  { level: 71, icon: '🔥', name: 'Boost XP', value: 8, onClaim: function() { showNotification('Boost XP x8 activé !', '🔥'); console.log('Boost XP x8 activé'); } },
+  { level: 72, icon: '⭐', name: 'Étoiles', value: 500, onClaim: function() { argent += 4000; moneyUI.textContent = argent.toLocaleString(); showNotification('+4000💰 Étoiles récupérées !', '⭐'); } },
+  { level: 73, icon: '💎', name: 'Gemmes', value: 1400, onClaim: function() { argent += 14000; moneyUI.textContent = argent.toLocaleString(); showNotification('+14000💰 Gemmes récupérées !', '💎'); } },
+  { level: 74, icon: '🎁', name: 'Coffre', value: 1, onClaim: function() { argent += 20000; moneyUI.textContent = argent.toLocaleString(); showNotification('Coffre ouvert ! +20000💰', '🎁'); } },
+  { level: 75, icon: '👑', name: 'Récompense Légendaire', value: 7500, onClaim: function() { argent += 50000; moneyUI.textContent = argent.toLocaleString(); showNotification('LÉGENDAIRE ! +50000💰', '👑'); } },
+  
+  // Niveaux 76-90
+  { level: 76, icon: '💎', name: 'Gemmes', value: 1500, onClaim: function() { argent += 15000; moneyUI.textContent = argent.toLocaleString(); showNotification('+15000💰 Gemmes récupérées !', '💎'); } },
+  { level: 77, icon: '🏆', name: 'Trophée', value: 800, onClaim: function() { argent += 4000; moneyUI.textContent = argent.toLocaleString(); showNotification('+4000💰 Trophée récupéré !', '🏆'); } },
+  { level: 78, icon: '⭐', name: 'Étoiles', value: 550, onClaim: function() { argent += 4400; moneyUI.textContent = argent.toLocaleString(); showNotification('+4400💰 Étoiles récupérées !', '⭐'); } },
+  { level: 79, icon: '💎', name: 'Gemmes', value: 1600, onClaim: function() { argent += 16000; moneyUI.textContent = argent.toLocaleString(); showNotification('+16000💰 Gemmes récupérées !', '💎'); } },
+  { level: 80, icon: '🎁', name: 'Coffre Mythique', value: 1, onClaim: function() { argent += 30000; moneyUI.textContent = argent.toLocaleString(); showNotification('Coffre Mythique ouvert ! +30000💰', '🎁'); } },
+  { level: 81, icon: '🛡️', name: 'Bouclier Légendaire', value: 1, onClaim: function() { showNotification('Bouclier Légendaire équipé !', '🛡️'); console.log('Bouclier Légendaire équipé'); } },
+  { level: 82, icon: '💎', name: 'Gemmes', value: 1700, onClaim: function() { argent += 17000; moneyUI.textContent = argent.toLocaleString(); showNotification('+17000💰 Gemmes récupérées !', '💎'); } },
+  { level: 83, icon: '⚔️', name: 'Épée Légendaire', value: 1, onClaim: function() { showNotification('Épée Légendaire équipée !', '⚔️'); console.log('Épée Légendaire équipée'); } },
+  { level: 84, icon: '⭐', name: 'Étoiles', value: 600, onClaim: function() { argent += 4800; moneyUI.textContent = argent.toLocaleString(); showNotification('+4800💰 Étoiles récupérées !', '⭐'); } },
+  { level: 85, icon: '🏆', name: 'Trophée', value: 900, onClaim: function() { argent += 4500; moneyUI.textContent = argent.toLocaleString(); showNotification('+4500💰 Trophée récupéré !', '🏆'); } },
+  { level: 86, icon: '💎', name: 'Gemmes', value: 1800, onClaim: function() { argent += 18000; moneyUI.textContent = argent.toLocaleString(); showNotification('+18000💰 Gemmes récupérées !', '💎'); } },
+  { level: 87, icon: '🔥', name: 'Boost XP', value: 10, onClaim: function() { showNotification('Boost XP x10 activé !', '🔥'); console.log('Boost XP x10 activé'); } },
+  { level: 88, icon: '⭐', name: 'Étoiles', value: 700, onClaim: function() { argent += 5600; moneyUI.textContent = argent.toLocaleString(); showNotification('+5600💰 Étoiles récupérées !', '⭐'); } },
+  { level: 89, icon: '🎁', name: 'Coffre Ultime', value: 1, onClaim: function() { argent += 50000; moneyUI.textContent = argent.toLocaleString(); showNotification('Coffre Ultime ouvert ! +50000💰', '🎁'); } },
+  { level: 90, icon: '👑', name: 'Récompense Ultime', value: 10000, onClaim: function() { argent += 100000; moneyUI.textContent = argent.toLocaleString(); showNotification('🎉 BATTLE PASS TERMINÉ ! +100000💰 🎉', '👑'); } },
+];
+
+// Fonction pour afficher une notification
+function showNotification(text, icon) {
+  const notif = document.createElement('div');
+  notif.style.cssText = `
+    position: fixed;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
+    padding: 16px 32px;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 18px;
+    box-shadow: 0 8px 32px rgba(46, 204, 113, 0.6);
+    z-index: 1000;
+    animation: slideDown 0.5s ease-out;
+  `;
+  notif.textContent = `${icon} ${text}`;
+  document.body.appendChild(notif);
+  
+  setTimeout(() => {
+    notif.style.animation = 'slideUp 0.5s ease-out';
+    setTimeout(() => notif.remove(), 500);
+  }, 2000);
+}
+
+// Animations pour notifications
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideDown {
+    from { top: -100px; opacity: 0; }
+    to { top: 100px; opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { top: 100px; opacity: 1; }
+    to { top: -100px; opacity: 0; }
+  }
+`;
+document.head.appendChild(style);
+
+// Paliers spéciaux (milestones)
+const milestones = [10, 25, 50, 75, 90];
+
+const pass = document.getElementById("pass");
+const moneyUI = document.getElementById("money");
+const hoursDisplay = document.getElementById("hours-display");
+const currentLevelUI = document.getElementById("current-level");
+const totalLevelsUI = document.getElementById("total-levels");
+const progressPercentUI = document.getElementById("progress-percent");
+const progressFill = document.getElementById("progress-fill");
+
+moneyUI.textContent = argent.toLocaleString();
+totalLevelsUI.textContent = TOTAL_LEVELS;
+
+// Niveau actuel basé sur les heures
+let currentLevel = 0;
+
+// Mise à jour immédiate de l'UI
+currentLevelUI.textContent = currentLevel;
+const initialProgressPercent = Math.round((currentLevel / TOTAL_LEVELS) * 100);
+progressPercentUI.textContent = initialProgressPercent + '%';
+progressFill.style.width = initialProgressPercent + '%';
+hoursDisplay.textContent = Math.floor(heures) + 'h';
+
+// =======================
+// CRÉATION DES NIVEAUX
+// =======================
+const levels = [];
+const claimedRewards = []; // Tableau simple sans localStorage
+
+for (let i = 1; i <= TOTAL_LEVELS; i++) {
+  const div = document.createElement("div");
+  // Application immédiate de l'état locked/unlocked
+  div.className = i <= currentLevel ? "level unlocked" : "level locked";
+  div.id = "level-" + i;
+  
+  const isMilestone = milestones.includes(i);
+  if (isMilestone) {
+    div.setAttribute("data-milestone", "true");
+  }
+  
+  // Récupération de la récompense définie pour ce niveau
+  const rewardData = LEVEL_REWARDS.find(r => r.level === i);
+  
+  if (!rewardData) {
+    console.error(`Récompense manquante pour le niveau ${i}`);
+    continue;
+  }
+  
+  const rewardText = rewardData.value > 1 
+    ? `${rewardData.name} x${rewardData.value}`
+    : rewardData.name;
+  
+  div.innerHTML = `
+    <div class="level-left">
+      <div class="level-number">${i}</div>
+      <div class="level-info">
+        <div class="level-title">Niveau ${i}</div>
+        <div class="level-hours">${i * HOURS_PER_LEVEL}h requises</div>
+      </div>
+    </div>
+    <div class="reward ${i <= currentLevel && !claimedRewards.includes(i) ? '' : 'locked'}" data-level="${i}">
+      <span class="reward-icon">${rewardData.icon}</span>
+      <span>${rewardText}</span>
+    </div>
+  `;
+  
+  pass.appendChild(div);
+  levels.push(div);
+  
+  // Gestion du clic sur la récompense
+  const rewardBtn = div.querySelector('.reward');
+  rewardBtn.addEventListener('click', function() {
+    if (this.classList.contains('locked') || this.classList.contains('claimed')) {
+      return;
+    }
+    
+    const levelNum = parseInt(this.getAttribute('data-level'));
+    const reward = LEVEL_REWARDS.find(r => r.level === levelNum);
+    
+    if (reward && reward.onClaim) {
+      // Appeler la fonction de claim définie
+      reward.onClaim();
+      
+      // Marquer comme récupérée
+      this.classList.add('claimed', 'reward-claim-effect');
+      claimedRewards.push(levelNum);
+      
+      setTimeout(() => {
+        this.classList.remove('reward-claim-effect');
+      }, 600);
+    }
+  });
+  
+  // Vérifier si déjà récupérée
+  if (claimedRewards.includes(i)) {
+    rewardBtn.classList.remove('locked');
+    rewardBtn.classList.add('claimed');
+  }
+}
+
+// =======================
+// UPDATE SYSTÈME
+// =======================
+function updateLevels() {
+  const newLevel = Math.min(
+    TOTAL_LEVELS,
+    Math.max(0, Math.floor(heures / HOURS_PER_LEVEL))
+  );
+
+  // Animation unlock uniquement en montée
+  if (newLevel > currentLevel) {
+    for (let i = currentLevel + 1; i <= newLevel; i++) {
+      const lvl = levels[i - 1];
+      lvl.classList.add("unlock-effect");
+      setTimeout(() => lvl.classList.remove("unlock-effect"), 800);
+    }
+  }
+
+  currentLevel = newLevel;
+
+  // Mise à jour visuelle des niveaux ET des récompenses
+  levels.forEach((lvl, i) => {
+    const rewardBtn = lvl.querySelector('.reward');
+    
+    if (i + 1 <= currentLevel) {
+      // Niveau débloqué
+      lvl.classList.remove("locked");
+      lvl.classList.add("unlocked");
+      
+      // Récompense cliquable si pas encore récupérée
+      if (!claimedRewards.includes(i + 1)) {
+        rewardBtn.classList.remove('locked');
+      }
+    } else {
+      // Niveau verrouillé
+      lvl.classList.remove("unlocked");
+      lvl.classList.add("locked");
+      
+      // Récompense verrouillée
+      if (!rewardBtn.classList.contains('claimed')) {
+        rewardBtn.classList.add('locked');
+      }
+    }
+  });
+
+  // Mise à jour UI
+  currentLevelUI.textContent = currentLevel;
+  const progressPercent = Math.round((currentLevel / TOTAL_LEVELS) * 100);
+  progressPercentUI.textContent = progressPercent + '%';
+  progressFill.style.width = progressPercent + '%';
+  
+  hoursDisplay.textContent = Math.floor(heures) + 'h';
+}
+
+function autoScroll() {
+  // Centrer sur le dernier niveau débloqué (currentLevel), pas le suivant
+  if (currentLevel > 0) {
+    const target = document.getElementById("level-" + currentLevel);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  } else if (currentLevel === 0) {
+    // Si niveau 0, scroller vers le haut
+    const container = document.getElementById("container");
+    container.scrollTop = 0;
+  }
+}
+
+// =======================
+// CHECK CONTINU
+// =======================
+setInterval(() => {
+  updateLevels();
+}, 500);
+
+// =======================
+// INITIALISATION IMMÉDIATE
+// =======================
+// Chargement immédiat sans délai
+updateLevels();
+
+// Scroll automatique vers le dernier niveau débloqué avec un léger délai pour le rendu
+setTimeout(() => {
+  autoScroll();
+}, 100);
+
+// =======================
+// TEST (à décommenter pour tester)
+// =======================
+// setInterval(() => {
+//   heures += 0.1;
+// }, 1000);
+</script>
+
+</body>
+</html>

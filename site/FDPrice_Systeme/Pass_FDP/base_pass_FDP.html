@@ -484,6 +484,7 @@ html, body {
 </div>
 
 <!-- Scripts -->
+ <script src="../../script/script_inspecter.js"></script>
 <script src="../script/script_affichage_raccourcis.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js"></script>
@@ -610,16 +611,16 @@ const LEVEL_REWARDS = [
   { level: 9, icon: '⭐', name: '10 FDPièces', value: 10, onClaim: function() { showNotification('+10 FDPièces récupérées !', '⭐'); sendFDPrice(username, 10); sendClaimedLevel(username, 9) } },
   { level: 10, icon: '⭐', name: '25 FDPièces', value: 25, onClaim: function() { showNotification('+25 FDPièces récupérées !', '⭐'); sendFDPrice(username, 25); sendClaimedLevel(username, 10) } },
   
-  { level: 11, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('Bouclier équipé !', '🛡️'); console.log('Bouclier équipé'); } },
-  { level: 12, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('Bouclier équipé !', '🛡️'); console.log('Bouclier équipé'); } },
-  { level: 13, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('Bouclier équipé !', '🛡️'); console.log('Bouclier équipé'); } },
-  { level: 14, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('Bouclier équipé !', '🛡️'); console.log('Bouclier équipé'); } },
-  { level: 15, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('Bouclier équipé !', '🛡️'); console.log('Bouclier équipé'); } },
-  { level: 16, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('Épée équipée !', '⚔️'); console.log('Épée équipée'); } },
-  { level: 17, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('Bouclier équipé !', '🛡️'); console.log('Bouclier équipé'); } },
-  { level: 18, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('Boost XP x3 activé !', '🔥'); console.log('Boost XP x3 activé'); } },
-  { level: 19, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { argent += 800; moneyUI.textContent = argent.toLocaleString(); showNotification('+800💰 Étoiles récupérées !', '⭐'); } },
-  { level: 20, icon: '🛡️', name: '25 FDPièces', value: 25, onClaim: function() { argent += 1000; moneyUI.textContent = argent.toLocaleString(); showNotification('+1000💰 Trophée récupéré !', '🏆'); } },
+  { level: 11, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('+15 FDPièces récupérées !', '🛡️'); sendFDPrice(username, 15); sendClaimedLevel(username, 11) } },
+  { level: 12, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('+15 FDPièces récupérées !', '🛡️'); sendFDPrice(username, 15); sendClaimedLevel(username, 12) } },
+  { level: 13, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('+15 FDPièces récupérées !', '🛡️'); sendFDPrice(username, 15); sendClaimedLevel(username, 13) } },
+  { level: 14, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('+15 FDPièces récupérées !', '🛡️'); sendFDPrice(username, 15); sendClaimedLevel(username, 14) } },
+  { level: 15, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('+15 FDPièces récupérées !', '🛡️'); sendFDPrice(username, 15); sendClaimedLevel(username, 15) } },
+  { level: 16, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('+15 FDPièces récupérées !', '🛡️'); sendFDPrice(username, 15); sendClaimedLevel(username, 16) } },
+  { level: 17, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('+15 FDPièces récupérées !', '🛡️'); sendFDPrice(username, 15); sendClaimedLevel(username, 17) } },
+  { level: 18, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('+15 FDPièces récupérées !', '🛡️'); sendFDPrice(username, 15); sendClaimedLevel(username, 18) } },
+  { level: 19, icon: '🛡️', name: '15 FDPièces', value: 15, onClaim: function() { showNotification('+15 FDPièces récupérées !', '🛡️'); sendFDPrice(username, 15); sendClaimedLevel(username, 19) } },
+  { level: 20, icon: '🛡️', name: '30 FDPièces', value: 30, onClaim: function() { showNotification('+30 FDPièces récupérées !', '🛡️'); sendFDPrice(username, 30); sendClaimedLevel(username, 20) } },
 
   { level: 21, icon: '💎', name: 'Gemmes', value: 250, onClaim: function() { argent += 2500; moneyUI.textContent = argent.toLocaleString(); showNotification('+2500💰 Gemmes récupérées !', '💎'); } },
   { level: 22, icon: '💎', name: 'Badge', value: 1, onClaim: function() { showNotification('Badge "Expert" débloqué !', '🎯'); console.log('Badge Expert débloqué'); } },
@@ -846,6 +847,7 @@ setTimeout(() => { autoScroll(); }, 100);
 // TEST (à décommenter pour tester)
 // =======================
 setInterval(() => {const heure = Math.floor(window.elapsedTime / 3600); heures = heure}, 3000);
+setInterval(() => {FDPiece = window.FDPiece;}, 3000);
 </script>
 
 </body>

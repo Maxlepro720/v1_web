@@ -245,6 +245,27 @@ const SUB_PRICE = {
     premium: 500
 };
 
+/* === NOTIFICATION HTML (ajout minimal) === */
+const notif = document.createElement("div");
+notif.style.position = "fixed";
+notif.style.top = "20px";
+notif.style.left = "50%";
+notif.style.transform = "translateX(-50%)";
+notif.style.padding = "14px 28px";
+notif.style.borderRadius = "30px";
+notif.style.fontWeight = "700";
+notif.style.zIndex = "2000";
+notif.style.display = "none";
+notif.style.boxShadow = "0 10px 30px rgba(0,0,0,0.6)";
+document.body.appendChild(notif);
+
+function showNotif(text, color){
+    notif.innerText = text;
+    notif.style.background = color;
+    notif.style.display = "block";
+    setTimeout(()=>{ notif.style.display = "none"; }, 3000);
+}
+
 function normalize(sub){
     return (sub || "").toLowerCase();
 }
@@ -288,7 +309,7 @@ async function payFD(username, amount){
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             username: username,
-            FDPiece: -amount // paiement = valeur négative
+            FDPiece: -amount
         })
     }).then(res => res.json());
 }
@@ -300,21 +321,21 @@ async function saveSub(tier){
 
     const price = SUB_PRICE[tier];
 
-    // paiement
+    showNotif("Tentative de paiement...", "#444");
+
     const pay = await payFD(username, price);
     if (pay.status !== "success") {
-        alert(pay.message || "Paiement refusé");
+        showNotif("Paiement refusé", "#8b0000");
         return;
     }
 
-    // set abonnement
     const response = await fetch("https://project-3-api-2bgb.onrender.com/set_sub",{
         method:"POST",
         headers:{ "Content-Type":"application/json" },
         body:JSON.stringify({
             username: username,
             sub: tier,
-            price: 0 // déjà payé via send_FDPrice
+            price: 0
         })
     });
 
@@ -323,14 +344,15 @@ async function saveSub(tier){
     if (data.status === "success") {
         window.subscribe = tier;
         refreshButtons();
+        showNotif("Paiement réussi ✔", "#1faa59");
     } else {
-        alert(data.message || "Erreur abonnement");
+        showNotif("Erreur abonnement", "#8b0000");
     }
 }
 
-// refresh auto si abonnement change ailleurs
 setInterval(refreshButtons, 1000);
 </script>
+
 
 
 </body>

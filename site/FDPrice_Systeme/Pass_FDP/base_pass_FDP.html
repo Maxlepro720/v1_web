@@ -528,24 +528,14 @@ async function fetchLastClaimed(username) {
     });
     const data = await response.json();
 
-    if (data.status === 'success') {
-      lastClaimedLevel = data.Pass || 0;
-
-      // 👉 si Pass = 3, alors les 3 premiers niveaux sont considérés comme récupérés
-      if (lastClaimedLevel >= 1) {
-        for (let i = 1; i <= lastClaimedLevel; i++) {
-          const levelBtn = document.querySelector(`[data-level="${i}"]`);
-          if (levelBtn) {
-            levelBtn.classList.add('claimed');
-            levelBtn.disabled = true;
-          }
-        }
-      }
+    for (let i = 1; i <= lastClaimedLevel; i++) {
+      claimedRewards.push(i);
     }
   } catch (err) {
     console.error('Erreur fetch last claimed:', err);
   }
 }
+
 
 
 // =======================
@@ -718,7 +708,8 @@ for (let i = 1; i <= TOTAL_LEVELS; i++) {
         <div class="level-hours">${i * HOURS_PER_LEVEL}h requises</div>
       </div>
     </div>
-    <div class="reward ${i <= currentLevel && !claimedRewards.includes(i) ? '' : 'locked'}" data-level="${i}">
+    <div class="reward ${claimedRewards.includes(i)? 'claimed locked': i <= currentLevel? '': 'locked'}" data-level="${i}">
+
       <span class="reward-icon">${rewardData.icon}</span>
       <span>${rewardText}</span>
     </div>
@@ -737,7 +728,8 @@ for (let i = 1; i <= TOTAL_LEVELS; i++) {
       return;
     }
 
-    if (this.classList.contains('locked') || this.classList.contains('claimed')) return;
+    if (claimedRewards.includes(levelNum)) return;
+
     
     const reward = LEVEL_REWARDS.find(r => r.level === levelNum);
     if (reward && reward.onClaim) {

@@ -150,7 +150,7 @@
                 const data = await res.json();
                 if (data.FDPiece != null) {
                     fdPiece = data.FDPiece; // ou argent = data.FDPiece
-                    moneyUI.textContent = fdPiece.toLocaleString();
+                    hudFD.textContent = fdPiece.toLocaleString();
                 }
             } catch (e) {
                 console.error("Erreur récupération continue de l'argent :", e);

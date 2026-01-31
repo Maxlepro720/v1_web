@@ -150,7 +150,9 @@
                 const data = await res.json();
                 if (data.FDPiece != null) {
                     fdPiece = data.FDPiece;
+                    console.log(fdPiece)
                     window.fdPiece = fdPiece
+                    console.log(window.fdPiece)
                     hudFD.textContent = fdPiece.toLocaleString();
                 }
             } catch (e) {

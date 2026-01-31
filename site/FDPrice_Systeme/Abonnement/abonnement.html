@@ -282,6 +282,7 @@ function refreshButtons(){
         const tier = normalize(card.querySelector("h2").innerText);
         const btns = card.querySelectorAll(".buy-btn");
 
+        // reset
         btns.forEach(btn => {
             btn.disabled = false;
             btn.style.background = "#1a1a1a";
@@ -296,9 +297,8 @@ function refreshButtons(){
                 btn.style.background = "#1faa59";
                 btn.innerText = "Déjà acheté";
             });
-        }
-
-        if (tier !== current && SUB_ORDER.indexOf(tier) < SUB_ORDER.indexOf(current)) {
+        } 
+        else if (SUB_ORDER.indexOf(tier) < SUB_ORDER.indexOf(current)) {
             btns.forEach(btn=>{
                 btn.disabled = true;
                 btn.style.background = "#555";
@@ -307,6 +307,7 @@ function refreshButtons(){
         }
     });
 }
+
 
 async function payFD(username, amount){
     return fetch("https://project-3-api-2bgb.onrender.com/send_FDPrice", {

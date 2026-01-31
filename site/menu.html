@@ -958,6 +958,13 @@
             }
         });
     }
+    setInterval(() => {
+        const moneyElem = document.getElementById("money-amount");
+        if (moneyElem && window.FDPiece != null) {
+            moneyElem.textContent = window.FDPiece.toLocaleString();
+        }
+    }, 5000);
+
 
     submitGameButton.addEventListener('click', openSubmitModal);
     closeSubmitModalButton.addEventListener('click', closeSubmitModal);

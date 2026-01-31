@@ -521,7 +521,7 @@ const HOURS_PER_LEVEL = 1;
 // =======================
 async function fetchLastClaimed(username) {
   try {
-    const response = await fetch('/get_evo_pass', {
+    const response = await fetch(`${URL_SERVER}'/get_evo_pass'`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username })

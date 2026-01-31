@@ -533,6 +533,11 @@ async function fetchLastClaimed(username) {
       claimedRewards.length = 0;
       for (let i = 1; i <= lastClaimedLevel; i++) {
         claimedRewards.push(i);
+        const rewardDiv = document.querySelector(`.reward[data-level="${i}"]`);
+        if (rewardDiv) {
+          rewardDiv.classList.add('claimed');
+          rewardDiv.classList.remove('locked');
+        }
       }
       console.log('reward recupérés :',lastClaimedLevel);
     }
@@ -714,7 +719,7 @@ for (let i = 1; i <= TOTAL_LEVELS; i++) {
         <div class="level-hours">${i * HOURS_PER_LEVEL}h requises</div>
       </div>
     </div>
-    <div class="reward ${i <= lastClaimedLevel ? 'claimed locked' : i === lastClaimedLevel + 1 && i <= currentLevel ? '' : 'locked'}">
+    <div class="reward ${i <= lastClaimedLevel ? 'claimed locked' : i === lastClaimedLevel + 1 && i <= currentLevel ? '' : 'locked'}" data-level="${i}">
 
 
 

@@ -526,8 +526,8 @@ async function fetchLastClaimed(username) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username })
     });
-    const data = await response.json();
-
+    const data = await response;
+    console.log(data)
     if (data.status === 'success') {
       lastClaimedLevel = data.Pass || 0;
       console.log('reward recupérés :',lastClaimedLevel);

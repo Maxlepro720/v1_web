@@ -1,3 +1,5 @@
+username = localStorage.getItem('username');
+
 async function getSub(username) {
     try {
         const response = await fetch("https://project-3-api-2bgb.onrender.com/get_sub", {
@@ -21,3 +23,8 @@ async function getSub(username) {
         window.subscribe = null;
     }
 }
+getSub(username)
+
+setInterval(() => {   
+        getSub(username)
+    }, 10000);

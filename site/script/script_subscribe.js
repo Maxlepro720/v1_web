@@ -11,6 +11,7 @@ async function getSub(username) {
         const data = await response.json();
 
         if (data.status === "success") {
+            console.log(data.Abonnement);
             window.subscribe = data.Abonnement; // null, basique, medium ou premium
         } else {
             window.subscribe = null;

@@ -966,9 +966,10 @@
     }
     setInterval(() => {   
         const moneyElem = document.getElementById("money-amount");  
-        print(window.FDPiece, window.FDPiece.toLocaleString())
+        console.log(window.FDPiece, window.FDPiece.toLocaleString())
         if (moneyElem && window.FDPiece != null) {
             moneyElem.textContent = window.FDPiece.toLocaleString();
+            console.log("maj effectuer")
         }
     }, 2500);
 

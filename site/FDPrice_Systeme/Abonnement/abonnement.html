@@ -213,23 +213,6 @@ h1 {
     </div>
 </div>
 
-<div id="basic-details" class="details">
-    <h2>Abonnement BASIC</h2>
-    <p>Une offre idéale pour débuter. Elle permet un style basique dans le Hub, un boost de x1,5 dans le pass de FDP.</p>
-    <button class="buy-btn" onclick="saveSub('Basic')">Payer BASIC</button>
-</div>
-
-<div id="premium-details" class="details">
-    <h2>Abonnement PREMIUM</h2>
-    <p>L’expérience complète. Elle permet un style premium dans le Hub, un boost de x3 dans le pass de FDP.</p>
-    <button class="buy-btn" onclick="saveSub('Premium')">Payer PREMIUM</button>
-</div>
-
-<div id="medium-details" class="details">
-    <h2>Abonnement MEDIUM</h2>
-    <p>Le meilleur équilibre. Elle permet un style medium dans le Hub, un boost de x2 dans le pass de FDP.</p>
-    <button class="buy-btn" onclick="saveSub('Medium')">Payer MEDIUM</button>
-</div>
 
 <!-- Scripts -->
  <script src="../../script/script_subscribe.js"></script>
@@ -261,7 +244,6 @@ const SUB_PRICE = {
     medium: 400,
     premium: 500
 };
-let username = localStorage.getItem('username');
 
 function normalize(sub){
     return (sub || "").toLowerCase();

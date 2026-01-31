@@ -168,7 +168,7 @@ h1 {
 <!-- PAR -->
 <div id="money">
     <img src="../../Image/FDPrice.png" alt="coin">
-    <span>1000</span>
+    <span id="money_span">1000</span>
 </div>
 
 <h1>Nos Offres</h1>
@@ -373,6 +373,7 @@ async function saveSub(tier){
 }
 
 setInterval(refreshButtons, 1000);
+setInterval(document.getElementById('money_span').textContent = window.FDPiece,3000)
 </script>
 
 

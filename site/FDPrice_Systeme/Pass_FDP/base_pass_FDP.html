@@ -527,13 +527,26 @@ async function fetchLastClaimed(username) {
       body: JSON.stringify({ username })
     });
     const data = await response.json();
+
     if (data.status === 'success') {
       lastClaimedLevel = data.Pass || 0;
+
+      // 👉 si Pass = 3, alors les 3 premiers niveaux sont considérés comme récupérés
+      if (lastClaimedLevel >= 1) {
+        for (let i = 1; i <= lastClaimedLevel; i++) {
+          const levelBtn = document.querySelector(`[data-level="${i}"]`);
+          if (levelBtn) {
+            levelBtn.classList.add('claimed');
+            levelBtn.disabled = true;
+          }
+        }
+      }
     }
   } catch (err) {
     console.error('Erreur fetch last claimed:', err);
   }
 }
+
 
 // =======================
 // ENVOYER LA DERNIÈRE RECOMPENSE RÉCUPÉRÉE
@@ -562,6 +575,11 @@ async function sendFDPrice(username, value) {
     console.error('Erreur send FDPrice:', err);
   }
 }
+// correction a faire:
+// - lire nombre dans Pass pour pas recuperer 2fois meme recompense
+// - gestion argent , pas de remlacement mais une somme
+// - ajouter route get_FDPiece
+
 
 // =======================
 // DÉFINITION DES RÉCOMPENSES PAR NIVEAU

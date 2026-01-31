@@ -280,55 +280,49 @@ function refreshButtons(){
 
     document.querySelectorAll(".card").forEach(card => {
         const tier = normalize(card.querySelector("h2").innerText);
-        const btns = card.querySelectorAll(".buy-btn");
+        const btn = card.querySelector(".buy-btn");
 
         // reset
-        btns.forEach(btn => {
-            btn.disabled = false;
-            btn.style.background = "#1a1a1a";
-            btn.innerText = "Choisir";
-        });
+        btn.disabled = false;
+        btn.style.background = "#1a1a1a";
+        btn.innerText = "Choisir";
 
         if (!current) return;
 
-        // BRUTEFORCE selon abonnement actuel
+        // === BASIQUE ===
         if (current === "basique") {
             if (tier === "basique") {
-                btns.forEach(btn=>{
-                    btn.disabled = true;
-                    btn.style.background = "#1faa59";
-                    btn.innerText = "Déjà acheté";
-                });
+                btn.disabled = true;
+                btn.style.background = "#1faa59";
+                btn.innerText = "Déjà acheté";
             }
-            // Medium et Premium restent actifs
-        } else if (current === "medium") {
+        }
+
+        // === MEDIUM ===
+        if (current === "medium") {
             if (tier === "basique") {
-                btns.forEach(btn=>{
-                    btn.disabled = true;
-                    btn.style.background = "#555";
-                    btn.innerText = "Indisponible";
-                });
-            } else if (tier === "medium") {
-                btns.forEach(btn=>{
-                    btn.disabled = true;
-                    btn.style.background = "#1faa59";
-                    btn.innerText = "Déjà acheté";
-                });
+                btn.disabled = true;
+                btn.style.background = "#555";
+                btn.innerText = "Indisponible";
             }
-            // Premium reste actif
-        } else if (current === "premium") {
+            if (tier === "medium") {
+                btn.disabled = true;
+                btn.style.background = "#1faa59";
+                btn.innerText = "Déjà acheté";
+            }
+        }
+
+        // === PREMIUM ===
+        if (current === "premium") {
             if (tier === "basique" || tier === "medium") {
-                btns.forEach(btn=>{
-                    btn.disabled = true;
-                    btn.style.background = "#555";
-                    btn.innerText = "Indisponible";
-                });
-            } else if (tier === "premium") {
-                btns.forEach(btn=>{
-                    btn.disabled = true;
-                    btn.style.background = "#1faa59";
-                    btn.innerText = "Déjà acheté";
-                });
+                btn.disabled = true;
+                btn.style.background = "#555";
+                btn.innerText = "Indisponible";
+            }
+            if (tier === "premium") {
+                btn.disabled = true;
+                btn.style.background = "#1faa59";
+                btn.innerText = "Déjà acheté";
             }
         }
     });

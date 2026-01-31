@@ -530,6 +530,7 @@ async function fetchLastClaimed(username) {
 
     if (data.status === 'success') {
       lastClaimedLevel = data.Pass || 0;
+      console.log('reward recupérés :',lastClaimedLevel);
     }
   } catch (err) {
     console.error('Erreur fetch last claimed:', err);

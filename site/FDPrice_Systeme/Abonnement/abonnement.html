@@ -373,7 +373,13 @@ async function saveSub(tier){
 }
 
 setInterval(refreshButtons, 1000);
-setInterval(document.getElementById('money_span').textContent = window.FDPiece.toLocaleString() ,3000)
+const moneyElem = document.getElementById("money-amount"); 
+setInterval(() => {
+    if (moneyElem && window.FDPiece != null) {
+        moneyElem.textContent = window.FDPiece.toLocaleString();
+    }
+}, 3000);
+
 </script>
 
 

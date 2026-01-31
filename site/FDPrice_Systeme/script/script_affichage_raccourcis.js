@@ -125,7 +125,23 @@
             window.elapsedTime = elapsedTime;
             updateHUD();
         }, 1000);
-
+        // Vérification continue de l'argent toutes les X secondes
+        setInterval(async () => {
+            try {
+                const res = await fetch(`${SERVER_URL}/get_FDPiece`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: USERNAME })
+                });
+                const data = await res.json();
+                if (data.FDPiece != null) {
+                    fdPiece = data.FDPiece; // ou argent = data.FDPiece
+                    moneyUI.textContent = fdPiece.toLocaleString();
+                }
+            } catch (e) {
+                console.error("Erreur récupération continue de l'argent :", e);
+            }
+        }, 5000); // toutes les 5 secondes, tu peux réduire à 1000 ms si besoin
         // Envoi toutes les 30 secondes
         sendIntervalID = setInterval(sendData, 30000);
     }

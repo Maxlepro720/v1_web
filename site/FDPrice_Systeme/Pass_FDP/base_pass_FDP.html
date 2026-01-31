@@ -565,17 +565,26 @@ async function sendClaimedLevel(username, level) {
 }
 async function sendFDPrice(username, value) {
   try {
-    await fetch(`${URL_SERVER}/send_FDPrice`, {
+    const response = await fetch(`${URL_SERVER}/send_FDPrice`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, FDPiece: value })
+      body: JSON.stringify({ username, FDPiece: value }) // value peut être positif ou négatif
     });
-    argent = value;
-    moneyUI.textContent = argent.toLocaleString();
+
+    const data = await response.json();
+    if (data.status === 'success') {
+      argent = data.FDPiece; // nouvelle valeur retournée par le serveur
+      moneyUI.textContent = argent.toLocaleString();
+      console.log('FDPièces mises à jour :', argent);
+    } else {
+      console.error('Erreur serveur :', data.message);
+    }
+
   } catch (err) {
     console.error('Erreur send FDPrice:', err);
   }
 }
+
 // correction a faire:
 // - lire nombre dans Pass pour pas recuperer 2fois meme recompense
 // - gestion argent , pas de remlacement mais une somme

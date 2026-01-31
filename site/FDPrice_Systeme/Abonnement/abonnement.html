@@ -291,6 +291,16 @@ function refreshButtons(){
 
         if (!current) return;
 
+        // === Cas spécial Basique ===
+        if(current === "basique" && tier === "basique"){
+            btns.forEach(btn=>{
+                btn.disabled = true;
+                btn.style.background = "#1faa59";
+                btn.innerText = "Déjà acheté";
+            });
+            return; // important pour ne pas écraser
+        }
+
         // Bouton déjà acheté
         if (tier === current) {
             btns.forEach(btn=>{
@@ -311,6 +321,7 @@ function refreshButtons(){
         }
     });
 }
+
 
 
 

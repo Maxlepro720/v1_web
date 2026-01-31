@@ -291,51 +291,25 @@ function refreshButtons() {
 
         if (!current) return;
 
-        if (current === "basique") {
-            if (tier === "basique") {
-                btns.forEach(btn => {
-                    btn.disabled = true;
-                    btn.style.background = "#1faa59";
-                    btn.innerText = "Déjà acheté";
-                });
-            } else {
-                btns.forEach(btn => {
-                    btn.disabled = true;
-                    btn.style.background = "#555";
-                    btn.innerText = "Indisponible";
-                });
-            }
-        } else if (current === "medium") {
-            if (tier === "medium") {
-                btns.forEach(btn => {
-                    btn.disabled = true;
-                    btn.style.background = "#1faa59";
-                    btn.innerText = "Déjà acheté";
-                });
-            } else if (tier === "basique") {
-                btns.forEach(btn => {
-                    btn.disabled = true;
-                    btn.style.background = "#555";
-                    btn.innerText = "Indisponible";
-                });
-            } // premium reste actif
-        } else if (current === "premium") {
-            if (tier === "premium") {
-                btns.forEach(btn => {
-                    btn.disabled = true;
-                    btn.style.background = "#1faa59";
-                    btn.innerText = "Déjà acheté";
-                });
-            } else { // medium et basique → indisponible
-                btns.forEach(btn => {
-                    btn.disabled = true;
-                    btn.style.background = "#555";
-                    btn.innerText = "Indisponible";
-                });
-            }
-        }
+        if (tier === current) {
+            // bouton déjà acheté
+            btns.forEach(btn => {
+                btn.disabled = true;
+                btn.style.background = "#1faa59";
+                btn.innerText = "Déjà acheté";
+            });
+        } else if (SUB_ORDER.indexOf(tier) < SUB_ORDER.indexOf(current)) {
+            // bouton inférieur → indisponible
+            btns.forEach(btn => {
+                btn.disabled = true;
+                btn.style.background = "#555";
+                btn.innerText = "Indisponible";
+            });
+        } 
+        // tiers supérieur → reste activé
     });
 }
+
 
 
 

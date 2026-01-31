@@ -151,7 +151,7 @@
                 if (data.FDPiece != null) {
                     fdPiece = data.FDPiece;
                     console.log(fdPiece)
-                    window.fdPiece = fdPiece
+                    window.FDPiece = fdPiece
                     console.log(window.fdPiece)
                     hudFD.textContent = fdPiece.toLocaleString();
                 }

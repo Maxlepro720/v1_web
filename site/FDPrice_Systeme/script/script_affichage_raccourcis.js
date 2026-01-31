@@ -149,7 +149,8 @@
                 });
                 const data = await res.json();
                 if (data.FDPiece != null) {
-                    fdPiece = data.FDPiece; // ou argent = data.FDPiece
+                    fdPiece = data.FDPiece;
+                    window.fdPiece = fdPiece
                     hudFD.textContent = fdPiece.toLocaleString();
                 }
             } catch (e) {

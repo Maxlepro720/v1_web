@@ -282,7 +282,7 @@ function refreshButtons(){
         const tier = normalize(card.querySelector("h2").innerText);
         const btns = card.querySelectorAll(".buy-btn");
 
-        // reset
+        // reset de base
         btns.forEach(btn => {
             btn.disabled = false;
             btn.style.background = "#1a1a1a";
@@ -291,14 +291,18 @@ function refreshButtons(){
 
         if (!current) return;
 
+        // Bouton déjà acheté
         if (tier === current) {
             btns.forEach(btn=>{
                 btn.disabled = true;
                 btn.style.background = "#1faa59";
                 btn.innerText = "Déjà acheté";
             });
-        } 
-        else if (SUB_ORDER.indexOf(tier) < SUB_ORDER.indexOf(current)) {
+            return; // important : on sort pour ne pas écraser
+        }
+
+        // Bouton inférieur à l’abonnement actuel → indisponible
+        if (SUB_ORDER.indexOf(tier) < SUB_ORDER.indexOf(current)) {
             btns.forEach(btn=>{
                 btn.disabled = true;
                 btn.style.background = "#555";
@@ -307,6 +311,7 @@ function refreshButtons(){
         }
     });
 }
+
 
 
 async function payFD(username, amount){

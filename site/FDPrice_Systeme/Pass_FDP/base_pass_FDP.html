@@ -810,8 +810,9 @@ setInterval(() => { updateLevels(); }, 500);
 // =======================
 // INITIALISATION IMMÉDIATE
 // =======================
-lastClaimedLevel(username)
+
 updateLevels();
+fetchLastClaimed(username);
 setTimeout(() => { autoScroll(); }, 100);
 
 // =======================

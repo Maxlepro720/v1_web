@@ -95,7 +95,6 @@
                 body: JSON.stringify({ username: USERNAME })
             });
             const data = await res.json();
-            console.log(data);
             elapsedTime = data.Time || 0;
             fdPiece = data.FDPiece || 0;
             window.FDPiece = fdPiece;
@@ -150,7 +149,6 @@
                 const data = await res.json();
                 if (data.FDPiece != null) {
                     fdPiece = data.FDPiece;
-                    console.log(fdPiece)
                     window.FDPiece = fdPiece
                     hudFD.textContent = fdPiece.toLocaleString();
                 }

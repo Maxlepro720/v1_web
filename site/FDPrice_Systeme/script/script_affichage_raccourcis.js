@@ -43,11 +43,18 @@
     const closeBtn = hud.querySelector("#hudClose");
     const hudFPS = hud.querySelector("#hudFPS"); 
     let lastFrameTime = performance.now();
+    let fpsArray = [];
     function updateFPS(now) {
         const delta = now - lastFrameTime;
-        const fps = Math.round(1000 / delta);
         lastFrameTime = now;
-        hudFPS.textContent = fps;
+
+        const fps = 1000 / delta;
+        fpsArray.push(fps);
+        if (fpsArray.length > 30) fpsArray.shift(); // moyenne sur les 30 dernières frames
+
+            const avgFPS = Math.round(fpsArray.reduce((a,b)=>a+b,0)/fpsArray.length);
+            hudFPS.textContent = avgFPS;
+
         requestAnimationFrame(updateFPS);
     }
     requestAnimationFrame(updateFPS);

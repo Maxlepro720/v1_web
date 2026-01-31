@@ -282,7 +282,7 @@ function refreshButtons(){
         const tier = normalize(card.querySelector("h2").innerText);
         const btns = card.querySelectorAll(".buy-btn");
 
-        // reset de base
+        // reset
         btns.forEach(btn => {
             btn.disabled = false;
             btn.style.background = "#1a1a1a";
@@ -291,23 +291,45 @@ function refreshButtons(){
 
         if (!current) return;
 
-        // Bouton déjà acheté
-        if (tier === current) {
-            btns.forEach(btn=>{
-                btn.disabled = true;
-                btn.style.background = "#1faa59";
-                btn.innerText = "Déjà acheté";
-            });
-            return; // important : on sort pour ne pas écraser
-        }
-
-        // Bouton inférieur à l’abonnement actuel → indisponible
-        if (SUB_ORDER.indexOf(tier) < SUB_ORDER.indexOf(current)) {
-            btns.forEach(btn=>{
-                btn.disabled = true;
-                btn.style.background = "#555";
-                btn.innerText = "Indisponible";
-            });
+        // BRUTEFORCE selon abonnement actuel
+        if (current === "basique") {
+            if (tier === "basique") {
+                btns.forEach(btn=>{
+                    btn.disabled = true;
+                    btn.style.background = "#1faa59";
+                    btn.innerText = "Déjà acheté";
+                });
+            }
+            // Medium et Premium restent actifs
+        } else if (current === "medium") {
+            if (tier === "basique") {
+                btns.forEach(btn=>{
+                    btn.disabled = true;
+                    btn.style.background = "#555";
+                    btn.innerText = "Indisponible";
+                });
+            } else if (tier === "medium") {
+                btns.forEach(btn=>{
+                    btn.disabled = true;
+                    btn.style.background = "#1faa59";
+                    btn.innerText = "Déjà acheté";
+                });
+            }
+            // Premium reste actif
+        } else if (current === "premium") {
+            if (tier === "basique" || tier === "medium") {
+                btns.forEach(btn=>{
+                    btn.disabled = true;
+                    btn.style.background = "#555";
+                    btn.innerText = "Indisponible";
+                });
+            } else if (tier === "premium") {
+                btns.forEach(btn=>{
+                    btn.disabled = true;
+                    btn.style.background = "#1faa59";
+                    btn.innerText = "Déjà acheté";
+                });
+            }
         }
     });
 }

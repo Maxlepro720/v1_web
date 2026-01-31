@@ -960,12 +960,13 @@
     }
     
     
-    const moneyElem = document.getElementById("money-amount");
-    if (moneyElem && window.FDPiece != null) {
-            moneyElem.textContent = window.FDPiece.toLocaleString();
+    const moneyElem_v1 = document.getElementById("money-amount");
+    if (moneyElem_v1 && window.FDPiece != null) {
+            moneyElem_v1.textContent = window.FDPiece.toLocaleString();
     }
     setInterval(() => {   
         const moneyElem = document.getElementById("money-amount");  
+        print(window.FDPiece, window.FDPiece.toLocaleString())
         if (moneyElem && window.FDPiece != null) {
             moneyElem.textContent = window.FDPiece.toLocaleString();
         }

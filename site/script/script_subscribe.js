@@ -1,4 +1,4 @@
-username = localStorage.getItem('username');
+let username = localStorage.getItem('username');
 
 async function getSub(username) {
     try {
@@ -23,8 +23,10 @@ async function getSub(username) {
         window.subscribe = null;
     }
 }
-getSub(username)
+if (username) {
+    getSub(username);
 
-setInterval(() => {   
-        getSub(username)
+    setInterval(() => {
+        getSub(username);
     }, 10000);
+}

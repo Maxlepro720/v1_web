@@ -964,7 +964,8 @@
     if (moneyElem && window.FDPiece != null) {
             moneyElem.textContent = window.FDPiece.toLocaleString();
     }
-    setInterval(() => {     
+    setInterval(() => {   
+        const moneyElem = document.getElementById("money-amount");  
         if (moneyElem && window.FDPiece != null) {
             moneyElem.textContent = window.FDPiece.toLocaleString();
         }

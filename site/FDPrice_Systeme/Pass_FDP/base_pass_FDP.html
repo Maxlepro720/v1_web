@@ -530,6 +530,10 @@ async function fetchLastClaimed(username) {
     console.log(data)
     if (data.status === 'success') {
       lastClaimedLevel = data.Pass || 0;
+      claimedRewards.length = 0;
+      for (let i = 1; i <= lastClaimedLevel; i++) {
+        claimedRewards.push(i);
+      }
       console.log('reward recupérés :',lastClaimedLevel);
     }
   } catch (err) {
@@ -710,7 +714,8 @@ for (let i = 1; i <= TOTAL_LEVELS; i++) {
         <div class="level-hours">${i * HOURS_PER_LEVEL}h requises</div>
       </div>
     </div>
-    <div class="reward ${i <= lastClaimedLevel? 'claimed locked': i <= currentLevel? '': 'locked'}" data-level="${i}">
+    <div class="reward ${i <= lastClaimedLevel ? 'claimed locked' : i === lastClaimedLevel + 1 && i <= currentLevel ? '' : 'locked'}">
+
 
 
       <span class="reward-icon">${rewardData.icon}</span>
@@ -726,10 +731,13 @@ for (let i = 1; i <= TOTAL_LEVELS; i++) {
     const levelNum = parseInt(this.getAttribute('data-level'));
     
     // Vérifie ordre des récompenses
+    if (levelNum <= lastClaimedLevel) return;
+
     if (levelNum !== lastClaimedLevel + 1) {
       showNotification('Vous devez récupérer les récompenses dans l’ordre !', '⚠️');
       return;
     }
+
 
     if (claimedRewards.includes(levelNum)) return;
 

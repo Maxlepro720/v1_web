@@ -112,10 +112,11 @@ h1 {
     cursor: pointer;
     font-weight: 700;
 }
-.buy-btn:hover {
-    background:white;
-    color:black;
+.buy-btn:enabled:hover {
+    background: white;
+    color: black;
 }
+
 
 .details {
     max-width: 900px;
@@ -295,7 +296,7 @@ function refreshButtons(){
             });
         }
 
-        if (SUB_ORDER.indexOf(tier) < SUB_ORDER.indexOf(current)) {
+        if (tier !== current && SUB_ORDER.indexOf(tier) < SUB_ORDER.indexOf(current)) {
             btns.forEach(btn=>{
                 btn.disabled = true;
                 btn.style.background = "#555";

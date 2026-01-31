@@ -517,7 +517,7 @@
         <button id="submit-game-button">📧 Soumettre un jeu</button> 
         <input id="search_bar" placeholder="🔍 Rechercher un jeu...">
         <button id="friends-button">👥 Amis</button>
-        <button id="abonnement-button" onclick="window.open('Menu/Abonnement/shop_part1.html','_self')">💎 Abonnement</button>
+        <button id="abonnement-button" onclick="window.open('Menu/Abonnement/shop_part1.html','_self')">💎 SHOP</button>
     </nav>
     <button id="logout-button" onclick="handleLogoutAndRedirect()">log out</button>
 </header>
@@ -961,7 +961,6 @@
     
     setInterval(() => {   
         const moneyElem = document.getElementById("money-amount");  
-        console.log('maj : ', window.FDPiece, window.FDPiece.toLocaleString())
         if (moneyElem && window.FDPiece != null) {
             moneyElem.textContent = window.FDPiece.toLocaleString();
         }

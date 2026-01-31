@@ -152,7 +152,6 @@
                     fdPiece = data.FDPiece;
                     console.log(fdPiece)
                     window.FDPiece = fdPiece
-                    console.log(window.fdPiece)
                     hudFD.textContent = fdPiece.toLocaleString();
                 }
             } catch (e) {

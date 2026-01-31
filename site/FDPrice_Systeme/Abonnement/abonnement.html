@@ -280,50 +280,34 @@ function refreshButtons(){
 
     document.querySelectorAll(".card").forEach(card => {
         const tier = normalize(card.querySelector("h2").innerText);
-        const btn = card.querySelector(".buy-btn");
+        const btns = card.querySelectorAll(".buy-btn");
 
-        // reset
-        btn.disabled = false;
-        btn.style.background = "#1a1a1a";
-        btn.innerText = "Choisir";
+        // reset de base
+        btns.forEach(btn => {
+            btn.disabled = false;
+            btn.style.background = "#1a1a1a";
+            btn.innerText = "Choisir";
+        });
 
         if (!current) return;
 
-        // === BASIQUE ===
-        if (current === "basique") {
-            if (tier === "basique") {
+        // Bouton déjà acheté
+        if (tier === current) {
+            btns.forEach(btn=>{
                 btn.disabled = true;
                 btn.style.background = "#1faa59";
                 btn.innerText = "Déjà acheté";
-            }
+            });
+            return; // important : on sort pour ne pas écraser
         }
 
-        // === MEDIUM ===
-        if (current === "medium") {
-            if (tier === "basique") {
+        // Bouton inférieur à l’abonnement actuel → indisponible
+        if (SUB_ORDER.indexOf(tier) < SUB_ORDER.indexOf(current)) {
+            btns.forEach(btn=>{
                 btn.disabled = true;
                 btn.style.background = "#555";
                 btn.innerText = "Indisponible";
-            }
-            if (tier === "medium") {
-                btn.disabled = true;
-                btn.style.background = "#1faa59";
-                btn.innerText = "Déjà acheté";
-            }
-        }
-
-        // === PREMIUM ===
-        if (current === "premium") {
-            if (tier === "basique" || tier === "medium") {
-                btn.disabled = true;
-                btn.style.background = "#555";
-                btn.innerText = "Indisponible";
-            }
-            if (tier === "premium") {
-                btn.disabled = true;
-                btn.style.background = "#1faa59";
-                btn.innerText = "Déjà acheté";
-            }
+            });
         }
     });
 }

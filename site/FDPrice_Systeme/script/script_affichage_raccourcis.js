@@ -30,6 +30,7 @@
         <div style="text-align:right; cursor:pointer;" id="hudClose">✖</div>
         <div>Temps joué: <span id="hudTime">0s</span></div>
         <div>Argent: <span id="hudFD">0</span></div>
+        <div>FPS: <span id="hudFPS">0</span></div>
     `;
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -40,6 +41,16 @@
     const hudTime = hud.querySelector("#hudTime");
     const hudFD = hud.querySelector("#hudFD");
     const closeBtn = hud.querySelector("#hudClose");
+    const hudFPS = hud.querySelector("#hudFPS"); 
+    let lastFrameTime = performance.now();
+    function updateFPS(now) {
+        const delta = now - lastFrameTime;
+        const fps = Math.round(1000 / delta);
+        lastFrameTime = now;
+        hudFPS.textContent = fps;
+        requestAnimationFrame(updateFPS);
+    }
+    requestAnimationFrame(updateFPS);
 
     closeBtn.addEventListener("click", () => toggleHUD());
 

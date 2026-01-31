@@ -105,11 +105,6 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username: USERNAME, Time: elapsedTime })
             });
-            await fetch(`${SERVER_URL}/send_FDPrice`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: USERNAME, FDPiece: fdPiece })
-            });
             console.log("Données envoyées au serveur");
         } catch(e){
             console.error("Erreur envoi FDPiece:", e);

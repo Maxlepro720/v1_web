@@ -98,6 +98,7 @@
             console.log(data);
             elapsedTime = data.Time || 0;
             fdPiece = data.FDPiece || 0;
+            window.FDPiece = fdPiece;
             updateHUD();
         } catch (e) {
             console.error("Erreur récupération FDPiece:", e);

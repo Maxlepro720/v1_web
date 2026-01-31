@@ -168,7 +168,7 @@ h1 {
 <!-- PAR -->
 <div id="money">
     <img src="../../Image/FDPrice.png" alt="coin">
-    <span id="money_span">N/A</span>
+    <span id="money-span">N/A</span>
 </div>
 
 <h1>Nos Offres</h1>
@@ -373,12 +373,12 @@ async function saveSub(tier){
 }
 
 setInterval(refreshButtons, 1000);
-const moneyElem = document.getElementById("money-amount"); 
+const moneyElem = document.getElementById("money-span"); 
 setInterval(() => {
     if (moneyElem && window.FDPiece != null) {
         moneyElem.textContent = window.FDPiece.toLocaleString();
     }
-}, 3000);
+}, 1000);
 
 </script>
 

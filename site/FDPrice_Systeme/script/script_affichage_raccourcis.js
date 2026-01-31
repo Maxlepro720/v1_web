@@ -128,7 +128,7 @@
         // Vérification continue de l'argent toutes les X secondes
         setInterval(async () => {
             try {
-                const res = await fetch(`${SERVER_URL}/get_FDPiece`, {
+                const res = await fetch(`${SERVER_URL}/get_time_FDPrice`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ username: USERNAME })

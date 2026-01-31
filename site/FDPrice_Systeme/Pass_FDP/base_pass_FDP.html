@@ -847,7 +847,7 @@ setTimeout(() => { autoScroll(); }, 100);
 // TEST (à décommenter pour tester)
 // =======================
 setInterval(() => {const heure = Math.floor(window.elapsedTime / 3600); heures = heure}, 3000);
-setInterval(() => {document.getElementById('money').value = window.FDPiece.toLocaleString() }, 1000);
+setInterval(() => {document.getElementById('money').textContent = window.FDPiece.toLocaleString() }, 1000);
 </script>
 
 </body>

@@ -1,6 +1,6 @@
 async function getSub(username) {
     try {
-        const response = await fetch("https://TON_URL_RENDER/get_sub", {
+        const response = await fetch("https://project-3-api-2bgb.onrender.com/get_sub", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

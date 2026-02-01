@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Jeu Memes</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #000;
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+    background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSWcR41AGRRhbFc6aKfqPq9PJaSnUWfybh-Vg&s');
+    background-size: cover;      /* étire l'image pour couvrir tout l'espace */
+    background-position: center; /* centre l'image */
+    background-repeat: no-repeat; /* empêche la répétition de l'image */
+  }
+
+  #score {
+    font-size: 2em;
+    margin: 20px 0;
+  }
+
+  button {
+    padding: 10px 20px;
+    font-size: 1em;
+    cursor: pointer;
+    margin: 10px;
+  }
+
+  #images {
+    display: flex;
+    gap: 20px;
+    margin: 20px auto;
+    justify-content: center;
+  }
+
+  .meme-img {
+    width: 150px;
+    height: 150px;
+    cursor: pointer;
+    border: 2px solid #fff;
+  }
+
+  #message {
+    font-size: 1.5em;
+    margin: 20px 0;
+    min-height: 40px;
+  }
+
+  #gameOver {
+    display: none;
+  }
+
+  .green-flash {
+    background: #00ff00 !important;
+  }
+
+  .red-flash {
+    background: #ff0000 !important;
+  }
+
+  #menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+  }
+
+  #menu h1 {
+    font-size: 4em;
+    margin: 20px 0;
+    text-shadow: 5px 5px 0px #ff00ff, -5px -5px 0px #00ffff;
+    animation: glitch 0.5s infinite;
+  }
+
+  @keyframes glitch {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+    100% { transform: translate(0); }
+  }
+
+  #menu p {
+    font-size: 1.5em;
+    color: #ffff00;
+    margin: 30px 0;
+  }
+
+  #startBtn {
+    background: linear-gradient(45deg, #ff0000, #00ff00, #0000ff, #ffff00);
+    background-size: 300% 300%;
+    animation: rainbow-bg 2s ease infinite;
+    border: 3px solid #fff;
+    font-size: 1.5em;
+    padding: 15px 40px;
+    font-weight: bold;
+    color: #000;
+  }
+
+  @keyframes rainbow-bg {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  #startBtn:hover {
+    transform: scale(1.2) rotate(5deg);
+  }
+</style>
+</head>
+
+<body>
+
+<div id="menu">
+  <h1>🎮 MEME QUIZ 🎮</h1>
+  <p>T'es pret a te faire humilier ?</p>
+  <button id="startBtn">LETS GOOO</button>
+</div>
+
+<div id="gameArea" style="display: none;">
+  <h1>Trouve le meme</h1>
+  <div id="score">0/10</div>
+  
+  <audio id="audio"></audio>
+  <audio id="bgMusic" loop></audio>
+  
+  <div id="images"></div>
+  <div id="message"></div>
+</div>
+
+<div id="gameOver">
+  <h2>FIN</h2>
+  <div id="finalScore"></div>
+  <div id="trollMessage"></div>
+  <button id="restartBtn">Restart</button>
+</div>
+
+<script>
+const memes = [
+  {
+    name: "6-7",
+    img: "https://landingsnews.com/wp-content/uploads/2025/10/sixseven.png",
+    audio: "https://www.myinstants.com/media/sounds/67_SQlv2Xv.mp3"
+  },
+  {
+    name: "Peppa pig haram",
+    img: "https://i.pinimg.com/736x/2b/57/db/2b57db380ac078088b1ae11140953fb4.jpg",
+    audio: "https://www.myinstants.com/media/sounds/img_0181-online-audio-converter.mp3"
+  },
+  {
+    name: "Hugoo",
+    img: "https://www.mon-pharmacien-conseil.com/14474-large_default/lysopaine-sans-sucre-36-pastilles-a-sucer.jpg",
+    audio: "https://www.myinstants.com/media/sounds/hugooo.mp3"
+  },
+  {
+    name: "fortnite danse",
+    img: "https://media.cdnws.com/_i/101847/11642/3700/43/danse-floss-fortnite-motif-thermocollant.jpeg",
+    audio: "https://www.myinstants.com/media/sounds/fortnite-default-dance-bass-boosted.mp3"
+  },
+  {
+    name: "T'as la dalle ..",
+    img: "https://media.lelombrik.net/t/ba5f64db5c351e2b697750923ae06529/p/01.png",
+    audio: "https://www.myinstants.com/media/sounds/tas-la-dalle-et-tas-envie-de-ken.mp3"
+  },
+  {
+    name: "Appel Discord",
+    img: "https://raw.githubusercontent.com/chand1012/Discord-Quick-Meme/master/icon/MemeBotBlue512.png",
+    audio: "https://www.myinstants.com/media/sounds/discord-call-sound.mp3"
+  },
+  {
+    name: "Ouai c'est greg!",
+    img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTEe610SnLS22MEPYT73f-Unz7gJh5_YIV60Q&s",
+    audio: "https://www.myinstants.com/media/sounds/ouais-cest-greg.mp3"
+  },
+  {
+    name: "Frank Leboeuf",
+    img: "https://www.parismatch.com/lmnr/r/960,640,FFFFFF,forcex,center-middle/img/var/pm/public/styles/paysage/public/media/image/2022/03/04/18/Frank-Leboeuf-Je-m-eclate-sur-scene-a-faire-rire-le-public.jpg?VersionId=.DVGtOqg5LW8gwhYkaAzukSOpMztXGrE",
+    audio: "https://www.myinstants.com/media/sounds/frank-leboeuf.mp3"
+  },
+  {
+    name: "Sonnerie collège",
+    img: "https://www.radio-rfe.com/images/Texte-Biblique/question_a_se_poser_sur_l_enfer_-_tag.jpg",
+    audio: "https://www.myinstants.com/media/sounds/sonnerie-college.mp3"
+  },
+  {
+    name: "Tralalelo phonk",
+    img: "https://m.media-amazon.com/images/I/61-1HFujrqL._AC_UF894,1000_QL80_.jpg",
+    audio: "https://www.myinstants.com/media/sounds/tralalelo-tralala-phonk.mp3"
+  },
+  {
+    name: "Sauce cuuurrrryyyyy",
+    img: "https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/3975.png&w=350&h=254",
+    audio: "https://www.myinstants.com/media/sounds/sauce-curry.mp3"
+  },
+  {
+    name: "Ching Chang Chong",
+    img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTz-sIEXVE-jrOQ16ze5jxpH5x6EK6hp6uShg&s",
+    audio: "https://www.myinstants.com/media/sounds/ching-chong-cang.mp3"
+  },
+];
+
+// Musiques de fond chelou
+const bgMusics = [
+  "https://www.myinstants.com/media/sounds/crab-rave-official-music-video-monstercat-release.mp3",
+  "https://www.myinstants.com/media/sounds/nyan-cat-original_BVDJqli.mp3",
+  "https://www.myinstants.com/media/sounds/kazoo-kid-wait-a-minute.mp3"
+];
+
+// SFX random
+const sfx = [
+  "https://www.myinstants.com/media/sounds/bruh.mp3",
+  "https://www.myinstants.com/media/sounds/oof-roblox.mp3",
+  "https://www.myinstants.com/media/sounds/vine-boom.mp3",
+  "https://www.myinstants.com/media/sounds/windows-xp-error.mp3",
+  "https://www.myinstants.com/media/sounds/samsung-notification.mp3"
+];
+
+let currentMeme = null;
+let score = 0;
+let questionNumber = 0;
+let answered = false;
+
+const troll = [
+  "nul",
+  "vraiment ?",
+  "mdr",
+  "pathetique",
+  "oof",
+  "serieux ?",
+  "lol",
+  "bruh",
+  "rip",
+  "next"
+];
+
+function playRandomBgMusic() {
+  const bgMusic = document.getElementById("bgMusic");
+  const randomMusic = bgMusics[Math.floor(Math.random() * bgMusics.length)];
+  bgMusic.src = randomMusic;
+  bgMusic.volume = 0.3;
+  bgMusic.play();
+}
+
+function playRandomSfx() {
+  if (Math.random() > 0.5) {
+    const sfxAudio = new Audio(sfx[Math.floor(Math.random() * sfx.length)]);
+    sfxAudio.volume = 0.5;
+    sfxAudio.play();
+  }
+}
+
+function chooseMeme() {
+  currentMeme = memes[Math.floor(Math.random() * memes.length)];
+}
+
+function loadAudio() {
+  const bgMusic = document.getElementById("bgMusic");
+  bgMusic.pause();
+  
+  const audio = document.getElementById("audio");
+  audio.src = currentMeme.audio;
+  audio.currentTime = 0;
+  audio.play();
+  
+  playRandomSfx();
+  
+  setTimeout(() => {
+    playRandomBgMusic();
+  }, Math.random() * 3000 + 1000);
+}
+
+function showImages() {
+  const imgs = document.getElementById("images");
+  imgs.innerHTML = "";
+
+  let choices = [...memes].sort(() => Math.random() - 0.5).slice(0, 3);
+
+  if (!choices.includes(currentMeme)) {
+    choices[Math.floor(Math.random() * 3)] = currentMeme;
+  }
+
+  choices.forEach(m => {
+    const img = document.createElement("img");
+    img.src = m.img;
+    img.className = "meme-img";
+    img.onclick = () => checkAnswer(m);
+    imgs.appendChild(img);
+  });
+}
+
+function checkAnswer(m) {
+  if (answered) return;
+  answered = true;
+
+  const msg = document.getElementById("message");
+  
+  if (m.name === currentMeme.name) {
+    score++;
+    msg.textContent = "ok";
+    document.body.classList.add("green-flash");
+    
+    setTimeout(() => {
+      document.body.classList.remove("green-flash");
+    }, 2000);
+  } else {
+    msg.textContent = troll[Math.floor(Math.random() * troll.length)];
+    document.body.classList.add("red-flash");
+    
+    playRandomSfx();
+    
+    setTimeout(() => {
+      document.body.classList.remove("red-flash");
+    }, 2000);
+  }
+  
+  document.getElementById("score").textContent = `${score}/10`;
+  
+  setTimeout(() => {
+    if (questionNumber >= 10) {
+      showGameOver();
+    } else {
+      nextRound();
+    }
+  }, 2000);
+}
+
+function nextRound() {
+  if (questionNumber >= 10) return;
+  
+  answered = false;
+  questionNumber++;
+  document.getElementById("message").textContent = "";
+  
+  chooseMeme();
+  loadAudio();
+  showImages();
+}
+
+function showGameOver() {
+  const bgMusic = document.getElementById("bgMusic");
+  bgMusic.pause();
+  
+  document.getElementById("gameArea").style.display = "none";
+  document.getElementById("gameOver").style.display = "block";
+  
+  document.getElementById("finalScore").textContent = `${score}/10`;
+  
+  let msg = "";
+  if (score >= 9) msg = "pas mal";
+  else if (score >= 7) msg = "moyen";
+  else if (score >= 5) msg = "bof";
+  else if (score >= 3) msg = "faible";
+  else msg = "catastrophique";
+  
+  document.getElementById("trollMessage").textContent = msg;
+  
+  playRandomSfx();
+}
+
+function resetGame() {
+  score = 0;
+  questionNumber = 0;
+  answered = false;
+  
+  const bgMusic = document.getElementById("bgMusic");
+  bgMusic.pause();
+  
+  document.getElementById("gameArea").style.display = "none";
+  document.getElementById("gameOver").style.display = "none";
+  document.getElementById("menu").style.display = "flex";
+  document.getElementById("images").innerHTML = "";
+  document.getElementById("message").textContent = "";
+  document.getElementById("score").textContent = "0/10";
+}
+
+document.getElementById("startBtn").onclick = () => {
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("gameArea").style.display = "block";
+  playRandomBgMusic();
+  nextRound();
+};
+
+document.getElementById("restartBtn").onclick = resetGame;
+</script>
+
+</body>
+</html>

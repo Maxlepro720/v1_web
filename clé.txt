@@ -1,1 +1,65 @@
 rnd_vAPZzfcps0xotIbfFEwydEwuwKaF
+
+
+save : const memes = [
+  {
+    name: "6-7",
+    img: "https://landingsnews.com/wp-content/uploads/2025/10/sixseven.png",
+    audio: "https://www.myinstants.com/media/sounds/67_SQlv2Xv.mp3"
+  },
+  {
+    name: "Peppa pig haram",
+    img: "https://i.pinimg.com/736x/2b/57/db/2b57db380ac078088b1ae11140953fb4.jpg",
+    audio: "https://www.myinstants.com/media/sounds/img_0181-online-audio-converter.mp3"
+  },
+  {
+    name: "Hugoo",
+    img: "https://www.mon-pharmacien-conseil.com/14474-large_default/lysopaine-sans-sucre-36-pastilles-a-sucer.jpg",
+    audio: "https://www.myinstants.com/media/sounds/hugooo.mp3"
+  },
+  {
+    name: "fortnite danse",
+    img: "https://media.cdnws.com/_i/101847/11642/3700/43/danse-floss-fortnite-motif-thermocollant.jpeg",
+    audio: "https://www.myinstants.com/media/sounds/fortnite-default-dance-bass-boosted.mp3"
+  },
+  {
+    name: "T'as la dalle ..",
+    img: "https://media.lelombrik.net/t/ba5f64db5c351e2b697750923ae06529/p/01.png",
+    audio: "https://www.myinstants.com/media/sounds/tas-la-dalle-et-tas-envie-de-ken.mp3"
+  },
+  {
+    name: "Appel Discord",
+    img: "https://raw.githubusercontent.com/chand1012/Discord-Quick-Meme/master/icon/MemeBotBlue512.png",
+    audio: "https://www.myinstants.com/media/sounds/discord-call-sound.mp3"
+  },
+  {
+    name: "Ouai c'est greg!",
+    img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTEe610SnLS22MEPYT73f-Unz7gJh5_YIV60Q&s",
+    audio: "https://www.myinstants.com/media/sounds/ouais-cest-greg.mp3"
+  },
+  {
+    name: "Frank Leboeuf",
+    img: "https://www.parismatch.com/lmnr/r/960,640,FFFFFF,forcex,center-middle/img/var/pm/public/styles/paysage/public/media/image/2022/03/04/18/Frank-Leboeuf-Je-m-eclate-sur-scene-a-faire-rire-le-public.jpg?VersionId=.DVGtOqg5LW8gwhYkaAzukSOpMztXGrE",
+    audio: "https://www.myinstants.com/media/sounds/frank-leboeuf.mp3"
+  },
+  {
+    name: "Sonnerie collège",
+    img: "https://www.radio-rfe.com/images/Texte-Biblique/question_a_se_poser_sur_l_enfer_-_tag.jpg",
+    audio: "https://www.myinstants.com/media/sounds/sonnerie-college.mp3"
+  },
+  {
+    name: "Tralalelo phonk",
+    img: "https://m.media-amazon.com/images/I/61-1HFujrqL._AC_UF894,1000_QL80_.jpg",
+    audio: "https://www.myinstants.com/media/sounds/tralalelo-tralala-phonk.mp3"
+  },
+  {
+    name: "Sauce cuuurrrryyyyy",
+    img: "https://a.espncdn.com/combiner/i?img=/i/headshots/nba/players/full/3975.png&w=350&h=254",
+    audio: "https://www.myinstants.com/media/sounds/sauce-curry.mp3"
+  },
+  {
+    name: "Ching Chang Chong",
+    img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTz-sIEXVE-jrOQ16ze5jxpH5x6EK6hp6uShg&s",
+    audio: "https://www.myinstants.com/media/sounds/ching-chong-cang.mp3"
+  },
+];

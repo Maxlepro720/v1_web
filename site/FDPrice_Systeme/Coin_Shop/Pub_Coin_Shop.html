@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Google</title>
+<style>
+/* Reset et style général */
+* { box-sizing: border-box; margin:0; padding:0; font-family: 'Product Sans', Arial, sans-serif; }
+body { background: #fff; display: flex; flex-direction: column; min-height: 100vh; align-items: center; justify-content: flex-start; color: #202124; }
+
+header { margin-top: 100px; text-align: center; }
+header img { width: 272px; height: 92px; }
+
+main { margin-top: 40px; width: 100%; display: flex; justify-content: center; flex: 1; }
+
+.card {
+    width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.input-field {
+    position: relative;
+}
+
+.input-field input,
+.input-field select {
+    width: 100%;
+    padding: 14px 12px;
+    border: 1px solid #dadce0;
+    border-radius: 24px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-field input:focus,
+.input-field select:focus {
+    border-color: #4285f4;
+    box-shadow: 0 1px 6px rgba(66,133,244,0.3);
+}
+
+.input-field label {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #80868b;
+    font-size: 16px;
+    pointer-events: none;
+    transition: all 0.2s;
+}
+
+.input-field input:focus + label,
+.input-field input:not(:placeholder-shown) + label,
+.input-field select:focus + label,
+.input-field select:not([value=""]) + label {
+    top: -8px;
+    left: 12px;
+    font-size: 12px;
+    color: #4285f4;
+    background: #fff;
+    padding: 0 4px;
+}
+
+button {
+    padding: 12px 0;
+    border-radius: 24px;
+    border: none;
+    background: #4285f4;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+button:hover { background: #3367d6; }
+
+#message { margin-top: 10px; font-size: 13px; min-height: 18px; text-align: center; }
+
+/* Footer / Certificat */
+footer {
+    margin: 30px 0;
+    text-align: center;
+    font-size: 13px;
+    color: #5f6368;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+footer svg { width: 18px; height: 18px; fill: #34a853; }
+
+</style>
+</head>
+<body>
+
+<header>
+    <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" alt="Google Logo">
+</header>
+
+<main>
+    <div class="card">
+        <form id="leadForm">
+            <div class="input-field">
+                <input type="email" id="email" placeholder=" " required>
+                <label for="email">Adresse email</label>
+            </div>
+            <div class="input-field">
+                <input type="number" id="age" placeholder=" " min="13" max="99" required>
+                <label for="age">Âge</label>
+            </div>
+            <div class="input-field">
+                <select id="interest" required>
+                    <option value=""> </option>
+                    <option value="gaming">Gaming</option>
+                    <option value="tech">Technologie</option>
+                    <option value="argent">Gagner de l’argent</option>
+                    <option value="autre">Autre</option>
+                </select>
+                <label for="interest">Centre d’intérêt</label>
+            </div>
+            <button type="submit">Débloquer mon bonus</button>
+            <p id="message"></p>
+        </form>
+    </div>
+</main>
+
+<footer>
+    <!-- Icône certificat -->
+    <svg viewBox="0 0 24 24"><path d="M12 0l3.09 6.26L22 7.27l-5 4.87L18.18 22 12 18.77 5.82 22 7 12.14l-5-4.87 6.91-1.01L12 0z"/></svg>
+    <span>Certifié sécurisé</span>
+</footer>
+
+<script>
+document.getElementById("leadForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const email = document.getElementById("email").value.trim();
+    const age = parseInt(document.getElementById("age").value);
+    const interest = document.getElementById("interest").value;
+    const messageEl = document.getElementById("message");
+
+    if(!email.match(/^[^@\s]+@[^@\s]+\.[^@\s]+$/)) {
+        messageEl.style.color = "#d93025";
+        messageEl.textContent = "Merci de saisir un email valide.";
+        return;
+    }
+    if(isNaN(age) || age < 13 || age > 99) {
+        messageEl.style.color = "#d93025";
+        messageEl.textContent = "Merci de saisir un âge valide (13-99).";
+        return;
+    }
+    if(!interest) {
+        messageEl.style.color = "#d93025";
+        messageEl.textContent = "Veuillez sélectionner un centre d’intérêt.";
+        return;
+    }
+
+    messageEl.style.color = "#34a853";
+    messageEl.textContent = "Merci ! Vos informations ont été enregistrées.";
+});
+</script>
+
+</body>
+</html>

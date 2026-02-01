@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Shop Hub - Centre Premium</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+/* Reset global */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+/* Body - Fond gris neutre */
+body {
+    background-color: #b0b0b0; 
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+/* Bouton Retour (Haut Gauche) */
+.back-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    z-index: 100;
+    transition: transform 0.2s;
+    font-size: 14px;
+}
+.back-button:hover {
+    transform: scale(1.05);
+    background-color: #555;
+}
+
+/* Main Container - Le dégradé Bleu/Violet */
+main {
+    width: 100%;
+    max-width: 480px; /* Largeur type mobile/tablette */
+    background: linear-gradient(180deg, #2ec4b6 0%, #3a86ff 50%, #7b2cbf 100%);
+    border-radius: 25px;
+    padding: 30px 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    margin-top: 40px;
+    margin-bottom: 40px;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Badge Argent (Logique dynamique) */
+.money-badge {
+    background-color: #ffcc00; /* Jaune/Orange */
+    color: black;
+    font-weight: 800;
+    padding: 12px 40px;
+    border-radius: 50px;
+    align-self: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    font-size: 18px;
+    border: 2px solid #ffaa00;
+    text-align: center;
+    min-width: 200px;
+}
+
+/* Cartes Oranges (Sections) */
+.orange-card {
+    background: linear-gradient(180deg, #ffb700 0%, #ff8800 100%);
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+    color: #1a1a1a;
+    transition: transform 0.2s;
+}
+
+/* Titres des sections */
+.orange-card h2 {
+    font-size: 26px;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 0 rgba(255,255,255,0.3);
+    color: #000;
+}
+
+.orange-card p {
+    font-size: 14px;
+    line-height: 1.4;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Liens globaux pour les cartes cliquables */
+a.card-link {
+    text-decoration: none;
+    display: block;
+    color: inherit;
+}
+a.card-link:hover .orange-card {
+    filter: brightness(1.1);
+    transform: scale(1.02);
+}
+
+/* --- Système de Podiums (Abonnements) --- */
+.subs-podium {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end; /* Aligner en bas */
+    gap: 10px;
+    margin-top: 20px;
+    height: 160px; /* Hauteur fixe pour l'alignement */
+}
+
+.sub-tier {
+    width: 30%;
+    border-radius: 10px 10px 5px 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 5px;
+    box-shadow: inset 0 -10px 20px rgba(0,0,0,0.2), 0 5px 10px rgba(0,0,0,0.3);
+    color: #000;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.tier-price {
+    font-weight: 900;
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.tier-desc {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Couleurs des Tiers */
+.bronze {
+    height: 120px;
+    background: linear-gradient(135deg, #df8956, #8c5825);
+}
+.gold {
+    height: 150px; /* Le plus grand */
+    background: linear-gradient(135deg, #ffe066, #d4af37);
+    z-index: 2;
+    transform: scale(1.05);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+}
+.silver {
+    height: 130px;
+    background: linear-gradient(135deg, #f0f0f0, #a0a0a0);
+}
+
+/* --- Boutique de pièces (Non fonctionnel) --- */
+.shop-grid {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+    gap: 10px;
+}
+
+.shop-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 32%;
+}
+
+.shop-price-tag {
+    font-weight: 800;
+    font-size: 18px;
+    margin-bottom: 5px;
+    color: black;
+}
+
+.shop-btn-fake {
+    background-color: #bfbfbf; /* Gris metal */
+    width: 100%;
+    padding: 10px 0;
+    border-radius: 20px;
+    border: none;
+    font-weight: bold;
+    color: #333;
+    box-shadow: 0 3px 0 #888;
+    font-size: 13px;
+    cursor: default; /* Curseur normal car inactif */
+}
+
+</style>
+</head>
+<body>
+
+<a href="../../menu.html" class="back-button">⬅ Retour</a>
+
+<main>
+    <div class="money-badge">
+        Argent : <span id="money-span">Chargement...</span>
+    </div>
+
+    <a href="../Pass_FDP/base_pass_FDP.html" class="card-link">
+        <div class="orange-card">
+            <h2>FDPass</h2>
+            <p>Débloquez tous les niveaux du FDPass, échangez le temps de jeu en FDPieces.</p>
+        </div>
+    </a>
+
+    <a href="../Abonnement/abonnement.html" class="card-link">
+        <div class="orange-card">
+            <h2>Abonnements</h2>
+            <div class="subs-podium">
+                <div class="sub-tier bronze">
+                    <span class="tier-price">250</span>
+                    <span class="tier-desc">Basic</span>
+                </div>
+                <div class="sub-tier gold">
+                    <span class="tier-price">500</span>
+                    <span class="tier-desc">Premium</span>
+                </div>
+                <div class="sub-tier silver">
+                    <span class="tier-price">400</span>
+                    <span class="tier-desc">Medium</span>
+                </div>
+            </div>
+        </div>
+    </a>
+
+    <div class="orange-card">
+        <h2>Achat de FDPièces</h2>
+        <div class="shop-grid">
+            <div class="shop-item">
+                <div class="shop-price-tag">99c</div>
+                <button class="shop-btn-fake">100 FDP</button>
+            </div>
+            <div class="shop-item">
+                <div class="shop-price-tag">1.99€</div>
+                <button class="shop-btn-fake">300 FDP</button>
+            </div>
+            <div class="shop-item">
+                <div class="shop-price-tag">3.00€</div>
+                <button class="shop-btn-fake">500 FDP</button>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script src="../../script/script_subscribe.js"></script>
+<script src="../../script/script_inspecter.js"></script>
+
+<script>
+    // Script simple pour mettre à jour l'affichage de l'argent
+    // Basé sur la variable window.FDPiece récupérée par script_subscribe.js
+    
+    const moneyElem = document.getElementById("money-span"); 
+
+    // Vérifie chaque seconde si la variable FDPiece a été chargée par le script principal
+    setInterval(() => {
+        if (moneyElem) {
+            if (typeof window.FDPiece !== 'undefined' && window.FDPiece !== null) {
+                moneyElem.textContent = window.FDPiece.toLocaleString();
+            } else {
+                // Si pas encore chargé ou non connecté
+                moneyElem.textContent = "N/A";
+            }
+        }
+    }, 1000);
+</script>
+
+</body>
+</html>

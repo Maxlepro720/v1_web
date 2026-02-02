@@ -167,9 +167,11 @@ a.card-link:hover .orange-card {
 }
 
 /* --- Boutique de pièces (Non fonctionnel) --- */
+/* Ajout du point pour cibler la classe */
 .shop-grid {
     display: flex;
     justify-content: space-between;
+    flex-wrap: wrap; /* Permet de passer à la ligne sur mobile */
     margin-top: 15px;
     gap: 10px;
 }
@@ -178,7 +180,13 @@ a.card-link:hover .orange-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 32%;
+    /* Utilisation de calc pour prendre en compte le gap */
+    width: calc(33.33% - 10px); 
+    text-align: center;
+}
+.shop-item:hover {
+    transform: scale(1.05); /* Agrandi de 5% */
+    z-index: 10; /* S'assure que l'élément passe au-dessus des autres */
 }
 
 .shop-price-tag {
@@ -189,16 +197,23 @@ a.card-link:hover .orange-card {
 }
 
 .shop-btn-fake {
-    background-color: #bfbfbf; /* Gris metal */
+    background-color: #00535e; /* Ton bleu/vert actuel */
     width: 100%;
     padding: 10px 0;
     border-radius: 20px;
     border: none;
     font-weight: bold;
-    color: #333;
-    box-shadow: 0 3px 0 #888;
+    color: #ffffff; /* Texte en blanc pour la lisibilité */
+    box-shadow: 0 3px 0 #003a42; /* Ombre plus foncée que le bouton pour l'effet 3D */
     font-size: 13px;
-    cursor: default; /* Curseur normal car inactif */
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+/* Petit effet interactif pour le côté "fonctionnel" */
+.shop-btn-fake:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #003a42;
 }
 
 </style>
@@ -243,7 +258,7 @@ a.card-link:hover .orange-card {
         <h2>Achat de FDPièces</h2>
         <div class="shop-grid">
             <div class="shop-item">
-                <div class="shop-price-tag">99c</div>
+                <div class="shop-price-tag">0.99€</div>
                 <button class="shop-btn-fake">100 FDP</button>
             </div>
             <div class="shop-item">

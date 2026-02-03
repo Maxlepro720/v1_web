@@ -1,9 +1,21 @@
-# Règles pour le cache des fichiers CSS et JS
-<FilesMatch "\.(css|js)$">
-    FileETag None
-    Header unset ETag
-    Header unset Pragma
-    Header unset Cache-Control
-    Header unset Last-Modified
-    Header set Cache-Control "max-age=0, no-cache, no-store, must-revalidate"
-</FilesMatch>
+# 1. Autoriser l'accès à tous les fichiers
+Order allow,deny
+Allow from all
+
+# 2. Empêcher le blocage si l'index est absent
+Options +FollowSymLinks -Indexes
+
+# 3. Forcer le type MIME pour le HTML
+AddType text/html .html
+
+# 4. Règles pour le cache (uniquement si le module est actif)
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js)$">
+        FileETag None
+        Header unset ETag
+        Header unset Pragma
+        Header unset Cache-Control
+        Header unset Last-Modified
+        Header set Cache-Control "max-age=0, no-cache, no-store, must-revalidate"
+    </FilesMatch>
+</IfModule>

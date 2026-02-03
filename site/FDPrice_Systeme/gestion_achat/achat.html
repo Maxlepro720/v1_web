@@ -175,7 +175,7 @@
 
         // On construit l'URL finale avec le username dans client_reference_id
         // C'est ce paramètre que votre serveur récupérera dans le Webhook
-        const finalUrl = `${stripeUrl}?goal_id=${encodeURIComponent(username)}`;
+        const finalUrl = `${stripeUrl}?client_reference_id=${encodeURIComponent(username)}`;
         
         // Redirection vers Stripe
         window.location.href = finalUrl;

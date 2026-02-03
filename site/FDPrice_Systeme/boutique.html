@@ -254,7 +254,7 @@ a.card-link:hover .orange-card {
         </div>
     </a>
 
-    <div class="orange-card">
+    <div onclick="window.open('FDPrice_Systeme/gestion_achat/achat.html','_self')" class="orange-card">
         <h2>Achat de FDPièces</h2>
         <div class="shop-grid">
             <div class="shop-item">
@@ -280,7 +280,7 @@ a.card-link:hover .orange-card {
 <script>
     // Script simple pour mettre à jour l'affichage de l'argent
     // Basé sur la variable window.FDPiece récupérée par script_subscribe.js
-    
+
     const moneyElem = document.getElementById("money-span"); 
 
     // Vérifie chaque seconde si la variable FDPiece a été chargée par le script principal

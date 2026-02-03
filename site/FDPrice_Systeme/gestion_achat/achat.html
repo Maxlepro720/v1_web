@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FDPrice Store | Paiement Sécurisé</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+        :root {
+            --bg-dark: #0b0e14;
+            --card-bg: #161b22;
+            --primary: #3b82f6;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #10b981;
+            --border: #30363d;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .shop-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin: 0;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-dim);
+            margin-top: 10px;
+        }
+
+        .offers-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .pack-link {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            cursor: pointer;
+        }
+
+        .pack-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .pack-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+            background: #1c2128;
+        }
+
+        .pack-info h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .pack-info span {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .price-tag {
+            background: #21262d;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 800;
+            color: var(--success);
+            border: 1px solid var(--border);
+        }
+
+        .success-toast {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--success);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+<div id="toast" class="success-toast">Achat validé avec succès !</div>
+
+<div class="shop-container">
+    <div class="header">
+        <h1>FDPrice Store</h1>
+        <p>Propulsé par Stripe Live</p>
+    </div>
+
+    <div class="offers-stack">
+        <div class="pack-link" onclick="redirectToStripe('https://buy.stripe.com/14A28jalyfa98HM46j8so01', 500)">
+            <div class="pack-card">
+                <div class="pack-info">
+                    <h3>500 FDPrice</h3>
+                    <span>Pack Premium</span>
+                </div>
+                <div class="price-tag">2,99 €</div>
+            </div>
+        </div>
+
+        <div class="pack-link" onclick="redirectToStripe('https://buy.stripe.com/5kQ6ozfFS6DD2jo6er8so02', 300)">
+            <div class="pack-card">
+                <div class="pack-info">
+                    <h3>300 FDPrice</h3>
+                    <span>Pack Standard</span>
+                </div>
+                <div class="price-tag">1,99 €</div>
+            </div>
+        </div>
+
+        <div class="pack-link" onclick="redirectToStripe('https://buy.stripe.com/3cIaEP2T68LLf6aeKX8so03', 100)">
+            <div class="pack-card">
+                <div class="pack-info">
+                    <h3>100 FDPrice</h3>
+                    <span>Pack Starter</span>
+                </div>
+                <div class="price-tag">0,99 €</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function redirectToStripe(stripeUrl, amount) {
+        const username = localStorage.getItem('username');
+
+        if (!username) {
+            alert("Erreur : Impossible de trouver votre nom d'utilisateur. Veuillez vous reconnecter.");
+            return;
+        }
+
+        // On enregistre l'intention d'achat pour afficher le toast au retour
+        localStorage.setItem('stripe_pending', amount);
+
+        // On construit l'URL finale avec le username dans client_reference_id
+        // C'est ce paramètre que votre serveur récupérera dans le Webhook
+        const finalUrl = `${stripeUrl}?goal_id=${encodeURIComponent(username)}`;
+        
+        // Redirection vers Stripe
+        window.location.href = finalUrl;
+    }
+
+</script>
+
+</body>
+</html>

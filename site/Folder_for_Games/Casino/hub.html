@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>iHub Pro - iOS Edition</title>
+    <style>
+        :root {
+            --bg-iphone: linear-gradient(180deg, #1a1c2c 0%, #4a192c 100%);
+            --glass: rgba(255, 255, 255, 0.05);
+            --border-glass: rgba(255, 255, 255, 0.12);
+            --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            --text-color: white;
+        }
+
+        body.light-mode {
+            --bg-iphone: linear-gradient(180deg, #f0f0f7 0%, #e2e2e7 100%);
+            --glass: rgba(0, 0, 0, 0.05);
+            --border-glass: rgba(0, 0, 0, 0.1);
+            --text-color: #000;
+        }
+
+        /* --- EFFET DARK WEB (AMBIANCE HACKER) --- */
+        .dark-web-active {
+            background: #000 !important;
+        }
+        .dark-web-active .app-label, 
+        .dark-web-active .status-bar, 
+        .dark-web-active .credits-footer,
+        .dark-web-active #stat-time {
+            color: #00ff41 !important;
+            text-shadow: 0 0 10px #00ff41 !important;
+        }
+        .dark-web-active .icon-box {
+            border: 1px solid #00ff41 !important;
+            background: rgba(0, 255, 65, 0.05) !important;
+            color: #00ff41 !important;
+        }
+
+        /* --- ÉCRAN MORT (BATTERIE VIDE) --- */
+        #dead-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: black; z-index: 9500; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            color: white; border-radius: 46px;
+        }
+        .charge-container { margin-top: 40px; text-align: center; width: 80%; }
+        .charge-progress-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 15px; overflow: hidden; }
+        #charge-bar-fill { width: 0%; height: 100%; background: #34c759; transition: width 0.1s; }
+
+        /* --- FLASH EFFECT DORÉ --- */
+        #flash-effect {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #fbbf24; opacity: 0; pointer-events: none; z-index: 10000;
+        }
+        @keyframes flashAnim {
+            0% { opacity: 0.7; }
+            100% { opacity: 0; }
+        }
+
+        /* --- EFFET PLUIE --- */
+        .money-particle {
+            position: absolute; top: -50px; font-size: 24px;
+            z-index: 5000; pointer-events: none;
+            animation: fall linear forwards;
+        }
+        @keyframes fall {
+            to { transform: translateY(700px) rotate(360deg); opacity: 0; }
+        }
+
+        /* --- INTERFACE APPEL --- */
+        #call-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 8000; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            color: white; border-radius: 46px;
+        }
+
+        /* CONFIGURATION RESPONSIVE & ANTI-SCROLL */
+        * { box-sizing: border-box; }
+        body {
+            background-color: #0d0d0d; color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; margin: 0; overflow: hidden; touch-action: none; perspective: 1500px;
+        }
+
+        #brightness-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: black; opacity: 0; pointer-events: none; z-index: 2000; border-radius: 46px;
+        }
+
+        .phone-case {
+            width: 320px; height: 660px;
+            background: #1c1c1e; border: 8px solid #3a3a3c;
+            border-radius: 55px; position: relative;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.9), inset 0 0 4px rgba(255,255,255,0.2);
+            padding: 10px; box-sizing: content-box;
+            transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.5s ease;
+            transform-style: preserve-3d; transform: scale(min(1, calc(100vh / 750)));
+        }
+
+        .phone-case.launching { transform: rotateY(-20deg) scale(3) translateZ(200px); opacity: 0; pointer-events: none; }
+
+        .screen {
+            width: 100%; height: 100%; background: var(--bg-iphone);
+            border-radius: 46px; display: flex; flex-direction: column; justify-content: center;
+            position: relative; overflow: hidden; transition: filter 0.5s ease;
+        }
+
+        .ios-notification {
+            position: absolute; top: -100px; left: 10px; right: 10px;
+            background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px); border-radius: 22px; padding: 12px 15px;
+            z-index: 3000; display: flex; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); color: white;
+        }
+        .ios-notification.show { transform: translateY(115px); }
+        .notif-icon { width: 38px; height: 38px; background: #ff3b30; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
+        .notif-content { flex: 1; }
+        .notif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+        .notif-app-name { font-size: 12px; font-weight: 600; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }
+        .notif-time { font-size: 11px; color: rgba(255,255,255,0.5); }
+        .notif-title { font-size: 14px; font-weight: 700; margin-bottom: 1px; }
+        .notif-body { font-size: 14px; opacity: 0.8; line-height: 1.3; }
+
+        .settings-trigger, .achievements-trigger { cursor: pointer; font-size: 14px; opacity: 0.8; transition: transform 0.2s; z-index: 700; }
+
+        #settings-panel, #achievements-panel {
+            position: absolute; bottom: -100%; left: 0; width: 100%; height: 85%;
+            background: rgba(28, 28, 30, 0.95); backdrop-filter: blur(25px);
+            border-top: 1px solid rgba(255,255,255,0.1); border-radius: 35px 35px 0 0;
+            z-index: 1500; transition: var(--transition); padding: 25px 20px; box-sizing: border-box;
+            color: white; overflow-y: auto;
+        }
+        #settings-panel.active, #achievements-panel.active { bottom: 0; }
+
+        .achievement-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 15px; background: rgba(255,255,255,0.05);
+            border-radius: 15px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .achievement-row.locked { opacity: 0.3; filter: grayscale(1); }
+        .achievement-row.hidden { display: none; }
+        .ach-name { font-size: 14px; font-weight: 600; }
+        .ach-status { font-size: 18px; }
+
+        .setting-row { margin-bottom: 20px; }
+        .setting-row label { display: block; font-size: 10px; opacity: 0.5; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; }
+        input[type="range"] { width: 100%; accent-color: #38bdf8; cursor: pointer; height: 6px; border-radius: 3px; }
+        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .theme-btn { 
+            padding: 12px; border-radius: 14px; border: none;
+            background: rgba(255,255,255,0.1); color: white; cursor: pointer; font-size: 12px; font-weight: 600;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+
+        .dynamic-island {
+            position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+            width: 90px; height: 28px; background: #000;
+            border-radius: 20px; z-index: 2500; transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .app-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: 25px; justify-items: center; align-items: center;
+            padding: 30px 20px; margin-top: 20px;
+        }
+        .app-icon { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .app-icon:hover { transform: translateY(-5px) scale(1.05); }
+        .app-icon:active { transform: scale(0.9); }
+        .icon-box {
+            width: 72px; height: 72px; border-radius: 18px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 32px; margin-bottom: 8px; background: var(--glass); 
+            box-shadow: 0 0 0 1px var(--border-glass), 0 10px 20px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px); transition: var(--transition); border: none;
+        }
+        .app-label { font-size: 11px; color: var(--text-color); font-weight: 500; transition: var(--transition); }
+
+        .home-bar {
+            position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+            width: 110px; height: 5px; background: rgba(255,255,255,0.35); border-radius: 10px; cursor: pointer; z-index: 600;
+        }
+
+        .credits-footer {
+            position: absolute; bottom: 25px; left: 0; width: 100%;
+            text-align: center; font-size: 9px; color: rgba(255,255,255,0.3);
+            text-transform: uppercase; letter-spacing: 1px; cursor: pointer; user-select: none; z-index: 500;
+        }
+
+        .status-bar {
+            position: absolute; top: 14px; width: 100%;
+            display: flex; justify-content: space-between; padding: 0 30px;
+            font-size: 11px; font-weight: 600; color: var(--text-color); box-sizing: border-box; z-index: 700;
+        }
+
+        .neon-blue { color: #38bdf8; text-shadow: 0 0 15px rgba(56,189,248,0.5); }
+        .neon-gold { color: #fbbf24; text-shadow: 0 0 15px rgba(251,191,36,0.5); }
+        .neon-red { color: #f87171; text-shadow: 0 0 15px rgba(248,113,113,0.5); }
+        .neon-green { color: #4ade80; text-shadow: 0 0 15px rgba(74,222,128,0.5); }
+        .neon-white { color: #ffffff; text-shadow: 0 0 15px rgba(255,255,255,0.4); }
+    </style>
+    <script src="script_save.js"></script>
+</head>
+<body>
+
+<div id="flash-effect"></div>
+
+<div class="phone-case" id="main-phone">
+    <div class="screen" id="main-screen">
+        <div id="brightness-overlay"></div>
+        
+        <div id="dead-screen">
+            <div style="font-size: 60px; opacity: 0.4; margin-bottom: 20px;">🪫</div>
+            <div class="charge-container">
+                <button id="btn-recharge" class="theme-btn" style="background: white; color: black; width: 100%; padding: 15px;">Maintenir pour charger</button>
+                <div class="charge-progress-bg">
+                    <div id="charge-bar-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="call-screen">
+            <h3 style="margin-bottom: 5px;">Maman ❤️</h3>
+            <p style="opacity: 0.6; margin-top: 0;">Appel en cours...</p>
+            <div style="margin-top: 50px; background: #ff3b30; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="endCall()">📞</div>
+        </div>
+
+        <div class="ios-notification" id="notif-maman">
+            <div class="notif-icon" onclick="handleHeartClick()">❤️</div>
+            <div class="notif-content">
+                <div class="notif-header">
+                    <span class="notif-app-name">Messages</span>
+                    <span class="notif-time">06/02/10</span>
+                </div>
+                <div class="notif-title">Maman</div>
+                <div class="notif-body">Bon anniversaire yenigma</div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div>
+                <span class="achievements-trigger" onclick="toggleAchievements()">🏆</span>
+                <span id="stat-time" style="margin-left: 10px; cursor: pointer; user-select: none;">--:--</span>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <span id="stat-signal">📶</span>
+                <span style="cursor: pointer;" onclick="drainEnergy()">🔋</span>
+                <span class="settings-trigger" onclick="toggleSettings()">⚙️</span>
+            </div>
+        </div>
+        
+        <div class="dynamic-island" onclick="handleIslandClick()"></div>
+        
+        <div id="settings-panel">
+            <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: 0 auto 20px;"></div>
+            <div class="control-grid" style="margin-bottom: 20px;">
+                <button id="btn-airplane" class="theme-btn" onclick="toggleAirplane()">✈️ Avion</button>
+                <button id="btn-focus" class="theme-btn" onclick="toggleFocus()">🌙 Repos</button>
+            </div>
+            <div class="setting-row"><label>Luminosité</label><input type="range" id="brightness-slider" min="0" max="0.8" step="0.01" value="0.8" oninput="updateBrightness(this.value)"></div>
+            <div class="setting-row"><label>Volume Sonore</label><input type="range" min="0" max="100" step="1" value="50"></div>
+            <div class="setting-row">
+                <label>Apparence</label>
+                <div class="control-grid">
+                    <button class="theme-btn" onclick="setTheme('dark')" style="background: #1c1c1e; border: 1px solid #3a3a3c;">Sombre</button>
+                    <button class="theme-btn" onclick="setTheme('light')" style="background: #f2f2f7; color: #000;">Clair</button>
+                </div>
+            </div>
+            <button class="theme-btn" style="width: 100%; margin-top: 20px; background: #007aff;" onclick="toggleSettings()">Fermer</button>
+        </div>
+
+        <div id="achievements-panel">
+            <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: 0 auto 20px;"></div>
+            <h2 style="margin-top:0; font-size: 22px; text-align: center;">Mes Succès</h2>
+            
+            <div id="ach-wtf" class="achievement-row locked"><span class="ach-name">WTF 🤯</span><span class="ach-status">🔒</span></div>
+            <div id="ach-chargeur-rapide" class="achievement-row hidden"><span class="ach-name">Chargeur Rapide ⚡</span><span class="ach-status">🔒</span></div>
+            <div id="ach-infinite-money" class="achievement-row locked"><span class="ach-name">Argent Infini</span><span class="ach-status">🔒</span></div>
+            <div id="ach-interface-gold" class="achievement-row locked"><span class="ach-name">Interface Gold</span><span class="ach-status">🔒</span></div>
+            <div id="ach-happy-birthday" class="achievement-row locked"><span class="ach-name">Happy Birthday</span><span class="ach-status">🔒</span></div>
+            <div id="ach-light-mode" class="achievement-row locked"><span class="ach-name">Wouah !</span><span class="ach-status">🔒</span></div>
+            <div id="ach-insomniac" class="achievement-row locked"><span class="ach-name">Insomniaque ☕</span><span class="ach-status">🔒</span></div>
+            <div id="ach-millionaire" class="achievement-row locked"><span class="ach-name">Millionnaire 💰</span><span class="ach-status">🔒</span></div>
+            <div id="ach-billionaire" class="achievement-row locked"><span class="ach-name">Milliardaire 💎</span><span class="ach-status">🔒</span></div>
+            <div id="ach-all-in" class="achievement-row locked"><span class="ach-name">All-In</span><span class="ach-status">🔒</span></div>
+            <div id="ach-time-traveler" class="achievement-row locked"><span class="ach-name">Voyageur Temporel ⏳</span><span class="ach-status">🔒</span></div>
+            <div id="ach-make-it-rain" class="achievement-row locked"><span class="ach-name">Make it Rain 💸</span><span class="ach-status">🔒</span></div>
+            <div id="ach-maman" class="achievement-row locked"><span class="ach-name">Maman ❤️</span><span class="ach-status">🔒</span></div>
+            <div id="ach-darkweb" class="achievement-row locked"><span class="ach-name">Dark Web 🕸️</span><span class="ach-status">🔒</span></div>
+
+            <p style="font-size: 11px; opacity: 0.4; text-align: center; margin-top: 20px;">Continuez d'explorer pour débloquer les secrets...</p>
+            <button class="theme-btn" style="width: 100%; margin-top: 20px; background: #34c759;" onclick="toggleAchievements()">Retour au Hub</button>
+        </div>
+        
+        <div class="app-grid">
+            <div class="app-icon" onclick="openApp('plinko.html')"><div class="icon-box neon-green">📉</div><div class="app-label">Plinko</div></div>
+            <div class="app-icon" onclick="openApp('blackjack.html')"><div class="icon-box neon-red">🃏</div><div class="app-label">Blackjack</div></div>
+            <div class="app-icon" onclick="openApp('roulette.html')"><div class="icon-box neon-gold">🎡</div><div class="app-label">Roulette</div></div>
+            <div class="app-icon" onclick="openApp('mines.html')"><div class="icon-box neon-white">💎</div><div class="app-label">Mines</div></div>
+            <div class="app-icon" onclick="openApp('cups.html')"><div class="icon-box neon-gold">🏺</div><div class="app-label">Cups</div></div>
+            <div class="app-icon" onclick="handleBankClick()"><div class="icon-box neon-blue">🏦</div><div class="app-label">iBank</div></div>
+        </div>
+
+        <div class="credits-footer" onclick="this.innerText='créateur : yenigma3698'">credits</div>
+        <div class="home-bar" onclick="closeAllPanels()"></div>
+    </div>
+</div>
+
+<script>
+    let isAirplaneMode = false;
+    let currentTheme = 'dark';
+    let currentBrightness = 0.8;
+    let isDarkWebLocked = false; 
+
+    function triggerFlash() {
+        const flash = document.getElementById('flash-effect');
+        flash.style.animation = 'none'; flash.offsetHeight; 
+        flash.style.animation = 'flashAnim 0.5s ease-out';
+    }
+
+    /* --- LOGIQUE SUCCÈS WTF --- */
+    let inputSequence = "";
+    window.addEventListener('keydown', (e) => {
+        inputSequence += e.key.toLowerCase();
+        if (inputSequence.includes("wtf")) {
+            if (localStorage.getItem('wtf_unlocked') !== 'true') {
+                triggerFlash(); // Correction : Flash ajouté ici
+                localStorage.setItem('wtf_unlocked', 'true');
+                updateAchievementsDisplay();
+            }
+            inputSequence = "";
+        }
+        if (inputSequence.length > 10) inputSequence = inputSequence.slice(-3);
+    });
+
+    /* --- LOGIQUE BATTERIE ET RECHARGE --- */
+    function drainEnergy() {
+        if (currentBrightness > 0) {
+            let newVal = Math.max(0, currentBrightness - 0.1);
+            document.getElementById('brightness-slider').value = newVal;
+            updateBrightness(newVal);
+        }
+        if (currentBrightness <= 0) {
+            document.getElementById('dead-screen').style.display = 'flex';
+        }
+    }
+
+    let chargeTimer;
+    let chargeProgress = 0;
+    const btnRecharge = document.getElementById('btn-recharge');
+    const chargeBar = document.getElementById('charge-bar-fill');
+
+    btnRecharge.onmousedown = btnRecharge.ontouchstart = () => {
+        chargeTimer = setInterval(() => {
+            chargeProgress += 2;
+            chargeBar.style.width = chargeProgress + '%';
+            if (chargeProgress >= 100) {
+                clearInterval(chargeTimer);
+                rallumerTel();
+            }
+        }, 30);
+    };
+
+    btnRecharge.onmouseup = btnRecharge.onmouseleave = btnRecharge.ontouchend = () => {
+        clearInterval(chargeTimer);
+        chargeProgress = 0;
+        chargeBar.style.width = '0%';
+    };
+
+    function rallumerTel() {
+        document.getElementById('dead-screen').style.display = 'none';
+        updateBrightness(0.8);
+        document.getElementById('brightness-slider').value = 0.8;
+        
+        if (localStorage.getItem('chargeur_rapide_unlocked') !== 'true') {
+            triggerFlash();
+            localStorage.setItem('chargeur_rapide_unlocked', 'true');
+        }
+        updateAchievementsDisplay();
+    }
+
+    function toggleAchievements() { updateAchievementsDisplay(); document.getElementById('achievements-panel').classList.toggle('active'); }
+
+    function updateAchievementsDisplay() {
+        const succ = ['wtf', 'chargeur-rapide', 'infinite-money', 'interface-gold', 'happy-birthday', 'light-mode', 'insomniac', 'millionaire', 'billionaire', 'all-in', 'time-traveler', 'make-it-rain', 'maman', 'darkweb'];
+        const keys = ['wtf_unlocked', 'chargeur_rapide_unlocked', 'labyrinth_done', 'enigma_done', 'birthday_done', 'light_mode_unlocked', 'insomniac_unlocked', 'millionaire_unlocked', 'billionaire_unlocked', 'all_in_roulette', 'time_traveler_unlocked', 'make_it_rain_unlocked', 'maman_call_unlocked', 'darkweb_unlocked'];
+        keys.forEach((k, i) => {
+            if (localStorage.getItem(k) === 'true') {
+                const el = document.getElementById('ach-' + succ[i]);
+                if(el) { 
+                    el.classList.remove('locked'); 
+                    el.classList.remove('hidden'); 
+                    el.querySelector('.ach-status').textContent = '✅'; 
+                }
+            }
+        });
+    }
+
+    function toggleAirplane() {
+        const signal = document.getElementById('stat-signal');
+        isAirplaneMode = !isAirplaneMode;
+        signal.style.display = isAirplaneMode ? 'none' : 'inline';
+        if (!isAirplaneMode) isDarkWebLocked = false;
+        checkDarkWeb();
+    }
+
+    function updateBrightness(val) { 
+        currentBrightness = parseFloat(val);
+        document.getElementById('brightness-overlay').style.opacity = 0.8 - currentBrightness; 
+        checkDarkWeb();
+    }
+
+    function checkDarkWeb() {
+        const screen = document.getElementById('main-screen');
+        if (isAirplaneMode && currentBrightness === 0 && currentTheme === 'dark') {
+            if (!isDarkWebLocked) {
+                isDarkWebLocked = true;
+                if (localStorage.getItem('darkweb_unlocked') !== 'true') {
+                    triggerFlash();
+                    localStorage.setItem('darkweb_unlocked', 'true');
+                    updateAchievementsDisplay();
+                }
+            }
+        }
+        if (!isAirplaneMode || currentTheme === 'light') {
+            isDarkWebLocked = false;
+        }
+        if (isDarkWebLocked) {
+            screen.classList.add('dark-web-active');
+        } else {
+            screen.classList.remove('dark-web-active');
+        }
+    }
+
+    let heartClicks = 0; let heartTimer;
+    function handleHeartClick() {
+        heartClicks++; clearTimeout(heartTimer);
+        heartTimer = setTimeout(() => { heartClicks = 0; }, 400);
+        if (heartClicks === 2) { triggerCall(); heartClicks = 0; }
+    }
+    function triggerCall() {
+        document.getElementById('call-screen').style.display = 'flex';
+        if (localStorage.getItem('maman_call_unlocked') !== 'true') { triggerFlash(); localStorage.setItem('maman_call_unlocked', 'true'); updateAchievementsDisplay(); }
+    }
+    function endCall() { document.getElementById('call-screen').style.display = 'none'; }
+
+    let bankClickCount = 0; let bankTimer;
+    function handleBankClick() {
+        bankClickCount++; clearTimeout(bankTimer);
+        if (bankClickCount === 2) { triggerMakeItRain(); bankClickCount = 0; }
+        else { bankTimer = setTimeout(() => { if (bankClickCount === 1) openApp('banque.html'); bankClickCount = 0; }, 300); }
+    }
+
+    function triggerMakeItRain() {
+        if (localStorage.getItem('make_it_rain_unlocked') !== 'true') { triggerFlash(); localStorage.setItem('make_it_rain_unlocked', 'true'); updateAchievementsDisplay(); }
+        const screen = document.querySelector('.screen');
+        const emojis = ['💎', '💵', '💰', '💸'];
+        let rainInterval = setInterval(() => {
+            const particle = document.createElement('div');
+            particle.className = 'money-particle'; particle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            particle.style.left = Math.random() * 100 + '%'; particle.style.animationDuration = (Math.random() * 1 + 1) + 's';
+            screen.appendChild(particle); setTimeout(() => particle.remove(), 2000);
+        }, 100);
+        setTimeout(() => clearInterval(rainInterval), 3000);
+    }
+
+    let isTimeGlitching = false;
+    function triggerTimeTravel() {
+        isTimeGlitching = true;
+        const timeDisplay = document.getElementById('stat-time');
+        if (localStorage.getItem('time_traveler_unlocked') !== 'true') { triggerFlash(); localStorage.setItem('time_traveler_unlocked', 'true'); updateAchievementsDisplay(); }
+        let count = 0;
+        const glitchInterval = setInterval(() => {
+            timeDisplay.textContent = `${String(Math.floor(Math.random() * 24)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`;
+            timeDisplay.style.color = '#fbbf24'; count++;
+            if (count > 50) { clearInterval(glitchInterval); timeDisplay.style.color = ''; isTimeGlitching = false; updateClock(); }
+        }, 100);
+    }
+    const timeBtn = document.getElementById('stat-time');
+    let timePressTimer;
+    timeBtn.onmousedown = timeBtn.ontouchstart = () => { timePressTimer = setTimeout(triggerTimeTravel, 3000); };
+    timeBtn.onmouseup = timeBtn.onmouseleave = timeBtn.ontouchend = () => clearTimeout(timePressTimer);
+
+    function closeAllPanels() { document.getElementById('settings-panel').classList.remove('active'); document.getElementById('achievements-panel').classList.remove('active'); endCall(); }
+
+    let islandClicks = 0; let islandTimer;
+    function handleIslandClick() {
+        islandClicks++; clearTimeout(islandTimer);
+        islandTimer = setTimeout(() => { islandClicks = 0; }, 2000);
+        if (islandClicks === 5) { 
+            if (localStorage.getItem('birthday_done') !== 'true') triggerFlash();
+            localStorage.setItem('birthday_done', 'true'); showSecretNotif(); islandClicks = 0; 
+        }
+    }
+    function showSecretNotif() { const notif = document.getElementById('notif-maman'); notif.classList.add('show'); setTimeout(() => { notif.classList.remove('show'); }, 5000); }
+
+    function updateClock() {
+        if (isTimeGlitching) return;
+        const timeDisplay = document.getElementById('stat-time');
+        const now = new Date();
+        timeDisplay.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    function openApp(url) {
+        document.getElementById('main-phone').classList.add('launching');
+        setTimeout(() => { window.location.href = url; }, 700);
+    }
+
+    function toggleSettings() { document.getElementById('settings-panel').classList.toggle('active'); }
+    
+    function setTheme(mode) {
+        currentTheme = mode;
+        if(mode === 'light') { 
+            document.body.classList.add('light-mode'); 
+            if (localStorage.getItem('light_mode_unlocked') !== 'true') { triggerFlash(); localStorage.setItem('light_mode_unlocked', 'true'); }
+        }
+        else { document.body.classList.remove('light-mode'); }
+        checkDarkWeb();
+    }
+    
+    updateBrightness(0.8);
+    updateAchievementsDisplay(); 
+</script>
+</body>
+</html>

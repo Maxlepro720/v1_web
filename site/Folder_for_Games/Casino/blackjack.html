@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Blackjack VIP - Hardcore Edition</title>
+    <style>
+        body {
+            background-color: #0a0f0d;
+            background-image: 
+                radial-gradient(circle at center, rgba(26, 74, 62, 0.2) 0%, transparent 100%),
+                repeating-conic-gradient(#0d1412 0% 25%, #111a17 0% 50%) ;
+            background-size: 100% 100%, 60px 60px;
+            color: white;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            height: 100vh;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #btn-back {
+            position: absolute; top: 20px; left: 20px;
+            background: linear-gradient(180deg, #333, #000);
+            color: #d4af37; border: 2px solid #d4af37;
+            padding: 10px 20px; border-radius: 5px; cursor: pointer;
+            font-weight: bold; font-size: 14px; text-transform: uppercase;
+            z-index: 1000;
+        }
+
+        #ui-top {
+            position: absolute; top: 15px; display: flex; gap: 20px; font-weight: bold;
+            background: linear-gradient(180deg, #222, #000);
+            padding: 8px 25px; border-radius: 50px; border: 2px solid #d4af37;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 100;
+        }
+
+        .currency { font-size: 18px; color: #ffd700; }
+
+        /* --- ADAPTATION RESPONSIVE DE LA TABLE --- */
+        #table {
+            width: 95vw; /* S'adapte à la largeur de l'écran */
+            max-width: 750px; 
+            height: 450px;
+            background: radial-gradient(circle at center, #1a5e42 0%, #0d3d2b 80%);
+            border: 12px solid #3d261b; border-radius: 200px 200px 30px 30px;
+            position: relative; display: flex; flex-direction: column;
+            align-items: center; justify-content: space-around;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            outline: 2px solid #d4af37; outline-offset: -8px;
+        }
+
+        /* Responsive pour petits écrans */
+        @media (max-width: 600px) {
+            #table { height: 380px; border-width: 8px; border-radius: 100px 100px 20px 20px; }
+            .card { width: 55px !important; height: 85px !important; font-size: 13px !important; }
+            #message { font-size: 30px !important; }
+            #btn-back { padding: 8px 12px; font-size: 11px; top: 10px; left: 10px; }
+        }
+
+        .hand-container { display: flex; flex-direction: column; align-items: center; min-height: 150px; z-index: 5; }
+        .cards-row { display: flex; gap: 8px; margin-top: 8px; }
+
+        .card {
+            width: 75px; height: 110px; background: white; color: black; border-radius: 6px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 6px; font-weight: bold; font-size: 16px; box-shadow: 3px 3px 10px rgba(0,0,0,0.5);
+        }
+
+        .score-badge { background: rgba(0,0,0,0.8); padding: 4px 15px; border-radius: 20px; font-size: 13px; border: 1px solid #d4af37; color: #ffd700; }
+
+        .controls { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .btn { padding: 12px 20px; font-size: 14px; font-weight: bold; border-radius: 5px; border: none; cursor: pointer; text-transform: uppercase; }
+        .btn-hit { background: #27ae60; color: white; }
+        .btn-stand { background: #c0392b; color: white; }
+        .btn-deal { background: #f1c40f; color: black; font-size: 16px; }
+        .btn:disabled { background: #444; color: #777; cursor: not-allowed; }
+
+        #message { position: absolute; top: 45%; font-size: 45px; font-weight: 900; text-shadow: 2px 2px 15px black; pointer-events: none; z-index: 20; text-align: center; width: 100%; }
+
+        #qte-zone {
+            display: none; position: absolute;
+            background: rgba(0,0,0,0.95); width: 100%; height: 100%;
+            border-radius: inherit; z-index: 300;
+            flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        #qte-track {
+            width: 80%; max-width: 300px; height: 40px; background: #222;
+            border: 2px solid #444; position: relative; border-radius: 10px;
+            overflow: hidden; margin: 20px 0;
+        }
+
+        #qte-target-zone {
+            position: absolute; left: 125px; width: 60px; height: 100%;
+            background: rgba(255, 255, 255, 0.2); border-left: 2px solid white; border-right: 2px solid white;
+            transition: left 0.3s, width 0.3s;
+        }
+
+        #qte-bar {
+            position: absolute; left: 0; width: 15px; height: 100%;
+            background: #d4af37; box-shadow: 0 0 15px #d4af37;
+        }
+
+        .btn-qte {
+            background: #d4af37; color: black; padding: 15px 40px;
+            font-weight: bold; border: none; border-radius: 5px; cursor: pointer;
+            font-size: 18px; text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <button id="btn-back" onclick="window.history.back()">← Retour</button>
+
+    <div id="ui-top">
+        <div class="currency">SOLDE : <span id="chips-display">0</span> 💎</div>
+    </div>
+
+    <div id="message"></div>
+
+    <div id="table">
+        <div id="qte-zone">
+            <h2 style="color:#d4af37;">SYNCHRONISATION VIP</h2>
+            <p style="font-size: 12px; text-align: center; padding: 0 10px;">Stoppez la barre sur la zone centrale</p>
+            <div id="qte-track">
+                <div id="qte-target-zone"></div>
+                <div id="qte-bar"></div>
+            </div>
+            <div style="color:#ffd700; margin-bottom: 20px; font-weight: bold;">
+                SUCCÈS : <span id="qte-count">0</span> / 3
+            </div>
+            <button class="btn-qte" onclick="checkQTE()">STOP</button>
+        </div>
+
+        <div class="hand-container">
+            <div class="score-badge">CROUPIER: <span id="dealer-score">?</span></div>
+            <div id="dealer-cards" class="cards-row"></div>
+        </div>
+        <div class="hand-container">
+            <div id="player-cards" class="cards-row"></div>
+            <div class="score-badge" style="margin-top:10px;">JOUEUR: <span id="player-score">0</span></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="btn-deal" class="btn btn-deal" onclick="startNewGame()">MISER 50 💎</button>
+        <button id="btn-hit" class="btn btn-hit" onclick="playerHit()" disabled>TIRER</button>
+        <button id="btn-stand" class="btn btn-stand" onclick="playerStand()" disabled>RESTER</button>
+    </div>
+
+    <script>
+        let chips = parseFloat(localStorage.getItem('blackjack_chips'));
+        if (isNaN(chips)) chips = 1000;
+
+        let deck = [], playerHand = [], dealerHand = [], gameActive = false;
+        let qteSuccessCount = 0;
+        let barPos = 0;
+        let barDirection = 1;
+        let qteInterval;
+        let targetWidth = 60;
+        let targetLeft = 125;
+
+        const chipsDisplay = document.getElementById('chips-display');
+        const playerScoreEl = document.getElementById('player-score');
+        const dealerScoreEl = document.getElementById('dealer-score');
+        const playerCardZone = document.getElementById('player-cards');
+        const dealerCardZone = document.getElementById('dealer-cards');
+        const msgEl = document.getElementById('message');
+        const qteZone = document.getElementById('qte-zone');
+        const qteBar = document.getElementById('qte-bar');
+        const qteCountEl = document.getElementById('qte-count');
+        const qteTargetZone = document.getElementById('qte-target-zone');
+
+        function updateUI() {
+            chipsDisplay.innerText = chips.toLocaleString();
+            localStorage.setItem('blackjack_chips', chips);
+            
+            if (chips < 50 && !gameActive) {
+                startQTE();
+            } else {
+                stopQTE();
+            }
+        }
+
+        function startQTE() {
+            resetTarget();
+            qteZone.style.display = "flex";
+            if (!qteInterval) {
+                qteInterval = setInterval(() => {
+                    const trackWidth = document.getElementById('qte-track').offsetWidth - 15;
+                    barPos += (4 * barDirection);
+                    if (barPos > trackWidth || barPos < 0) barDirection *= -1;
+                    qteBar.style.left = barPos + "px";
+                }, 10);
+            }
+        }
+
+        function stopQTE() {
+            qteZone.style.display = "none";
+            clearInterval(qteInterval);
+            qteInterval = null;
+        }
+
+        function resetTarget() {
+            const trackWidth = document.getElementById('qte-track').offsetWidth;
+            if (qteSuccessCount === 0) targetWidth = 60;
+            else if (qteSuccessCount === 1) targetWidth = 40;
+            else if (qteSuccessCount === 2) targetWidth = 20;
+
+            targetLeft = Math.floor(Math.random() * (trackWidth - targetWidth - 20)) + 10;
+            qteTargetZone.style.width = targetWidth + "px";
+            qteTargetZone.style.left = targetLeft + "px";
+        }
+
+        function checkQTE() {
+            const barEnd = barPos + 15;
+            const targetEnd = targetLeft + targetWidth;
+            if (barEnd >= targetLeft && barPos <= targetEnd) {
+                qteSuccessCount++;
+                qteCountEl.innerText = qteSuccessCount;
+                if (qteSuccessCount >= 3) {
+                    chips = 50;
+                    qteSuccessCount = 0;
+                    alert("SYSTÈME RÉINITIALISÉ : +50 💎");
+                    updateUI();
+                } else {
+                    resetTarget();
+                }
+            } else {
+                qteSuccessCount = 0;
+                qteCountEl.innerText = "0";
+                alert("RATÉ ! Le compteur repart à zéro.");
+                resetTarget();
+            }
+        }
+
+        function createDeck() {
+            const suits = ['♠', '♣', '♥', '♦'], values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+            deck = [];
+            for (let s of suits) { for (let v of values) { deck.push({ value: v, suit: s }); } }
+            deck.sort(() => Math.random() - 0.5);
+        }
+
+        function calculateScore(hand) {
+            let score = 0, aces = 0;
+            for (let card of hand) {
+                if (card.value === 'A') { aces++; score += 11; }
+                else if (['J', 'Q', 'K'].includes(card.value)) { score += 10; }
+                else { score += parseInt(card.value); }
+            }
+            while (score > 21 && aces > 0) { score -= 10; aces--; }
+            return score;
+        }
+
+        function renderCard(card, targetElement, hidden = false) {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'card';
+            if (hidden) {
+                cardDiv.style.background = 'linear-gradient(45deg, #2c3e50, #000)';
+                cardDiv.innerHTML = '<div style="color:rgba(255,255,255,0.2); font-size:40px; margin:auto">?</div>';
+            } else {
+                cardDiv.innerHTML = `<div>${card.value}</div><div style="font-size:30px; align-self:center">${card.suit}</div><div style="align-self:flex-end">${card.value}</div>`;
+                if (card.suit === '♥' || card.suit === '♦') cardDiv.style.color = '#e74c3c';
+            }
+            targetElement.appendChild(cardDiv);
+        }
+
+        function startNewGame() {
+            if (chips < 50) return;
+            chips -= 50; gameActive = true;
+            playerHand = []; dealerHand = [];
+            createDeck(); msgEl.innerText = "";
+            playerCardZone.innerHTML = ""; dealerCardZone.innerHTML = "";
+            document.getElementById('btn-deal').disabled = true;
+            document.getElementById('btn-hit').disabled = false;
+            document.getElementById('btn-stand').disabled = false;
+            playerHand.push(deck.pop(), deck.pop());
+            dealerHand.push(deck.pop(), deck.pop());
+            renderCard(playerHand[0], playerCardZone); renderCard(playerHand[1], playerCardZone);
+            renderCard(dealerHand[0], dealerCardZone); renderCard(dealerHand[1], dealerCardZone, true);
+            playerScoreEl.innerText = calculateScore(playerHand);
+            dealerScoreEl.innerText = "?";
+            updateUI();
+            if (calculateScore(playerHand) === 21) playerStand();
+        }
+
+        function playerHit() {
+            if (!gameActive) return;
+            const card = deck.pop(); playerHand.push(card);
+            renderCard(card, playerCardZone);
+            const score = calculateScore(playerHand);
+            playerScoreEl.innerText = score;
+            if (score > 21) endGame("PERDU (BUST)", "#e74c3c");
+        }
+
+        async function playerStand() {
+            if (!gameActive) return;
+            gameActive = false;
+            document.getElementById('btn-hit').disabled = true;
+            document.getElementById('btn-stand').disabled = true;
+            dealerCardZone.innerHTML = "";
+            renderCard(dealerHand[0], dealerCardZone); renderCard(dealerHand[1], dealerCardZone);
+            let dealerScore = calculateScore(dealerHand);
+            let playerScore = calculateScore(playerHand);
+            while (dealerScore < 17) {
+                await new Promise(r => setTimeout(r, 600));
+                const card = deck.pop(); dealerHand.push(card);
+                renderCard(card, dealerCardZone); dealerScore = calculateScore(dealerHand);
+            }
+            dealerScoreEl.innerText = dealerScore;
+            if (playerScore === 21 && playerHand.length === 2 && dealerScore !== 21) {
+                chips += 125; endGame("BLACKJACK ! (+125 💎)", "#2ecc71");
+            } else if (playerScore > 21) {
+                endGame("PERDU (BUST)", "#e74c3c");
+            } else if (dealerScore > 21 || playerScore > dealerScore) {
+                chips += 100; endGame("GAGNÉ ! (+100 💎)", "#2ecc71");
+            } else if (dealerScore === playerScore) {
+                chips += 50; endGame("ÉGALITÉ (+50 💎)", "#bdc3c7");
+            } else {
+                endGame("CROUPIER GAGNE", "#e74c3c");
+            }
+        }
+
+        function endGame(text, color) {
+            gameActive = false;
+            msgEl.innerText = text; msgEl.style.color = color;
+            document.getElementById('btn-deal').disabled = false;
+            document.getElementById('btn-hit').disabled = true;
+            document.getElementById('btn-stand').disabled = true;
+            updateUI();
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>

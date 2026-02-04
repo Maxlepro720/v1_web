@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Triple Roulette Gold - Shadow Chest</title>
+    <style>
+        body {
+            background-color: #0a0f0d;
+            background-image: radial-gradient(circle at center, rgba(26, 74, 62, 0.2) 0%, transparent 100%);
+            color: white;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            min-height: 100vh;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        #btn-back {
+            position: absolute; top: 20px; left: 20px;
+            background: #000; color: #d4af37; border: 2px solid #d4af37;
+            padding: 8px 15px; cursor: pointer; font-size: 14px; font-weight: bold;
+            border-radius: 5px; z-index: 1000;
+        }
+
+        #ui-top {
+            position: absolute; top: 15px;
+            background: linear-gradient(180deg, #222, #000);
+            padding: 12px 40px; border-radius: 50px; border: 2px solid #d4af37;
+            z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+        }
+
+        .currency { font-size: 22px; color: #ffd700; font-weight: bold; }
+
+        .game-area {
+            display: flex; gap: 20px; justify-content: center; width: 95%; transition: filter 0.5s;
+            flex-wrap: wrap; 
+            margin-top: 80px;
+        }
+
+        .wheel-block {
+            display: flex; flex-direction: column; align-items: center;
+            background: rgba(255, 255, 255, 0.07); padding: 15px;
+            border-radius: 15px; border: 1px solid #444; width: 260px;
+        }
+
+        .roulette-container {
+            position: relative; width: 220px; height: 220px; margin-bottom: 20px;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        canvas {
+            width: 100%; height: 100%; border-radius: 50%;
+            border: 6px solid #3d261b; outline: 2px solid #d4af37;
+            transition: transform 5s cubic-bezier(0.15, 0, 0.1, 1);
+        }
+
+        @media (max-width: 600px) {
+            body { overflow-y: auto; justify-content: flex-start; }
+            .game-area { margin-top: 100px; padding-bottom: 50px; }
+            #ui-top { padding: 8px 20px; }
+            .currency { font-size: 16px; }
+            #btn-back { padding: 5px 10px; font-size: 12px; top: 10px; left: 10px; }
+        }
+
+        .pointer {
+            position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 14px solid transparent;
+            border-right: 14px solid transparent; border-top: 28px solid #ffd700;
+            z-index: 50; filter: drop-shadow(0 2px 5px black);
+        }
+
+        .betting-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; width: 100%; }
+
+        .bet-option {
+            padding: 8px; font-size: 12px; font-weight: bold; border: 2px solid #444;
+            background: #1a1a1a; color: white; cursor: pointer; border-radius: 6px; transition: 0.2s;
+        }
+
+        .bet-option.active { border-color: #ffd700; background: #333; box-shadow: 0 0 10px rgba(212, 175, 55, 0.5); }
+        .red { color: #e74c3c; } .black { color: #ccc; } .green { color: #2ecc71; }
+
+        .bet-input-zone { display: flex; gap: 10px; margin-bottom: 15px; font-size: 16px; align-items: center; }
+
+        .bet-amount {
+            background: #000; border: 2px solid #d4af37; color: #ffd700;
+            width: 80px; text-align: center; padding: 5px; font-weight: bold; border-radius: 4px;
+        }
+
+        .spin-btn {
+            background: linear-gradient(180deg, #f1c40f, #d4af37);
+            border: none; padding: 12px 0; font-weight: 900; cursor: pointer;
+            border-radius: 6px; width: 100%; font-size: 16px; text-transform: uppercase;
+        }
+
+        .spin-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .status { font-size: 16px; margin-top: 10px; height: 20px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+
+        #qte-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 2000; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        #lock-container {
+            width: 400px; height: 30px; background: #333; border: 3px solid #d4af37;
+            position: relative; border-radius: 15px; overflow: hidden; margin-top: 40px;
+        }
+
+        #lock-target {
+            position: absolute; left: 45%; width: 10%; height: 100%;
+            background: rgba(255, 215, 0, 0.6); box-shadow: 0 0 15px #ffd700;
+        }
+
+        #lock-cursor {
+            position: absolute; left: 0; width: 4px; height: 100%; background: white;
+            box-shadow: 0 0 10px white;
+        }
+
+        #qte-msg { color: #d4af37; font-size: 24px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; text-align: center; }
+        
+        #btn-action-qte {
+            margin-top: 30px; padding: 15px 40px; background: #d4af37; color: #000;
+            border: none; font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 18px;
+        }
+
+        #recovery-btn {
+            display: none; position: fixed; bottom: 20px;
+            background: linear-gradient(45deg, #333, #111); color: #d4af37;
+            border: 2px solid #d4af37; padding: 15px 30px; font-size: 14px;
+            font-weight: bold; border-radius: 10px; cursor: pointer; z-index: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <button id="btn-back" onclick="window.history.back()">← MENU</button>
+
+    <div id="ui-top">
+        <div class="currency">OR TOTAL : <span id="gold-display">0</span> 🟡</div>
+    </div>
+
+    <div class="game-area" id="game-area">
+        <div class="wheel-block" id="block-0">
+            <div class="roulette-container"><div class="pointer"></div><canvas id="canvas-0" width="500" height="500"></canvas></div>
+            <div class="betting-grid">
+                <button class="bet-option red" onclick="setBet(0, 'rouge')">ROUGE</button>
+                <button class="bet-option black" onclick="setBet(0, 'noir')">NOIR</button>
+                <button class="bet-option green" onclick="setBet(0, 'vert')">VERT</button>
+            </div>
+            <div class="bet-input-zone"><input type="number" class="bet-amount" id="bet-0" value="100"></div>
+            <button class="spin-btn" id="btn-0" onclick="play(0)">LANCER 1</button>
+            <div class="status" id="status-0"></div>
+        </div>
+
+        <div class="wheel-block" id="block-1">
+            <div class="roulette-container"><div class="pointer"></div><canvas id="canvas-1" width="500" height="500"></canvas></div>
+            <div class="betting-grid">
+                <button class="bet-option red" onclick="setBet(1, 'rouge')">ROUGE</button>
+                <button class="bet-option black" onclick="setBet(1, 'noir')">NOIR</button>
+                <button class="bet-option green" onclick="setBet(1, 'vert')">VERT</button>
+            </div>
+            <div class="bet-input-zone"><input type="number" class="bet-amount" id="bet-1" value="100"></div>
+            <button class="spin-btn" id="btn-1" onclick="play(1)">LANCER 2</button>
+            <div class="status" id="status-1"></div>
+        </div>
+
+        <div class="wheel-block" id="block-2">
+            <div class="roulette-container"><div class="pointer"></div><canvas id="canvas-2" width="500" height="500"></canvas></div>
+            <div class="betting-grid">
+                <button class="bet-option red" onclick="setBet(2, 'rouge')">ROUGE</button>
+                <button class="bet-option black" onclick="setBet(2, 'noir')">NOIR</button>
+                <button class="bet-option green" onclick="setBet(2, 'vert')">VERT</button>
+            </div>
+            <div class="bet-input-zone"><input type="number" class="bet-amount" id="bet-2" value="100"></div>
+            <button class="spin-btn" id="btn-2" onclick="play(2)">LANCER 3</button>
+            <div class="status" id="status-2"></div>
+        </div>
+    </div>
+
+    <button id="recovery-btn" onclick="openQTE()">LE COFFRE DES OMBRES (SOLDE 0)</button>
+
+    <div id="qte-overlay">
+        <div id="qte-msg">CROCHETAGE EN COURS...</div>
+        <div style="color: #ccc; text-align: center; padding: 0 20px;">Appuie sur ESPACE ou clique quand le curseur est au centre !</div>
+        <div id="lock-container">
+            <div id="lock-target"></div>
+            <div id="lock-cursor"></div>
+        </div>
+        <button id="btn-action-qte" onclick="attemptLockpick()">ACTION !</button>
+    </div>
+
+    <script>
+        const goldDisplay = document.getElementById('gold-display');
+        const recoveryBtn = document.getElementById('recovery-btn');
+        const qteOverlay = document.getElementById('qte-overlay');
+        const lockCursor = document.getElementById('lock-cursor');
+        const gameArea = document.getElementById('game-area');
+
+        const numbers = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+        const colors = ["#27ae60", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d", "#c0392b", "#0a0f0d"];
+        
+        let wheels = [
+            { canvas: 'canvas-0', rotation: 0, bet: null, spinning: false },
+            { canvas: 'canvas-1', rotation: 0, bet: null, spinning: false },
+            { canvas: 'canvas-2', rotation: 0, bet: null, spinning: false }
+        ];
+
+        let savedGold = localStorage.getItem('roulette_gold');
+        let gold = (savedGold === null) ? 1000 : parseFloat(savedGold);
+
+        let cursorPos = 0;
+        let cursorDir = 1;
+        let qteActive = false;
+        let qteAnim;
+
+        function updateUI() {
+            goldDisplay.innerText = gold.toLocaleString();
+            localStorage.setItem('roulette_gold', gold);
+            
+            const stillSpinning = wheels.some(w => w.spinning === true);
+            
+            if (!stillSpinning && gold <= 0) {
+                recoveryBtn.style.display = 'block';
+                gameArea.style.filter = 'grayscale(1) blur(3px)';
+            } else {
+                recoveryBtn.style.display = 'none';
+                gameArea.style.filter = 'none';
+            }
+        }
+
+        // --- NOUVELLE FONCTION : SCANNER TOUS LES COMPTES ---
+        function checkAllInSuccess(stakedAmount) {
+            // Liste des clés de tous tes portefeuilles
+            const otherWallets = [
+                'plinko_money', 
+                'blackjack_chips', 
+                'mines_coins', 
+                'magic_orbs', 
+                'bank_savings'
+            ];
+            
+            // On vérifie si les autres comptes sont vides (0 ou n'existent pas)
+            let totalElsewhere = 0;
+            otherWallets.forEach(key => {
+                totalElsewhere += parseFloat(localStorage.getItem(key)) || 0;
+            });
+
+            // Condition : Les autres comptes sont à 0 ET la mise est égale au solde actuel de la roulette
+            if (totalElsewhere === 0 && stakedAmount >= gold && gold > 0) {
+                localStorage.setItem('all_in_roulette', 'true');
+                console.log("SUCCÈS DÉBLOQUÉ : ALL-IN TOTAL !");
+            }
+        }
+
+        function drawWheels() {
+            wheels.forEach((w, idx) => {
+                const ctx = document.getElementById(w.canvas).getContext('2d');
+                const slice = (Math.PI * 2) / numbers.length;
+                for (let i = 0; i < numbers.length; i++) {
+                    ctx.beginPath(); ctx.fillStyle = colors[i]; ctx.moveTo(250, 250);
+                    ctx.arc(250, 250, 250, i * slice, (i + 1) * slice); ctx.fill();
+                    ctx.save(); ctx.translate(250, 250); ctx.rotate(i * slice + slice / 2);
+                    ctx.fillStyle = "white"; ctx.font = "bold 18px Arial";
+                    ctx.fillText(numbers[i], 210, 7); ctx.restore();
+                }
+            });
+        }
+
+        function setBet(idx, type) {
+            if (wheels[idx].spinning) return;
+            wheels[idx].bet = type;
+            document.getElementById(`block-${idx}`).querySelectorAll('.bet-option').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        function play(idx) {
+            const w = wheels[idx];
+            const amt = parseInt(document.getElementById(`bet-${idx}`).value);
+            if (w.spinning || !w.bet || isNaN(amt) || amt <= 0 || gold < amt) return;
+
+            // VÉRIFICATION DU SUCCÈS ALL-IN AVANT DE DÉDUIRE L'ARGENT
+            checkAllInSuccess(amt);
+
+            gold -= amt;
+            w.spinning = true;
+            updateUI();
+            
+            document.getElementById(`btn-${idx}`).disabled = true;
+
+            const deg = (10 + Math.random() * 5) * 360 + Math.random() * 360;
+            w.rotation += deg;
+            document.getElementById(w.canvas).style.transform = `rotate(${w.rotation}deg)`;
+
+            setTimeout(() => {
+                w.spinning = false;
+                document.getElementById(`btn-${idx}`).disabled = false;
+                checkResult(idx, w.rotation, amt);
+            }, 5000);
+        }
+
+        function checkResult(idx, rot, staked) {
+            const net = rot % 360;
+            const corrected = (360 - net + 270) % 360;
+            const i = Math.floor(corrected / (360 / numbers.length)) % numbers.length;
+            const num = numbers[i];
+            const col = (num === 0) ? "vert" : (colors[i] === "#c0392b" ? "rouge" : "noir");
+            const status = document.getElementById(`status-${idx}`);
+
+            if (wheels[idx].bet === col) {
+                const win = staked * (col === "vert" ? 15 : 2);
+                gold += win;
+                status.innerText = `N°${num}: +${win} 🟡`;
+                status.style.color = "#2ecc71";
+            } else {
+                status.innerText = `N°${num}: -${staked}`;
+                status.style.color = "#e74c3c";
+            }
+            updateUI();
+        }
+
+        function openQTE() {
+            qteOverlay.style.display = 'flex';
+            qteActive = true;
+            cursorPos = 0;
+            animateCursor();
+        }
+
+        function animateCursor() {
+            if (!qteActive) return;
+            cursorPos += 3 * cursorDir;
+            if (cursorPos >= 100 || cursorPos <= 0) cursorDir *= -1;
+            lockCursor.style.left = cursorPos + '%';
+            qteAnim = requestAnimationFrame(animateCursor);
+        }
+
+        function attemptLockpick() {
+            if (!qteActive) return;
+            qteActive = false;
+            cancelAnimationFrame(qteAnim);
+            if (cursorPos >= 45 && cursorPos <= 55) {
+                gold = 100;
+                alert("COFFRE OUVERT ! Vous récupérez 100 🟡.");
+                qteOverlay.style.display = 'none';
+                updateUI();
+            } else {
+                alert("ÉCHEC ! Réessayez !");
+                qteActive = true;
+                animateCursor();
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === "Space" && qteOverlay.style.display === 'flex') attemptLockpick();
+        });
+
+        drawWheels();
+        updateUI();
+    </script>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plinko Jackpot Baby</title>
+    <style>
+        :root {
+            --bg-dark: #0f212e;
+            --panel-bg: #213743;
+            --text-grey: #b1bad3;
+            --accent-green: #00e701;
+            --accent-hover: #00c701;
+            --input-bg: #2f4553;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Inter', system-ui, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: var(--panel-bg);
+            color: white;
+            border: 1px solid var(--text-grey);
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: var(--panel-bg);
+            padding: 20px;
+            padding-top: 80px; 
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .logo { font-size: 24px; font-weight: 800; color: white; margin-bottom: 20px; letter-spacing: 1px; }
+        .control-group { display: flex; flex-direction: column; gap: 8px; }
+        label { color: var(--text-grey); font-size: 12px; font-weight: bold; text-transform: uppercase; }
+
+        .input-wrapper {
+            background: var(--input-bg);
+            border: 2px solid var(--input-bg);
+            border-radius: 5px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        input[type="number"] {
+            background: transparent;
+            border: none;
+            color: white;
+            width: 100%;
+            font-weight: bold;
+            outline: none;
+        }
+
+        .risk-selector {
+            background: var(--input-bg);
+            padding: 4px;
+            border-radius: 5px;
+            display: flex;
+            gap: 4px;
+        }
+
+        .risk-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-grey);
+            padding: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .risk-btn.active { background: #4d606d; color: white; }
+
+        #play-btn {
+            background: var(--accent-green);
+            color: #013e01;
+            border: none;
+            padding: 16px;
+            border-radius: 5px;
+            font-weight: 800;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        #qte-full-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 20, 28, 0.98);
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+
+        .qte-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        #lock-circle {
+            position: absolute;
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            border: 12px solid #2f4553;
+        }
+
+        #lock-target {
+            position: absolute;
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            border: 12px solid transparent;
+            border-top-color: var(--accent-green);
+            box-sizing: border-box;
+        }
+
+        #lock-cursor {
+            position: absolute;
+            width: 8px; height: 35px;
+            background: white;
+            top: 0;
+            border-radius: 4px;
+            box-shadow: 0 0 15px white;
+            transform-origin: 4px 100px;
+        }
+
+        .game-area {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #0b1924;
+        }
+
+        canvas { border-radius: 8px; max-height: 95vh; max-width: 100%; }
+
+        .hud-top {
+            position: absolute;
+            top: 20px; right: 40px;
+            background: var(--panel-bg);
+            padding: 10px 20px;
+            border-radius: 50px;
+            display: flex; gap: 10px; align-items: center;
+        }
+        
+        #balance-display { color: var(--accent-green); font-weight: bold; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+    <button id="back-btn" onclick="window.location.href='hub.html'">← RETOUR</button>
+
+    <div id="qte-full-overlay">
+        <h1 style="color: white; margin-bottom: 5px;">PLUS DE CRÉDITS</h1>
+        <p style="color: var(--text-grey); margin-bottom: 30px;">Réussis 3 fois d'affilée pour gagner 10.00€</p>
+        <div class="qte-container" onclick="handleQTEClick()">
+            <div id="lock-circle"></div>
+            <div id="lock-target"></div>
+            <div id="lock-cursor"></div>
+        </div>
+        <div id="qte-status" style="color: var(--accent-green); font-size: 24px; font-weight: 900; margin-top: 30px;">ÉTAPE : 0 / 3</div>
+    </div>
+
+    <div class="sidebar">
+        <div class="logo">PLINKO</div>
+        <div class="control-group">
+            <label>Mise (€)</label>
+            <div class="input-wrapper">
+                <input type="number" id="bet-input" value="10.00" step="1.00">
+                <span>€</span>
+            </div>
+        </div>
+        <div class="control-group">
+            <label>Difficulté</label>
+            <div class="risk-selector">
+                <button class="risk-btn" onclick="setMode('low')" id="btn-low">Faible</button>
+                <button class="risk-btn active" onclick="setMode('medium')" id="btn-medium">Moyen</button>
+                <button class="risk-btn" onclick="setMode('high')" id="btn-high">Élevé</button>
+            </div>
+        </div>
+        <button id="play-btn">MISER</button>
+    </div>
+
+    <div class="game-area">
+        <div class="hud-top">
+            <span>Solde :</span>
+            <span id="balance-display">0.00 €</span>
+        </div>
+        <canvas id="plinkoCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('plinkoCanvas');
+        const ctx = canvas.getContext('2d');
+        const balanceEl = document.getElementById('balance-display');
+        const betInput = document.getElementById('bet-input');
+        const playBtn = document.getElementById('play-btn');
+
+        let balance = parseFloat(localStorage.getItem('plinko_money')) || 1000.00;
+        let balls = [];
+        let pegs = [];
+        let particles = [];
+        let multipliersStatus = [];
+        const rows = 16; 
+
+        let qteActive = false;
+        let qteAngle = 0;
+        let qteTargetAngle = 0;
+        let qteSuccessCount = 0;
+        let qteSpeed = 3;
+
+        function updateBalanceDisplay() {
+            balanceEl.innerText = balance.toFixed(2) + " €";
+            localStorage.setItem('plinko_money', balance.toString());
+            if (balance <= 0 && balls.length === 0) {
+                setTimeout(() => { if(balance <= 0 && balls.length === 0) showQTE(); }, 500);
+            } else {
+                hideQTE();
+            }
+        }
+
+        function showQTE() {
+            if (qteActive) return;
+            qteActive = true; qteSuccessCount = 0; qteSpeed = 3;
+            document.getElementById('qte-full-overlay').style.display = 'flex';
+            document.getElementById('qte-status').innerText = "ÉTAPE : 0 / 3";
+            resetLock();
+        }
+
+        function hideQTE() { qteActive = false; document.getElementById('qte-full-overlay').style.display = 'none'; }
+
+        function resetLock() {
+            qteTargetAngle = Math.random() * 360;
+            document.getElementById('lock-target').style.transform = `rotate(${qteTargetAngle}deg)`;
+        }
+
+        function handleQTEClick() {
+            if (!qteActive) return;
+            let currentPos = qteAngle % 360;
+            let diff = Math.abs(currentPos - (qteTargetAngle + 45)); 
+            if (diff > 180) diff = 360 - diff;
+            if (diff < 25) {
+                qteSuccessCount++; qteSpeed += 1.3;
+                document.getElementById('qte-status').innerText = `ÉTAPE : ${qteSuccessCount} / 3`;
+                if (qteSuccessCount >= 3) { balance = 10.00; updateBalanceDisplay(); hideQTE(); } else { resetLock(); }
+            } else {
+                qteSuccessCount = 0; qteSpeed = 3;
+                document.getElementById('qte-status').innerText = "ÉCHEC ! recommence : 0 / 3";
+                resetLock();
+            }
+        }
+
+        // --- VALEURS ÉQUILIBRÉES AVEC NÉGATIFS ---
+        const modes = {
+            low: { 
+                values: [16, 8, 4, 1.5, 0.5, -1, -5, -10, -5, -1, 0.5, 1.5, 4, 8, 16], 
+                colorStart: [50, 200, 50], colorEnd: [255, 255, 0] 
+            },
+            medium: { 
+                values: [110, 40, 15, 5, 1, -10, -20, -50, -20, -10, 1, 5, 15, 40, 110], 
+                colorStart: [255, 200, 0], colorEnd: [255, 80, 80] 
+            },
+            high: { 
+                values: [1000, 150, 50, 10, -5, -50, -100, -500, -100, -50, -5, 10, 50, 150, 1000], 
+                colorStart: [255, 100, 0], colorEnd: [220, 0, 0] 
+            }
+        };
+
+        let currentMode = 'medium';
+        let multipliers = modes[currentMode].values;
+        const width = 800; const height = 650;
+        canvas.width = width; canvas.height = height;
+        const xSpace = width / 20; const ySpace = height / 19; const startY = 50;
+
+        function initBoard() {
+            pegs = [];
+            for (let r = 0; r < rows; r++) {
+                for (let i = 0; i <= r; i++) {
+                    pegs.push({ x: width / 2 + (i - r / 2) * xSpace, y: startY + r * ySpace });
+                }
+            }
+            multipliersStatus = multipliers.map(() => ({ scale: 1, flash: 0 }));
+        }
+
+        window.setMode = (mode) => {
+            currentMode = mode; multipliers = modes[mode].values;
+            multipliersStatus = multipliers.map(() => ({ scale: 1, flash: 0 }));
+            document.querySelectorAll('.risk-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${mode}`).classList.add('active');
+        };
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            if (qteActive) { qteAngle += qteSpeed; document.getElementById('lock-cursor').style.transform = `rotate(${qteAngle}deg)`; }
+            
+            const bottomY = startY + rows * ySpace + 10;
+            const startX = width/2 - (multipliers.length * xSpace)/2;
+            
+            multipliers.forEach((m, i) => {
+                const status = multipliersStatus[i];
+                let ratio = Math.abs(i - Math.floor(multipliers.length/2)) / Math.floor(multipliers.length/2);
+                let cStart = modes[currentMode].colorStart; let cEnd = modes[currentMode].colorEnd;
+                
+                ctx.save();
+                ctx.translate(startX + i * xSpace + xSpace/2, bottomY + 17.5);
+                ctx.scale(status.scale, status.scale);
+                
+                ctx.fillStyle = `rgb(${cStart[0] + (cEnd[0]-cStart[0])*ratio}, ${cStart[1] + (cEnd[1]-cStart[1])*ratio}, ${cStart[2] + (cEnd[2]-cStart[2])*ratio})`;
+                if(status.flash > 0) ctx.fillStyle = "white";
+                
+                ctx.beginPath(); 
+                ctx.roundRect(-xSpace/2 + 2, -17.5, xSpace - 4, 35, 6); 
+                ctx.fill();
+                
+                ctx.fillStyle = "#0f212e"; ctx.font = "bold 11px Inter"; ctx.textAlign = "center";
+                ctx.fillText(m + (m > 1 || m < -1 ? "x" : "x"), 0, 5);
+                ctx.restore();
+
+                if(status.scale > 1) status.scale -= 0.05;
+                if(status.flash > 0) status.flash -= 0.1;
+            });
+
+            ctx.fillStyle = "white";
+            pegs.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                ctx.fillStyle = p.amount < 0 ? `rgba(255, 50, 50, ${p.life})` : `rgba(0, 231, 1, ${p.life})`;
+                ctx.font = "bold 16px Inter"; ctx.textAlign = "center";
+                ctx.fillText((p.amount > 0 ? "+" : "") + p.amount + "€", p.x, p.y);
+                p.y -= 1; p.life -= 0.02;
+                if(p.life <= 0) particles.splice(i, 1);
+            }
+
+            for (let i = balls.length - 1; i >= 0; i--) {
+                let b = balls[i];
+                b.vy += 0.25; b.x += b.vx; b.y += b.vy;
+
+                for (let p of pegs) {
+                    let dx = b.x - p.x; let dy = b.y - p.y;
+                    if (dx*dx + dy*dy < 100) {
+                        const angle = Math.atan2(dy, dx);
+                        const impact = 2.8; const friction = 0.7;
+                        b.vx = Math.cos(angle + (Math.random()-0.5)*0.8) * impact * friction;
+                        b.vy = Math.sin(angle + (Math.random()-0.5)*0.8) * impact * friction;
+                    }
+                }
+
+                ctx.fillStyle = "#ff0040"; ctx.beginPath(); ctx.arc(b.x, b.y, 5.5, 0, Math.PI*2); ctx.fill();
+                
+                if (b.y > bottomY) { 
+                    const idx = Math.floor((b.x - startX) / xSpace);
+                    const safeIdx = Math.max(0, Math.min(multipliers.length - 1, idx));
+                    const m = multipliers[safeIdx] || 0;
+                    const winAmount = b.bet * m;
+                    
+                    balance += winAmount;
+                    multipliersStatus[safeIdx].scale = 1.3;
+                    multipliersStatus[safeIdx].flash = 1;
+                    particles.push({ x: b.x, y: bottomY, amount: winAmount.toFixed(2), life: 1 });
+                    balls.splice(i, 1); updateBalanceDisplay(); 
+                }
+            }
+            requestAnimationFrame(draw);
+        }
+
+        playBtn.addEventListener('click', () => {
+            const bet = parseFloat(betInput.value);
+            if (balance >= bet && bet > 0) {
+                balance -= bet; updateBalanceDisplay();
+                const spawnY = startY + (1.5 * ySpace);
+                const left = width / 2 - (1.5 / 2) * xSpace;
+                const right = width / 2 + (1.5 / 2) * xSpace;
+                balls.push({ x: left + Math.random() * (right - left), y: spawnY, vx: (Math.random()-0.5)*1, vy: 0, bet });
+            }
+        });
+
+        initBoard(); updateBalanceDisplay(); draw();
+    </script>
+</body>
+</html>

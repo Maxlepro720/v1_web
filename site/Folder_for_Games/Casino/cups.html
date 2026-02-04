@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Magic Cups - Royal Edition</title>
+    <style>
+        :root {
+            --gold: #fcd34d;
+            --gold-dark: #b45309;
+            --table-green: #064e3b;
+            --bg-dark: #0a0a0a;
+            --accent-blue: #38bdf8;
+        }
+
+        body {
+            background: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000 100%);
+            color: white; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex; justify-content: center; margin: 0; min-height: 100vh;
+            /* Changé pour mobile */
+            overflow-x: hidden;
+            overflow-y: auto; 
+            touch-action: manipulation;
+        }
+
+        .game-wrapper {
+            width: 100%; max-width: 400px; padding: 15px;
+            display: flex; flex-direction: column; 
+            min-height: 100vh; box-sizing: border-box;
+            position: relative; z-index: 1;
+        }
+
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 15px;
+        }
+        
+        .back-nav {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--gold);
+            color: var(--gold); width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            font-size: 20px; transition: 0.3s;
+        }
+
+        .balance-pill { 
+            background: linear-gradient(145deg, #111, #000); padding: 10px 18px; 
+            border-radius: 50px; border: 1px solid var(--gold); font-weight: 800; 
+            color: var(--gold); box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
+            font-size: 14px; letter-spacing: 0.5px;
+        }
+
+        #status { 
+            text-align: center; font-weight: 900; font-size: 16px; color: var(--gold); 
+            text-transform: uppercase; letter-spacing: 2px; margin: 10px 0;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .round-indicator { 
+            display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; 
+        }
+        .step {
+            width: 45px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;
+            transition: 0.4s;
+        }
+        .step.active { background: var(--gold); box-shadow: 0 0 12px var(--gold); }
+
+        /* Ajustement Responsive de la table */
+        .table-area {
+            position: relative; width: 100%; height: 220px;
+            background: radial-gradient(circle at center, #065f46 0%, #022c22 100%);
+            border-radius: 100px / 40px;
+            border: 4px solid #222; 
+            outline: 2px solid var(--gold-dark);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 0 60px rgba(0,0,0,0.6);
+            display: flex; justify-content: space-around; align-items: center;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .cup-container {
+            position: absolute; width: 75px; height: 100px;
+            display: flex; flex-direction: column; align-items: center;
+            z-index: 10; bottom: 50px; cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .cup {
+            width: 60px; height: 85px;
+            background: linear-gradient(135deg, #b45309 0%, #fcd34d 45%, #fff 50%, #fcd34d 55%, #78350f 100%);
+            clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+            border-radius: 5px; position: relative;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(0 10px 5px rgba(0,0,0,0.4));
+        }
+
+        .cup.lifted { transform: translateY(-60px) rotate(-8deg); }
+
+        .ball {
+            position: absolute; bottom: 5px; width: 18px; height: 18px;
+            background: radial-gradient(circle at 35% 35%, #fff 0%, #38bdf8 50%, #1e40af 100%);
+            border-radius: 50%; z-index: 1; visibility: hidden;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.8);
+        }
+
+        .controls-panel {
+            background: rgba(255,255,255,0.03); padding: 20px;
+            border-radius: 25px; border: 1px solid rgba(255,255,255,0.08);
+            backdrop-filter: blur(15px); margin-top: auto; margin-bottom: 20px;
+        }
+
+        .input-group { position: relative; margin-bottom: 12px; }
+        .input-group label { 
+            position: absolute; top: -8px; left: 15px; background: #1a1a1a;
+            padding: 0 8px; font-size: 9px; color: var(--gold); font-weight: bold;
+        }
+
+        input {
+            background: rgba(0,0,0,0.6); border: 1px solid #444;
+            padding: 12px; border-radius: 12px; color: #fff; 
+            width: 100%; text-align: center; font-size: 18px; font-weight: 700;
+            outline: none; box-sizing: border-box; transition: 0.3s;
+        }
+
+        .btn-play {
+            padding: 18px; border-radius: 12px; border: none;
+            background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%);
+            color: #2b1402; font-weight: 900; text-transform: uppercase;
+            cursor: pointer; font-size: 15px; width: 100%; letter-spacing: 1px;
+            box-shadow: 0 6px 0 #78350f, 0 10px 20px rgba(0,0,0,0.4);
+            transition: 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-play:active { transform: translateY(3px); box-shadow: 0 3px 0 #78350f; }
+
+        /* QTE Mobile responsive */
+        #qte-btn {
+            display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: var(--accent-blue); border: 2px solid var(--accent-blue);
+            padding: 14px 25px; border-radius: 50px; font-weight: 800; cursor: pointer; z-index: 100;
+            backdrop-filter: blur(10px); text-transform: uppercase; font-size: 11px;
+            width: 80%; max-width: 280px; text-align: center;
+        }
+
+        #qte-overlay {
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.98); z-index: 2000; flex-direction: column; align-items:center; justify-content: center;
+        }
+
+        .oracle-altar {
+            width: 80px; height: 280px; background: rgba(56, 189, 248, 0.05);
+            border: 2px solid var(--accent-blue); position: relative; border-radius: 40px; overflow: hidden;
+        }
+
+        #energy-ball {
+            position: absolute; width: 40px; height: 40px; left: 18px; bottom: 0;
+            background: radial-gradient(circle, #fff, var(--accent-blue));
+            border-radius: 50%; box-shadow: 0 0 30px var(--accent-blue);
+        }
+
+        #target-zone {
+            position: absolute; width: 100%; height: 70px; left: 0; top: 40%;
+            background: rgba(56, 189, 248, 0.2); border-top: 2px solid rgba(255,255,255,0.5); border-bottom: 2px solid rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-wrapper">
+    <header>
+        <div class="back-nav" onclick="window.history.back()">✕</div>
+        <div class="balance-pill"><span id="wallet">0.00</span> MO</div>
+    </header>
+
+    <div id="status">MAGIC CUPS</div>
+
+    <div class="round-indicator">
+        <div class="step" id="step-1"></div>
+        <div class="step" id="step-2"></div>
+        <div class="step" id="step-3"></div>
+    </div>
+
+    <div class="table-area">
+        <div class="cup-container" id="cup-0" onclick="pickCup(0)" style="left: 5%;">
+            <div class="cup"></div>
+            <div class="ball" id="ball-0"></div>
+        </div>
+        <div class="cup-container" id="cup-1" onclick="pickCup(1)" style="left: 37%;">
+            <div class="cup"></div>
+            <div class="ball" id="ball-1"></div>
+        </div>
+        <div class="cup-container" id="cup-2" onclick="pickCup(2)" style="left: 69%;">
+            <div class="cup"></div>
+            <div class="ball" id="ball-2"></div>
+        </div>
+    </div>
+
+    <div class="controls-panel">
+        <div class="input-group">
+            <label>MONTANT DE LA MISE</label>
+            <input type="number" id="bet-amount" value="100" min="1">
+        </div>
+        <button id="play-btn" class="btn-play" onclick="startGame()">Lancer la partie (x5)</button>
+    </div>
+</div>
+
+<button id="qte-btn" onclick="openQTE()">✨ Offrande à l'Oracle (0 MO)</button>
+
+<div id="qte-overlay">
+    <div class="qte-instructions" style="color: var(--accent-blue); text-align: center; margin-bottom: 20px; font-weight: bold;">STABILISEZ L'ÉNERGIE<br><span id="qte-timer" style="font-size: 32px;">5.0s</span></div>
+    <div class="oracle-altar">
+        <div id="target-zone"></div>
+        <div id="energy-ball"></div>
+    </div>
+    <p style="color: #666; font-size: 11px; margin-top: 30px; text-transform: uppercase;">Maintenez pour monter</p>
+</div>
+
+<script>
+    let ballPos = 1;
+    let isMixing = false;
+    let gameActive = false;
+    let currentRound = 1;
+    let positions = [5, 37, 69]; 
+    let currentOrder = [0, 1, 2];
+    let speed = 400;
+
+    let qteActive = false;
+    let ballY = 150;
+    let velocity = 0;
+    let qteScore = 5.0;
+    let isPressing = false;
+
+    function getWallet() {
+        let bal = localStorage.getItem('magic_orbs');
+        if (bal === null) { localStorage.setItem('magic_orbs', '500'); return 500; }
+        return parseFloat(bal);
+    }
+
+    function updateWallet(forceCheckQTE = false) {
+        let balance = getWallet();
+        document.getElementById('wallet').innerText = balance.toFixed(2);
+        
+        if (forceCheckQTE && balance <= 0 && !isMixing && !gameActive) {
+            document.getElementById('qte-btn').style.display = 'block';
+        } else if (balance > 0) {
+            document.getElementById('qte-btn').style.display = 'none';
+        }
+    }
+
+    function startGame() {
+        const betInput = document.getElementById('bet-amount');
+        const bet = parseFloat(betInput.value);
+        let wallet = getWallet();
+        
+        if (isNaN(bet) || bet <= 0 || wallet < bet) {
+            alert("Solde insuffisant !"); return;
+        }
+
+        document.getElementById('qte-btn').style.display = 'none';
+        localStorage.setItem('magic_orbs', (wallet - bet).toFixed(2));
+        updateWallet(false); 
+        currentRound = 1;
+        speed = 400;
+        startNewRound();
+    }
+
+    function startNewRound() {
+        isMixing = true;
+        gameActive = false;
+        document.getElementById('play-btn').disabled = true;
+        document.getElementById('status').innerText = `Manche ${currentRound} / 3`;
+        
+        document.querySelectorAll('.step').forEach((s, i) => {
+            s.classList.toggle('active', i < currentRound);
+        });
+
+        ballPos = Math.floor(Math.random() * 3);
+        document.querySelectorAll('.ball').forEach(b => b.style.visibility = 'hidden');
+        
+        const cup = document.querySelector(`#cup-${ballPos} .cup`);
+        const ball = document.getElementById(`ball-${ballPos}`);
+        
+        setTimeout(() => {
+            ball.style.visibility = 'visible';
+            cup.classList.add('lifted');
+            setTimeout(() => {
+                cup.classList.remove('lifted');
+                setTimeout(() => {
+                    ball.style.visibility = 'hidden';
+                    shuffle();
+                }, 500);
+            }, 800);
+        }, 300);
+    }
+
+    function shuffle() {
+        let shuffleCount = 0;
+        let maxShuffles = 7 + (currentRound * 3); 
+        let currentSpeed = speed - (currentRound * 60); 
+
+        const interval = setInterval(() => {
+            let i = Math.floor(Math.random() * 3);
+            let j;
+            do { j = Math.floor(Math.random() * 3); } while (i === j);
+            [currentOrder[i], currentOrder[j]] = [currentOrder[j], currentOrder[i]];
+
+            currentOrder.forEach((cupIdx, posIdx) => {
+                const el = document.getElementById(`cup-${cupIdx}`);
+                el.style.left = positions[posIdx] + "%";
+                el.style.transition = `left ${currentSpeed}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+            });
+
+            shuffleCount++;
+            if (shuffleCount >= maxShuffles) {
+                clearInterval(interval);
+                isMixing = false;
+                gameActive = true;
+                document.getElementById('status').innerText = "Où est la perle ?";
+            }
+        }, currentSpeed + 60);
+    }
+
+    function pickCup(index) {
+        if (!gameActive || isMixing) return;
+        gameActive = false;
+        const cup = document.querySelector(`#cup-${index} .cup`);
+        const ball = document.getElementById(`ball-${index}`);
+
+        if (index === ballPos) {
+            ball.style.visibility = 'visible';
+            cup.classList.add('lifted');
+            if (currentRound < 3) {
+                document.getElementById('status').innerText = "Bien joué !";
+                setTimeout(() => {
+                    cup.classList.remove('lifted');
+                    currentRound++;
+                    setTimeout(startNewRound, 600);
+                }, 1000);
+            } else {
+                const bet = parseFloat(document.getElementById('bet-amount').value);
+                localStorage.setItem('magic_orbs', (getWallet() + (bet * 5)).toFixed(2));
+                document.getElementById('status').innerText = "💰 JACKPOT X5 !";
+                endGame();
+            }
+        } else {
+            cup.style.filter = "drop-shadow(0 0 15px #ef4444) brightness(0.7)";
+            document.getElementById('status').innerText = "Perdu...";
+            setTimeout(() => {
+                document.getElementById(`ball-${ballPos}`).style.visibility = 'visible';
+                document.querySelector(`#cup-${ballPos} .cup`).classList.add('lifted');
+                endGame();
+            }, 500);
+        }
+    }
+
+    function endGame() {
+        setTimeout(() => {
+            document.querySelectorAll('.cup').forEach(c => {
+                c.classList.remove('lifted');
+                c.style.filter = "";
+            });
+            document.querySelectorAll('.ball').forEach(b => b.style.visibility = 'hidden');
+            document.getElementById('play-btn').disabled = false;
+            document.getElementById('status').innerText = "MAGIC CUPS";
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            updateWallet(true); 
+        }, 2500);
+    }
+
+    function openQTE() {
+        qteActive = true;
+        qteScore = 5.0;
+        ballY = 130;
+        velocity = 0;
+        document.getElementById('qte-overlay').style.display = 'flex';
+        requestAnimationFrame(updateQTE);
+    }
+
+    window.onmousedown = window.ontouchstart = (e) => { if(qteActive) isPressing = true; };
+    window.onmouseup = window.ontouchend = () => { isPressing = false; };
+
+    function updateQTE() {
+        if (!qteActive) return;
+
+        if (isPressing) velocity += 0.25; 
+        else velocity -= 0.25;
+
+        velocity *= 0.97;
+        ballY += velocity;
+
+        if (ballY < 0) { ballY = 0; velocity = 0; }
+        if (ballY > 240) { ballY = 240; velocity = 0; }
+
+        document.getElementById('energy-ball').style.bottom = ballY + 'px';
+
+        let ballCenter = ballY + 20;
+        if (ballCenter > 112 && ballCenter < 182) {
+            qteScore -= 0.016;
+            document.getElementById('target-zone').style.background = "rgba(56, 189, 248, 0.5)";
+        } else {
+            document.getElementById('target-zone').style.background = "rgba(239, 68, 68, 0.3)";
+        }
+
+        document.getElementById('qte-timer').innerText = Math.max(0, qteScore).toFixed(1) + "s";
+
+        if (qteScore <= 0) {
+            qteActive = false;
+            localStorage.setItem('magic_orbs', 100);
+            alert("L'Oracle vous a accordé une seconde chance. +100 MO");
+            document.getElementById('qte-overlay').style.display = 'none';
+            updateWallet(false);
+        } else {
+            requestAnimationFrame(updateQTE);
+        }
+    }
+
+    updateWallet(true);
+</script>
+</body>
+</html>

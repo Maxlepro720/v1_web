@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mines - Casino Royal</title>
+    <style>
+        :root {
+            --casino-green: #064e3b;
+            --gold: #fbbf24;
+            --accent-red: #ef4444;
+            --tile-bg: rgba(0, 0, 0, 0.4);
+            --tile-border: rgba(251, 191, 36, 0.3);
+        }
+
+        body {
+            background: radial-gradient(circle at center, #065f46 0%, #022c22 100%);
+            color: white;
+            font-family: -apple-system, system-ui, sans-serif;
+            display: flex; justify-content: center; margin: 0; min-height: 100vh;
+            /* Blocage strict du défilement */
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        body::before {
+            content: ""; position: absolute; width: 200%; height: 200%;
+            background-image: url('https://www.transparenttextures.com/patterns/carbon-fibre.png');
+            opacity: 0.1; pointer-events: none;
+        }
+
+        .game-wrapper {
+            width: 100%; max-width: 380px; padding: 20px;
+            display: flex; flex-direction: column; gap: 15px;
+            position: relative; z-index: 1;
+        }
+
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 10px 0; position: relative;
+        }
+
+        .back-nav {
+            background: rgba(0,0,0,0.3); border: 1px solid var(--tile-border);
+            color: var(--gold); width: 35px; height: 35px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 18px; text-decoration: none;
+        }
+
+        .balance-pill { 
+            background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 20px; 
+            border: 2px solid var(--gold); font-weight: bold; color: var(--gold); 
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
+        }
+
+        .grid {
+            display: grid; grid-template-columns: repeat(5, 1fr);
+            gap: 10px; background: rgba(0,0,0,0.3);
+            padding: 15px; border-radius: 28px; 
+            border: 3px solid #047857;
+            position: relative; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        .tile {
+            aspect-ratio: 1; background: var(--tile-bg);
+            border: 1px solid var(--tile-border); border-radius: 12px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; cursor: pointer; transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #big-explosion {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle, #ff4d4d 0%, #000 70%);
+            z-index: 100; opacity: 0; pointer-events: none;
+            display: flex; justify-content: center; align-items: center;
+            mix-blend-mode: screen;
+        }
+
+        @keyframes megaBlast {
+            0% { opacity: 0; transform: scale(0.1); }
+            10% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(3); }
+        }
+        .animate-blast { animation: megaBlast 0.8s ease-out forwards; }
+
+        @keyframes shakeHard {
+            0% { transform: translate(0,0); }
+            10% { transform: translate(-15px, 15px); }
+            30% { transform: translate(15px, -15px); }
+            50% { transform: translate(-15px, -15px); }
+            70% { transform: translate(15px, 15px); }
+            100% { transform: translate(0,0); }
+        }
+        .shake-heavy { animation: shakeHard 0.1s infinite; }
+
+        .tile.revealed-diamond { 
+            background: linear-gradient(135deg, #059669, #10b981);
+            border-color: #fff; box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
+        }
+
+        .controls { 
+            background: rgba(0,0,0,0.4); padding: 20px; 
+            border-radius: 28px; border: 1px solid var(--tile-border);
+            display: flex; flex-direction: column; gap: 12px;
+        }
+
+        input, select { 
+            background: #022c22; border: 1px solid var(--gold); 
+            padding: 10px; border-radius: 10px; color: white; font-weight: bold;
+            width: 100%; box-sizing: border-box; outline: none;
+        }
+
+        .btn-main {
+            padding: 18px; border-radius: 18px; border: none; 
+            font-weight: 900; cursor: pointer; text-transform: uppercase;
+            font-size: 16px; letter-spacing: 1px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-play { background: linear-gradient(to bottom, #fbbf24, #d97706); color: #451a03; border-bottom: 4px solid #92400e; }
+        .btn-cashout { background: linear-gradient(to bottom, #10b981, #059669); color: white; border-bottom: 4px solid #064e3b; }
+        
+        .multiplier-info { text-align: center; font-size: 24px; font-weight: 900; color: var(--gold); text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+
+        #recovery-btn {
+            display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #000; color: #0f0;
+            border: 2px solid #0f0; padding: 15px 30px; font-size: 14px;
+            font-family: 'Courier New', monospace; font-weight: bold; border-radius: 5px; cursor: pointer; z-index: 500;
+            box-shadow: 0 0 15px #0f0;
+        }
+
+        #qte-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,10,0,0.98); z-index: 2000; flex-direction: column; align-items: center; justify-content: center;
+            font-family: 'Courier New', monospace;
+        }
+
+        #hack-area {
+            width: 200px; height: 200px; border: 2px solid #0f0;
+            position: relative; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        }
+
+        #hack-core {
+            width: 40px; height: 40px; background: #0f0; border-radius: 50%;
+            box-shadow: 0 0 20px #0f0; z-index: 10;
+        }
+
+        #hack-ring {
+            position: absolute; width: 100%; height: 100%;
+            border: 8px solid rgba(0, 255, 0, 0.2); border-radius: 50%;
+            transform: scale(0.1);
+        }
+
+        .hack-label { color: #0f0; margin-bottom: 20px; font-size: 18px; text-align: center; }
+        .btn-hack { margin-top: 40px; background: transparent; border: 1px solid #0f0; color: #0f0; padding: 10px 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="big-explosion"></div>
+
+<div class="game-wrapper" id="main-wrapper">
+    <header>
+        <div class="back-nav" onclick="window.history.back()">←</div>
+        <div style="font-weight: 900; color: var(--gold); font-size: 18px;">CASINO MINES</div>
+        <div class="balance-pill"><span id="wallet">0.00</span> MC</div>
+    </header>
+
+    <div id="multiplier" class="multiplier-info">1.00x</div>
+
+    <div class="grid" id="game-grid"></div>
+
+    <div class="controls">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <span style="font-size: 9px; color: var(--gold); font-weight: bold; opacity: 0.7; text-transform: uppercase;">Mise</span>
+                <input type="number" id="bet-amount" value="50">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <span style="font-size: 9px; color: var(--gold); font-weight: bold; opacity: 0.7; text-transform: uppercase;">Mines</span>
+                <select id="mine-count">
+                    <option value="1">1 Mine</option>
+                    <option value="3" selected>3 Mines</option>
+                    <option value="5">5 Mines</option>
+                    <option value="10">10 Mines</option>
+                </select>
+            </div>
+        </div>
+        <button id="main-btn" class="btn-main btn-play" onclick="handleMainAction()">Placer Pari</button>
+    </div>
+</div>
+
+<button id="recovery-btn" onclick="openQTE()">SYS_RECOVER_MINES.EXE (0 MC)</button>
+
+<div id="qte-overlay">
+    <div class="hack-label">INTRUSION SYSTEME...<br><span style="font-size: 10px;">SYNCHRONISE L'ONDE AU CENTRE</span></div>
+    <div id="hack-area">
+        <div id="hack-core"></div>
+        <div id="hack-ring"></div>
+    </div>
+    <button class="btn-hack" onclick="attemptLockpick()">EXECUTE_BYPASS()</button>
+</div>
+
+<script>
+    let mines = [];
+    let revealedCount = 0;
+    let isPlaying = false;
+    let currentBet = 0;
+
+    let qteActive = false;
+    let ringScale = 0.1;
+    let ringDir = 1;
+    let qteAnim;
+
+    function getWalletBalance() {
+        let bal = localStorage.getItem('mines_coins');
+        if (bal === null) {
+            localStorage.setItem('mines_coins', '500'); 
+            return 500;
+        }
+        return parseFloat(bal);
+    }
+
+    function updateWallet() {
+        let balance = getWalletBalance();
+        document.getElementById('wallet').innerText = balance.toFixed(2);
+        
+        if (balance <= 0 && !isPlaying) {
+            document.getElementById('recovery-btn').style.display = 'block';
+            document.getElementById('main-wrapper').style.filter = 'grayscale(1) brightness(0.5)';
+        } else {
+            document.getElementById('recovery-btn').style.display = 'none';
+            document.getElementById('main-wrapper').style.filter = 'none';
+        }
+    }
+
+    function createGrid() {
+        const grid = document.getElementById('game-grid');
+        grid.innerHTML = '';
+        for (let i = 0; i < 25; i++) {
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            tile.onclick = () => revealTile(i);
+            grid.appendChild(tile);
+        }
+    }
+
+    function handleMainAction() {
+        if (!isPlaying) startGame();
+        else cashOut();
+    }
+
+    function startGame() {
+        const amount = parseFloat(document.getElementById('bet-amount').value);
+        let wallet = getWalletBalance();
+        
+        if (isNaN(amount) || amount <= 0 || Math.round(wallet * 100) < Math.round(amount * 100)) {
+            alert("ERREUR_SOLDE_INSUFFISANT");
+            return;
+        }
+        
+        let newBalance = parseFloat((wallet - amount).toFixed(2));
+        localStorage.setItem('mines_coins', newBalance);
+        
+        currentBet = amount;
+        isPlaying = true;
+        revealedCount = 0;
+        mines = [];
+        const count = parseInt(document.getElementById('mine-count').value);
+        while(mines.length < count) {
+            let r = Math.floor(Math.random() * 25);
+            if(!mines.includes(r)) mines.push(r);
+        }
+        document.getElementById('main-btn').innerText = "ENCAISSER 0.00";
+        document.getElementById('main-btn').className = "btn-main btn-cashout";
+        createGrid();
+        document.getElementById('multiplier').innerText = "1.00x";
+        updateWallet();
+    }
+
+    function revealTile(index) {
+        if (!isPlaying) return;
+        const tiles = document.querySelectorAll('.tile');
+        const tile = tiles[index];
+        if (tile.classList.contains('revealed-diamond')) return;
+        if (mines.includes(index)) {
+            gameOver();
+        } else {
+            tile.innerHTML = '💎';
+            tile.classList.add('revealed-diamond');
+            revealedCount++;
+            updateMultiplier();
+        }
+    }
+
+    function getMultiplier() {
+        const total = 25;
+        const mineCount = parseInt(document.getElementById('mine-count').value);
+        const diamonds = total - mineCount;
+        let mult = 1;
+        for (let i = 0; i < revealedCount; i++) {
+            mult = mult * (total - i) / (diamonds - i);
+        }
+        return mult * 0.98;
+    }
+
+    function updateMultiplier() {
+        const mult = getMultiplier();
+        document.getElementById('multiplier').innerText = `${mult.toFixed(2)}x`;
+        if (isPlaying && revealedCount > 0) {
+            document.getElementById('main-btn').innerText = `ENCAISSER ${(currentBet * mult).toFixed(2)}`;
+        }
+    }
+
+    function cashOut() {
+        if (!isPlaying || revealedCount === 0) return;
+        let win = currentBet * getMultiplier();
+        let wallet = getWalletBalance();
+        localStorage.setItem('mines_coins', (wallet + win));
+        isPlaying = false;
+        resetUI();
+        updateWallet();
+    }
+
+    function gameOver() {
+        isPlaying = false;
+        const blast = document.getElementById('big-explosion');
+        blast.classList.add('animate-blast');
+        document.getElementById('main-wrapper').classList.add('shake-heavy');
+        const tiles = document.querySelectorAll('.tile');
+        mines.forEach(m => {
+            tiles[m].innerHTML = '💣';
+            tiles[m].style.background = "var(--accent-red)";
+        });
+        setTimeout(() => {
+            blast.classList.remove('animate-blast');
+            document.getElementById('main-wrapper').classList.remove('shake-heavy');
+            resetUI();
+            updateWallet();
+        }, 1500);
+    }
+
+    function resetUI() {
+        document.getElementById('main-btn').innerText = "Placer Pari";
+        document.getElementById('main-btn').className = "btn-main btn-play";
+    }
+
+    function openQTE() {
+        document.getElementById('qte-overlay').style.display = 'flex';
+        qteActive = true;
+        ringScale = 0.1;
+        animateHack();
+    }
+
+    function animateHack() {
+        if (!qteActive) return;
+        ringScale += 0.02 * ringDir;
+        if (ringScale >= 1.2 || ringScale <= 0.1) ringDir *= -1;
+        document.getElementById('hack-ring').style.transform = `scale(${ringScale})`;
+        if(ringScale >= 0.15 && ringScale <= 0.35) {
+            document.getElementById('hack-ring').style.borderColor = "#0f0";
+        } else {
+            document.getElementById('hack-ring').style.borderColor = "rgba(0, 255, 0, 0.2)";
+        }
+        qteAnim = requestAnimationFrame(animateHack);
+    }
+
+    function attemptLockpick() {
+        if (!qteActive) return;
+        qteActive = false;
+        cancelAnimationFrame(qteAnim);
+        if (ringScale >= 0.15 && ringScale <= 0.35) {
+            localStorage.setItem('mines_coins', 100);
+            alert("ACCÈS AUTORISÉ : +100 MC");
+            document.getElementById('qte-overlay').style.display = 'none';
+            updateWallet();
+        } else {
+            alert("ACCÈS REFUSÉ : SYNCHRONISATION ÉCHOUÉE");
+            qteActive = true;
+            animateHack();
+        }
+    }
+
+    createGrid();
+    updateWallet();
+</script>
+</body>
+</html>

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>iBank Pro - FinTech</title>
+    <style>
+        :root {
+            --bg-dark: #05070a;
+            --card-bg: rgba(22, 28, 45, 0.8);
+            --accent-blue: #38bdf8;
+            --accent-gold: #fbbf24;
+            --text-main: #f8fafc;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* --- MODE GOLD DYNAMIQUE --- */
+        body.gold-mode {
+            --bg-dark: #1a1605;
+            --card-bg: rgba(45, 38, 22, 0.9);
+            --accent-blue: #fbbf24; 
+            --text-main: #fffdf5;
+        }
+
+        body.gold-mode .savings-card {
+            background: linear-gradient(165deg, #2d2616 0%, #050500 100%) !important;
+            border-bottom: 3px solid var(--accent-gold);
+        }
+
+        body.gold-mode .card { 
+            border: 1px solid rgba(251, 191, 36, 0.3); 
+            box-shadow: 0 15px 40px rgba(251, 191, 36, 0.15); 
+        }
+
+        body.gold-mode .val-text, body.gold-mode span {
+            color: var(--text-main);
+        }
+
+        body.gold-mode header h1 { 
+            background: linear-gradient(135deg, #fff 30%, #fbbf24); 
+            -webkit-background-clip: text; 
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-family: -apple-system, system-ui, sans-serif;
+            display: flex; justify-content: center; margin: 0; min-height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+            transition: background 1s ease;
+        }
+
+        #reward-pop {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fbbf24; font-size: 40px; font-weight: 900;
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+            pointer-events: none; z-index: 9999;
+            opacity: 0; display: none;
+        }
+
+        @keyframes rewardAnim {
+            0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            80% { opacity: 1; transform: translate(-50%, -60%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -100%) scale(0.8); }
+        }
+
+        .bank-wrapper {
+            width: 100%; max-width: 380px; padding: 15px;
+            display: flex; flex-direction: column; gap: 12px;
+            overflow-y: auto; height: 100vh;
+        }
+        .bank-wrapper::-webkit-scrollbar { display: none; }
+
+        header { text-align: left; padding: 5px 5px 10px 5px; }
+        header h1 { 
+            font-size: 28px; margin: 0; font-weight: 800;
+            background: linear-gradient(135deg, #fff 30%, var(--accent-blue));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        header p { font-size: 10px; opacity: 0.4; text-transform: uppercase; letter-spacing: 2px; margin: 2px 0; }
+
+        .section-title { font-size: 11px; font-weight: 700; opacity: 0.4; text-transform: uppercase; margin-bottom: 0px; margin-left: 10px; }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 24px; padding: 16px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+            transition: var(--transition);
+        }
+
+        .balance-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .balance-item:last-child { border: none; }
+        .token-info { display: flex; align-items: center; gap: 10px; }
+        .token-icon { 
+            width: 32px; height: 32px; border-radius: 10px; 
+            display: flex; align-items: center; justify-content: center; font-size: 16px;
+        }
+        .val-text { font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; color: white; }
+
+        .savings-card {
+            background: linear-gradient(165deg, #1e293b 0%, #020617 100%);
+            border-bottom: 3px solid var(--accent-gold);
+        }
+        .big-balance { font-size: 32px; font-weight: 800; color: var(--accent-gold); margin: 8px 0; letter-spacing: -1px; }
+        
+        .timer-pill {
+            background: rgba(251, 191, 36, 0.1); color: var(--accent-gold);
+            padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+        
+        select, input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px; padding: 12px; color: white; font-size: 14px;
+            transition: var(--transition); outline: none;
+        }
+
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button {
+            padding: 14px; border-radius: 16px; border: none; font-weight: 700;
+            cursor: pointer; transition: var(--transition); font-size: 13px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        
+        button:active { transform: scale(0.96); }
+
+        .btn-primary { background: var(--accent-blue); color: #020617; }
+        .btn-gold { background: var(--accent-gold); color: #451a03; }
+        .btn-outline { background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); }
+        
+        #logs { font-size: 11px; text-align: center; color: var(--accent-blue); margin-top: 8px; min-height: 14px; }
+        
+        .btn-exit {
+            background: rgba(255, 59, 48, 0.1); color: #ff3b30;
+            border: 1px solid rgba(255, 59, 48, 0.2);
+            margin-top: 5px; flex-shrink: 0;
+        }
+
+        #enigma-overlay {
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.95); z-index: 5000;
+            justify-content: center; align-items: center; padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .enigma-card {
+            background: #000; border: 2px solid var(--accent-gold);
+            border-radius: 20px; padding: 30px; width: 100%; max-width: 320px;
+            text-align: center; color: var(--accent-gold);
+            box-shadow: 0 0 50px rgba(251, 191, 36, 0.2);
+        }
+        .enigma-card h2 { font-size: 14px; letter-spacing: 3px; margin-bottom: 20px; }
+        #enigma-text { font-size: 15px; line-height: 1.5; margin-bottom: 25px; color: #fff; }
+
+        #admin-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 7, 10, 0.98); z-index: 1000;
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        .admin-card {
+            background: #161c2d; border: 1px solid var(--accent-blue);
+            border-radius: 24px; padding: 25px; width: 100%; max-width: 340px;
+            text-align: center; box-shadow: 0 0 30px rgba(56, 189, 248, 0.2);
+        }
+
+        /* Styles Labyrinthe */
+        canvas { border: 1px solid #1a1a1a; background: #000; cursor: none; margin-top: 10px; max-width: 100%; }
+        .shake { animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(3px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-5px, 0, 0); } 40%, 60% { transform: translate3d(5px, 0, 0); } }
+
+    </style>
+</head>
+<body>
+
+<div id="reward-pop">+1 000 000 €</div>
+
+<div id="enigma-overlay">
+    <div class="enigma-card">
+        <h2>SYSTÈME ENIGMA</h2>
+        <div id="enigma-text">Chargement...</div>
+        <input type="text" id="enigma-input" placeholder="Réponse..." style="text-align: center; margin-bottom: 15px; border-color: var(--accent-gold);">
+        <button class="btn-gold" style="width: 100%;" onclick="checkEnigma()">VÉRIFIER</button>
+        <p id="enigma-error" style="color: #ff3b30; font-size: 11px; margin-top: 10px; display: none;">Erreur de décryptage</p>
+    </div>
+</div>
+
+<div id="admin-overlay">
+    <div class="admin-card">
+        <h2 id="admin-title" style="color: var(--accent-blue); margin-top: 0; font-size: 18px;">INTERNAL ACCESS</h2>
+        
+        <div id="admin-step-1">
+            <input type="password" id="admin-key" style="text-align: center; margin-bottom: 15px;" placeholder="••••••">
+            <button class="btn-primary" style="width: 100%;" onclick="verifyKey()">DÉVERROUILLER</button>
+        </div>
+
+        <div id="admin-maze-container" style="display: none;">
+            <p style="color: #64748b; font-size: 10px; margin-bottom: 5px;">Mémorisez l'invisible. Atteignez l'or.</p>
+            <canvas id="gameCanvas"></canvas>
+        </div>
+
+        <div id="credit-interface" style="display: none; flex-direction: column; gap: 10px;">
+            <select id="target-wallet">
+                <option value="plinko_money">Portefeuille Plinko</option>
+                <option value="blackjack_chips">Jetons Blackjack</option>
+                <option value="roulette_gold">Or Roulette</option>
+                <option value="mines_coins">Pièces Mines</option>
+                <option value="magic_orbs">Orbes Magic Cups</option>
+            </select>
+            <input type="number" id="credit-amount" placeholder="Montant à injecter">
+            <button class="btn-gold" onclick="applyCredit()">INJECTER FONDS</button>
+        </div>
+
+        <button onclick="closeAdmin()" style="background: none; border: none; color: #64748b; font-size: 11px; margin-top: 20px;">ANNULER</button>
+    </div>
+</div>
+
+<div class="bank-wrapper">
+    <header>
+        <p>Verified Secure Connection</p>
+        <h1 id="bank-logo">iBank Pro</h1>
+    </header>
+
+    <div class="section-title">Mes Actifs Disponibles</div>
+    <div class="card">
+        <div class="balance-item"><div class="token-info"><div class="token-icon" style="background: rgba(74, 222, 128, 0.1); color: #4ade80;">€</div><span style="color: white;">Plinko Wallet</span></div><span class="val-text" id="val-plinko">0.00</span></div>
+        <div class="balance-item"><div class="token-info"><div class="token-icon" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8;">💎</div><span style="color: white;">Blackjack Chips</span></div><span class="val-text" id="val-blackjack">0.00</span></div>
+        <div class="balance-item"><div class="token-info"><div class="token-icon" style="background: rgba(251, 191, 36, 0.1); color: #fbbf24;">🟡</div><span style="color: white;">Roulette Gold</span></div><span class="val-text" id="val-roulette">0.00</span></div>
+        <div class="balance-item"><div class="token-info"><div class="token-icon" style="background: rgba(168, 85, 247, 0.1); color: #a855f7;">💣</div><span style="color: white;">Mines Coins</span></div><span class="val-text" id="val-mines">0.00</span></div>
+        <div class="balance-item"><div class="token-info"><div class="token-icon" style="background: rgba(251, 191, 36, 0.1); color: #fcd34d;">🏺</div><span style="color: white;">Magic Orbs</span></div><span class="val-text" id="val-cups">0.00</span></div>
+    </div>
+
+    <div class="section-title">Épargne & Rendement</div>
+    <div class="card savings-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"><b style="font-size: 13px;">Livret de Croissance</b><span id="interest-timer" class="timer-pill">60s</span></div>
+        <div class="big-balance"><span id="val-savings">0.00</span> <span style="font-size: 18px;">€</span></div>
+        <div class="input-group">
+            <select id="save-source">
+                <option value="plinko_money">Source : Plinko (€)</option>
+                <option value="blackjack_chips">Source : Blackjack (💎)</option>
+                <option value="roulette_gold">Source : Roulette (🟡)</option>
+                <option value="mines_coins">Source : Mines (💣)</option>
+                <option value="magic_orbs">Source : Magic Cups (🏺)</option>
+            </select>
+            <input type="number" id="save-amount" placeholder="Montant">
+        </div>
+        <div class="btn-grid">
+            <button class="btn-gold" onclick="deposit()">DÉPOSER</button>
+            <button class="btn-outline" onclick="withdraw()">RETIRER</button>
+        </div>
+    </div>
+
+    <div class="section-title">Gestion des flux</div>
+    <div class="card">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <select id="from-acc"><option value="plinko_money">De Plinko</option><option value="blackjack_chips">De Blackjack</option><option value="roulette_gold">De Roulette</option><option value="mines_coins">De Mines</option><option value="magic_orbs">De Magic Cups</option></select>
+            <select id="to-acc"><option value="blackjack_chips">Vers Blackjack</option><option value="plinko_money">Vers Plinko</option><option value="roulette_gold">Vers Roulette</option><option value="mines_coins">Vers Mines</option><option value="magic_orbs">Vers Magic Cups</option></select>
+        </div>
+        <input type="number" id="trans-amount" placeholder="Code ou Montant" style="margin-bottom: 12px;">
+        <button class="btn-primary" style="width: 100%;" onclick="executeTransfer()">CONFIRMER</button>
+        <div id="logs">Système prêt</div>
+    </div>
+
+    <div id="gold-controls" style="display: none; flex-direction: column; gap: 8px;">
+        <div class="section-title">Personnalisation</div>
+        <div class="btn-grid">
+            <button class="btn-outline" id="btn-to-blue" onclick="setVisualMode('classic')">MODE BLEU</button>
+            <button class="btn-gold" id="btn-to-gold" onclick="setVisualMode('gold')">MODE DORÉ</button>
+        </div>
+    </div>
+
+    <button class="btn-exit" onclick="goBack()">QUITTER</button>
+</div>
+
+<script>
+    const enigmes = [
+        { q: "Plus j'ai de gardiens, moins je suis gardé. Moins j'ai de gardiens, plus je suis gardé. Qui suis-je ?", r: "secret" },
+        { q: "Je ne respire jamais mais j'ai besoin d'air. Je n'ai pas de bouche mais l'eau me tue. Qui suis-je ?", r: "feu" },
+        { q: "Qu'est-ce qui appartient à yenigma mais que les autres utilisent plus que lui ?", r: "nom" },
+        { q: "Je peux voyager dans le monde entier tout en restant dans mon coin. Qui suis-je ?", r: "timbre" },
+        { q: "Je commence par la nuit et je finis par le matin. Qui suis-je ?", r: "n" },
+        { q: "Plus je sèche, plus je deviens mouillée. Qui suis-je ?", r: "serviette" },
+        { q: "On me trouve une fois dans la minute, deux fois dans le moment, mais jamais dans un siècle. Qui suis-je ?", r: "m" },
+        { q: "Je cours mais je n'ai pas de jambes. Qui suis-je ?", r: "riviere" },
+        { q: "Qu'est-ce qui a des dents mais ne peut pas mordre ?", r: "peigne" },
+        { q: "Je suis là au début de l'été et à la fin de la vie. Qui suis-je ?", r: "e" },
+        { q: "Qu'est-ce qui monte et descend sans jamais bouger ?", r: "escalier" },
+        { q: "J'ai des villes mais pas de maisons, des montagnes mais pas d'arbres. Qui suis-je ?", r: "carte" },
+        { q: "Qu'est-ce qui est toujours devant nous mais qu'on ne peut pas voir ?", r: "futur" },
+        { q: "On m'achète pour manger, mais on ne me mange jamais. Qui suis-je ?", r: "assiette" },
+        { q: "Qu'est-ce qui a un oeil mais ne voit rien ?", r: "aiguille" },
+        { q: "Plus on en retire, plus elle devient grande. Qui suis-je ?", r: "fosse" },
+        { q: "Qu'est-ce qui peut remplir une chambre sans prendre de place ?", r: "lumiere" },
+        { q: "Je ne suis pas vivant, mais je peux grandir. Je n'ai pas de poumons, mais j'ai besoin d'air.", r: "feu" },
+        { q: "Si tu me lâches, je casse. Si tu me souris, je te souris en retour.", r: "miroir" },
+        { q: "Quel mot devient plus court quand on lui ajoute deux lettres ?", r: "court" },
+        { q: "J'ai un chapeau mais pas de tête, un pied mais pas de chaussure. Qui suis-je ?", r: "champignon" },
+        { q: "Qu'est-ce qui a des ailes mais ne vole pas, et des pieds mais ne marche pas ?", r: "lit" },
+        { q: "Qu'est-ce qui est noir quand on l'achète, rouge quand on l'utilise et gris quand on le jette ?", r: "charbon" },
+        { q: "Plus j'avance, plus je laisse de traces derrière moi. Qui suis-je ?", r: "pas" },
+        { q: "Qu'est-ce qui tombe sans jamais se blesser ?", r: "nuit" },
+        { q: "J'ai une gorge mais je ne peux pas parler. Qui suis-je ?", r: "bouteille" },
+        { q: "Qu'est-ce qui vole sans ailes et pleure sans yeux ?", r: "nuage" },
+        { q: "Quel est l'animal qui marche à quatre pattes le matin, deux le midi et trois le soir ?", r: "homme" },
+        { q: "Qu'est-ce qui est plein de trous mais retient l'eau ?", r: "eponge" },
+        { q: "Qu'est-ce qui est à toi mais que tes amis utilisent tout le temps ?", r: "nom" },
+        { q: "Je suis le seul fruit dont les graines sont à l'extérieur. Qui suis-je ?", r: "fraise" },
+        { q: "Qu'est-ce qui a un cou mais pas de tête ?", r: "chemise" },
+        { q: "Je ne parle pas, mais je réponds quand on m'appelle. Qui suis-je ?", r: "echo" },
+        { q: "Qu'est-ce qui a 13 cœurs mais aucun organe ?", r: "cartes" },
+        { q: "Plus on est de fous, moins il y en a. De quoi s'agit-il ?", r: "riz" },
+        { q: "Qu'est-ce qui peut faire le tour du monde sans quitter son enveloppe ?", r: "timbre" },
+        { q: "Qu'est-ce qui a des mains mais ne peut rien tenir ?", r: "horloge" },
+        { q: "Si tu m'as, tu veux me partager. Si tu me partages, tu ne m'as plus.", r: "secret" },
+        { q: "Qu'est-ce qui peut voyager partout sans quitter son coin ?", r: "timbre" },
+        { q: "Qu'est-ce qui brise le silence dès qu'on prononce son nom ?", r: "silence" },
+        { q: "Je suis d'eau, mais l'eau me tue. Qui suis-je ?", r: "glacon" },
+        { q: "Qu'est-ce qui a une tête et une queue, mais pas de corps ?", r: "piece" },
+        { q: "Qu'est-ce qui a quatre jambes mais ne peut pas marcher ?", r: "table" },
+        { q: "Je suis léger comme une plume, mais même l'homme le plus fort ne peut pas me tenir longtemps.", r: "souffle" },
+        { q: "Qu'est-ce qui devient blanc quand il est sale ?", r: "tableau" },
+        { q: "Qu'est-ce qui va de Paris à Marseille sans jamais bouger ?", r: "route" },
+        { q: "J'ai deux aiguilles mais je ne couds pas. Qui suis-je ?", r: "montre" },
+        { q: "Qu'est-ce qui appartient à tout le monde mais que personne ne peut perdre ?", r: "ombre" },
+        { q: "Je suis entre la Terre et le Ciel. Qui suis-je ?", r: "et" },
+        { q: "On me tourne pour entrer, mais je ne suis pas une clé. Qui suis-je ?", r: "poignee" }
+    ];
+
+    let currentEnigme = null;
+
+    function checkSecretCode(val) {
+        if (val === "060210") {
+            if (localStorage.getItem('enigma_done') === 'true') {
+                alert("Déjà déverrouillé.");
+                return;
+            }
+            openEnigma();
+        }
+    }
+
+    function openEnigma() {
+        currentEnigme = enigmes[Math.floor(Math.random() * enigmes.length)];
+        document.getElementById('enigma-text').innerText = currentEnigme.q;
+        document.getElementById('enigma-overlay').style.display = 'flex';
+        document.getElementById('enigma-input').value = "";
+    }
+
+    function checkEnigma() {
+        let userAns = document.getElementById('enigma-input').value.toLowerCase().trim();
+        userAns = userAns.replace(/^(le\s|la\s|l\'|un\s|une\s)/g, "");
+        userAns = userAns.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const targetAns = currentEnigme.r.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        if (userAns === targetAns) {
+            localStorage.setItem('enigma_done', 'true');
+            let pB = parseFloat(localStorage.getItem('plinko_money') || 0);
+            localStorage.setItem('plinko_money', pB + 1000000);
+            localStorage.setItem('bank_visual_mode', 'gold');
+            document.getElementById('enigma-overlay').style.display = 'none';
+            setVisualMode('gold');
+            refresh();
+            triggerReward();
+        } else {
+            document.getElementById('enigma-error').style.display = 'block';
+            setTimeout(() => { document.getElementById('enigma-error').style.display = 'none'; }, 2000);
+        }
+    }
+
+    function triggerReward() {
+        const pop = document.getElementById('reward-pop');
+        pop.style.display = 'block';
+        pop.style.animation = 'rewardAnim 2.5s forwards ease-out';
+        setTimeout(() => { pop.style.display = 'none'; pop.style.animation = 'none'; }, 2500);
+    }
+
+    function setVisualMode(mode) {
+        if (mode === 'gold') {
+            document.body.classList.add('gold-mode');
+            localStorage.setItem('bank_visual_mode', 'gold');
+        } else {
+            document.body.classList.remove('gold-mode');
+            localStorage.setItem('bank_visual_mode', 'classic');
+        }
+    }
+
+    let timeLeft = 60;
+    function goBack() { if (window.history.length > 1) window.history.back(); else window.location.href = "index.html"; }
+
+    function refresh() {
+       document.getElementById('val-plinko').innerText = parseFloat(localStorage.getItem('plinko_money') || 1000).toFixed(2);
+       document.getElementById('val-blackjack').innerText = parseFloat(localStorage.getItem('blackjack_chips') || 1000).toFixed(2);
+       document.getElementById('val-roulette').innerText = parseFloat(localStorage.getItem('roulette_gold') || 1000).toFixed(2);
+       document.getElementById('val-mines').innerText = parseFloat(localStorage.getItem('mines_coins') || 500).toFixed(2);
+       document.getElementById('val-cups').innerText = parseFloat(localStorage.getItem('magic_orbs') || 500).toFixed(2);
+       document.getElementById('val-savings').innerText = parseFloat(localStorage.getItem('bank_savings') || 0).toFixed(2);
+       if (localStorage.getItem('enigma_done') === 'true') { document.getElementById('gold-controls').style.display = 'flex'; }
+       setVisualMode(localStorage.getItem('bank_visual_mode') || 'classic');
+    }
+
+    function deposit() {
+        const source = document.getElementById('save-source').value;
+        const amount = parseFloat(document.getElementById('save-amount').value);
+        let balance = parseFloat(localStorage.getItem(source) || 0);
+        let savings = parseFloat(localStorage.getItem('bank_savings') || 0);
+        if (amount > 0 && balance >= amount) {
+           localStorage.setItem(source, (balance - amount));
+           localStorage.setItem('bank_savings', (savings + amount));
+           refresh();
+        }
+    }
+
+    function withdraw() {
+        const dest = document.getElementById('save-source').value;
+        const amount = parseFloat(document.getElementById('save-amount').value);
+        let balance = parseFloat(localStorage.getItem(dest) || 0);
+        let savings = parseFloat(localStorage.getItem('bank_savings') || 0);
+        if (amount > 0 && savings >= amount) {
+           localStorage.setItem(dest, (balance + amount));
+           localStorage.setItem('bank_savings', (savings - amount));
+           refresh();
+        }
+    }
+
+    function executeTransfer() {
+        const inputEl = document.getElementById('trans-amount');
+        const val = inputEl.value;
+        if (val === "3698") { document.getElementById('admin-overlay').style.display = 'flex'; return; }
+        checkSecretCode(val);
+        const from = document.getElementById('from-acc').value;
+        const to = document.getElementById('to-acc').value;
+        const amount = parseFloat(val);
+        if (from === to || isNaN(amount)) return;
+        let fB = parseFloat(localStorage.getItem(from) || 0);
+        let tB = parseFloat(localStorage.getItem(to) || 0);
+        if (fB >= amount) {
+           localStorage.setItem(from, fB - amount);
+           localStorage.setItem(to, tB + amount);
+           refresh();
+        }
+    }
+
+    // --- LOGIQUE ADMIN ET LABYRINTHE ---
+    function verifyKey() {
+        const key = document.getElementById('admin-key').value.toUpperCase();
+        if (key === "PBRMC") {
+            document.getElementById('admin-step-1').style.display = 'none';
+            document.getElementById('admin-maze-container').style.display = 'block';
+            startTheVoidPath();
+        } else {
+            alert("Accès refusé.");
+        }
+    }
+
+    function startTheVoidPath() {
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 250; canvas.height = 250; // Ajusté pour le cadre mobile
+
+        const gridSize = 25; const tileSize = canvas.width / gridSize;
+        let player = { x: 1, y: 1, visualX: 1, visualY: 1 };
+        let goal = { x: gridSize - 2, y: gridSize - 2 };
+        let trail = [];
+
+        const maze = [];
+        for (let y = 0; y < gridSize; y++) {
+            maze[y] = [];
+            for (let x = 0; x < gridSize; x++) {
+                if (x === 0 || x === gridSize - 1 || y === 0 || y === gridSize - 1) maze[y][x] = 1;
+                else maze[y][x] = (Math.sin(x * 0.5) * Math.cos(y * 0.5) > 0.3) ? 1 : 0;
+            }
+        }
+        maze[1][1] = 0; maze[goal.y][goal.x] = 0;
+
+        function update() {
+            player.visualX += (player.x - player.visualX) * 0.22;
+            player.visualY += (player.y - player.visualY) * 0.22;
+            trail.push({x: player.visualX, y: player.visualY});
+            if (trail.length > 12) trail.shift();
+        }
+
+        function draw() {
+            ctx.fillStyle = "black"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            trail.forEach((t, i) => {
+                ctx.globalAlpha = (i / trail.length) * 0.4;
+                ctx.fillStyle = "#00f2ff";
+                ctx.fillRect(t.x * tileSize, t.y * tileSize, tileSize, tileSize);
+            });
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = "#FFD700"; // Goal
+            ctx.fillRect(goal.x * tileSize, goal.y * tileSize, tileSize, tileSize);
+            ctx.fillStyle = "#00f2ff"; // Player
+            ctx.fillRect(player.visualX * tileSize, player.visualY * tileSize, tileSize, tileSize);
+            
+            update();
+            if (document.getElementById('admin-maze-container').style.display === 'block') {
+                requestAnimationFrame(draw);
+            }
+        }
+
+        window.onkeydown = (e) => {
+            let nextX = player.x; let nextY = player.y;
+            if (e.key === 'ArrowUp') nextY--; if (e.key === 'ArrowDown') nextY++;
+            if (e.key === 'ArrowLeft') nextX--; if (e.key === 'ArrowRight') nextX++;
+
+            if (maze[nextY][nextX] === 1) {
+                canvas.classList.add('shake');
+                setTimeout(() => canvas.classList.remove('shake'), 200);
+                player.x = 1; player.y = 1;
+            } else {
+                player.x = nextX; player.y = nextY;
+            }
+            if (player.x === goal.x && player.y === goal.y) {
+                victory();
+            }
+        };
+
+        function victory() {
+            localStorage.setItem('labyrinth_done', 'true');
+            document.getElementById('admin-maze-container').style.display = 'none';
+            document.getElementById('admin-title').innerText = "VULNÉRABILITÉ DÉTECTÉE";
+            document.getElementById('credit-interface').style.display = 'flex';
+        }
+        draw();
+    }
+
+    function applyCredit() {
+        const wallet = document.getElementById('target-wallet').value;
+        const amount = parseFloat(document.getElementById('credit-amount').value);
+        if (amount > 0) {
+            let current = parseFloat(localStorage.getItem(wallet) || 0);
+            localStorage.setItem(wallet, current + amount);
+            refresh();
+            alert("Injection effectuée !");
+            closeAdmin();
+        }
+    }
+
+    function closeAdmin() { 
+        document.getElementById('admin-overlay').style.display = 'none';
+        document.getElementById('admin-step-1').style.display = 'block';
+        document.getElementById('admin-maze-container').style.display = 'none';
+        document.getElementById('credit-interface').style.display = 'none';
+        document.getElementById('admin-title').innerText = "INTERNAL ACCESS";
+    }
+
+    setInterval(() => {
+        let savings = parseFloat(localStorage.getItem('bank_savings') || 0);
+        if (savings > 0) {
+            timeLeft--;
+            if (timeLeft <= 0) {
+                localStorage.setItem('bank_savings', savings * 1.03);
+                refresh(); timeLeft = 60;
+            }
+        } else { timeLeft = 60; }
+        document.getElementById('interest-timer').innerText = timeLeft + "s";
+    }, 1000);
+
+    refresh();
+</script>
+</body>
+</html>

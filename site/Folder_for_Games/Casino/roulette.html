@@ -216,10 +216,8 @@
 
         function updateCasinoMoney() {
             // Recalculer la somme totale du casino
-            if (typeof window.casino_money !== 'undefined') {
-                window.casino_money = (window.plinko_money || 0) + (window.blackjack_chips || 0) + 
-                                    gold + (window.mines_coins || 0) + (window.magic_orbs || 0) + (window.money_save || 0);
-            }
+            sessionStorage.setItem('casino_money', (parseFloat(sessionStorage.getItem('plinko_money')) || 0) + (parseFloat(sessionStorage.getItem('blackjack_chips')) || 0) +
+                                gold + (parseFloat(sessionStorage.getItem('mines_coins')) || 0) + (parseFloat(sessionStorage.getItem('magic_orbs')) || 0) + (parseFloat(sessionStorage.getItem('money_save')) || 0));
         }
 
         const goldDisplay = document.getElementById('gold-display');
@@ -237,7 +235,7 @@
             { canvas: 'canvas-2', rotation: 0, bet: null, spinning: false }
         ];
 
-        gold = window.roulette_gold;
+        gold = parseFloat(sessionStorage.getItem('roulette_gold')) || 0;
 
         let cursorPos = 0;
         let cursorDir = 1;
@@ -376,7 +374,7 @@
             cancelAnimationFrame(qteAnim);
             if (cursorPos >= 45 && cursorPos <= 55) {
                 gold = 100;
-                window.roulette_gold = gold;
+                sessionStorage.setItem('roulette_gold', gold);
                 updateCasinoMoney();
                 alert("COFFRE OUVERT ! Vous récupérez 100 🟡.");
                 qteOverlay.style.display = 'none';

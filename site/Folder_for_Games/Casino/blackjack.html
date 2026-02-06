@@ -159,27 +159,25 @@
         let gameMoneyLoaded = "NA";
         let chips = "NA";
 
-        // Charger l'argent du jeu avec délai pour serveur
-        function loadGameMoney() {
-            setTimeout(() => {
-                if (typeof window[GAME_NAME] === 'number' && window[GAME_NAME] > 0) {
-                    gameMoneyLoaded = window[GAME_NAME];
-                    chips = window[GAME_NAME];
-                } else {
-                    gameMoneyLoaded = 0;
-                    chips = 0;
-                }
-                updateUI();
-            }, 1000); // Attendre 1s minimum avant d'utiliser les données du serveur
-        }
-
-        function updateCasinoMoney() {
-            // Recalculer la somme totale du casino
-            if (typeof window.casino_money !== 'undefined') {
-                window.casino_money = (window.plinko_money || 0) + chips + (window.roulette_gold || 0) + 
-                                    (window.mines_coins || 0) + (window.magic_orbs || 0) + (window.money_save || 0);
+    // Charger l'argent du jeu avec délai pour serveur
+    function loadGameMoney() {
+        setTimeout(() => {
+            if (parseFloat(sessionStorage.getItem(GAME_NAME)) > 0) {
+                gameMoneyLoaded = parseFloat(sessionStorage.getItem(GAME_NAME));
+                chips = parseFloat(sessionStorage.getItem(GAME_NAME));
+            } else {
+                gameMoneyLoaded = 0;
+                chips = 0;
             }
-        }
+            updateUI();
+        }, 1000); // Attendre 1s minimum avant d'utiliser les données du serveur
+    }
+
+    function updateCasinoMoney() {
+        // Recalculer la somme totale du casino
+        sessionStorage.setItem('casino_money', (parseFloat(sessionStorage.getItem('plinko_money')) || 0) + chips + (parseFloat(sessionStorage.getItem('roulette_gold')) || 0) +
+                                (parseFloat(sessionStorage.getItem('mines_coins')) || 0) + (parseFloat(sessionStorage.getItem('magic_orbs')) || 0) + (parseFloat(sessionStorage.getItem('money_save')) || 0));
+    }
 
         let deck = [], playerHand = [], dealerHand = [], gameActive = false;
         let qteSuccessCount = 0;

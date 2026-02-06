@@ -326,9 +326,9 @@
     window.addEventListener('keydown', (e) => {
         inputSequence += e.key.toLowerCase();
         if (inputSequence.includes("wtf")) {
-            if (localStorage.getItem('wtf_unlocked') !== 'true') {
+            if (!window.casino_success.includes('wtf')) {
+                window.casino_success.push('wtf');
                 triggerFlash(); // Correction : Flash ajouté ici
-                localStorage.setItem('wtf_unlocked', 'true');
                 updateAchievementsDisplay();
             }
             inputSequence = "";
@@ -375,9 +375,9 @@
         updateBrightness(0.8);
         document.getElementById('brightness-slider').value = 0.8;
         
-        if (localStorage.getItem('chargeur_rapide_unlocked') !== 'true') {
+        if (!window.casino_success.includes('chargeur-rapide')) {
+            window.casino_success.push('chargeur-rapide');
             triggerFlash();
-            localStorage.setItem('chargeur_rapide_unlocked', 'true');
         }
         updateAchievementsDisplay();
     }
@@ -385,19 +385,31 @@
     function toggleAchievements() { updateAchievementsDisplay(); document.getElementById('achievements-panel').classList.toggle('active'); }
 
     function updateAchievementsDisplay() {
-        const succ = ['wtf', 'chargeur-rapide', 'infinite-money', 'interface-gold', 'happy-birthday', 'light-mode', 'insomniac', 'millionaire', 'billionaire', 'all-in', 'time-traveler', 'make-it-rain', 'maman', 'darkweb'];
-        const keys = ['wtf_unlocked', 'chargeur_rapide_unlocked', 'labyrinth_done', 'enigma_done', 'birthday_done', 'light_mode_unlocked', 'insomniac_unlocked', 'millionaire_unlocked', 'billionaire_unlocked', 'all_in_roulette', 'time_traveler_unlocked', 'make_it_rain_unlocked', 'maman_call_unlocked', 'darkweb_unlocked'];
-        keys.forEach((k, i) => {
-            if (localStorage.getItem(k) === 'true') {
-                const el = document.getElementById('ach-' + succ[i]);
-                if(el) { 
-                    el.classList.remove('locked'); 
-                    el.classList.remove('hidden'); 
-                    el.querySelector('.ach-status').textContent = '✅'; 
-                }
-            }
-        });
+    if (!Array.isArray(window.casino_success)) {
+        try {
+            window.casino_success = JSON.parse(window.casino_success);
+        } catch {
+            console.warn("window.casino_success n'est pas un tableau, abandon.");
+            return;
+        }
     }
+    console.log("liste actuelle succes :",window.casino_success);
+
+    const succ = ['wtf', 'chargeur-rapide', 'infinite-money', 'interface-gold', 'happy-birthday', 'light-mode', 'insomniac', 'millionaire', 'billionaire', 'all-in', 'time-traveler', 'make-it-rain', 'maman', 'darkweb'];
+    const keys = ['wtf_unlocked', 'chargeur_rapide_unlocked', 'labyrinth_done', 'enigma_done', 'birthday_done', 'light_mode_unlocked', 'insomniac_unlocked', 'millionaire_unlocked', 'billionaire_unlocked', 'all_in_roulette', 'time_traveler_unlocked', 'make_it_rain_unlocked', 'maman_call_unlocked', 'darkweb_unlocked'];
+
+    keys.forEach((k, i) => {
+       if (window.casino_success.includes(succ[i])) {
+            const el = document.getElementById('ach-' + succ[i]);
+            if (el) {
+                el.classList.remove('locked');
+                el.classList.remove('hidden');
+                el.querySelector('.ach-status').textContent = '✅';
+            }
+        }
+    }); 
+    }
+
 
     function toggleAirplane() {
         const signal = document.getElementById('stat-signal');
@@ -418,9 +430,9 @@
         if (isAirplaneMode && currentBrightness === 0 && currentTheme === 'dark') {
             if (!isDarkWebLocked) {
                 isDarkWebLocked = true;
-                if (localStorage.getItem('darkweb_unlocked') !== 'true') {
+                if (!window.casino_success.includes('darkweb')) {
+                    window.casino_success.push('darkweb');
                     triggerFlash();
-                    localStorage.setItem('darkweb_unlocked', 'true');
                     updateAchievementsDisplay();
                 }
             }
@@ -443,7 +455,11 @@
     }
     function triggerCall() {
         document.getElementById('call-screen').style.display = 'flex';
-        if (localStorage.getItem('maman_call_unlocked') !== 'true') { triggerFlash(); localStorage.setItem('maman_call_unlocked', 'true'); updateAchievementsDisplay(); }
+        if (!window.casino_success.includes('maman')) {
+            window.casino_success.push('maman');
+            triggerFlash();
+            updateAchievementsDisplay();
+        }
     }
     function endCall() { document.getElementById('call-screen').style.display = 'none'; }
 
@@ -455,7 +471,7 @@
     }
 
     function triggerMakeItRain() {
-        if (localStorage.getItem('make_it_rain_unlocked') !== 'true') { triggerFlash(); localStorage.setItem('make_it_rain_unlocked', 'true'); updateAchievementsDisplay(); }
+        if (!window.casino_success.includes('make-it-rain')) { triggerFlash(); window.casino_success.push('make-it-rain'); updateAchievementsDisplay(); }
         const screen = document.querySelector('.screen');
         const emojis = ['💎', '💵', '💰', '💸'];
         let rainInterval = setInterval(() => {
@@ -471,7 +487,7 @@
     function triggerTimeTravel() {
         isTimeGlitching = true;
         const timeDisplay = document.getElementById('stat-time');
-        if (localStorage.getItem('time_traveler_unlocked') !== 'true') { triggerFlash(); localStorage.setItem('time_traveler_unlocked', 'true'); updateAchievementsDisplay(); }
+        if (!window.casino_success.includes('time-traveler')) { triggerFlash(); window.casino_success.push('time-traveler'); updateAchievementsDisplay(); }
         let count = 0;
         const glitchInterval = setInterval(() => {
             timeDisplay.textContent = `${String(Math.floor(Math.random() * 24)).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`;
@@ -491,8 +507,10 @@
         islandClicks++; clearTimeout(islandTimer);
         islandTimer = setTimeout(() => { islandClicks = 0; }, 2000);
         if (islandClicks === 5) { 
-            if (localStorage.getItem('birthday_done') !== 'true') triggerFlash();
-            localStorage.setItem('birthday_done', 'true'); showSecretNotif(); islandClicks = 0; 
+            if (!window.casino_success.includes('happy-birthday')) {
+                triggerFlash();
+                window.casino_success.push('happy-birthday');
+            }
         }
     }
     function showSecretNotif() { const notif = document.getElementById('notif-maman'); notif.classList.add('show'); setTimeout(() => { notif.classList.remove('show'); }, 5000); }
@@ -516,12 +534,14 @@
         currentTheme = mode;
         if(mode === 'light') { 
             document.body.classList.add('light-mode'); 
-            if (localStorage.getItem('light_mode_unlocked') !== 'true') { triggerFlash(); localStorage.setItem('light_mode_unlocked', 'true'); }
+            if (!window.casino_success.includes('light-mode')) { triggerFlash(); window.casino_success.push('light-mode'); }
         }
         else { document.body.classList.remove('light-mode'); }
         checkDarkWeb();
     }
     
+    
+    setInterval(updateAchievementsDisplay, 3000)
     updateBrightness(0.8);
     updateAchievementsDisplay(); 
 </script>

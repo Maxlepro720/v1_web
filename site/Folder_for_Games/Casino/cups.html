@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Magic Cups - Royal Edition</title>
+    <script src="script_save.js"></script>
     <style>
         :root {
             --gold: #fcd34d;
@@ -215,6 +216,33 @@
 </div>
 
 <script>
+    // --- SYSTÈME DE GESTION D'ARGENT CASINO ---
+    const GAME_NAME = 'magic_orbs';
+    let gameMoneyLoaded = "NA";
+    let gameBalance = "NA";
+
+    // Charger l'argent du jeu avec délai pour serveur
+    function loadGameMoney() {
+        setTimeout(() => {
+            if (typeof window[GAME_NAME] === 'number' && window[GAME_NAME] > 0) {
+                gameMoneyLoaded = window[GAME_NAME];
+                gameBalance = window[GAME_NAME];
+            } else {
+                gameMoneyLoaded = 0;
+                gameBalance = 0;
+            }
+            updateWallet(true);
+        }, 1000); // Attendre 1s minimum avant d'utiliser les données du serveur
+    }
+
+    function updateCasinoMoney() {
+        // Recalculer la somme totale du casino
+        if (typeof window.casino_money !== 'undefined') {
+            window.casino_money = (window.plinko_money || 0) + (window.blackjack_chips || 0) + 
+                                (window.roulette_gold || 0) + (window.mines_coins || 0) + gameBalance + (window.money_save || 0);
+        }
+    }
+
     let ballPos = 1;
     let isMixing = false;
     let gameActive = false;
@@ -230,18 +258,19 @@
     let isPressing = false;
 
     function getWallet() {
-        let bal = localStorage.getItem('magic_orbs');
-        if (bal === null) { localStorage.setItem('magic_orbs', '500'); return 500; }
-        return parseFloat(bal);
+        return gameBalance;
     }
 
     function updateWallet(forceCheckQTE = false) {
-        let balance = getWallet();
-        document.getElementById('wallet').innerText = balance.toFixed(2);
+        if (gameMoneyLoaded === "NA") {
+            document.getElementById('wallet').innerText = "NA";
+        } else {
+            document.getElementById('wallet').innerText = gameBalance.toFixed(2);
+        }
         
-        if (forceCheckQTE && balance <= 0 && !isMixing && !gameActive) {
+        if (forceCheckQTE && gameBalance <= 0 && !isMixing && !gameActive) {
             document.getElementById('qte-btn').style.display = 'block';
-        } else if (balance > 0) {
+        } else if (gameBalance > 0) {
             document.getElementById('qte-btn').style.display = 'none';
         }
     }
@@ -256,8 +285,10 @@
         }
 
         document.getElementById('qte-btn').style.display = 'none';
-        localStorage.setItem('magic_orbs', (wallet - bet).toFixed(2));
-        updateWallet(false); 
+        gameBalance = wallet - bet;
+        window.magic_orbs = gameBalance;
+        updateCasinoMoney();
+        updateWallet(false);
         currentRound = 1;
         speed = 400;
         startNewRound();
@@ -337,7 +368,9 @@
                 }, 1000);
             } else {
                 const bet = parseFloat(document.getElementById('bet-amount').value);
-                localStorage.setItem('magic_orbs', (getWallet() + (bet * 5)).toFixed(2));
+                gameBalance = getWallet() + (bet * 5);
+                window.magic_orbs = gameBalance;
+                updateCasinoMoney();
                 document.getElementById('status').innerText = "💰 JACKPOT X5 !";
                 endGame();
             }
@@ -404,7 +437,9 @@
 
         if (qteScore <= 0) {
             qteActive = false;
-            localStorage.setItem('magic_orbs', 100);
+            gameBalance = 100;
+            window.magic_orbs = gameBalance;
+            updateCasinoMoney();
             alert("L'Oracle vous a accordé une seconde chance. +100 MO");
             document.getElementById('qte-overlay').style.display = 'none';
             updateWallet(false);
@@ -414,6 +449,8 @@
     }
 
     updateWallet(true);
+    // Charger l'argent du jeu à l'initialisation
+    loadGameMoney();
 </script>
 </body>
 </html>

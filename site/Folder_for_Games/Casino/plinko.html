@@ -220,13 +220,38 @@
     </div>
 
     <script>
+        // --- SYSTÈME DE GESTION D'ARGENT CASINO ---
+        const GAME_NAME = 'plinko_money';
+        let gameMoneyLoaded = "NA";
+        let balance = "NA";
+
+        // Charger l'argent du jeu avec délai pour serveur
+        function loadGameMoney() {
+            setTimeout(() => {
+                if (typeof window[GAME_NAME] === 'number' && window[GAME_NAME] > 0) {
+                    gameMoneyLoaded = window[GAME_NAME];
+                    balance = window[GAME_NAME];
+                } else {
+                    gameMoneyLoaded = 0;
+                    balance = 0;
+                }
+                updateBalanceDisplay();
+            }, 1000); // Attendre 1s minimum avant d'utiliser les données du serveur
+        }
+
+        function updateCasinoMoney() {
+            // Recalculer la somme totale du casino
+            if (typeof window.casino_money !== 'undefined') {
+                window.casino_money = balance + (window.blackjack_chips || 0) + 
+                                    (window.roulette_gold || 0) + (window.mines_coins || 0) + (window.magic_orbs || 0) + (window.money_save || 0);
+            }
+        }
+
         const canvas = document.getElementById('plinkoCanvas');
         const ctx = canvas.getContext('2d');
         const balanceEl = document.getElementById('balance-display');
         const betInput = document.getElementById('bet-input');
         const playBtn = document.getElementById('play-btn');
-
-        let balance = parseFloat(localStorage.getItem('plinko_money')) || 1000.00;
         let balls = [];
         let pegs = [];
         let particles = [];
@@ -240,8 +265,12 @@
         let qteSpeed = 3;
 
         function updateBalanceDisplay() {
-            balanceEl.innerText = balance.toFixed(2) + " €";
-            localStorage.setItem('plinko_money', balance.toString());
+            if (gameMoneyLoaded === "NA") {
+                balanceEl.innerText = "NA €";
+            } else {
+                balanceEl.innerText = balance.toFixed(2) + " €";
+            }
+            updateCasinoMoney();
             if (balance <= 0 && balls.length === 0) {
                 setTimeout(() => { if(balance <= 0 && balls.length === 0) showQTE(); }, 500);
             } else {
@@ -272,7 +301,13 @@
             if (diff < 25) {
                 qteSuccessCount++; qteSpeed += 1.3;
                 document.getElementById('qte-status').innerText = `ÉTAPE : ${qteSuccessCount} / 3`;
-                if (qteSuccessCount >= 3) { balance = 10.00; updateBalanceDisplay(); hideQTE(); } else { resetLock(); }
+                if (qteSuccessCount >= 3) { 
+                    balance = 10.00; 
+                    window.plinko_money = balance;
+                    updateCasinoMoney();
+                    updateBalanceDisplay(); 
+                    hideQTE(); 
+                } else { resetLock(); }
             } else {
                 qteSuccessCount = 0; qteSpeed = 3;
                 document.getElementById('qte-status').innerText = "ÉCHEC ! recommence : 0 / 3";
@@ -385,6 +420,8 @@
                     const winAmount = b.bet * m;
                     
                     balance += winAmount;
+                    window.plinko_money = balance;
+                    updateCasinoMoney();
                     multipliersStatus[safeIdx].scale = 1.3;
                     multipliersStatus[safeIdx].flash = 1;
                     particles.push({ x: b.x, y: bottomY, amount: winAmount.toFixed(2), life: 1 });
@@ -397,7 +434,10 @@
         playBtn.addEventListener('click', () => {
             const bet = parseFloat(betInput.value);
             if (balance >= bet && bet > 0) {
-                balance -= bet; updateBalanceDisplay();
+                balance -= bet; 
+                window.plinko_money = balance;
+                updateCasinoMoney();
+                updateBalanceDisplay();
                 const spawnY = startY + (1.5 * ySpace);
                 const left = width / 2 - (1.5 / 2) * xSpace;
                 const right = width / 2 + (1.5 / 2) * xSpace;
@@ -406,6 +446,8 @@
         });
 
         initBoard(); updateBalanceDisplay(); draw();
+        // Charger l'argent du jeu à l'initialisation
+        loadGameMoney();
     </script>
 </body>
 </html>

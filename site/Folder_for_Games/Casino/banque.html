@@ -13,6 +13,9 @@
             --text-main: #f8fafc;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+    </style>
+    <script src="script_save.js"></script>
+    <style>
 
         /* --- MODE GOLD DYNAMIQUE --- */
         body.gold-mode {
@@ -38,7 +41,6 @@
 
         body.gold-mode header h1 { 
             background: linear-gradient(135deg, #fff 30%, #fbbf24); 
-            -webkit-background-clip: text; 
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -79,8 +81,7 @@
         header { text-align: left; padding: 5px 5px 10px 5px; }
         header h1 { 
             font-size: 28px; margin: 0; font-weight: 800;
-            background: linear-gradient(135deg, #fff 30%, var(--accent-blue));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background: linear-gradient(135deg, #fff 30%, var(--accent-blue)); -webkit-text-fill-color: transparent;
         }
         header p { font-size: 10px; opacity: 0.4; text-transform: uppercase; letter-spacing: 2px; margin: 2px 0; }
 
@@ -184,6 +185,7 @@
         @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(3px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-5px, 0, 0); } 40%, 60% { transform: translate3d(5px, 0, 0); } }
 
     </style>
+    <script src="script_save.js"></script>
 </head>
 <body>
 
@@ -283,10 +285,11 @@
         </div>
     </div>
 
-    <button class="btn-exit" onclick="goBack()">QUITTER</button>
+    <button class="btn-exit" onclick="window.location.href='hub.html'">QUITTER</button>
 </div>
 
 <script>
+    // --- ENIGMES ---
     const enigmes = [
         { q: "Plus j'ai de gardiens, moins je suis gardé. Moins j'ai de gardiens, plus je suis gardé. Qui suis-je ?", r: "secret" },
         { q: "Je ne respire jamais mais j'ai besoin d'air. Je n'ai pas de bouche mais l'eau me tue. Qui suis-je ?", r: "feu" },
@@ -342,6 +345,30 @@
 
     let currentEnigme = null;
 
+    // --- INITIALISATION DES VARIABLES GLOBALES DES JEUX ---
+    window.money_save = 0;
+    window.plinko_money = 0;
+    window.blackjack_chips = 0;
+    window.roulette_gold = 0;
+    window.mines_coins = 0;
+    window.magic_orbs = 0;
+    // window.casino_money will be set later
+
+    // Listen for casino money loaded event
+    window.addEventListener('casinoMoneyLoaded', () => {
+        distributeMoney();
+        refresh();
+    });
+
+    // On page unload, add savings to total casino money
+    window.addEventListener('beforeunload', () => {
+        window.casino_money += window.money_save;
+        // Save the updated casino money
+        if (typeof saveData === 'function') {
+            saveData();
+        }
+    });
+
     function checkSecretCode(val) {
         if (val === "060210") {
             if (localStorage.getItem('enigma_done') === 'true') {
@@ -367,8 +394,8 @@
 
         if (userAns === targetAns) {
             localStorage.setItem('enigma_done', 'true');
-            let pB = parseFloat(localStorage.getItem('plinko_money') || 0);
-            localStorage.setItem('plinko_money', pB + 1000000);
+            window.plinko_money += 1000000;
+            updateCasinoMoney();
             localStorage.setItem('bank_visual_mode', 'gold');
             document.getElementById('enigma-overlay').style.display = 'none';
             setVisualMode('gold');
@@ -400,25 +427,57 @@
     let timeLeft = 60;
     function goBack() { if (window.history.length > 1) window.history.back(); else window.location.href = "index.html"; }
 
+    function distributeMoney() {
+        if (typeof window.casino_money === 'number' && window.casino_money > 0) {
+            const equalShare = window.casino_money / 5;
+            window.plinko_money = equalShare;
+            window.blackjack_chips = equalShare;
+            window.roulette_gold = equalShare;
+            window.mines_coins = equalShare;
+            window.magic_orbs = equalShare;
+        }
+    }
+
+    function updateCasinoMoney() {
+        window.casino_money = window.plinko_money + window.blackjack_chips + window.roulette_gold + window.mines_coins + window.magic_orbs + window.money_save;
+    }
+
     function refresh() {
-       document.getElementById('val-plinko').innerText = parseFloat(localStorage.getItem('plinko_money') || 1000).toFixed(2);
-       document.getElementById('val-blackjack').innerText = parseFloat(localStorage.getItem('blackjack_chips') || 1000).toFixed(2);
-       document.getElementById('val-roulette').innerText = parseFloat(localStorage.getItem('roulette_gold') || 1000).toFixed(2);
-       document.getElementById('val-mines').innerText = parseFloat(localStorage.getItem('mines_coins') || 500).toFixed(2);
-       document.getElementById('val-cups').innerText = parseFloat(localStorage.getItem('magic_orbs') || 500).toFixed(2);
-       document.getElementById('val-savings').innerText = parseFloat(localStorage.getItem('bank_savings') || 0).toFixed(2);
-       if (localStorage.getItem('enigma_done') === 'true') { document.getElementById('gold-controls').style.display = 'flex'; }
-       setVisualMode(localStorage.getItem('bank_visual_mode') || 'classic');
+        // Check if casino_money is loaded but money not distributed yet
+        if (typeof window.casino_money === 'number' && window.casino_money > 0 && window.plinko_money === 0 && window.blackjack_chips === 0 && window.roulette_gold === 0 && window.mines_coins === 0 && window.magic_orbs === 0) {
+            distributeMoney();
+        }
+
+        // --- Recalcul du total casino ---
+        window.casino_money = window.plinko_money + window.blackjack_chips + window.roulette_gold + window.mines_coins + window.magic_orbs + window.money_save;
+
+        if (typeof window.casino_money === 'number' && window.casino_money > 0) {
+            document.getElementById('val-plinko').innerText = window.plinko_money.toFixed(2);
+            document.getElementById('val-blackjack').innerText = window.blackjack_chips.toFixed(2);
+            document.getElementById('val-roulette').innerText = window.roulette_gold.toFixed(2);
+            document.getElementById('val-mines').innerText = window.mines_coins.toFixed(2);
+            document.getElementById('val-cups').innerText = window.magic_orbs.toFixed(2);
+        } else {
+            document.getElementById('val-plinko').innerText = 'NA';
+            document.getElementById('val-blackjack').innerText = 'NA';
+            document.getElementById('val-roulette').innerText = 'NA';
+            document.getElementById('val-mines').innerText = 'NA';
+            document.getElementById('val-cups').innerText = 'NA';
+        }
+        document.getElementById('val-savings').innerText = window.money_save.toFixed(2);
+        if (localStorage.getItem('enigma_done') === 'true') { document.getElementById('gold-controls').style.display = 'flex'; }
+        setVisualMode(localStorage.getItem('bank_visual_mode') || 'classic');
     }
 
     function deposit() {
         const source = document.getElementById('save-source').value;
         const amount = parseFloat(document.getElementById('save-amount').value);
-        let balance = parseFloat(localStorage.getItem(source) || 0);
-        let savings = parseFloat(localStorage.getItem('bank_savings') || 0);
+        let balance = window[source];
+        let savings = window.money_save;
         if (amount > 0 && balance >= amount) {
-           localStorage.setItem(source, (balance - amount));
-           localStorage.setItem('bank_savings', (savings + amount));
+           window[source] = balance - amount;
+           window.money_save = savings + amount;
+           updateCasinoMoney();
            refresh();
         }
     }
@@ -426,15 +485,15 @@
     function withdraw() {
         const dest = document.getElementById('save-source').value;
         const amount = parseFloat(document.getElementById('save-amount').value);
-        let balance = parseFloat(localStorage.getItem(dest) || 0);
-        let savings = parseFloat(localStorage.getItem('bank_savings') || 0);
+        let balance = window[dest];
+        let savings = window.money_save;
         if (amount > 0 && savings >= amount) {
-           localStorage.setItem(dest, (balance + amount));
-           localStorage.setItem('bank_savings', (savings - amount));
+           window[dest] = balance + amount;
+           window.money_save = savings - amount;
+           updateCasinoMoney();
            refresh();
         }
     }
-
     function executeTransfer() {
         const inputEl = document.getElementById('trans-amount');
         const val = inputEl.value;
@@ -444,11 +503,12 @@
         const to = document.getElementById('to-acc').value;
         const amount = parseFloat(val);
         if (from === to || isNaN(amount)) return;
-        let fB = parseFloat(localStorage.getItem(from) || 0);
-        let tB = parseFloat(localStorage.getItem(to) || 0);
+        let fB = window[from];
+        let tB = window[to];
         if (fB >= amount) {
-           localStorage.setItem(from, fB - amount);
-           localStorage.setItem(to, tB + amount);
+           window[from] = fB - amount;
+           window[to] = tB + amount;
+           updateCasinoMoney();
            refresh();
         }
     }
@@ -468,7 +528,7 @@
     function startTheVoidPath() {
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = 250; canvas.height = 250; // Ajusté pour le cadre mobile
+        canvas.width = 250; canvas.height = 250;
 
         const gridSize = 25; const tileSize = canvas.width / gridSize;
         let player = { x: 1, y: 1, visualX: 1, visualY: 1 };
@@ -500,9 +560,9 @@
                 ctx.fillRect(t.x * tileSize, t.y * tileSize, tileSize, tileSize);
             });
             ctx.globalAlpha = 1;
-            ctx.fillStyle = "#FFD700"; // Goal
+            ctx.fillStyle = "#FFD700"; 
             ctx.fillRect(goal.x * tileSize, goal.y * tileSize, tileSize, tileSize);
-            ctx.fillStyle = "#00f2ff"; // Player
+            ctx.fillStyle = "#00f2ff"; 
             ctx.fillRect(player.visualX * tileSize, player.visualY * tileSize, tileSize, tileSize);
             
             update();
@@ -541,8 +601,8 @@
         const wallet = document.getElementById('target-wallet').value;
         const amount = parseFloat(document.getElementById('credit-amount').value);
         if (amount > 0) {
-            let current = parseFloat(localStorage.getItem(wallet) || 0);
-            localStorage.setItem(wallet, current + amount);
+            window[wallet] += amount;
+            updateCasinoMoney();
             refresh();
             alert("Injection effectuée !");
             closeAdmin();
@@ -558,12 +618,15 @@
     }
 
     setInterval(() => {
-        let savings = parseFloat(localStorage.getItem('bank_savings') || 0);
+        let savings = window.money_save;
         if (savings > 0) {
             timeLeft--;
             if (timeLeft <= 0) {
-                localStorage.setItem('bank_savings', savings * 1.03);
-                refresh(); timeLeft = 60;
+                savings *= 1.03;
+                window.money_save = savings;
+                localStorage.setItem('bank_savings', savings);
+                refresh(); 
+                timeLeft = 60;
             }
         } else { timeLeft = 60; }
         document.getElementById('interest-timer').innerText = timeLeft + "s";
@@ -571,5 +634,8 @@
 
     refresh();
 </script>
+
+
+
 </body>
 </html>

@@ -1,3 +1,8 @@
+function updateCasinoMoney() {
+    // --- Recalcul du total casino ---
+    window.casino_money = (window.plinko_money || 0) + (window.blackjack_chips || 0) + (window.roulette_gold || 0) + (window.mines_coins || 0) + (window.magic_orbs || 0) + (window.money_save || 0);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 
     // --- CONFIGURATION ---
@@ -6,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Initialisation des variables globales
     window.game_money = 0;
-    window.game_success = {};
+    window.game_success = [];
 
     // --- INTERFACE (Minuteur) ---
     const timerBox = document.createElement('div');
@@ -26,36 +31,53 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     document.body.appendChild(timerBox);
 
-    let timeLeft = 15;
+    let timeLeft = 5;
 
     // --- FONCTIONS DE COMMUNICATION ---
 
     async function fetchData() {
-        try {
-            const response = await fetch(`${API_BASE_URL}/get_casino_data?username=${CURRENT_USER}`);
-            const result = await response.json();
+    try {
+        const response = await fetch(`${API_BASE_URL}/get_casino_data?username=${CURRENT_USER}`);
+        const result = await response.json();
 
-            if (result.status === "success") {
-                window.casino_money = result.data.money;
-                window.casino_success = result.data.success;
-                console.log("Données récupérées :", result.data);
+        if (result.status === "success") {
+            window.casino_money = Math.round(result.data.money);
+
+            try {
+                window.casino_success = Array.isArray(result.data.success)
+                    ? result.data.success
+                    : JSON.parse(result.data.success);
+            } catch (e) {
+                window.casino_success = [];
+                console.error("Impossible de parser casino_success :", result.data.success);
             }
-        } catch (err) {
-            console.error("Erreur lors de la récupération :", err);
+
+            console.log("money :", window.casino_money);
+            console.log("success :", window.casino_success);
+            console.log("Données récupérées :", result.data);
+
+            // Dispatch event to distribute money
+            window.dispatchEvent(new CustomEvent('casinoMoneyLoaded'));
         }
+    } catch (err) {
+        console.error("Erreur lors de la récupération :", err);
     }
+}
+
 
     async function saveData() {
-        try {
-            await fetch(`${API_BASE_URL}/update_casino_money`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: CURRENT_USER,
-                    money: window.casino_money
-                })
-            });
-
+    try {
+        // Sauvegarde de l'argent
+        await fetch(`${API_BASE_URL}/update_casino_money`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: CURRENT_USER,
+                money: window.casino_money
+            })
+        });
+        // Sauvegarde des succès uniquement si le tableau n'est pas vide
+        if (Array.isArray(window.casino_success) && window.casino_success.length > 0) {
             await fetch(`${API_BASE_URL}/update_casino_success`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -64,12 +86,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     success: window.casino_success
                 })
             });
-
-            console.log("Sauvegarde automatique effectuée.");
-        } catch (err) {
-            console.error("Erreur lors de la sauvegarde :", err);
         }
+
+        console.log("Sauvegarde automatique effectuée.");
+    } catch (err) {
+        console.error("Erreur lors de la sauvegarde :", err);
     }
+}
 
     fetchData();
 
@@ -78,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (timeLeft <= 0) {
             saveData();
-            timeLeft = 15;
+            timeLeft = 5;
         } else {
             timeLeft--;
         }

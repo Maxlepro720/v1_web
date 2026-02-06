@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Triple Roulette Gold - Shadow Chest</title>
+    <script src="script_save.js"></script>
     <style>
         body {
             background-color: #0a0f0d;
@@ -194,6 +195,33 @@
     </div>
 
     <script>
+        // --- SYSTÈME DE GESTION D'ARGENT CASINO ---
+        const GAME_NAME = 'roulette_gold';
+        let gameMoneyLoaded = "NA";
+        let gold = "NA";
+
+        // Charger l'argent du jeu avec délai pour serveur
+        function loadGameMoney() {
+            setTimeout(() => {
+                if (typeof window[GAME_NAME] === 'number' && window[GAME_NAME] > 0) {
+                    gameMoneyLoaded = window[GAME_NAME];
+                    gold = window[GAME_NAME];
+                } else {
+                    gameMoneyLoaded = 0;
+                    gold = 0;
+                }
+                updateUI();
+            }, 1000); // Attendre 1s minimum avant d'utiliser les données du serveur
+        }
+
+        function updateCasinoMoney() {
+            // Recalculer la somme totale du casino
+            if (typeof window.casino_money !== 'undefined') {
+                window.casino_money = (window.plinko_money || 0) + (window.blackjack_chips || 0) + 
+                                    gold + (window.mines_coins || 0) + (window.magic_orbs || 0) + (window.money_save || 0);
+            }
+        }
+
         const goldDisplay = document.getElementById('gold-display');
         const recoveryBtn = document.getElementById('recovery-btn');
         const qteOverlay = document.getElementById('qte-overlay');
@@ -209,8 +237,7 @@
             { canvas: 'canvas-2', rotation: 0, bet: null, spinning: false }
         ];
 
-        let savedGold = localStorage.getItem('roulette_gold');
-        let gold = (savedGold === null) ? 1000 : parseFloat(savedGold);
+        gold = window.roulette_gold;
 
         let cursorPos = 0;
         let cursorDir = 1;
@@ -218,11 +245,15 @@
         let qteAnim;
 
         function updateUI() {
-            goldDisplay.innerText = gold.toLocaleString();
-            localStorage.setItem('roulette_gold', gold);
-            
+            if (gameMoneyLoaded === "NA") {
+                goldDisplay.innerText = "NA";
+            } else {
+                goldDisplay.innerText = gold.toLocaleString();
+            }
+            updateCasinoMoney();
+
             const stillSpinning = wheels.some(w => w.spinning === true);
-            
+
             if (!stillSpinning && gold <= 0) {
                 recoveryBtn.style.display = 'block';
                 gameArea.style.filter = 'grayscale(1) blur(3px)';
@@ -236,23 +267,25 @@
         function checkAllInSuccess(stakedAmount) {
             // Liste des clés de tous tes portefeuilles
             const otherWallets = [
-                'plinko_money', 
-                'blackjack_chips', 
-                'mines_coins', 
-                'magic_orbs', 
-                'bank_savings'
+                'plinko_money',
+                'blackjack_chips',
+                'mines_coins',
+                'magic_orbs',
+                'money_save'
             ];
-            
+
             // On vérifie si les autres comptes sont vides (0 ou n'existent pas)
             let totalElsewhere = 0;
             otherWallets.forEach(key => {
-                totalElsewhere += parseFloat(localStorage.getItem(key)) || 0;
+                totalElsewhere += parseFloat(window[key]) || 0;
             });
 
             // Condition : Les autres comptes sont à 0 ET la mise est égale au solde actuel de la roulette
             if (totalElsewhere === 0 && stakedAmount >= gold && gold > 0) {
-                localStorage.setItem('all_in_roulette', 'true');
-                console.log("SUCCÈS DÉBLOQUÉ : ALL-IN TOTAL !");
+                if (!window.casino_success.includes('all-in')) {
+                    window.casino_success.push('all-in');
+                    console.log("SUCCÈS DÉBLOQUÉ : ALL-IN TOTAL !");
+                }
             }
         }
 
@@ -343,6 +376,8 @@
             cancelAnimationFrame(qteAnim);
             if (cursorPos >= 45 && cursorPos <= 55) {
                 gold = 100;
+                window.roulette_gold = gold;
+                updateCasinoMoney();
                 alert("COFFRE OUVERT ! Vous récupérez 100 🟡.");
                 qteOverlay.style.display = 'none';
                 updateUI();
@@ -359,6 +394,8 @@
 
         drawWheels();
         updateUI();
+        // Charger l'argent du jeu à l'initialisation
+        loadGameMoney();
     </script>
 </body>
 </html>

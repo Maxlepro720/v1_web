@@ -210,6 +210,33 @@
         const friction = 0.96;      
         const pegBounciness = 0.35; 
 
+        // --- SYSTÈME DE GESTION D'ARGENT CASINO ---
+        const GAME_NAME = 'plinko_money';
+        let gameMoneyLoaded = "NA";
+        let money = "NA";
+
+        // Charger l'argent du jeu avec délai pour serveur
+        function loadGameMoney() {
+            setTimeout(() => {
+                if (typeof window[GAME_NAME] === 'number' && window[GAME_NAME] > 0) {
+                    gameMoneyLoaded = window[GAME_NAME];
+                    money = window[GAME_NAME];
+                } else {
+                    gameMoneyLoaded = 0;
+                    money = 0;
+                }
+                updateUI();
+            }, 1000); // Attendre 1s minimum avant d'utiliser les données du serveur
+        }
+
+        function updateCasinoMoney() {
+            // Recalculer la somme totale du casino
+            if (typeof window.casino_money !== 'undefined') {
+                window.casino_money = money + (window.blackjack_chips || 0) + 
+                                    (window.roulette_gold || 0) + (window.mines_coins || 0) + (window.magic_orbs || 0) + (window.money_save || 0);
+            }
+        }
+
         const multipliers = [
             { label: "x5", val: 5, type: "mult" },
             { label: "x2", val: 2, type: "mult" },
@@ -220,8 +247,6 @@
             { label: "x5", val: 5, type: "mult" }
         ];
         
-        // Synchronisation avec ton système global
-        let money = parseFloat(localStorage.getItem('plinko_money')) || 1000;
         let stockPrice = parseFloat(localStorage.getItem('plinko_stock')) || 150.00;
         let balls = [];
         let pegs = [];
@@ -256,8 +281,13 @@
 
         function updateUI() {
             if (money < -100) money = -100;
-            moneyDisplay.innerText = Math.floor(money).toLocaleString();
+            if (gameMoneyLoaded === "NA") {
+                moneyDisplay.innerText = "NA";
+            } else {
+                moneyDisplay.innerText = Math.floor(money).toLocaleString();
+            }
             stockDisplay.innerText = stockPrice.toFixed(2);
+            updateCasinoMoney();
             
             if (money <= 0) {
                 playBtn.style.display = "none";
@@ -292,6 +322,8 @@
         function checkQTE() {
             if (qtePos >= targetLeft && qtePos <= (targetLeft + targetWidth)) {
                 money += (10 * currentCombo);
+                window.plinko_money = money;
+                updateCasinoMoney();
                 currentCombo++;
                 moneyContainer.style.color = "#00ff88";
                 if(currentCombo > 5) comboDisplay.style.color = "#ff0055";
@@ -318,6 +350,8 @@
         function dropBall() {
             if (money >= 10) {
                 money -= 10;
+                window.plinko_money = money;
+                updateCasinoMoney();
                 updateUI();
                 save();
                 balls.push({
@@ -406,6 +440,8 @@
                     } else {
                         money += result.val;
                     }
+                    window.plinko_money = money;
+                    updateCasinoMoney();
                     updateStock();
                     balls.splice(i, 1);
                     updateUI();
@@ -428,6 +464,8 @@
         update();
         animateQTE();
         randomizeTarget();
+        // Charger l'argent du jeu à l'initialisation
+        loadGameMoney();
     </script>
 </body>
 </html>

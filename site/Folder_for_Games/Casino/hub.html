@@ -525,7 +525,7 @@
 
     function openApp(url) {
         document.getElementById('main-phone').classList.add('launching');
-        setTimeout(() => { window.location.href = url; }, 700);
+        setTimeout(() => { window.open(url, '_self'); }, 700);
     }
 
     function toggleSettings() { document.getElementById('settings-panel').classList.toggle('active'); }
@@ -541,9 +541,11 @@
     }
     
     
+
+
     setInterval(updateAchievementsDisplay, 3000)
     updateBrightness(0.8);
-    updateAchievementsDisplay(); 
+    updateAchievementsDisplay();
 </script>
 </body>
 </html>

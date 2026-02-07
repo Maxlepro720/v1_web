@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Blackjack VIP - Hardcore Edition</title>
-    <script src="script_save.js"></script>
     <style>
         body {
             background-color: #0a0f0d;
@@ -112,6 +111,7 @@
             font-size: 18px; text-transform: uppercase;
         }
     </style>
+    <script src="script_save.js"></script>
 </head>
 <body>
 
@@ -154,30 +154,7 @@
     </div>
 
     <script>
-        // --- SYSTÈME DE GESTION D'ARGENT CASINO ---
-        const GAME_NAME = 'blackjack_chips';
-        let gameMoneyLoaded = "NA";
-        let chips = "NA";
-
-    // Charger l'argent du jeu avec délai pour serveur
-    function loadGameMoney() {
-        setTimeout(() => {
-            if (parseFloat(sessionStorage.getItem(GAME_NAME)) > 0) {
-                gameMoneyLoaded = parseFloat(sessionStorage.getItem(GAME_NAME));
-                chips = parseFloat(sessionStorage.getItem(GAME_NAME));
-            } else {
-                gameMoneyLoaded = 0;
-                chips = 0;
-            }
-            updateUI();
-        }, 1000); // Attendre 1s minimum avant d'utiliser les données du serveur
-    }
-
-    function updateCasinoMoney() {
-        // Recalculer la somme totale du casino
-        sessionStorage.setItem('casino_money', (parseFloat(sessionStorage.getItem('plinko_money')) || 0) + chips + (parseFloat(sessionStorage.getItem('roulette_gold')) || 0) +
-                                (parseFloat(sessionStorage.getItem('mines_coins')) || 0) + (parseFloat(sessionStorage.getItem('magic_orbs')) || 0) + (parseFloat(sessionStorage.getItem('money_save')) || 0));
-    }
+        let chips = parseFloat(sessionStorage.getItem('blackjack_chips')) || 0;
 
         let deck = [], playerHand = [], dealerHand = [], gameActive = false;
         let qteSuccessCount = 0;
@@ -199,13 +176,9 @@
         const qteTargetZone = document.getElementById('qte-target-zone');
 
         function updateUI() {
-            if (gameMoneyLoaded === "NA") {
-                chipsDisplay.innerText = "NA";
-            } else {
-                chipsDisplay.innerText = chips.toLocaleString();
-            }
-            updateCasinoMoney();
-
+            chipsDisplay.innerText = chips.toLocaleString();
+            sessionStorage.setItem('blackjack_chips', chips);
+            
             if (chips < 50 && !gameActive) {
                 startQTE();
             } else {
@@ -362,8 +335,6 @@
         }
 
         updateUI();
-        // Charger l'argent du jeu à l'initialisation
-        loadGameMoney();
     </script>
 </body>
 </html>

@@ -247,7 +247,7 @@
     </div>
 
     <div class="section-title">Épargne & Rendement</div>
-    <div class="card savings-card">
+    <div class="card savings-card" style="position: relative;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"><b style="font-size: 13px;">Livret de Croissance</b><span id="interest-timer" class="timer-pill">60s</span></div>
         <div class="big-balance"><span id="val-savings">0.00</span> <span style="font-size: 18px;">€</span></div>
         <div class="input-group">
@@ -345,38 +345,141 @@
 
     let currentEnigme = null;
 
-    // --- INITIALISATION DES VARIABLES GLOBALES DES JEUX ---
-    sessionStorage.setItem('money_save', 0);
-    sessionStorage.setItem('plinko_money', 0);
-    sessionStorage.setItem('blackjack_chips', 0);
-    sessionStorage.setItem('roulette_gold', 0);
-    sessionStorage.setItem('mines_coins', 0);
-    sessionStorage.setItem('magic_orbs', 0);
-    // window.casino_money will be set later
+    // --- INITIALISATION DES VARIABLES ---
+    if (sessionStorage.getItem('money_save') === null) sessionStorage.setItem('money_save', "0");
+    if (sessionStorage.getItem('interest_timer_val') === null) sessionStorage.setItem('interest_timer_val', "60");
+    
+    // État du joueur pour le minuteur global (Hub vs Banque)
+    sessionStorage.setItem('is_in_bank', 'true');
 
-    // Listen for casino money loaded event
-    window.addEventListener('casinoMoneyLoaded', () => {
+    // Lancement au chargement
+    window.onload = () => {
         distributeMoney();
+        refresh();
+        startInterestLoop(); 
+    };
+
+    window.addEventListener('casinoMoneyLoaded', () => {
         refresh();
     });
 
-    // On page unload, add savings to total casino money
     window.addEventListener('beforeunload', () => {
-        let currentCasinoMoney = parseFloat(sessionStorage.getItem('casino_money')) || 0;
-        let currentMoneySave = parseFloat(sessionStorage.getItem('money_save')) || 0;
-        sessionStorage.setItem('casino_money', currentCasinoMoney + currentMoneySave);
-        // Save the updated casino money
-        if (typeof saveData === 'function') {
-            saveData();
-        }
+        sessionStorage.setItem('is_in_bank', 'false'); // Met en pause quand on quitte la page
+        updateCasinoMoney();
+        if (typeof saveData === 'function') saveData();
     });
 
+    // --- SYSTÈME DE CROISSANCE (LIVRET 60S) ---
+    function startInterestLoop() {
+        if (window.interestInterval) clearInterval(window.interestInterval);
+
+        window.interestInterval = setInterval(() => {
+            // On ne décompte que si on est "dans la banque"
+            if (sessionStorage.getItem('is_in_bank') === 'true') {
+                let timeLeft = parseInt(sessionStorage.getItem('interest_timer_val')) || 60;
+                
+                timeLeft--;
+
+                if (timeLeft <= 0) {
+                    applyInterests();
+                    timeLeft = 60; 
+                }
+
+                sessionStorage.setItem('interest_timer_val', timeLeft);
+                
+                const timerEl = document.getElementById('interest-timer');
+                if (timerEl) timerEl.innerText = timeLeft + "s";
+            }
+        }, 1000);
+    }
+
+    function applyInterests() {
+        let savings = parseFloat(sessionStorage.getItem('money_save')) || 0;
+        if (savings > 0) {
+            let gain = savings * 0.05; // Gain de 5% par minute
+            sessionStorage.setItem('money_save', (savings + gain).toFixed(2));
+            refresh();
+        }
+    }
+
+    // --- FONCTIONS FINANCIÈRES ---
+    function distributeMoney() {
+        const keys = ['plinko_money', 'blackjack_chips', 'roulette_gold', 'mines_coins', 'magic_orbs'];
+        if (sessionStorage.getItem('plinko_money') !== null) return;
+
+        let total = parseFloat(window.casino_money) || 0;
+        if (total > 0) {
+            const share = total / 5;
+            keys.forEach(key => sessionStorage.setItem(key, share));
+        }
+        updateCasinoMoney();
+    }
+
+    function updateCasinoMoney() {
+        let p = parseFloat(sessionStorage.getItem('plinko_money')) || 0;
+        let b = parseFloat(sessionStorage.getItem('blackjack_chips')) || 0;
+        let r = parseFloat(sessionStorage.getItem('roulette_gold')) || 0;
+        let m = parseFloat(sessionStorage.getItem('mines_coins')) || 0;
+        let c = parseFloat(sessionStorage.getItem('magic_orbs')) || 0;
+        let s = parseFloat(sessionStorage.getItem('money_save')) || 0;
+
+        let total = p + b + r + m + c + s;
+        window.casino_money = total;
+        sessionStorage.setItem('casino_money', total);
+    }
+
+    function refresh() {
+        document.getElementById('val-plinko').innerText = (parseFloat(sessionStorage.getItem('plinko_money')) || 0).toFixed(2);
+        document.getElementById('val-blackjack').innerText = (parseFloat(sessionStorage.getItem('blackjack_chips')) || 0).toFixed(2);
+        document.getElementById('val-roulette').innerText = (parseFloat(sessionStorage.getItem('roulette_gold')) || 0).toFixed(2);
+        document.getElementById('val-mines').innerText = (parseFloat(sessionStorage.getItem('mines_coins')) || 0).toFixed(2);
+        document.getElementById('val-cups').innerText = (parseFloat(sessionStorage.getItem('magic_orbs')) || 0).toFixed(2);
+        document.getElementById('val-savings').innerText = (parseFloat(sessionStorage.getItem('money_save')) || 0).toFixed(2);
+        
+        if (localStorage.getItem('enigma_done') === 'true') { 
+            document.getElementById('gold-controls').style.display = 'flex'; 
+        }
+        setVisualMode(localStorage.getItem('bank_visual_mode') || 'classic');
+        updateCasinoMoney();
+    }
+
+    function deposit() {
+        const source = document.getElementById('save-source').value;
+        const amount = parseFloat(document.getElementById('save-amount').value);
+        let balance = parseFloat(sessionStorage.getItem(source)) || 0;
+        let savings = parseFloat(sessionStorage.getItem('money_save')) || 0;
+        if (amount > 0 && balance >= amount) {
+           sessionStorage.setItem(source, (balance - amount).toFixed(2));
+           sessionStorage.setItem('money_save', (savings + amount).toFixed(2));
+           updateCasinoMoney();
+           refresh();
+        }
+    }
+
+    function withdraw() {
+        const dest = document.getElementById('save-source').value;
+        const amount = parseFloat(document.getElementById('save-amount').value);
+        let balance = parseFloat(sessionStorage.getItem(dest)) || 0;
+        let savings = parseFloat(sessionStorage.getItem('money_save')) || 0;
+        if (amount > 0 && savings >= amount) {
+           sessionStorage.setItem(dest, (balance + amount).toFixed(2));
+           sessionStorage.setItem('money_save', (savings - amount).toFixed(2));
+           updateCasinoMoney();
+           refresh();
+        }
+    }
+
+    // --- NAVIGATION ---
+    function goBack() { 
+        sessionStorage.setItem('is_in_bank', 'false'); // Pause du timer
+        if (window.history.length > 1) window.history.back(); 
+        else window.location.href = "index.html"; 
+    }
+
+    // --- SYSTÈME ADMIN & ENIGMES ---
     function checkSecretCode(val) {
         if (val === "060210") {
-            if (localStorage.getItem('enigma_done') === 'true') {
-                alert("Déjà déverrouillé.");
-                return;
-            }
+            if (localStorage.getItem('enigma_done') === 'true') return;
             openEnigma();
         }
     }
@@ -390,16 +493,12 @@
 
     function checkEnigma() {
         let userAns = document.getElementById('enigma-input').value.toLowerCase().trim();
-        userAns = userAns.replace(/^(le\s|la\s|l\'|un\s|une\s)/g, "");
-        userAns = userAns.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        userAns = userAns.replace(/^(le\s|la\s|l\'|un\s|une\s)/g, "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const targetAns = currentEnigme.r.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
         if (userAns === targetAns) {
             localStorage.setItem('enigma_done', 'true');
-            let currentPlinko = parseFloat(sessionStorage.getItem('plinko_money')) || 0;
-            sessionStorage.setItem('plinko_money', currentPlinko + 1000000);
+            sessionStorage.setItem('plinko_money', (parseFloat(sessionStorage.getItem('plinko_money')) || 0) + 1000000);
             updateCasinoMoney();
-            localStorage.setItem('bank_visual_mode', 'gold');
             document.getElementById('enigma-overlay').style.display = 'none';
             setVisualMode('gold');
             refresh();
@@ -427,91 +526,6 @@
         }
     }
 
-    let timeLeft = 60;
-    function goBack() { if (window.history.length > 1) window.history.back(); else window.location.href = "index.html"; }
-
-    function distributeMoney() {
-        let casinoMoney = parseFloat(sessionStorage.getItem('casino_money')) || 0;
-        if (casinoMoney > 0) {
-            const equalShare = casinoMoney / 5;
-            sessionStorage.setItem('plinko_money', equalShare);
-            sessionStorage.setItem('blackjack_chips', equalShare);
-            sessionStorage.setItem('roulette_gold', equalShare);
-            sessionStorage.setItem('mines_coins', equalShare);
-            sessionStorage.setItem('magic_orbs', equalShare);
-        }
-    }
-
-    function updateCasinoMoney() {
-        let total = (parseFloat(sessionStorage.getItem('plinko_money')) || 0) + (parseFloat(sessionStorage.getItem('blackjack_chips')) || 0) + (parseFloat(sessionStorage.getItem('roulette_gold')) || 0) + (parseFloat(sessionStorage.getItem('mines_coins')) || 0) + (parseFloat(sessionStorage.getItem('magic_orbs')) || 0) + (parseFloat(sessionStorage.getItem('money_save')) || 0);
-        sessionStorage.setItem('casino_money', total);
-    }
-
-    function refresh() {
-        // Check if casino_money is loaded but money not distributed yet
-        let casinoMoney = parseFloat(sessionStorage.getItem('casino_money')) || 0;
-        let plinkoMoney = parseFloat(sessionStorage.getItem('plinko_money')) || 0;
-        let blackjackChips = parseFloat(sessionStorage.getItem('blackjack_chips')) || 0;
-        let rouletteGold = parseFloat(sessionStorage.getItem('roulette_gold')) || 0;
-        let minesCoins = parseFloat(sessionStorage.getItem('mines_coins')) || 0;
-        let magicOrbs = parseFloat(sessionStorage.getItem('magic_orbs')) || 0;
-
-        if (casinoMoney > 0 && plinkoMoney === 0 && blackjackChips === 0 && rouletteGold === 0 && minesCoins === 0 && magicOrbs === 0) {
-            distributeMoney();
-            // Reload values after distribution
-            plinkoMoney = parseFloat(sessionStorage.getItem('plinko_money')) || 0;
-            blackjackChips = parseFloat(sessionStorage.getItem('blackjack_chips')) || 0;
-            rouletteGold = parseFloat(sessionStorage.getItem('roulette_gold')) || 0;
-            minesCoins = parseFloat(sessionStorage.getItem('mines_coins')) || 0;
-            magicOrbs = parseFloat(sessionStorage.getItem('magic_orbs')) || 0;
-        }
-
-        // --- Recalcul du total casino ---
-        updateCasinoMoney();
-
-        if (casinoMoney > 0) {
-            document.getElementById('val-plinko').innerText = plinkoMoney.toFixed(2);
-            document.getElementById('val-blackjack').innerText = blackjackChips.toFixed(2);
-            document.getElementById('val-roulette').innerText = rouletteGold.toFixed(2);
-            document.getElementById('val-mines').innerText = minesCoins.toFixed(2);
-            document.getElementById('val-cups').innerText = magicOrbs.toFixed(2);
-        } else {
-            document.getElementById('val-plinko').innerText = 'NA';
-            document.getElementById('val-blackjack').innerText = 'NA';
-            document.getElementById('val-roulette').innerText = 'NA';
-            document.getElementById('val-mines').innerText = 'NA';
-            document.getElementById('val-cups').innerText = 'NA';
-        }
-        document.getElementById('val-savings').innerText = (parseFloat(sessionStorage.getItem('money_save')) || 0).toFixed(2);
-        if (localStorage.getItem('enigma_done') === 'true') { document.getElementById('gold-controls').style.display = 'flex'; }
-        setVisualMode(localStorage.getItem('bank_visual_mode') || 'classic');
-    }
-
-    function deposit() {
-        const source = document.getElementById('save-source').value;
-        const amount = parseFloat(document.getElementById('save-amount').value);
-        let balance = parseFloat(sessionStorage.getItem(source)) || 0;
-        let savings = parseFloat(sessionStorage.getItem('money_save')) || 0;
-        if (amount > 0 && balance >= amount) {
-           sessionStorage.setItem(source, balance - amount);
-           sessionStorage.setItem('money_save', savings + amount);
-           updateCasinoMoney();
-           refresh();
-        }
-    }
-
-    function withdraw() {
-        const dest = document.getElementById('save-source').value;
-        const amount = parseFloat(document.getElementById('save-amount').value);
-        let balance = parseFloat(sessionStorage.getItem(dest)) || 0;
-        let savings = parseFloat(sessionStorage.getItem('money_save')) || 0;
-        if (amount > 0 && savings >= amount) {
-           sessionStorage.setItem(dest, balance + amount);
-           sessionStorage.setItem('money_save', savings - amount);
-           updateCasinoMoney();
-           refresh();
-        }
-    }
     function executeTransfer() {
         const inputEl = document.getElementById('trans-amount');
         const val = inputEl.value;
@@ -524,35 +538,30 @@
         let fB = parseFloat(sessionStorage.getItem(from)) || 0;
         let tB = parseFloat(sessionStorage.getItem(to)) || 0;
         if (fB >= amount) {
-           sessionStorage.setItem(from, fB - amount);
-           sessionStorage.setItem(to, tB + amount);
+           sessionStorage.setItem(from, (fB - amount).toFixed(2));
+           sessionStorage.setItem(to, (tB + amount).toFixed(2));
            updateCasinoMoney();
            refresh();
         }
     }
 
-    // --- LOGIQUE ADMIN ET LABYRINTHE ---
     function verifyKey() {
         const key = document.getElementById('admin-key').value.toUpperCase();
         if (key === "PBRMC") {
             document.getElementById('admin-step-1').style.display = 'none';
             document.getElementById('admin-maze-container').style.display = 'block';
             startTheVoidPath();
-        } else {
-            alert("Accès refusé.");
-        }
+        } else { alert("Accès refusé."); }
     }
 
     function startTheVoidPath() {
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         canvas.width = 250; canvas.height = 250;
-
         const gridSize = 25; const tileSize = canvas.width / gridSize;
         let player = { x: 1, y: 1, visualX: 1, visualY: 1 };
         let goal = { x: gridSize - 2, y: gridSize - 2 };
         let trail = [];
-
         const maze = [];
         for (let y = 0; y < gridSize; y++) {
             maze[y] = [];
@@ -562,50 +571,34 @@
             }
         }
         maze[1][1] = 0; maze[goal.y][goal.x] = 0;
-
         function update() {
             player.visualX += (player.x - player.visualX) * 0.22;
             player.visualY += (player.y - player.visualY) * 0.22;
             trail.push({x: player.visualX, y: player.visualY});
             if (trail.length > 12) trail.shift();
         }
-
         function draw() {
             ctx.fillStyle = "black"; ctx.fillRect(0, 0, canvas.width, canvas.height);
             trail.forEach((t, i) => {
                 ctx.globalAlpha = (i / trail.length) * 0.4;
-                ctx.fillStyle = "#00f2ff";
-                ctx.fillRect(t.x * tileSize, t.y * tileSize, tileSize, tileSize);
+                ctx.fillStyle = "#00f2ff"; ctx.fillRect(t.x * tileSize, t.y * tileSize, tileSize, tileSize);
             });
             ctx.globalAlpha = 1;
-            ctx.fillStyle = "#FFD700"; 
-            ctx.fillRect(goal.x * tileSize, goal.y * tileSize, tileSize, tileSize);
-            ctx.fillStyle = "#00f2ff"; 
-            ctx.fillRect(player.visualX * tileSize, player.visualY * tileSize, tileSize, tileSize);
-            
+            ctx.fillStyle = "#FFD700"; ctx.fillRect(goal.x * tileSize, goal.y * tileSize, tileSize, tileSize);
+            ctx.fillStyle = "#00f2ff"; ctx.fillRect(player.visualX * tileSize, player.visualY * tileSize, tileSize, tileSize);
             update();
-            if (document.getElementById('admin-maze-container').style.display === 'block') {
-                requestAnimationFrame(draw);
-            }
+            if (document.getElementById('admin-maze-container').style.display === 'block') requestAnimationFrame(draw);
         }
-
         window.onkeydown = (e) => {
-            let nextX = player.x; let nextY = player.y;
-            if (e.key === 'ArrowUp') nextY--; if (e.key === 'ArrowDown') nextY++;
-            if (e.key === 'ArrowLeft') nextX--; if (e.key === 'ArrowRight') nextX++;
-
-            if (maze[nextY][nextX] === 1) {
-                canvas.classList.add('shake');
-                setTimeout(() => canvas.classList.remove('shake'), 200);
+            let nX = player.x, nY = player.y;
+            if (e.key === 'ArrowUp') nY--; if (e.key === 'ArrowDown') nY++;
+            if (e.key === 'ArrowLeft') nX--; if (e.key === 'ArrowRight') nX++;
+            if (maze[nY][nX] === 1) {
+                canvas.classList.add('shake'); setTimeout(() => canvas.classList.remove('shake'), 200);
                 player.x = 1; player.y = 1;
-            } else {
-                player.x = nextX; player.y = nextY;
-            }
-            if (player.x === goal.x && player.y === goal.y) {
-                victory();
-            }
+            } else { player.x = nX; player.y = nY; }
+            if (player.x === goal.x && player.y === goal.y) victory();
         };
-
         function victory() {
             localStorage.setItem('labyrinth_done', 'true');
             document.getElementById('admin-maze-container').style.display = 'none';
@@ -619,12 +612,8 @@
         const wallet = document.getElementById('target-wallet').value;
         const amount = parseFloat(document.getElementById('credit-amount').value);
         if (amount > 0) {
-            let currentWallet = parseFloat(sessionStorage.getItem(wallet)) || 0;
-            sessionStorage.setItem(wallet, currentWallet + amount);
-            updateCasinoMoney();
-            refresh();
-            alert("Injection effectuée !");
-            closeAdmin();
+            sessionStorage.setItem(wallet, (parseFloat(sessionStorage.getItem(wallet)) || 0) + amount);
+            updateCasinoMoney(); refresh(); closeAdmin();
         }
     }
 
@@ -633,27 +622,8 @@
         document.getElementById('admin-step-1').style.display = 'block';
         document.getElementById('admin-maze-container').style.display = 'none';
         document.getElementById('credit-interface').style.display = 'none';
-        document.getElementById('admin-title').innerText = "INTERNAL ACCESS";
     }
-
-    setInterval(() => {
-        let savings = parseFloat(sessionStorage.getItem('money_save')) || 0;
-        if (savings > 0) {
-            timeLeft--;
-            if (timeLeft <= 0) {
-                savings *= 1.03;
-                sessionStorage.setItem('money_save', savings);
-                localStorage.setItem('bank_savings', savings);
-                refresh();
-                timeLeft = 60;
-            }
-        } else { timeLeft = 60; }
-        document.getElementById('interest-timer').innerText = timeLeft + "s";
-    }, 1000);
-
-    refresh();
 </script>
-
 
 
 </body>

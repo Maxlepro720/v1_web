@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Magic Cups - Royal Edition</title>
-    <script src="script_save.js"></script>
     <style>
         :root {
             --gold: #fcd34d;
@@ -163,6 +162,7 @@
             background: rgba(56, 189, 248, 0.2); border-top: 2px solid rgba(255,255,255,0.5); border-bottom: 2px solid rgba(255,255,255,0.5);
         }
     </style>
+    <script src="script_save.js"></script>
 </head>
 <body>
 
@@ -216,31 +216,6 @@
 </div>
 
 <script>
-    // --- SYSTÈME DE GESTION D'ARGENT CASINO ---
-    const GAME_NAME = 'magic_orbs';
-    let gameMoneyLoaded = "NA";
-    let gameBalance = "NA";
-
-    // Charger l'argent du jeu avec délai pour serveur
-    function loadGameMoney() {
-        setTimeout(() => {
-            if (parseFloat(sessionStorage.getItem(GAME_NAME)) > 0) {
-                gameMoneyLoaded = parseFloat(sessionStorage.getItem(GAME_NAME));
-                gameBalance = parseFloat(sessionStorage.getItem(GAME_NAME));
-            } else {
-                gameMoneyLoaded = 0;
-                gameBalance = 0;
-            }
-            updateWallet(true);
-        }, 1000); // Attendre 1s minimum avant d'utiliser les données du serveur
-    }
-
-    function updateCasinoMoney() {
-        // Recalculer la somme totale du casino
-        sessionStorage.setItem('casino_money', (parseFloat(sessionStorage.getItem('plinko_money')) || 0) + (parseFloat(sessionStorage.getItem('blackjack_chips')) || 0) +
-                                (parseFloat(sessionStorage.getItem('roulette_gold')) || 0) + (parseFloat(sessionStorage.getItem('mines_coins')) || 0) + gameBalance + (parseFloat(sessionStorage.getItem('money_save')) || 0));
-    }
-
     let ballPos = 1;
     let isMixing = false;
     let gameActive = false;
@@ -256,19 +231,18 @@
     let isPressing = false;
 
     function getWallet() {
-        return gameBalance;
+        let bal = sessionStorage.getItem('magic_orbs');
+        if (bal === null) { sessionStorage.setItem('magic_orbs', '0'); return 500; }
+        return parseFloat(bal);
     }
 
     function updateWallet(forceCheckQTE = false) {
-        if (gameMoneyLoaded === "NA") {
-            document.getElementById('wallet').innerText = "NA";
-        } else {
-            document.getElementById('wallet').innerText = gameBalance.toFixed(2);
-        }
+        let balance = getWallet();
+        document.getElementById('wallet').innerText = balance.toFixed(2);
         
-        if (forceCheckQTE && gameBalance <= 0 && !isMixing && !gameActive) {
+        if (forceCheckQTE && balance <= 0 && !isMixing && !gameActive) {
             document.getElementById('qte-btn').style.display = 'block';
-        } else if (gameBalance > 0) {
+        } else if (balance > 0) {
             document.getElementById('qte-btn').style.display = 'none';
         }
     }
@@ -283,10 +257,8 @@
         }
 
         document.getElementById('qte-btn').style.display = 'none';
-        gameBalance = wallet - bet;
-        sessionStorage.setItem('magic_orbs', gameBalance);
-        updateCasinoMoney();
-        updateWallet(false);
+        sessionStorage.setItem('magic_orbs', (wallet - bet).toFixed(2));
+        updateWallet(false); 
         currentRound = 1;
         speed = 400;
         startNewRound();
@@ -366,9 +338,7 @@
                 }, 1000);
             } else {
                 const bet = parseFloat(document.getElementById('bet-amount').value);
-                gameBalance = getWallet() + (bet * 5);
-                sessionStorage.setItem('magic_orbs', gameBalance);
-                updateCasinoMoney();
+                sessionStorage.setItem('magic_orbs', (getWallet() + (bet * 5)).toFixed(2));
                 document.getElementById('status').innerText = "💰 JACKPOT X5 !";
                 endGame();
             }
@@ -435,9 +405,7 @@
 
         if (qteScore <= 0) {
             qteActive = false;
-            gameBalance = 100;
-            sessionStorage.setItem('magic_orbs', gameBalance);
-            updateCasinoMoney();
+            localStorage.setItem('magic_orbs', 100);
             alert("L'Oracle vous a accordé une seconde chance. +100 MO");
             document.getElementById('qte-overlay').style.display = 'none';
             updateWallet(false);
@@ -447,8 +415,6 @@
     }
 
     updateWallet(true);
-    // Charger l'argent du jeu à l'initialisation
-    loadGameMoney();
 </script>
 </body>
 </html>

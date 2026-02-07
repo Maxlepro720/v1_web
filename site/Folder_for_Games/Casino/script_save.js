@@ -5,7 +5,7 @@ function updateCasinoMoney() {
     let roulette = parseFloat(sessionStorage.getItem('roulette_gold')) || 0;
     let mines = parseFloat(sessionStorage.getItem('mines_coins')) || 0;
     let cups = parseFloat(sessionStorage.getItem('magic_orbs')) || 0;
-    let savings = parseFloat(localStorage.getItem('money_save')) || 0;
+    let savings = parseFloat(sessionStorage.getItem('money_save')) || 0;
 
     let total = plinko + blackjack + roulette + mines + cups + savings;
     

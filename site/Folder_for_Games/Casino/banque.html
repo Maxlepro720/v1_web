@@ -396,7 +396,7 @@
     function applyInterests() {
         let savings = parseFloat(sessionStorage.getItem('money_save')) || 0;
         if (savings > 0) {
-            let gain = savings * 0.05; // Gain de 5% par minute
+            let gain = savings * 0.02; // Gain de 5% par minute
             sessionStorage.setItem('money_save', (savings + gain).toFixed(2));
             refresh();
         }

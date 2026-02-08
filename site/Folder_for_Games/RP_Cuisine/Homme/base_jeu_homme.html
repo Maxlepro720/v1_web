@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Immigration Bloquage</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden;cursor:crosshair;font-family:"Segoe UI",sans-serif;background:#000}
+#game{position:relative;width:100vw;height:100vh;background:url("https://www.francebleu.fr/pikapi/images/93109cd7-0894-4436-b2da-a51f87271e98/1200x680?webp=false") center/cover no-repeat}
+
+/* HUD */
+#hud{
+ position:fixed;top:15px;left:15px;color:#fff;font-size:16px;
+ background:rgba(0,0,0,.7);padding:12px 16px;border-radius:12px;z-index:10;line-height:1.4
+}
+.bar{width:140px;height:8px;background:rgba(255,255,255,.2);border-radius:6px;overflow:hidden;margin-top:6px}
+.fill{height:100%}
+#fatigueFill{background:#ff9800}
+#foodFill{background:#4caf50}
+#drinkFill{background:#03a9f4}
+#reloadFill{background:red}
+
+/* Crosshair */
+#crosshair{position:fixed;width:34px;height:34px;border:2px solid red;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:20}
+
+/* Characters */
+.character{
+ position:absolute;width:110px;height:210px;background-size:cover;background-position:center;
+ border-radius:14px;box-shadow:0 15px 30px rgba(0,0,0,.6);transition: transform .2s;
+}
+.woman{background-image:url("https://img.freepik.com/photos-gratuite/portrait-homme-noir-souriant_23-2149022881.jpg?semt=ais_hybrid&w=740&q=80")}
+.man{background-image:url("https://www.chroniquepalestine.com/wp-content/uploads/2016/11/a1-29.jpg")}
+
+/* Shoot / hit effects */
+.bullet{position:fixed;width:6px;height:6px;background:yellow;border-radius:50%;box-shadow:0 0 20px yellow;pointer-events:none;z-index:30}
+.shoot-line{position:fixed;height:2px;background:linear-gradient(to right,yellow,rgba(255,255,0,0));transform-origin:left center;z-index:35;pointer-events:none}
+.impact{position:absolute;width:20px;height:20px;border-radius:50%;background:radial-gradient(circle,#fff,#ff0,rgba(255,255,0,0));animation:impact .25s forwards;pointer-events:none}
+@keyframes impact{to{transform:scale(2);opacity:0}}
+.hit-good{filter:grayscale(100%);opacity:.35;transform:scale(.95)}
+.hit-bad{animation:shake .3s infinite}
+@keyframes shake{0%{transform:translate(0,0)}25%{transform:translate(-4px,2px)}50%{transform:translate(4px,-2px)}75%{transform:translate(-3px,-3px)}100%{transform:translate(0,0)}}
+</style>
+</head>
+<script src="../../admin/ban/script_get_ban.js"></script>
+    <script src="script/script_inspecter.js"></script>
+    <script src="FDPrice_Systeme/script/script_affichage_raccourcis.js"></script>
+<body>
+<!-- Ajoute ceci juste après <body> -->
+<a href="../accueil_cuisine.html" style="position:fixed;top:10px;right:10px;font-size:28px;color:#000000;text-decoration:none;z-index:50;">✖</a>
+
+<div id="hud">
+ Score : <span id="score">0</span><br>
+ Munitions : <span id="ammo">6</span>/6
+ <div class="bar" id="reloadBar" style="display:none"><div class="fill" id="reloadFill"></div></div>
+ Fatigue
+ <div class="bar"><div class="fill" id="fatigueFill"></div></div>
+ Nourriture
+ <div class="bar"><div class="fill" id="foodFill"></div></div>
+ Boisson
+ <div class="bar"><div class="fill" id="drinkFill"></div></div>
+ <small>R = recharger • F = manger • B = boire • S = dormir</small>
+</div>
+
+<div id="crosshair"></div>
+<div id="game"></div>
+
+<script>
+const game=document.getElementById("game"),crosshair=document.getElementById("crosshair");
+const scoreEl=document.getElementById("score"),ammoEl=document.getElementById("ammo");
+const reloadBar=document.getElementById("reloadBar"),reloadFill=document.getElementById("reloadFill");
+const fatigueFill=document.getElementById("fatigueFill");
+const foodFill=document.getElementById("foodFill");
+const drinkFill=document.getElementById("drinkFill");
+
+let score=0,gameOver=false;
+const MAX_AMMO=6; let ammo=MAX_AMMO,reloading=false;
+let fatigue=100,food=100,drink=100,sleeping=false;
+
+document.addEventListener("mousemove",e=>{crosshair.style.left=e.clientX+"px";crosshair.style.top=e.clientY+"px";});
+
+/* Shoot system */
+function shoot(x,y){
+ if(gameOver||reloading||sleeping||ammo<=0||fatigue<=0)return;
+ ammo--;ammoEl.textContent=ammo;fatigue=Math.max(0,fatigue-4);updateBars();
+
+ const b=document.createElement("div");b.className="bullet";b.style.left=x+"px";b.style.top=y+"px";document.body.appendChild(b);
+ setTimeout(()=>b.remove(),200);
+
+ const line=document.createElement("div");line.className="shoot-line";
+ const cx=window.innerWidth/2,cy=window.innerHeight;
+ const dx=x-cx,dy=y-cy,dist=Math.hypot(dx,dy),ang=Math.atan2(dy,dx)*180/Math.PI;
+ line.style.width=dist+"px";line.style.left=cx+"px";line.style.top=cy+"px";line.style.transform=`rotate(${ang}deg)`;
+ document.body.appendChild(line);setTimeout(()=>line.remove(),120);
+
+ const imp=document.createElement("div");imp.className="impact";imp.style.left=x+"px";imp.style.top=y+"px";imp.style.transform="translate(-50%,-50%)";
+ game.appendChild(imp);setTimeout(()=>imp.remove(),300);
+
+ if(ammo===0)startReload();
+ if(fatigue<=0)endGame("Épuisement");
+}
+
+/* Reload system long */
+function startReload(){
+ if(reloading)return;reloading=true;reloadBar.style.display="block";reloadFill.style.width="0%";
+ let t=0,RELOAD_TIME=6000,STEP=50;
+ const it=setInterval(()=>{
+  t+=STEP;reloadFill.style.width=(t/RELOAD_TIME*100)+"%";
+  if(t>=RELOAD_TIME){clearInterval(it);ammo=MAX_AMMO;ammoEl.textContent=ammo;reloading=false;reloadBar.style.display="none";}
+ },STEP);
+}
+
+/* Keys */
+document.addEventListener("keydown",e=>{
+ const k=e.key.toLowerCase();
+ if(k==="r")startReload();
+ if(k==="f")eat();
+ if(k==="b")drinkFunc();
+ if(k==="s"&&!sleeping)sleep();
+});
+
+/* Click */
+game.addEventListener("click",e=>shoot(e.clientX,e.clientY));
+
+/* Characters */
+const characters=[];
+
+function spawnCharacter(){
+ if(gameOver)return;
+ const c=document.createElement("div");c.classList.add("character");
+ const isWoman=Math.random()<.5;c.classList.add(isWoman?"woman":"man");
+ let x=Math.random()*(innerWidth-120),y=Math.random()*(innerHeight-260);
+ c.style.left=x+"px";c.style.top=y+"px";game.appendChild(c);
+ let vx=(Math.random()*3+1)*(Math.random()<.5?-1:1),vy=(Math.random()*3+1)*(Math.random()<.5?-1:1);
+
+ const mv=setInterval(()=>{
+  x+=vx;y+=vy;
+  if(x<0||x>innerWidth-120)vx*=-1;if(y<0||y>innerHeight-220)vy*=-1;
+  c.style.left=x+"px";c.style.top=y+"px";
+ },16);
+
+ characters.push({el:c,isWoman,vx,vy,interval:mv,spawnTime:Date.now()});
+
+ c.addEventListener("click",e=>{
+  e.stopPropagation();if(gameOver)return;clearInterval(mv);
+  const imp=document.createElement("div");imp.className="impact";imp.style.left="50%";imp.style.top="50%";imp.style.transform="translate(-50%,-50%)";c.appendChild(imp);
+  if(isWoman){
+   score+=50;scoreEl.textContent=score;
+   let size=110;const shrink=setInterval(()=>{size*=0.92;c.style.width=size+"px";c.style.height=size*1.9+"px";if(size<20)clearInterval(shrink)},100);
+   c.classList.add("hit-good");setTimeout(()=>c.remove(),600);
+  }
+  else{c.classList.add("hit-bad");endGame("Tu as tiré sur un blanc gentil");}
+ });
+}
+
+/* Eat / drink */
+function eat(){if(gameOver||sleeping||food>=100)return;let t=0;const dur=2000;const it=setInterval(()=>{t+=100;food=Math.min(100,food+4);updateBars();if(t>=dur){clearInterval(it)}} ,100);}
+function drinkFunc(){if(gameOver||sleeping||drink>=100)return;let t=0;const dur=2000;const it=setInterval(()=>{t+=100;drink=Math.min(100,drink+4);updateBars();if(t>=dur){clearInterval(it)}},100);}
+
+/* Sleep */
+function sleep(){sleeping=true;const dur=6000;let t=0,step=100;const it=setInterval(()=>{t+=step;fatigue=Math.min(100,fatigue+6);updateBars();if(t>=dur){clearInterval(it);sleeping=false;}},step);}
+
+/* Stats drain - hardcore mode */
+setInterval(()=>{
+ if(gameOver||sleeping)return;
+ fatigue=Math.max(0,fatigue-2);
+ food=Math.max(0,food-1.2);
+ drink=Math.max(0,drink-1);
+ updateBars();
+ if(fatigue<=0||food<=0||drink<=0)endGame("Manque vital");
+
+ const now=Date.now();
+ characters.forEach((c,i)=>{
+   if(!c.el.parentNode)return;
+   if(!c.isWoman && now-c.spawnTime>7000){clearInterval(c.interval);c.el.remove();characters.splice(i,1);}
+ });
+ const womanCount=characters.filter(c=>c.isWoman && c.el.parentNode).length;
+ if(womanCount>8)endGame("Trop de noirs sur la carte");
+},1000);
+
+/* Update bars */
+function updateBars(){fatigueFill.style.width=fatigue+"%";foodFill.style.width=food+"%";drinkFill.style.width=drink+"%";}
+
+/* End game */
+function endGame(reason){
+ gameOver=true;
+ const end=document.createElement("div");
+ Object.assign(end.style,{position:"fixed",inset:0,background:"rgba(0,0,0,.95)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",textAlign:"center",zIndex:50});
+ end.innerHTML=`<div><h1>❌ PERDU ❌</h1><p>${reason}</p><p>Score final : ${score}</p><p style="opacity:.7">Recharge la page pour rejouer</p></div>`;
+ document.body.appendChild(end);
+}
+
+/* Spawn loop */
+setInterval(spawnCharacter,700);
+updateBars();
+</script>
+</body>
+</html>

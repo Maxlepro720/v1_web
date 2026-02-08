@@ -719,7 +719,9 @@ body {
 </div>
 
 </div>
-
+<script src="../../admin/ban/script_get_ban.js"></script>
+    <script src="script/script_inspecter.js"></script>
+    <script src="FDPrice_Systeme/script/script_affichage_raccourcis.js"></script>
 <script>
 let energy = 100;
 let score = 0;
@@ -1483,7 +1485,7 @@ function lose() {
 
 function quit() {
     if (confirm("Voulez-vous vraiment quitter le jeu ?")) {
-        location.reload();
+        window.open('../accueil_cuisine.html','_self');
     }
 }
 

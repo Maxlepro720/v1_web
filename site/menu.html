@@ -665,7 +665,7 @@
         {id:2,name:"Stickman_Runner",title:"Stickman Runner",genre:"Deathrun",link:"Folder_for_Games/jeu_3/game.html",color:"#63D945", img:"Image/Image_Stickman_Runner.png"}, 
         {id:3,name:"Astro_Dodge",title:"Astro Dodge",genre:"Infinite",link:"Folder_for_Games/jeu2/game.html",color:"#07a7b3", img:"Image/Image_Astro_Dodge.png"},
         {id:4,name:"Tower_Defense",title:"Tower Defense",genre:"Defensif",link:"Folder_for_Games/Tower_Defense/tower_defense.html",color:"#026c02", img:"Image/Image_Tower_Defense.png"},
-        {id:5,name:"Snake",title:"Snake",genre:"Yeni va te faire enculer!!",link:"Folder_for_Games/Snake/Snake_game.html",color:"#969696", img:"Image/Image_Snake.webp"},
+        {id:5,name:"Snake",title:"Snake",genre:"Retro Gaming",link:"Folder_for_Games/Snake/Snake_game.html",color:"#969696", img:"Image/Image_Snake.webp"},
         {id:6,name:"Orbital_Chaos",title:"Orbital Chaos",genre:"Esquive",link:"Folder_for_Games/Orbital_Chaos/Orbital_Chaos.html",color:"#969696",img:"Image/Image_Orbital_Chaos.png"},
         {id:7,name:"Personnalité_Test",title:"Test de Personnalité",genre:"Nerd",link:"Folder_for_Games/Personnality_Test/test_de_personnalité.html",color:"#969696",img:"Image/Image_Personnality_Test.webp"},
         {id:8,name:"Casino",title:"Casino",genre:"Jeu d'Argents",link:"Folder_for_Games/Casino/banque.html",color:"#969696",img:"Image/Image_Casino.avif"},
@@ -762,12 +762,15 @@
     let playCounters = {};
 
     // Fonction pour envoyer une vue au serveur
-    async function sendGameView(gameName) {
-        try {
-            await fetch(`${API_URL}/add1to_count?name=${encodeURIComponent(gameName)}`);
-            refreshPlayCounters(); // Optionnel : rafraîchir immédiatement après l'envoi
-        } catch (e) {
-            console.error("Erreur envoi vue:", e);
+    function sendGameView(gameName) {
+        const url = `${API_URL}/add1to_count?name=${encodeURIComponent(gameName)}`;
+
+        // sendBeacon est préférable pour les statistiques car il survit au changement de page
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(url);
+        } else {
+            // Fallback si sendBeacon n'est pas supporté (vieux navigateurs)
+            fetch(url, { mode: 'no-cors' }); 
         }
     }
 
@@ -828,6 +831,7 @@
             }
         });
     }
+    
 
     function displayGames(filteredGames){
         grid.innerHTML="";
@@ -876,7 +880,7 @@
              if (game.link) {
                 cardButton.addEventListener('click', (e) => {
                     e.stopPropagation(); 
-                    sendGameView(game.title);
+                    sendGameView(game.name);
                     window.location.href = link;
                 });
             }

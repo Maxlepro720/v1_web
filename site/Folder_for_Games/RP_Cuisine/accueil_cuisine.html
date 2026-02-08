@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cuisine Simulator</title>
+    <title>RP Cuisine - Le Chef c'est vous !</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
     <link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/3003/3003695.png" type="image/x-icon">
     <style>
-        /* --- CSS : Le Look du Jeu --- */
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Quicksand', sans-serif;
             overflow: hidden;
         }
 
-        /* Fond avec image de cuisine */
         .background {
-            background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('https://cdn-thumbs.ohmyprints.net/1/1528b0c55ac6b5cc3cec62f26a814896/817x600/thumbnail/fit.jpg');
+            background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), 
+                              url('https://cdn-thumbs.ohmyprints.net/1/1528b0c55ac6b5cc3cec62f26a814896/817x600/thumbnail/fit.jpg');
             background-size: cover;
             background-position: center;
             height: 100vh;
@@ -27,80 +27,114 @@
             flex-direction: column;
         }
 
-        /* Écran d'accueil principal */
-        #home-screen {
-            text-align: center;
-        }
-
+        /* --- STYLE TEXTE CUISINE --- */
         h1 {
-            color: white;
-            font-size: 3rem;
-            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
-            margin-bottom: 20px;
+            font-family: 'Pacifico', cursive; /* Police manuscrite style chef */
+            color: #ffffff; /* Couleur jaune d'or/beurre */
+            font-size: 5rem;
+            text-shadow: 4px 4px 0px #ff1900; /* Ombre rouge tomate */
+            margin-bottom: 30px;
         }
 
-        /* Bouton Jouer */
-        .btn-play {
-            padding: 15px 40px;
-            font-size: 1.5rem;
-            background-color: #ff9f43;
+        h2 {
+            font-family: 'Pacifico', cursive;
             color: white;
-            border: none;
-            border-radius: 50px;
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+        }
+
+        /* --- BOUTON JOUER STYLE TABLIER --- */
+        .btn-play {
+            padding: 20px 60px;
+            font-size: 2rem;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: bold;
+            background-color: #c0392b; /* Rouge cuisine */
+            color: white;
+            border: 4px solid #ffffff;
+            border-radius: 15px;
             cursor: pointer;
-            transition: transform 0.3s, background-color 0.3s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 0px #7f0d00;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         .btn-play:hover {
-            transform: scale(1.1);
-            background-color: #f39c12;
+            transform: translateY(4px);
+            box-shadow: 0 4px 0px #7f0d00;
+            background-color: #e74c3c;
         }
 
-        /* Écran de sélection (caché au début) */
+        /* --- CARTES SELECTION STYLE ASSIETTE --- */
         #selection-screen {
-            display: none; /* Caché par défaut */
+            display: none;
             text-align: center;
         }
 
         .selection-container {
             display: flex;
-            gap: 50px;
+            gap: 40px;
         }
 
-        /* Style des cartes Homme/Femme */
         .card {
-            width: 200px;
-            padding: 40px;
-            border-radius: 20px;
+            width: 220px;
+            height: 220px;
+            background: rgb(134, 66, 29);
+            border-radius: 50%; /* Forme d'assiette */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            font-size: 1.5rem;
-            font-weight: bold;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border: 8px double #eee;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            position: relative;
         }
 
-        /* Effets de Hover Spécifiques */
-        .man { color: #2980b9; border: 4px solid transparent; }
+        .card span {
+            font-size: 1.2rem;
+            margin-top: 10px;
+        }
+
+        .card .emoji {
+            font-size: 4rem;
+        }
+
+        /* Couleurs et Hover */
+        .man { color: #3498db; border-color: #3498db; }
         .man:hover {
             background-color: #3498db;
             color: white;
-            border-color: #2980b9;
-            transform: translateY(-20px) scale(1.1);
-            box-shadow: 0 15px 30px rgba(52, 152, 219, 0.5);
+            transform: rotate(-10deg) scale(1.1);
         }
 
-        .woman { color: #d63031; border: 4px solid transparent; }
+        .woman { color: #e84393; border-color: #e84393; }
         .woman:hover {
-            background-color: #fd79a8;
+            background-color: #e84393;
             color: white;
-            border-color: #d63031;
-            transform: translateY(-20px) scale(1.1);
-            box-shadow: 0 15px 30px rgba(253, 121, 168, 0.5);
+            transform: rotate(10deg) scale(1.1);
         }
 
-        .hidden { display: none; }
+        /* Petit badge "Chef" au survol */
+        .card::after {
+            content: "CHEF ?";
+            position: absolute;
+            top: -10px;
+            background: #f1c40f;
+            color: black;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: 0.3s;
+        }
+
+        .card:hover::after {
+            opacity: 1;
+            top: -25px;
+        }
 
     </style>
 </head>
@@ -110,17 +144,19 @@
         
         <div id="home-screen">
             <h1>RP Cuisine</h1>
-            <button class="btn-play" onclick="showSelection()">JOUER</button>
+            <button class="btn-play" onclick="showSelection()">Au fourneau !</button>
         </div>
 
         <div id="selection-screen">
-            <h1 style="margin-bottom: 50px;">Qui es-tu ?</h1>
+            <h2>Choisissez votre rôle</h2>
             <div class="selection-container">
-                <div class="card man" onclick="goToGame('homme')">
-                    ♂<br>HOMME
+                <div class="card man" onclick="window.close()">
+                    <div class="emoji">🤵‍♂️</div>
+                    <span>Homme</span>
                 </div>
-                <div class="card woman" onclick="goToGame('femme')">
-                    ♀<br>FEMME
+                <div class="card woman" onclick="window.open('Femme/jeu_femme.html','_self')">
+                    <div class="emoji">👩‍🍳</div>
+                    <span>Femme</span>
                 </div>
             </div>
         </div>
@@ -128,23 +164,9 @@
     </div>
 
     <script>
-        /* --- JS : La Logique --- */
-
-        // Fonction pour passer de l'accueil au choix
         function showSelection() {
             document.getElementById('home-screen').style.display = 'none';
             document.getElementById('selection-screen').style.display = 'block';
-        }
-
-        // Fonction pour rediriger vers le bon fichier
-        function goToGame(genre) {
-            if (genre === 'homme') {
-                console.log("Redirection vers : cuisine_homme.html");
-                window.location.href = "cuisine_homme.html"; // Nom du fichier homme
-            } else {
-                console.log("Redirection vers : cuisine_femme.html");
-                window.location.href = "cuisine_femme.html"; // Nom du fichier femme
-            }
         }
     </script>
 

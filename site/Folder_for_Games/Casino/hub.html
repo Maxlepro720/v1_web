@@ -313,6 +313,13 @@
 </div>
 
 <script>
+    (function waitForCasinoSuccess(){
+        if (Array.isArray(window.casino_success)) {
+            return; // le script peut continuer normalement
+        }
+        setTimeout(waitForCasinoSuccess, 50);
+    })();   
+
     let isAirplaneMode = false;
     let currentTheme = 'dark';
     let currentBrightness = 0.8;

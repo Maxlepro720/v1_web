@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Routine Infinie</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+#game {
+    width: 100%;
+    max-width: 480px;
+    background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    position: relative;
+}
+
+#quitBtn {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #ff4757;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.3s;
+    z-index: 10;
+}
+
+#quitBtn:hover {
+    background: #ff3838;
+    transform: scale(1.05);
+}
+
+#top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 25px;
+    padding: 15px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 15px;
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+#scoreDisplay {
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+#difficultyDisplay {
+    font-size: 14px;
+    text-align: center;
+    margin-top: 5px;
+    font-weight: bold;
+}
+
+.diff-easy { color: #4CAF50; }
+.diff-medium { color: #FFC107; }
+.diff-hard { color: #FF5722; }
+.diff-extreme { color: #9C27B0; }
+.diff-impossible { 
+    color: #000; 
+    animation: diffPulse 1s infinite;
+}
+
+@keyframes diffPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+#sleepBtn {
+    background: #feca57;
+    color: #333;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s;
+    box-shadow: 0 4px 10px rgba(254, 202, 87, 0.4);
+}
+
+#sleepBtn:hover:not(:disabled) {
+    background: #ffd93d;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(254, 202, 87, 0.5);
+}
+
+#sleepBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#energyContainer {
+    margin: 20px 0;
+    padding: 12px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+#energyLabel {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #333;
+}
+
+#energy {
+    height: 24px;
+    background: #e0e0e0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#energyBar {
+    height: 100%;
+    background: linear-gradient(90deg, #11998e, #38ef7d);
+    transition: width 0.5s, background 0.5s;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(56, 239, 125, 0.5);
+}
+
+#energyBar.low {
+    background: linear-gradient(90deg, #f12711, #f5af19);
+}
+
+#energyBar.critical {
+    background: linear-gradient(90deg, #c31432, #240b36);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+#newTaskBtn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    margin: 15px 0;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+}
+
+#newTaskBtn:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+}
+
+#newTaskBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#taskTitle {
+    text-align: center;
+    padding: 15px;
+    background: linear-gradient(135deg, #fa709a, #fee140);
+    border-radius: 12px;
+    color: white;
+    font-size: 22px;
+    font-weight: bold;
+    margin: 15px 0;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 15px rgba(250, 112, 154, 0.4);
+}
+
+#taskZone {
+    margin-top: 20px;
+    display: none;
+    min-height: 300px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+#taskInstruction {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 16px;
+    font-weight: bold;
+    background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+    padding: 15px;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+    line-height: 1.6;
+}
+
+#taskHelp {
+    text-align: center;
+    color: #666;
+    margin-bottom: 15px;
+    font-size: 13px;
+    font-style: italic;
+    background: #fff9e6;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.interactive-task {
+    margin: 20px 0;
+}
+
+/* Tâche de pliage */
+.fold-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.cloth-item {
+    width: 200px;
+    height: 200px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 80px;
+    position: relative;
+    transition: all 0.5s;
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.cloth-item.folding {
+    animation: foldAnim 0.5s;
+}
+
+@keyframes foldAnim {
+    0% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(0.8) rotate(180deg); }
+    100% { transform: scale(0.6) rotate(360deg); }
+}
+
+.fold-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    width: 100%;
+}
+
+.fold-btn {
+    padding: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+}
+
+.fold-btn:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(102, 126, 234, 0.5);
+}
+
+.fold-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.fold-btn.correct {
+    background: linear-gradient(135deg, #4CAF50, #81C784);
+    animation: correctPulse 0.5s;
+}
+
+@keyframes correctPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.fold-step-indicator {
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: #667eea;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f0f4ff;
+    border-radius: 8px;
+}
+
+/* Tâche de rythme */
+.rhythm-container {
+    text-align: center;
+}
+
+.rhythm-display {
+    font-size: 60px;
+    margin: 30px 0;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rhythm-icon {
+    display: inline-block;
+    animation: rhythmPulse 0.5s;
+}
+
+@keyframes rhythmPulse {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.rhythm-btn {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    font-size: 60px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    transition: all 0.1s;
+    color: white;
+}
+
+.rhythm-btn:active {
+    transform: scale(0.9);
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4);
+}
+
+.rhythm-btn.hit {
+    animation: hitEffect 0.3s;
+}
+
+@keyframes hitEffect {
+    0% { background: linear-gradient(135deg, #4CAF50, #81C784); }
+    100% { background: linear-gradient(135deg, #667eea, #764ba2); }
+}
+
+.rhythm-waiting {
+    text-align: center;
+    font-size: 18px;
+    color: #999;
+    margin-top: 20px;
+}
+
+/* Tâche de trace/dessin */
+.trace-container {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    background: #f0f0f0;
+    border-radius: 12px;
+    overflow: hidden;
+    touch-action: none;
+    border: 3px dashed #667eea;
+}
+
+.trace-path {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 50%;
+    opacity: 0.3;
+    transition: opacity 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.trace-path.completed {
+    opacity: 1;
+    background: linear-gradient(135deg, #4CAF50, #81C784);
+}
+
+.trace-cursor {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background: #ff4757;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 10;
+    box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
+}
+
+.trace-start-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 18px;
+    font-weight: bold;
+    color: #667eea;
+    pointer-events: none;
+    text-align: center;
+    background: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+/* Tâche de mémoire */
+.memory-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.memory-card {
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+}
+
+.memory-card:hover {
+    transform: translateY(-5px);
+}
+
+.memory-card.show {
+    animation: cardFlip 0.5s;
+}
+
+.memory-card.matched {
+    background: linear-gradient(135deg, #4CAF50, #81C784);
+    cursor: default;
+}
+
+@keyframes cardFlip {
+    0% { transform: rotateY(0deg); }
+    50% { transform: rotateY(90deg); }
+    100% { transform: rotateY(0deg); }
+}
+
+.memory-status {
+    text-align: center;
+    font-size: 16px;
+    color: #667eea;
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+/* Tâche de tri rapide */
+.sort-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.sort-item {
+    padding: 15px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 10px;
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    cursor: grab;
+    transition: all 0.3s;
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+    user-select: none;
+}
+
+.sort-item:active {
+    cursor: grabbing;
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+}
+
+.sort-item.correct-position {
+    background: linear-gradient(135deg, #4CAF50, #81C784);
+}
+
+.sort-hint {
+    text-align: center;
+    margin-top: 15px;
+    padding: 10px;
+    background: #e8f5e9;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #2e7d32;
+}
+
+/* Tâche de timing */
+.timing-container {
+    text-align: center;
+}
+
+.timing-bar-container {
+    width: 100%;
+    height: 40px;
+    background: #e0e0e0;
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+    margin: 30px 0;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.timing-cursor {
+    position: absolute;
+    width: 8px;
+    height: 100%;
+    background: #ff4757;
+    box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
+    transition: none;
+}
+
+.timing-target {
+    position: absolute;
+    height: 100%;
+    background: linear-gradient(135deg, #4CAF50, #81C784);
+    opacity: 0.5;
+}
+
+.timing-btn {
+    padding: 20px 40px;
+    font-size: 24px;
+    font-weight: bold;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s;
+}
+
+.timing-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(102, 126, 234, 0.5);
+}
+
+.timing-legend {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+.timing-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.timing-legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.progress-indicator {
+    text-align: center;
+    margin: 15px 0;
+    font-size: 18px;
+    font-weight: bold;
+    color: #667eea;
+}
+
+#msg {
+    text-align: center;
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 16px;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#msg.success {
+    background: linear-gradient(135deg, #4CAF50, #81C784);
+    color: white;
+    animation: slideIn 0.5s;
+}
+
+#msg.error {
+    background: linear-gradient(135deg, #ff4757, #ff6348);
+    color: white;
+    animation: shake 0.5s;
+}
+
+#msg.info {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    color: white;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+#sleepOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 20, 0.95);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+#sleepAnimation {
+    font-size: 80px;
+    animation: float 2s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+#sleepText {
+    color: white;
+    font-size: 28px;
+    margin-top: 20px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+</style>
+</head>
+
+<body>
+<div id="game">
+
+<button id="quitBtn" onclick="quit()">✕ Quitter</button>
+
+<div id="top">
+    <div>
+        <div id="scoreDisplay">🏆 <span id="score">0</span></div>
+        <div id="difficultyDisplay">Niveau 1 - Facile</div>
+    </div>
+    <button id="sleepBtn" onclick="sleep()">🛏️ Dormir</button>
+</div>
+
+<div id="energyContainer">
+    <div id="energyLabel">
+        <span>⚡ Énergie</span>
+        <span id="energyValue">100%</span>
+    </div>
+    <div id="energy"><div id="energyBar"></div></div>
+</div>
+
+<button id="newTaskBtn" onclick="newTask()">🔀 Nouvelle tâche</button>
+
+<h3 id="taskTitle"></h3>
+
+<div id="taskZone">
+    <div id="taskInstruction"></div>
+    <div id="taskHelp"></div>
+    <div class="progress-indicator" id="progress"></div>
+    <div id="taskContent"></div>
+</div>
+
+<p id="msg"></p>
+
+<div id="sleepOverlay">
+    <div id="sleepAnimation">🌙</div>
+    <div id="sleepText">Repos en cours...</div>
+</div>
+
+</div>
+
+<script>
+let energy = 100;
+let score = 0;
+let remaining = 0;
+let currentTask = null;
+let sleeping = false;
+let tasksCompleted = 0;
+let difficultyLevel = 1;
+
+const tasks = [
+    {
+        name: "Plier le linge", 
+        icon: "👕", 
+        type: "fold", 
+        baseCount: 3, 
+        baseCost: 15, 
+        baseGain: 50,
+        instruction: "📋 Suis la séquence de pliage dans l'ordre exact",
+        help: "💡 Clique les boutons un par un : d'abord HAUT, puis DROITE, puis BAS, puis GAUCHE"
+    },
+    {
+        name: "Laver la vaisselle", 
+        icon: "🍽️", 
+        type: "rhythm", 
+        baseCount: 5, 
+        baseCost: 12, 
+        baseGain: 45,
+        instruction: "🎵 Clique sur le gros bouton quand l'icône apparaît en haut",
+        help: "💡 Attends qu'une assiette s'affiche, puis clique vite sur le bouton avant qu'elle disparaisse"
+    },
+    {
+        name: "Nettoyer la table", 
+        icon: "🧼", 
+        type: "trace", 
+        baseCount: 1, 
+        baseCost: 10, 
+        baseGain: 40,
+        instruction: "✏️ Maintiens le clic enfoncé et passe sur tous les points numérotés",
+        help: "💡 Clique et reste appuyé, puis déplace ta souris sur chaque cercle pour le nettoyer"
+    },
+    {
+        name: "Ranger les courses", 
+        icon: "🛒", 
+        type: "memory", 
+        baseCount: 6, 
+        baseCost: 18, 
+        baseGain: 55,
+        instruction: "🧠 Trouve les paires d'aliments identiques en cliquant sur les cartes",
+        help: "💡 Clique sur deux cartes pour les retourner. Si elles sont identiques, elles restent visibles"
+    },
+    {
+        name: "Trier le recyclage", 
+        icon: "♻️", 
+        type: "sort", 
+        baseCount: 1, 
+        baseCost: 14, 
+        baseGain: 45,
+        instruction: "🔄 Glisse-dépose les déchets pour les mettre dans le bon ordre",
+        help: "💡 Clique et maintiens sur un élément, puis déplace-le pour changer l'ordre"
+    },
+    {
+        name: "Étendre le linge", 
+        icon: "🧺", 
+        type: "timing", 
+        baseCount: 4, 
+        baseCost: 15, 
+        baseGain: 50,
+        instruction: "⏱️ Clique sur STOP quand le curseur rouge est dans la zone verte",
+        help: "💡 Regarde le curseur rouge bouger, et clique sur le bouton quand il entre dans le vert"
+    }
+];
+
+function getDifficultyMultipliers() {
+    // Niveau 1-3: Facile
+    if (difficultyLevel <= 3) {
+        return {
+            countMult: 1,
+            costMult: 1,
+            gainMult: 1,
+            speedMult: 1,
+            timeMult: 1,
+            label: "Facile",
+            class: "diff-easy"
+        };
+    }
+    // Niveau 4-7: Moyen
+    else if (difficultyLevel <= 7) {
+        return {
+            countMult: 1 + (difficultyLevel - 3) * 0.2,
+            costMult: 1 + (difficultyLevel - 3) * 0.15,
+            gainMult: 1 + (difficultyLevel - 3) * 0.1,
+            speedMult: 1 + (difficultyLevel - 3) * 0.15,
+            timeMult: 1 - (difficultyLevel - 3) * 0.08,
+            label: "Moyen",
+            class: "diff-medium"
+        };
+    }
+    // Niveau 8-12: Difficile
+    else if (difficultyLevel <= 12) {
+        return {
+            countMult: 1.8 + (difficultyLevel - 7) * 0.3,
+            costMult: 1.6 + (difficultyLevel - 7) * 0.2,
+            gainMult: 1.4 + (difficultyLevel - 7) * 0.15,
+            speedMult: 1.6 + (difficultyLevel - 7) * 0.25,
+            timeMult: 0.68 - (difficultyLevel - 7) * 0.08,
+            label: "Difficile",
+            class: "diff-hard"
+        };
+    }
+    // Niveau 13-18: Extrême
+    else if (difficultyLevel <= 18) {
+        return {
+            countMult: 3.3 + (difficultyLevel - 12) * 0.5,
+            costMult: 2.6 + (difficultyLevel - 12) * 0.3,
+            gainMult: 2.15 + (difficultyLevel - 12) * 0.2,
+            speedMult: 2.85 + (difficultyLevel - 12) * 0.4,
+            timeMult: 0.28 - (difficultyLevel - 12) * 0.03,
+            label: "Extrême",
+            class: "diff-extreme"
+        };
+    }
+    // Niveau 19+: IMPOSSIBLE
+    else {
+        return {
+            countMult: 6.3 + (difficultyLevel - 18) * 1,
+            costMult: 4.4 + (difficultyLevel - 18) * 0.5,
+            gainMult: 3.35 + (difficultyLevel - 18) * 0.3,
+            speedMult: 5.25 + (difficultyLevel - 18) * 0.8,
+            timeMult: Math.max(0.05, 0.1 - (difficultyLevel - 18) * 0.01),
+            label: "IMPOSSIBLE",
+            class: "diff-impossible"
+        };
+    }
+}
+
+function updateDifficultyDisplay() {
+    const mult = getDifficultyMultipliers();
+    const display = document.getElementById("difficultyDisplay");
+    display.textContent = `Niveau ${difficultyLevel} - ${mult.label}`;
+    display.className = mult.class;
+}
+
+function updateUI() {
+    document.getElementById("score").textContent = score;
+    document.getElementById("energyBar").style.width = energy + "%";
+    document.getElementById("energyValue").textContent = energy + "%";
+    
+    const bar = document.getElementById("energyBar");
+    bar.classList.remove("low", "critical");
+    if (energy <= 30) bar.classList.add("critical");
+    else if (energy <= 50) bar.classList.add("low");
+    
+    updateDifficultyDisplay();
+}
+
+function showMessage(text, type = "info") {
+    const msg = document.getElementById("msg");
+    msg.textContent = text;
+    msg.className = type;
+    setTimeout(() => {
+        msg.textContent = "";
+        msg.className = "";
+    }, 3000);
+}
+
+function newTask() {
+    if (energy <= 0) return lose();
+    if (sleeping) return;
+
+    const baseTask = tasks[Math.floor(Math.random() * tasks.length)];
+    const mult = getDifficultyMultipliers();
+    
+    currentTask = {
+        ...baseTask,
+        count: Math.ceil(baseTask.baseCount * mult.countMult),
+        cost: Math.ceil(baseTask.baseCost * mult.costMult),
+        gain: Math.ceil(baseTask.baseGain * mult.gainMult),
+        speedMult: mult.speedMult,
+        timeMult: mult.timeMult
+    };
+    
+    const zone = document.getElementById("taskZone");
+    const content = document.getElementById("taskContent");
+
+    content.innerHTML = "";
+    zone.style.display = "block";
+    document.getElementById("taskTitle").textContent = currentTask.icon + " " + currentTask.name;
+    document.getElementById("taskInstruction").textContent = currentTask.instruction;
+    document.getElementById("taskHelp").textContent = currentTask.help;
+    
+    remaining = currentTask.count;
+    updateProgress();
+
+    switch(currentTask.type) {
+        case "fold":
+            createFoldTask();
+            break;
+        case "rhythm":
+            createRhythmTask();
+            break;
+        case "trace":
+            createTraceTask();
+            break;
+        case "memory":
+            createMemoryTask();
+            break;
+        case "sort":
+            createSortTask();
+            break;
+        case "timing":
+            createTimingTask();
+            break;
+    }
+}
+
+// ===== TÂCHE DE PLIAGE =====
+function createFoldTask() {
+    const content = document.getElementById("taskContent");
+    const container = document.createElement("div");
+    container.className = "fold-container";
+    
+    const stepIndicator = document.createElement("div");
+    stepIndicator.className = "fold-step-indicator";
+    stepIndicator.textContent = "Étape : Clique d'abord sur ⬆️ HAUT";
+    
+    const cloth = document.createElement("div");
+    cloth.className = "cloth-item";
+    cloth.textContent = currentTask.icon;
+    
+    const buttonsDiv = document.createElement("div");
+    buttonsDiv.className = "fold-buttons";
+    
+    const sequence = ["⬆️ Haut", "➡️ Droite", "⬇️ Bas", "⬅️ Gauche"];
+    const nextSteps = ["➡️ DROITE", "⬇️ BAS", "⬅️ GAUCHE", "✅ Terminé !"];
+    let currentStep = 0;
+    
+    sequence.forEach((label, index) => {
+        const btn = document.createElement("button");
+        btn.className = "fold-btn";
+        btn.textContent = label;
+        btn.onclick = () => {
+            if (index === currentStep) {
+                btn.classList.add("correct");
+                btn.disabled = true;
+                cloth.classList.add("folding");
+                setTimeout(() => cloth.classList.remove("folding"), 500);
+                
+                currentStep++;
+                if (currentStep < sequence.length) {
+                    stepIndicator.textContent = "Étape suivante : Clique sur " + nextSteps[index];
+                } else {
+                    remaining--;
+                    updateProgress();
+                    if (remaining === 0) {
+                        finishTask();
+                    } else {
+                        stepIndicator.textContent = "✅ Pliage réussi ! Recommence : ⬆️ HAUT";
+                        setTimeout(() => {
+                            currentStep = 0;
+                            stepIndicator.textContent = "Étape : Clique d'abord sur ⬆️ HAUT";
+                            buttonsDiv.querySelectorAll("button").forEach(b => {
+                                b.classList.remove("correct");
+                                b.disabled = false;
+                            });
+                        }, 800);
+                    }
+                }
+            } else {
+                showMessage("❌ Non ! Suis l'ordre indiqué en haut", "error");
+            }
+        };
+        buttonsDiv.appendChild(btn);
+    });
+    
+    container.appendChild(stepIndicator);
+    container.appendChild(cloth);
+    container.appendChild(buttonsDiv);
+    content.appendChild(container);
+}
+
+// ===== TÂCHE DE RYTHME =====
+function createRhythmTask() {
+    const content = document.getElementById("taskContent");
+    const container = document.createElement("div");
+    container.className = "rhythm-container";
+    
+    const display = document.createElement("div");
+    display.className = "rhythm-display";
+    
+    const waitingText = document.createElement("div");
+    waitingText.className = "rhythm-waiting";
+    waitingText.textContent = "👀 Regarde ici... L'icône va apparaître !";
+    display.appendChild(waitingText);
+    
+    const btn = document.createElement("button");
+    btn.className = "rhythm-btn";
+    btn.textContent = "👆 CLIQUE ICI";
+    
+    let expectingClick = false;
+    let rhythmInterval;
+    
+    const baseInterval = 1800;
+    const baseWindow = 1000;
+    const interval = Math.max(400, baseInterval / currentTask.speedMult);
+    const window = Math.max(200, baseWindow * currentTask.timeMult);
+    
+    const startRhythm = () => {
+        rhythmInterval = setInterval(() => {
+            expectingClick = true;
+            waitingText.remove();
+            const icon = document.createElement("span");
+            icon.className = "rhythm-icon";
+            icon.textContent = currentTask.icon;
+            display.innerHTML = "";
+            display.appendChild(icon);
+            
+            setTimeout(() => {
+                if (expectingClick) {
+                    showMessage("❌ Trop lent ! Clique plus vite", "error");
+                    expectingClick = false;
+                    display.innerHTML = "";
+                    display.appendChild(waitingText);
+                }
+            }, window);
+        }, interval);
+    };
+    
+    btn.onclick = () => {
+        if (expectingClick) {
+            btn.classList.add("hit");
+            setTimeout(() => btn.classList.remove("hit"), 300);
+            expectingClick = false;
+            remaining--;
+            updateProgress();
+            showMessage("✅ Bien joué !", "success");
+            display.innerHTML = "";
+            display.appendChild(waitingText);
+            
+            if (remaining === 0) {
+                clearInterval(rhythmInterval);
+                finishTask();
+            }
+        }
+    };
+    
+    container.appendChild(display);
+    container.appendChild(btn);
+    content.appendChild(container);
+    
+    setTimeout(startRhythm, 1000);
+}
+
+// ===== TÂCHE DE TRACÉ =====
+function createTraceTask() {
+    const content = document.getElementById("taskContent");
+    const container = document.createElement("div");
+    container.className = "trace-container";
+    
+    const startMessage = document.createElement("div");
+    startMessage.className = "trace-start-message";
+    startMessage.textContent = "👆 Clique ici et garde le bouton enfoncé pour commencer";
+    container.appendChild(startMessage);
+    
+    const points = [];
+    const numPoints = Math.min(20, Math.ceil(8 * currentTask.speedMult));
+    
+    for (let i = 0; i < numPoints; i++) {
+        const point = document.createElement("div");
+        point.className = "trace-path";
+        point.textContent = i + 1;
+        const baseSize = 50;
+        const size = Math.max(20, baseSize / Math.sqrt(currentTask.speedMult));
+        point.style.width = size + "px";
+        point.style.height = size + "px";
+        point.style.fontSize = Math.max(12, 20 / Math.sqrt(currentTask.speedMult)) + "px";
+        point.style.left = (5 + (i * (90 / numPoints))) + "%";
+        point.style.top = (20 + Math.sin(i * 0.8) * 40) + "%";
+        container.appendChild(point);
+        points.push(point);
+    }
+    
+    const cursor = document.createElement("div");
+    cursor.className = "trace-cursor";
+    cursor.style.display = "none";
+    container.appendChild(cursor);
+    
+    let isDrawing = false;
+    let completedPoints = 0;
+    let hasStarted = false;
+    
+    const updateCursor = (e) => {
+        const rect = container.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        cursor.style.left = x - 15 + "px";
+        cursor.style.top = y - 15 + "px";
+        
+        if (isDrawing) {
+            if (!hasStarted) {
+                hasStarted = true;
+                startMessage.style.display = "none";
+            }
+            
+            points.forEach((point, index) => {
+                if (!point.classList.contains("completed")) {
+                    const pointRect = point.getBoundingClientRect();
+                    const pointX = pointRect.left + pointRect.width / 2 - rect.left;
+                    const pointY = pointRect.top + pointRect.height / 2 - rect.top;
+                    
+                    const hitRadius = Math.max(25, 40 / Math.sqrt(currentTask.speedMult));
+                    const distance = Math.sqrt((x - pointX) ** 2 + (y - pointY) ** 2);
+                    if (distance < hitRadius) {
+                        point.classList.add("completed");
+                        point.textContent = "✓";
+                        completedPoints++;
+                        if (completedPoints === numPoints) {
+                            showMessage("✅ Tout est propre !", "success");
+                            setTimeout(() => finishTask(), 500);
+                        }
+                    }
+                }
+            });
+        }
+    };
+    
+    container.onmousedown = () => {
+        isDrawing = true;
+        cursor.style.display = "block";
+    };
+    
+    container.onmouseup = () => {
+        isDrawing = false;
+        if (hasStarted && completedPoints < numPoints) {
+            showMessage("⚠️ Continue sans relâcher le clic !", "error");
+        }
+    };
+    
+    container.onmousemove = updateCursor;
+    container.onmouseleave = () => {
+        cursor.style.display = "none";
+        isDrawing = false;
+    };
+    
+    content.appendChild(container);
+}
+
+// ===== TÂCHE DE MÉMOIRE =====
+function createMemoryTask() {
+    const content = document.getElementById("taskContent");
+    const container = document.createElement("div");
+    container.className = "memory-container";
+    
+    const status = document.createElement("div");
+    status.className = "memory-status";
+    status.textContent = "🧠 Trouve les paires !";
+    
+    const icons = ["🍎", "🍌", "🍊", "🥕", "🥦", "🍇", "🍓", "🥑", "🥔", "🍆", "🌽", "🥒"];
+    const numPairs = Math.min(12, Math.ceil(currentTask.count / 2));
+    const pairs = icons.slice(0, numPairs);
+    const cards = [...pairs, ...pairs].sort(() => Math.random() - 0.5);
+    
+    if (cards.length > 12) {
+        container.style.gridTemplateColumns = "repeat(4, 1fr)";
+    }
+    
+    let firstCard = null;
+    let secondCard = null;
+    let locked = false;
+    let matchedPairs = 0;
+    
+    const showTime = Math.max(300, 1200 * currentTask.timeMult);
+    
+    cards.forEach((icon, index) => {
+        const card = document.createElement("div");
+        card.className = "memory-card";
+        card.textContent = "❓";
+        card.dataset.icon = icon;
+        card.dataset.index = index;
+        
+        card.onclick = () => {
+            if (locked || card.classList.contains("matched") || card === firstCard) return;
+            
+            card.classList.add("show");
+            card.textContent = icon;
+            
+            if (!firstCard) {
+                firstCard = card;
+                status.textContent = "👀 Mémorise cette carte et trouve son double";
+            } else {
+                secondCard = card;
+                locked = true;
+                
+                if (firstCard.dataset.icon === secondCard.dataset.icon) {
+                    setTimeout(() => {
+                        firstCard.classList.add("matched");
+                        secondCard.classList.add("matched");
+                        matchedPairs++;
+                        remaining -= 2;
+                        updateProgress();
+                        
+                        status.textContent = "✅ Paire trouvée ! Continue";
+                        
+                        if (matchedPairs === pairs.length) {
+                            finishTask();
+                        }
+                        
+                        firstCard = null;
+                        secondCard = null;
+                        locked = false;
+                    }, 500);
+                } else {
+                    status.textContent = "❌ Ce n'est pas la même ! Réessaie";
+                    setTimeout(() => {
+                        firstCard.classList.remove("show");
+                        secondCard.classList.remove("show");
+                        firstCard.textContent = "❓";
+                        secondCard.textContent = "❓";
+                        firstCard = null;
+                        secondCard = null;
+                        locked = false;
+                        status.textContent = "🧠 Trouve les paires !";
+                    }, showTime);
+                }
+            }
+        };
+        
+        container.appendChild(card);
+    });
+    
+    content.appendChild(status);
+    content.appendChild(container);
+}
+
+// ===== TÂCHE DE TRI =====
+function createSortTask() {
+    const content = document.getElementById("taskContent");
+    const container = document.createElement("div");
+    container.className = "sort-container";
+    
+    const hint = document.createElement("div");
+    hint.className = "sort-hint";
+    
+    const allItems = [
+        { text: "🥤 Plastique", order: 1 },
+        { text: "📄 Papier", order: 2 },
+        { text: "🥫 Métal", order: 3 },
+        { text: "🍾 Verre", order: 4 },
+        { text: "🍌 Compost", order: 5 },
+        { text: "🔋 Pile", order: 6 },
+        { text: "💡 Ampoule", order: 7 }
+    ];
+    
+    const numItems = Math.min(7, Math.ceil(4 * Math.sqrt(currentTask.speedMult)));
+    const items = allItems.slice(0, numItems).sort(() => Math.random() - 0.5);
+    
+    hint.textContent = "📌 Ordre : " + allItems.slice(0, numItems).map(i => i.text).join(" → ");
+    
+    let draggedElement = null;
+    
+    items.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "sort-item";
+        div.textContent = item.text;
+        div.dataset.order = item.order;
+        div.draggable = true;
+        
+        div.ondragstart = (e) => {
+            draggedElement = div;
+            setTimeout(() => div.style.opacity = "0.5", 0);
+        };
+        
+        div.ondragend = () => {
+            div.style.opacity = "1";
+            checkOrder();
+        };
+        
+        div.ondragover = (e) => {
+            e.preventDefault();
+        };
+        
+        div.ondrop = (e) => {
+            e.preventDefault();
+            if (draggedElement !== div) {
+                const allItems = [...container.children];
+                const draggedIndex = allItems.indexOf(draggedElement);
+                const targetIndex = allItems.indexOf(div);
+                
+                if (draggedIndex < targetIndex) {
+                    container.insertBefore(draggedElement, div.nextSibling);
+                } else {
+                    container.insertBefore(draggedElement, div);
+                }
+            }
+        };
+        
+        container.appendChild(div);
+    });
+    
+    function checkOrder() {
+        const currentOrder = [...container.children].map(el => parseInt(el.dataset.order));
+        const isCorrect = currentOrder.every((val, idx) => val === idx + 1);
+        
+        if (isCorrect) {
+            container.querySelectorAll(".sort-item").forEach(el => {
+                el.classList.add("correct-position");
+                el.draggable = false;
+            });
+            showMessage("✅ Parfait ! Tout est bien trié", "success");
+            setTimeout(() => finishTask(), 800);
+        }
+    }
+    
+    content.appendChild(hint);
+    content.appendChild(container);
+}
+
+// ===== TÂCHE DE TIMING =====
+function createTimingTask() {
+    const content = document.getElementById("taskContent");
+    const container = document.createElement("div");
+    container.className = "timing-container";
+    
+    const legend = document.createElement("div");
+    legend.className = "timing-legend";
+    legend.innerHTML = `
+        <div class="timing-legend-item">
+            <div class="timing-legend-color" style="background: #ff4757;"></div>
+            <span>Curseur</span>
+        </div>
+        <div class="timing-legend-item">
+            <div class="timing-legend-color" style="background: linear-gradient(135deg, #4CAF50, #81C784);"></div>
+            <span>Zone verte = CLIQUE !</span>
+        </div>
+    `;
+    
+    const barContainer = document.createElement("div");
+    barContainer.className = "timing-bar-container";
+    
+    const cursor = document.createElement("div");
+    cursor.className = "timing-cursor";
+    
+    const target = document.createElement("div");
+    target.className = "timing-target";
+    
+    barContainer.appendChild(cursor);
+    barContainer.appendChild(target);
+    
+    const btn = document.createElement("button");
+    btn.className = "timing-btn";
+    btn.textContent = "⏱️ STOP !";
+    
+    let position = 0;
+    let direction = 1;
+    let targetStart = 40 + Math.random() * 30;
+    let targetWidth = Math.max(5, 20 / currentTask.speedMult);
+    
+    target.style.left = targetStart + "%";
+    target.style.width = targetWidth + "%";
+    
+    const speed = 1.5 * currentTask.speedMult;
+    
+    const interval = setInterval(() => {
+        position += direction * speed;
+        if (position >= 100) {
+            position = 100;
+            direction = -1;
+        } else if (position <= 0) {
+            position = 0;
+            direction = 1;
+        }
+        cursor.style.left = position + "%";
+    }, 20);
+    
+    btn.onclick = () => {
+        const targetEnd = targetStart + targetWidth;
+        
+        if (position >= targetStart && position <= targetEnd) {
+            showMessage("✅ Timing parfait !", "success");
+            remaining--;
+            updateProgress();
+            
+            if (remaining === 0) {
+                clearInterval(interval);
+                finishTask();
+            } else {
+                targetStart = 40 + Math.random() * 30;
+                target.style.left = targetStart + "%";
+            }
+        } else {
+            showMessage("❌ Le curseur n'était pas dans le vert !", "error");
+        }
+    };
+    
+    container.appendChild(legend);
+    container.appendChild(barContainer);
+    container.appendChild(btn);
+    content.appendChild(container);
+}
+
+function updateProgress() {
+    const total = currentTask.count;
+    const done = total - remaining;
+    document.getElementById("progress").textContent = 
+        `Progression: ${done}/${total} (${Math.round(done/total*100)}%)`;
+}
+
+function finishTask() {
+    energy -= currentTask.cost;
+    score += currentTask.gain;
+    tasksCompleted++;
+    
+    // Augmente la difficulté tous les 2 tâches au début, puis tous les 3
+    if (tasksCompleted % (difficultyLevel < 5 ? 2 : 3) === 0) {
+        difficultyLevel++;
+        const mult = getDifficultyMultipliers();
+        showMessage(`🔥 Niveau ${difficultyLevel} - ${mult.label} débloqué !`, "info");
+    }
+
+    document.getElementById("taskZone").style.display = "none";
+    document.getElementById("taskTitle").textContent = "";
+    showMessage("✅ " + currentTask.name + " terminée ! +" + currentTask.gain + " points", "success");
+
+    updateUI();
+    if (energy <= 0) lose();
+}
+
+function sleep() {
+    if (sleeping || energy >= 100) return;
+    
+    sleeping = true;
+    document.getElementById("sleepBtn").disabled = true;
+    document.getElementById("newTaskBtn").disabled = true;
+    
+    const overlay = document.getElementById("sleepOverlay");
+    overlay.style.display = "flex";
+    
+    let duration = 3000;
+    let recovered = 50;
+    
+    if (energy < 30) {
+        duration = 4000;
+        recovered = 60;
+    }
+    
+    setTimeout(() => {
+        energy = Math.min(100, energy + recovered);
+        overlay.style.display = "none";
+        showMessage(`💤 Repos terminé ! +${recovered} énergie`, "success");
+        updateUI();
+        sleeping = false;
+        document.getElementById("sleepBtn").disabled = false;
+        document.getElementById("newTaskBtn").disabled = false;
+    }, duration);
+}
+
+function lose() {
+    showMessage(`💀 Énergie épuisée ! Score final: ${score} | Niveau atteint: ${difficultyLevel}`, "error");
+    document.querySelectorAll("button").forEach(b => b.disabled = true);
+    document.getElementById("quitBtn").disabled = false;
+}
+
+function quit() {
+    if (confirm("Voulez-vous vraiment quitter le jeu ?")) {
+        location.reload();
+    }
+}
+
+updateUI();
+showMessage("🎮 Bienvenue ! Le jeu devient de plus en plus difficile...", "info");
+</script>
+
+</body>
+</html>

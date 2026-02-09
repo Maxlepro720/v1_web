@@ -408,7 +408,7 @@
 
         if (qteScore <= 0) {
             qteActive = false;
-            localStorage.setItem('magic_orbs', 100);
+            sessionStorage.setItem('magic_orbs', 5);
             alert("L'Oracle vous a accordé une seconde chance. +100 MO");
             document.getElementById('qte-overlay').style.display = 'none';
             updateWallet(false);

@@ -375,7 +375,7 @@
         qteActive = false;
         cancelAnimationFrame(qteAnim);
         if (ringScale >= 0.15 && ringScale <= 0.35) {
-            localStorage.setItem('mines_coins', 100);
+            sessionStorage.setItem('mines_coins', 100);
             alert("ACCÈS AUTORISÉ : +100 MC");
             document.getElementById('qte-overlay').style.display = 'none';
             updateWallet();

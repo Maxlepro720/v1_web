@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test IP Ban</title>
+</head>
+<body>
+    <h1>Test IP</h1>
+
+    <script>
+        // Liste des IP bannies
+        const bannedIPs = [
+            "123.45.67.89",
+            "98.76.54.32"
+        ];
+
+        // Récupération de l'IP publique
+        fetch("https://api.ipify.org?format=json")
+            .then(response => response.json())
+            .then(data => {
+                const userIP = data.ip;
+                console.log("IP détectée :", userIP);
+
+                // Comparaison avec la liste
+                if (bannedIPs.includes(userIP)) {
+                    console.log("❌ IP BANNIE");
+                } else {
+                    console.log("✅ IP AUTORISÉE");
+                }
+            })
+            .catch(err => {
+                console.error("Erreur récupération IP :", err);
+            });
+    </script>
+</body>
+</html>

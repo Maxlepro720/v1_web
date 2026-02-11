@@ -618,7 +618,16 @@ function reloadAllChunks() {
     for (const k in chunks) delete chunks[k];
     proceduralCache = {};
 }
-
+function updateHotbarUI() {
+    const slots = document.querySelectorAll('.hotslot');
+    slots.forEach((slot, index) => {
+        if (index === activeSlot) {
+            slot.classList.add('active');
+        } else {
+            slot.classList.remove('active');
+        }
+    });
+}
 function setupInputs() {
     document.addEventListener('keydown', e => {
         switch(e.code) {
@@ -628,6 +637,15 @@ function setupInputs() {
             case 'KeyD': moveRight = true; break;
             case 'Space': if(canJump) { velocity.y = 0.18; canJump = false; } break;
             case 'ShiftLeft': isSprinting = true; break;
+            // Dans setupInputs, à l'intérieur de document.addEventListener('keydown', ...)
+            case 'Digit1': activeSlot = 0; updateHotbarUI(); break;
+            case 'Digit2': activeSlot = 1; updateHotbarUI(); break;
+            case 'Digit3': activeSlot = 2; updateHotbarUI(); break;
+            case 'Digit4': activeSlot = 3; updateHotbarUI(); break;
+            case 'Digit5': activeSlot = 4; updateHotbarUI(); break;
+            case 'Digit6': activeSlot = 5; updateHotbarUI(); break;
+            case 'Digit7': activeSlot = 6; updateHotbarUI(); break;
+            case 'Digit8': activeSlot = 7; updateHotbarUI(); break;
             case 'KeyC': {
                 swingArm();
                 const h = raycastDDA();

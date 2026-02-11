@@ -348,6 +348,7 @@ function loadMaterials() {
     const tGrassSide = loadTex(TEXTURES_FILES.grass_side);
     const tStone = loadTex(TEXTURES_FILES.stone);
     const tWood = loadTex(TEXTURES_FILES.wood);
+    const tLeaves = loadTex(TEXTURES_FILES.leaves);
 
     // Ordre des faces ThreeJS : Right, Left, Top, Bottom, Front, Back
     materials.grass = [
@@ -364,7 +365,7 @@ function loadMaterials() {
     materials.dirt     = simple(new THREE.MeshLambertMaterial({ map: tDirt }));
     materials.stone    = simple(new THREE.MeshLambertMaterial({ map: tStone, color: 0xaaaaaa }));
     materials.wood     = simple(new THREE.MeshLambertMaterial({ map: tWood }));
-    materials.leaves   = simple(new THREE.MeshLambertMaterial({ map: tWood }));
+    materials.leaves   = simple(new THREE.MeshLambertMaterial({ map: tleave }));
     materials.coal     = simple(col(0x333333));
     materials.iron     = simple(col(0xCD853F));
     materials.diamond  = simple(col(0x00FFFF));

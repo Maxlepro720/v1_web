@@ -534,39 +534,37 @@ function raycastDDA(maxDist = 6) {
     const origin = camera.position.clone();
     const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
 
-    // Coordonnées de la cellule de départ
+    // On commence à la position du bloc
     let x = Math.floor(origin.x);
     let y = Math.floor(origin.y);
     let z = Math.floor(origin.z);
 
-    // Direction du pas
     const stepX = (dir.x > 0) ? 1 : -1;
     const stepY = (dir.y > 0) ? 1 : -1;
     const stepZ = (dir.z > 0) ? 1 : -1;
 
-    // Distance pour traverser un bloc entier sur chaque axe
     const deltaX = Math.abs(1 / dir.x);
     const deltaY = Math.abs(1 / dir.y);
     const deltaZ = Math.abs(1 / dir.z);
 
-    // Distance jusqu'à la prochaine face de bloc
-    let sideX = (dir.x > 0) ? (x + 1 - origin.x) * deltaX : (origin.x - x) * deltaX;
-    let sideY = (dir.y > 0) ? (y + 1 - origin.y) * deltaY : (origin.y - y) * deltaY;
-    let sideZ = (dir.z > 0) ? (z + 1 - origin.z) * deltaZ : (origin.z - z) * deltaZ;
+    let sideX = (dir.x > 0) ? (Math.floor(origin.x) + 1 - origin.x) * deltaX : (origin.x - Math.floor(origin.x)) * deltaX;
+    let sideY = (dir.y > 0) ? (Math.floor(origin.y) + 1 - origin.y) * deltaY : (origin.y - Math.floor(origin.y)) * deltaY;
+    let sideZ = (dir.z > 0) ? (Math.floor(origin.z) + 1 - origin.z) * deltaZ : (origin.z - Math.floor(origin.z)) * deltaZ;
 
     let face = { x: 0, y: 0, z: 0 };
 
-    for (let i = 0; i < 50; i++) {
-        // On vérifie le bloc actuel
+    for (let i = 0; i < 64; i++) {
+        // --- AJUSTEMENT ICI ---
+        // On vérifie le bloc avec un léger décalage vers l'intérieur du bloc visé
+        // pour éviter de toucher le bloc d'à côté par erreur d'arrondi.
         if (getBlock(x, y, z)) {
             return { x, y, z, face };
         }
 
-        // Avancement vers le bloc suivant le plus proche
         if (sideX < sideY && sideX < sideZ) {
             sideX += deltaX;
             x += stepX;
-            face = { x: -stepX, y: 0, z: 0 }; // Définit la face touchée
+            face = { x: -stepX, y: 0, z: 0 };
         } else if (sideY < sideZ) {
             sideY += deltaY;
             y += stepY;
@@ -577,11 +575,9 @@ function raycastDDA(maxDist = 6) {
             face = { x: 0, y: 0, z: -stepZ };
         }
 
-        // Vérification distance maximum
-        const dx = x - origin.x;
-        const dy = y - origin.y;
-        const dz = z - origin.z;
-        if ((dx*dx + dy*dy + dz*dz) > maxDist*maxDist) break;
+        // Distance de sécurité
+        const distSq = (x - origin.x)**2 + (y - origin.y)**2 + (z - origin.z)**2;
+        if (distSq > maxDist * maxDist) break;
     }
     return null;
 }

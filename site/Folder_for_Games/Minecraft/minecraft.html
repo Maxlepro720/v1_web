@@ -507,22 +507,23 @@ function updateChunks() {
 // PHYSIQUE & COLLISIONS (CORRIGÉ)
 // ============================================================
 function checkCollision(pos) {
-    // Vérification simple : le corps du joueur est un cylindre
-    // On vérifie le point aux pieds et le point à la tête
-    const r = 0.3; // Rayon du joueur
-    const x = pos.x;
-    const y = pos.y;
-    const z = pos.z;
+    const r = 0.3; // Rayon de collision du joueur
+    // On vérifie 4 points autour du joueur pour ne pas traverser les coins
+    const checkPoints = [
+        { x: pos.x + r, z: pos.z + r },
+        { x: pos.x - r, z: pos.z + r },
+        { x: pos.x + r, z: pos.z - r },
+        { x: pos.x - r, z: pos.z - r }
+    ];
 
-    // Pieds (légèrement au-dessus du sol absolu pour éviter le collage)
-    if (getBlock(x, y - 1.5, z)) return true;
-    // Tête
-    if (getBlock(x, y, z)) return true;
-    
-    // Vérification des bords (murs) - 4 points cardinaux
-    if (getBlock(x+r, y-1, z) || getBlock(x-r, y-1, z) || getBlock(x, y-1, z+r) || getBlock(x, y-1, z-r)) return true;
-    if (getBlock(x+r, y, z) || getBlock(x-r, y, z) || getBlock(x, y, z+r) || getBlock(x, y, z-r)) return true;
-
+    for (let p of checkPoints) {
+        // Vérifie aux pieds, à la taille et à la tête
+        if (getBlock(p.x, pos.y - 1.5, p.z) || 
+            getBlock(p.x, pos.y - 0.8, p.z) || 
+            getBlock(p.x, pos.y, p.z)) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -731,43 +732,52 @@ function animate() {
         const vForward = direction.z * speed;
         const vRight   = direction.x * speed;
 
-        // --- 2. Physique & Collisions (AABB simple) ---
-        // On bouge un axe à la fois pour glisser contre les murs
+        // --- 2. Physique & Collisions ---
         
-        // --- Axe X ---
+        // Axe X
         controls.moveRight(vRight);
         if (checkCollision(camera.position)) {
-            controls.moveRight(-vRight); // Annuler mouvement si collision
+            controls.moveRight(-vRight); 
         }
 
-        // --- Axe Z ---
+        // Axe Z
         controls.moveForward(vForward);
         if (checkCollision(camera.position)) {
-            controls.moveForward(-vForward); // Annuler mouvement si collision
+            controls.moveForward(-vForward);
         }
 
-        // --- Axe Y (Gravité) ---
-        velocity.y -= 0.01; // Gravité constante
+        // Axe Y (Gravité)
+        velocity.y -= 0.008; 
         camera.position.y += velocity.y;
         
-        // Collision Sol/Plafond
-        // On vérifie spécifiquement les pieds
-        if (getBlock(camera.position.x, camera.position.y - 1.6, camera.position.z)) {
-            // Collision Sol
+        // Collision Sol
+        let footPos = camera.position.y - 1.6;
+        if (getBlock(camera.position.x, footPos, camera.position.z)) {
             if (velocity.y < 0) {
                 velocity.y = 0;
                 canJump = true;
-                // Caler sur le bloc entier
-                camera.position.y = Math.floor(camera.position.y - 1.6) + 1 + 1.6001;
+                // Calage précis pour éviter de s'enfoncer
+                camera.position.y = Math.floor(footPos) + 1 + 1.6001;
             }
         } 
-        // Collision Tête (Plafond)
+        // Collision Plafond
         else if (getBlock(camera.position.x, camera.position.y + 0.1, camera.position.z)) {
-            if (velocity.y > 0) velocity.y = 0;
+            if (velocity.y > 0) {
+                velocity.y = 0;
+                camera.position.y = Math.floor(camera.position.y + 0.1) - 0.1001;
+            }
+        }
+
+        // --- SÉCURITÉ ANTI-BLOQUAGE (UNSTUCK) ---
+        // Si la tête ou le corps est dans un bloc, on repousse vers le haut
+        if (getBlock(camera.position.x, camera.position.y, camera.position.z) || 
+            getBlock(camera.position.x, camera.position.y - 0.8, camera.position.z)) {
+            camera.position.y += 0.1; 
+            velocity.y = 0;
         }
 
         // Animation bras
-        if (moveForward||moveBackward||moveLeft||moveRight) {
+        if (moveForward || moveBackward || moveLeft || moveRight) {
             armMesh.position.y = -0.4 + Math.sin(now * 0.015) * 0.02;
         }
 

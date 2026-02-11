@@ -364,7 +364,7 @@ function loadMaterials() {
     materials.dirt     = simple(new THREE.MeshLambertMaterial({ map: tDirt }));
     materials.stone    = simple(new THREE.MeshLambertMaterial({ map: tStone, color: 0xaaaaaa }));
     materials.wood     = simple(new THREE.MeshLambertMaterial({ map: tWood }));
-    materials.leaves   = simple(col(0x228B22)); // Couleur unie pour perf et visibilité
+    materials.leaves   = simple(new THREE.MeshLambertMaterial({ map: tWood }));
     materials.coal     = simple(col(0x333333));
     materials.iron     = simple(col(0xCD853F));
     materials.diamond  = simple(col(0x00FFFF));

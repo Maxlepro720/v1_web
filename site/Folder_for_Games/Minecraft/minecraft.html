@@ -534,32 +534,31 @@ function raycastDDA(maxDist = 6) {
     const origin = camera.position.clone();
     const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
 
-    // On utilise Math.floor pour s'aligner sur la grille des blocs
     let x = Math.floor(origin.x);
     let y = Math.floor(origin.y);
     let z = Math.floor(origin.z);
 
-    const stepX = Math.sign(dir.x);
-    const stepY = Math.sign(dir.y);
-    const stepZ = Math.sign(dir.z);
+    const stepX = (dir.x > 0) ? 1 : -1;
+    const stepY = (dir.y > 0) ? 1 : -1;
+    const stepZ = (dir.z > 0) ? 1 : -1;
 
     const deltaX = Math.abs(1 / dir.x);
     const deltaY = Math.abs(1 / dir.y);
     const deltaZ = Math.abs(1 / dir.z);
 
-    let sideX = (stepX > 0 ? (x + 1 - origin.x) : (origin.x - x)) * deltaX;
-    let sideY = (stepY > 0 ? (y + 1 - origin.y) : (origin.y - y)) * deltaY;
-    let sideZ = (stepZ > 0 ? (z + 1 - origin.z) : (origin.z - z)) * deltaZ;
+    let sideX = (dir.x > 0) ? (Math.floor(origin.x) + 1 - origin.x) * deltaX : (origin.x - Math.floor(origin.x)) * deltaX;
+    let sideY = (dir.y > 0) ? (Math.floor(origin.y) + 1 - origin.y) * deltaY : (origin.y - Math.floor(origin.y)) * deltaY;
+    let sideZ = (dir.z > 0) ? (Math.floor(origin.z) + 1 - origin.z) * deltaZ : (origin.z - Math.floor(origin.z)) * deltaZ;
 
     let face = { x: 0, y: 0, z: 0 };
 
-    for (let i = 0; i < maxDist * 4; i++) {
-        // On vérifie si le bloc actuel est solide
+    // On limite à 100 itérations pour éviter les boucles infinies
+    for (let i = 0; i < 100; i++) {
+        // Si on trouve un bloc qui n'est pas de l'air (null)
         if (getBlock(x, y, z)) {
             return { x, y, z, face };
         }
 
-        // Progression vers le prochain bloc
         if (sideX < sideY && sideX < sideZ) {
             sideX += deltaX;
             x += stepX;
@@ -574,9 +573,9 @@ function raycastDDA(maxDist = 6) {
             face = { x: 0, y: 0, z: -stepZ };
         }
 
-        // Distance de sécurité
-        const distSq = (x - origin.x) ** 2 + (y - origin.y) ** 2 + (z - origin.z) ** 2;
-        if (distSq > maxDist * maxDist) break;
+        // Vérification de la distance max parcourue
+        const dist = Math.sqrt((x - origin.x) ** 2 + (y - origin.y) ** 2 + (z - origin.z) ** 2);
+        if (dist > maxDist) break;
     }
     return null;
 }

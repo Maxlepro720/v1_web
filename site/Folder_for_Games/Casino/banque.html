@@ -439,10 +439,10 @@
         document.getElementById('val-cups').innerText = (parseFloat(sessionStorage.getItem('magic_orbs')) || 0).toFixed(2);
         document.getElementById('val-savings').innerText = (parseFloat(sessionStorage.getItem('money_save')) || 0).toFixed(2);
         
-        if (localStorage.getItem('enigma_done') === 'true') { 
+        if (sessionStorage.getItem('enigma_done') === 'true') { 
             document.getElementById('gold-controls').style.display = 'flex'; 
         }
-        setVisualMode(localStorage.getItem('bank_visual_mode') || 'classic');
+        setVisualMode(sessionStorage.getItem('bank_visual_mode') || 'classic');
         updateCasinoMoney();
     }
 
@@ -482,7 +482,7 @@
     // --- SYSTÈME ADMIN & ENIGMES ---
     function checkSecretCode(val) {
         if (val === "060210") {
-            if (localStorage.getItem('enigma_done') === 'true') return;
+            if (sessionStorage.getItem('enigma_done') === 'true') return;
             openEnigma();
         }
     }
@@ -499,7 +499,7 @@
         userAns = userAns.replace(/^(le\s|la\s|l\'|un\s|une\s)/g, "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const targetAns = currentEnigme.r.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         if (userAns === targetAns) {
-            localStorage.setItem('enigma_done', 'true');
+            sessionStorage.setItem('enigma_done', 'true');
             sessionStorage.setItem('plinko_money', (parseFloat(sessionStorage.getItem('plinko_money')) || 0) + 1000000);
             updateCasinoMoney();
             document.getElementById('enigma-overlay').style.display = 'none';
@@ -522,10 +522,10 @@
     function setVisualMode(mode) {
         if (mode === 'gold') {
             document.body.classList.add('gold-mode');
-            localStorage.setItem('bank_visual_mode', 'gold');
+            sessionStorage.setItem('bank_visual_mode', 'gold');
         } else {
             document.body.classList.remove('gold-mode');
-            localStorage.setItem('bank_visual_mode', 'classic');
+            sessionStorage.setItem('bank_visual_mode', 'classic');
         }
     }
 

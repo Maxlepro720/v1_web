@@ -204,8 +204,8 @@
     </style>
     <script src="script_save.js"></script>
     <script src="../../admin/ban/script_get_ban.js"></script>
-    <script src="script/script_inspecter.js"></script>
-    <script src="FDPrice_Systeme/script/script_affichage_raccourcis.js"></script>
+    <script src="../../script/script_inspecter.js"></script>
+    <script src="../../FDPrice_Systeme/script/script_affichage_raccourcis.js"></script>
 </head>
 <body>
 
@@ -519,6 +519,7 @@
         if (islandClicks === 5) { 
             if (!window.casino_success.includes('happy-birthday')) {
                 triggerFlash();
+                showSecretNotif();
                 window.casino_success.push('happy-birthday');
             }
         }

@@ -372,15 +372,38 @@ function loadMaterials() {
 }
 
 // ============================================================
-// MOTEUR DE RENDU (CHUNKS)
+// MOTEUR DE RENDU (CHUNKS) - SOMMETS CORRIGÉS
 // ============================================================
 const FACES = [
-    { dir:[1,0,0],  corners:[[1,0,1],[1,1,1],[1,1,0],[1,0,0]],  faceIdx:0 }, // Right
-    { dir:[-1,0,0], corners:[[0,0,0],[0,1,0],[0,1,1],[0,0,1]],  faceIdx:1 }, // Left
-    { dir:[0,1,0],  corners:[[0,1,0],[1,1,0],[1,1,1],[0,1,1]],  faceIdx:2 }, // Top
-    { dir:[0,-1,0], corners:[[0,0,1],[1,0,1],[1,0,0],[0,0,0]],  faceIdx:3 }, // Bottom
-    { dir:[0,0,1],  corners:[[0,0,1],[0,1,1],[1,1,1],[1,0,1]],  faceIdx:4 }, // Front
-    { dir:[0,0,-1], corners:[[1,0,0],[1,1,0],[0,1,0],[0,0,0]],  faceIdx:5 }, // Back
+    { 
+        dir:[1,0,0],  
+        corners:[[1,0,0],[1,1,0],[1,1,1],[1,0,1]], // Right: Inversé pour le sens horaire
+        faceIdx:0 
+    },
+    { 
+        dir:[-1,0,0], 
+        corners:[[0,0,1],[0,1,1],[0,1,0],[0,0,0]], // Left: Inversé
+        faceIdx:1 
+    },
+    { 
+        dir:[0,1,0],  
+        corners:[[0,1,1],[1,1,1],[1,1,0],[0,1,0]], // Top: Sens horaire
+        faceIdx:2 
+    },
+    { 
+        dir:[0,-1,0], 
+        corners:[[0,0,0],[1,0,0],[1,0,1],[0,0,1]], // Bottom: Sens horaire
+        faceIdx:3 
+    },
+    { 
+        dir:[0,0,1],  
+        corners:[[1,0,1],[1,1,1],[0,1,1],[0,0,1]], // Front: Inversé
+        faceIdx:4 
+    },
+    { 
+        dir:[0,0,-1], corners:[[0,0,0],[0,1,0],[1,1,0],[1,0,0]], // Back: Inversé
+        faceIdx:5 
+    },
 ];
 
 function buildChunk(cx, cz) {

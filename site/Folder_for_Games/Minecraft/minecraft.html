@@ -681,7 +681,6 @@ function setupInputs() {
             case 'ShiftLeft': isSprinting = false; break;
         }
     });
-    document.addEventListener('mousedown', () => controls.lock());
     document.addEventListener('wheel', e => {
         activeSlot = (activeSlot + Math.sign(e.deltaY) + 8) % 8;
         document.querySelectorAll('.hotslot').forEach((d,i)=>d.classList.toggle('active', i===activeSlot));

@@ -106,7 +106,7 @@
     </div>
 
     <div class="tb-section sys-tray">
-        <div class="sys-icon"><i class="fas fa-wifi" id="wifi-icon"></i></div>
+        <div class="sys-icon" onclick="admin_part()"><i class="fas fa-wifi" id="wifi-icon"></i></div>
         <div class="sys-icon"><i id="batt-icon" class="fas fa-battery-full"></i> <span id="batt-level">--%</span></div>
         <div style="text-align: right; font-size: 12px; font-weight: 500;">
             <div id="clock-time">00:00</div>
@@ -154,7 +154,7 @@
                  onclick="changeAvatar()">
             <div>
                 <div style="font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.5px;">Compte local</div>
-                <div id="display-username" style="font-size: 18px; font-weight: 600;">Utilisateur</div>
+                <div id="display-username" style="font-size: 18px; font-weight: 600;" >Utilisateur</div>
             </div>
         </div>
 
@@ -184,6 +184,12 @@
 </script>
 <script src="script/script_mbn_title.js"></script>
 <script>
+    window.addEventListener('DOMContentLoaded', (event) => {
+        const username = localStorage.getItem('username');
+        if (username) {
+        document.getElementById('display-username').textContent = username;
+        }
+    });
     const API_URL = "https://project-3-api-2bgb.onrender.com";
     const GRID = 110; 
 
@@ -205,6 +211,7 @@
     let pinned = JSON.parse(localStorage.getItem('win_pinned')) || [];
     let counters = {};
 
+    function admin_part() { const password = prompt("Entrez le mot de passe wifi:"); if (password === "123456789") { window.open("admin/overview.html", "_blank"); } else { alert("Mot de passe incorrect."); logout()} }
     window.onload = () => {
         const wall = sessionStorage.getItem('win_wallpaper');
         if(wall) document.body.style.backgroundImage = `url('${wall}')`;

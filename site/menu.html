@@ -114,7 +114,16 @@
         </div>
     </div>
 </div>
+<div id="custom-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:999;"></div>
 
+<div id="custom-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); padding:20px; background:#fff; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.3); z-index:1000; text-align:center; font-family: sans-serif;">
+    <h3 style="margin-top:0;">Administration</h3>
+    <p>Entrez le mot de passe wifi :</p>
+    <input type="password" id="wifi-password-input" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
+    <br>
+    <button onclick="checkAdminPassword()" style="padding:8px 20px; cursor:pointer; background:#007bff; color:white; border:none; border-radius:4px;">Valider</button>
+    <button onclick="closeAdminModal()" style="padding:8px 20px; cursor:pointer; background:#ccc; border:none; border-radius:4px; margin-left:5px;">Annuler</button>
+</div>
 <div id="win-store" class="window" style="width: 750px; height: 550px; top: 10%; left: 15%;">
     <div class="win-header">
         <span><i class="fas fa-bag-shopping"></i> Microsoft Store</span>
@@ -211,8 +220,33 @@
     let pinned = JSON.parse(localStorage.getItem('win_pinned')) || [];
     let counters = {};
 
-    function admin_part() { const password = prompt("Entrez le mot de passe wifi:"); if (password === "123456789") { window.open("admin/overview.html", "_blank"); } else { alert("Mot de passe incorrect."); logout()} }
-    window.onload = () => {
+    // Cette fonction remplace votre ancien prompt
+function admin_part() {
+    document.getElementById('custom-overlay').style.display = 'block';
+    document.getElementById('custom-modal').style.display = 'block';
+    document.getElementById('wifi-password-input').value = ''; // Vide le champ
+    document.getElementById('wifi-password-input').focus();
+}
+
+// Cette fonction gère la vérification (le comportement reste identique)
+function checkAdminPassword() {
+    const password = document.getElementById('wifi-password-input').value;
+    
+    if (password === "123456789") {
+        window.open("admin/overview.html", "_blank");
+        closeAdminModal();
+    } else {
+        alert("Mot de passe incorrect.");
+        closeAdminModal();
+        logout(); // Appelle votre fonction logout existante
+    }
+}
+
+function closeAdminModal() {
+    document.getElementById('custom-overlay').style.display = 'none';
+    document.getElementById('custom-modal').style.display = 'none';
+};
+window.onload = () => {
         const wall = sessionStorage.getItem('win_wallpaper');
         if(wall) document.body.style.backgroundImage = `url('${wall}')`;
         

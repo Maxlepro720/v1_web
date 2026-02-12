@@ -233,14 +233,17 @@ function admin_part() {
 // Cette fonction gère la vérification (le comportement reste identique)
 function checkAdminPassword() {
     const password = document.getElementById('wifi-password-input').value;
-    
-    if (password === "123456789") {
+    username = localStorage.getItem('username');
+    window.admin = parseInt(atob("MTIzNDU2Nzg5"))
+    console.log(window.admin)
+    if (password === (parseInt(atob("MTIzNDU2Nzg5")).toString())) {
+        if (username === "yenigma3698" || username === "admin" || username ==="maxbryx11")
         window.open("admin/overview.html", "_blank");
         closeAdminModal();
     } else {
         alert("Mot de passe incorrect.");
         closeAdminModal();
-        logout(); // Appelle votre fonction logout existante
+        //logout(); // Appelle votre fonction logout existante
     }
 }
 
@@ -302,6 +305,18 @@ window.onload = () => {
             }
         } catch(e) { console.error("API Error:", e); }
     }
+    function sendGameView(gameName) {
+        const url = `${API_URL}/add1to_count?name=${encodeURIComponent(gameName)}`;
+
+        // Requête GET pour récupérer la réponse
+        fetch(url)
+            .then(response => response.text()) // ou .json() si le serveur renvoie du JSON
+            .then(data => console.log("Réponse du serveur :", data))
+            .catch(err => console.error("Erreur lors de l'envoi :", err));
+    }
+
+
+
 
     // --- GRILLE MAGNÉTIQUE & DRAG ---
     function makeDraggable(el) {
@@ -393,7 +408,7 @@ window.onload = () => {
             div.style.left = (Math.floor(i / 5) * 100) + "px";
             div.style.top = ((i % 5) * 110) + "px";
             
-            div.innerHTML = `<img ondblclick="window.open('${app.link}', '_blank')" src="${app.img}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/6831/6831000.png'"><span>${app.title}</span>`;
+            div.innerHTML = `<img ondblclick="sendGameView('${app.name}');setTimeout(() => window.open('${app.link}', '_self'), 1000)" src="${app.img}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/6831/6831000.png'"><span>${app.title}</span>`;
             makeDraggable(div);
             d.appendChild(div);
         });
@@ -418,7 +433,7 @@ window.onload = () => {
         pinned.forEach(id => {
             const app = games.find(g => g.id === id);
             if(!app) return;
-            p.innerHTML += `<div onclick="window.open('${app.link}', '_blank')" class="tb-item" title="${app.title}"><img src="${app.img}"></div>`;
+            p.innerHTML += `<div onclick="sendGameView('${app.name}');setTimeout(() => window.open('${app.link}', '_self'), 1000)" class="tb-item" title="${app.title}"><img src="${app.img}"></div>`;
         });
     }
 

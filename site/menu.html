@@ -204,18 +204,19 @@
 
     // ✅ FIX : IDs uniques pour Find_Meme (9) et Life_Game (10)
     const games = [
-        {id:1,  name:"Skull_Arena",      title:"Skull Arena",        genre:"Survie",          link:"Folder_for_Games/jeu_1/game.html",                          color:"#CF4F5E", img:"Image/Image_Skull_Arena.png"},
-        {id:2,  name:"Stickman_Runner",  title:"Stickman Runner",    genre:"Infinite",         link:"Folder_for_Games/jeu_3/game.html",                          color:"#63D945", img:"Image/Image_Stickman_Runner.png"}, 
-        {id:3,  name:"Astro_Dodge",      title:"Astro Dodge",        genre:"Infinite",         link:"Folder_for_Games/jeu2/game.html",                           color:"#07a7b3", img:"Image/Image_Astro_Dodge.png"},
-        {id:4,  name:"Tower_Defense",    title:"Tower Defense",      genre:"Survie",         link:"Folder_for_Games/Tower_Defense/tower_defense.html",         color:"#026c02", img:"Image/Image_Tower_Defense.png"},
-        {id:5,  name:"Snake",            title:"Snake",              genre:"Retro Gaming",     link:"Folder_for_Games/Snake/Snake_game.html",                    color:"#969696", img:"Image/Image_Snake.webp"},
-        {id:6,  name:"Orbital_Chaos",    title:"Orbital Chaos",      genre:"Survie",          link:"Folder_for_Games/Orbital_Chaos/Orbital_Chaos.html",         color:"#969696", img:"Image/Image_Orbital_Chaos.png"},
-        {id:7,  name:"Personnalité_Test",title:"Test de Personnalité",genre:"Nerd",            link:"Folder_for_Games/Personnality_Test/test_de_personnalité.html",color:"#969696",img:"Image/Image_Personnality_Test.webp"},
-        {id:8,  name:"Casino",           title:"Casino",             genre:"Jeu d'Argents",    link:"Folder_for_Games/Casino/banque.html",                        color:"#969696", img:"Image/Image_Casino.avif"},
-        {id:9,  name:"Find_Meme",        title:"Trouve le Même",     genre:"Nerd",        link:"Folder_for_Games/Find_Meme/base_find_meme.html",            color:"#969696", img:"https://m.media-amazon.com/images/I/61-1HFujrqL._AC_UF894,1000_QL80_.jpg"},
+        {id:11, name:"Level_Devil",        title:"Level Devil",      genre:"Infinite",        link:"Folder_for_Games/Level_Devil/Jeu_Level_Devil.html",          color:"#969696", img:"https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=204,height=204,fit=cover,f=auto/0c3d1446c6992c2b88a9498de054688b/level-devil.png"},
         {id:10, name:"Life_Game",        title:"Jeu de la Vie",      genre:"Role Play",        link:"Folder_for_Games/RP_Cuisine/accueil_cuisine.html",          color:"#969696", img:"https://www.notebookcheck.biz/fileadmin/Notebooks/News/_nc4/GTA5Logo.jpg"},
-        {id:11, name:"Level_Devil",        title:"Level Devil",      genre:"Infinite",        link:"Folder_for_Games/Level_Devil/Jeu_Level_Devil.html",          color:"#969696", img:"https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=204,height=204,fit=cover,f=auto/0c3d1446c6992c2b88a9498de054688b/level-devil.png"}
+        {id:9,  name:"Find_Meme",        title:"Trouve le Même",     genre:"Nerd",        link:"Folder_for_Games/Find_Meme/base_find_meme.html",            color:"#969696", img:"https://m.media-amazon.com/images/I/61-1HFujrqL._AC_UF894,1000_QL80_.jpg"},
+        {id:8,  name:"Casino",           title:"Casino",             genre:"Jeu d'Argents",    link:"Folder_for_Games/Casino/banque.html",                        color:"#969696", img:"Image/Image_Casino.avif"},
+        {id:7,  name:"Personnalité_Test",title:"Test de Personnalité",genre:"Nerd",            link:"Folder_for_Games/Personnality_Test/test_de_personnalité.html",color:"#969696",img:"Image/Image_Personnality_Test.webp"},
+        {id:6,  name:"Orbital_Chaos",    title:"Orbital Chaos",      genre:"Survie",          link:"Folder_for_Games/Orbital_Chaos/Orbital_Chaos.html",         color:"#969696", img:"Image/Image_Orbital_Chaos.png"},
+        {id:5,  name:"Snake",            title:"Snake",              genre:"Retro Gaming",     link:"Folder_for_Games/Snake/Snake_game.html",                    color:"#969696", img:"Image/Image_Snake.webp"},
+        {id:4,  name:"Tower_Defense",    title:"Tower Defense",      genre:"Survie",         link:"Folder_for_Games/Tower_Defense/tower_defense.html",         color:"#026c02", img:"Image/Image_Tower_Defense.png"},
+        {id:3,  name:"Astro_Dodge",      title:"Astro Dodge",        genre:"Infinite",         link:"Folder_for_Games/jeu2/game.html",                           color:"#07a7b3", img:"Image/Image_Astro_Dodge.png"},
+        {id:2,  name:"Stickman_Runner",  title:"Stickman Runner",    genre:"Infinite",         link:"Folder_for_Games/jeu_3/game.html",                          color:"#63D945", img:"Image/Image_Stickman_Runner.png"},
+        {id:1,  name:"Skull_Arena",      title:"Skull Arena",        genre:"Survie",          link:"Folder_for_Games/jeu_1/game.html",                          color:"#CF4F5E", img:"Image/Image_Skull_Arena.png"}
     ];
+
 
     let installed = JSON.parse(localStorage.getItem('win_installed')) || [];
     let pinned = JSON.parse(localStorage.getItem('win_pinned')) || [];

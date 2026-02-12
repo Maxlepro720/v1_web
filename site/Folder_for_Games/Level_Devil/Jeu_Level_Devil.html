@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>LEVEL DEVIL : FIX EDITION</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { margin: 0; background: #1a0033; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; user-select: none; }
+        #game-wrapper { position: relative; border: 6px solid #000; box-shadow: 0 0 30px rgba(255, 0, 0, 0.5); background: #000; }
+        canvas { display: block; image-rendering: pixelated; }
+        #ui, #level-info { position: absolute; top: 15px; font-size: 20px; font-weight: bold; text-shadow: 3px 3px 0 #000; z-index: 10; background: rgba(0,0,0,0.7); padding: 8px 12px; border: 2px solid #fff; }
+        #ui { left: 15px; }
+        #level-info { right: 15px; text-align: right; }
+        #level-title { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; font-weight: bold; color: #fff; pointer-events: none; text-transform: uppercase; text-shadow: 4px 4px 0 #000; opacity: 0; z-index: 20; }
+        @keyframes fadeInOut { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 30% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 70% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); } }
+        .controls { margin-top: 20px; color: #ccc; font-size: 16px; font-weight: bold; text-align: center; }
+        .controls span { color: #ff3333; }
+        #game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #000; padding: 40px; border: 6px solid #ff3333; text-align: center; display: none; z-index: 100; }
+    </style>
+</head>
+<body>
+
+    <div id="game-wrapper">
+        <canvas id="gameCanvas" width="800" height="450"></canvas>
+        <div id="ui">💀 <span id="deaths">0</span></div>
+        <div id="level-info"><div>NIVEAU <span id="current-level">1</span>/50</div></div>
+        <div id="level-title">NIVEAU 1</div>
+        <div id="game-over">
+            <h1>🎉 BRAVO ! 🎉</h1>
+            <p>Tu as terminé les 50 niveaux !</p>
+            <p id="final-deaths"></p>
+        </div>
+    </div>
+    <div class="controls">
+        <span>← →</span> ou <span>Q D</span> pour bouger • <span>Z / ESPACE / ↑</span> pour sauter • <span>R</span> pour reset
+    </div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- PHYSIQUE NERVEUSE ET CORRIGÉE ---
+const GRAVITY = 0.8;
+const FRICTION = 0.75;         // S'arrête net
+const MOVE_ACCEL = 1.5;        // Départ rapide
+const MAX_SPEED = 5.0;         // Vitesse stable
+const JUMP_POWER = -13.5;      // Saut réactif
+const COYOTE_TIME = 8;         // Tolérance de saut dans le vide
+
+let state = { lvlIndex: 0, deaths: 0, frames: 0, shake: 0, jumpBuffer: 0 };
+let player = { x: 50, y: 300, w: 26, h: 26, dx: 0, dy: 0, grounded: false, coyote: 0, facingRight: true };
+let goal = { x: 0, y: 0, w: 40, h: 60 };
+let walls = [], hazards = [], particles = [], movingPlatforms = [];
+const keys = { left: false, right: false, up: false };
+
+// --- NIVEAUX ---
+const levels = [
+    {
+        name: "BIENVENUE",
+        setup: () => {
+            player.x = 50; player.y = 300;
+            goal = { x: 700, y: 340, w: 40, h: 60 };
+            walls = [{ x: 0, y: 400, w: 800, h: 50 }, { x: 300, y: 300, w: 200, h: 20 }];
+            hazards = [{ x: 350, y: 385, w: 100, h: 15, type: 'spike' }];
+        },
+        update: () => {
+            if (player.x > 450 && player.y < 320 && !walls.find(w => w.temp)) {
+                walls.push({ x: 550, y: 200, w: 50, h: 150, temp: true });
+            }
+        }
+    },
+    {
+        name: "LE PLAFOND",
+        setup: () => {
+            player.x = 50; player.y = 300;
+            goal = { x: 720, y: 340, w: 40, h: 60 };
+            walls = [{ x: 0, y: 400, w: 800, h: 50 }, { x: 200, y: 0, w: 400, h: 250, id: 'crusher' }];
+            hazards = [];
+        },
+        update: () => {
+            let c = walls.find(w => w.id === 'crusher');
+            if (c && player.x > 180 && c.y < 370) c.y += 12;
+        }
+    },
+    ...Array(48).fill(null).map((_, i) => ({
+        name: `NIVEAU ${3 + i}`,
+        setup: () => {
+            player.x = 50; player.y = 300;
+            goal = { x: 720, y: 340, w: 40, h: 60 };
+            walls = [{ x: 0, y: 400, w: 800, h: 50 }];
+            hazards = [{ x: 200 + (i*20)%400, y: 385, w: 60, h: 15, type: 'spike' }];
+            if(i%2===0) walls.push({ x: 300, y: 280, w: 150, h: 20 });
+        },
+        update: () => {}
+    }))
+];
+
+function initLevel() {
+    if (state.lvlIndex >= levels.length) {
+        document.getElementById('game-over').style.display = 'block';
+        return;
+    }
+    player.dx = 0; player.dy = 0;
+    particles = [];
+    const lvl = levels[state.lvlIndex];
+    document.getElementById('level-title').innerText = lvl.name;
+    document.getElementById('level-title').style.animation = 'none';
+    void document.getElementById('level-title').offsetWidth;
+    document.getElementById('level-title').style.animation = 'fadeInOut 2s ease-in-out';
+    document.getElementById('current-level').innerText = state.lvlIndex + 1;
+    lvl.setup();
+}
+
+function die() {
+    if (player.dead) return;
+    player.dead = true;
+    state.deaths++;
+    document.getElementById('deaths').innerText = state.deaths;
+    state.shake = 10;
+    for(let i=0; i<20; i++) particles.push({ x: player.x+13, y: player.y+13, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 1, color: '#ff4400' });
+    setTimeout(() => { player.dead = false; initLevel(); }, 600);
+}
+
+function rectIntersect(r1, r2, px=0, py=0) {
+    return r1.x + px < r2.x + r2.w && r1.x + r1.w - px > r2.x && r1.y + py < r2.y + r2.h && r1.y + r1.h - py > r2.y;
+}
+
+function checkCollisions(isX) {
+    const targets = [...walls, ...movingPlatforms];
+    for (let t of targets) {
+        if (rectIntersect(player, t)) {
+            if (isX) {
+                // Correction du bug "bloqué au sol" : On n'active la collision X 
+                // que si on ne chevauche pas juste le haut de la plateforme (tolérance de 4px)
+                if (player.y + player.h > t.y + 4 && player.y < t.y + t.h - 4) {
+                    if (player.dx > 0) player.x = t.x - player.w;
+                    else if (player.dx < 0) player.x = t.x + t.w;
+                    player.dx = 0;
+                }
+            } else {
+                if (player.dy > 0) {
+                    player.y = t.y - player.h;
+                    player.grounded = true;
+                    player.dy = 0;
+                    player.coyote = COYOTE_TIME;
+                } else if (player.dy < 0) {
+                    player.y = t.y + t.h;
+                    player.dy = 0;
+                }
+            }
+        }
+    }
+}
+
+function update() {
+    state.frames++;
+    if (state.shake > 0) state.shake--;
+    if (state.jumpBuffer > 0) state.jumpBuffer--;
+    
+    // Particules
+    particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= 0.02; if(p.life <= 0) particles.splice(i,1); });
+
+    if (player.dead) return;
+    levels[state.lvlIndex].update();
+
+    // Horizontal
+    if (keys.right) { player.dx += MOVE_ACCEL; player.facingRight = true; }
+    else if (keys.left) { player.dx -= MOVE_ACCEL; player.facingRight = false; }
+    else { player.dx *= FRICTION; }
+    
+    if (player.dx > MAX_SPEED) player.dx = MAX_SPEED;
+    if (player.dx < -MAX_SPEED) player.dx = -MAX_SPEED;
+    
+    player.x += player.dx;
+    checkCollisions(true);
+
+    // Vertical
+    player.dy += GRAVITY;
+    player.y += player.dy;
+    player.grounded = false;
+    if (player.coyote > 0) player.coyote--;
+
+    checkCollisions(false);
+
+    // Saut (Buffer + Coyote)
+    if (state.jumpBuffer > 0 && player.coyote > 0) {
+        player.dy = JUMP_POWER;
+        player.coyote = 0;
+        state.jumpBuffer = 0;
+    }
+    // Saut variable
+    if (!keys.up && player.dy < -4) player.dy = -4;
+
+    // Morts et Victoire
+    if (player.y > canvas.height) die();
+    hazards.forEach(h => { if(rectIntersect(player, h, 4, 4)) die(); }); // Hitbox pics réduite de 4px
+    if (rectIntersect(player, goal)) { state.lvlIndex++; initLevel(); }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    if(state.shake > 0) ctx.translate((Math.random()-0.5)*state.shake, (Math.random()-0.5)*state.shake);
+
+    ctx.fillStyle = '#87CEEB'; ctx.fillRect(0,0,canvas.width,canvas.height); // Ciel
+    ctx.fillStyle = '#2C2C2C'; walls.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h)); // Murs
+    
+    ctx.fillStyle = '#FF0000'; // Pics
+    hazards.forEach(h => {
+        for(let i=0; i<h.w; i+=10) {
+            ctx.beginPath(); ctx.moveTo(h.x+i, h.y+h.h); ctx.lineTo(h.x+i+5, h.y); ctx.lineTo(h.x+i+10, h.y+h.h); ctx.fill();
+        }
+    });
+
+    ctx.fillStyle = '#FFD700'; ctx.fillRect(goal.x, goal.y, goal.w, goal.h); // Porte
+
+    if (!player.dead) {
+        ctx.fillStyle = '#FFDD00'; ctx.fillRect(player.x, player.y, player.w, player.h);
+        ctx.fillStyle = '#000'; ctx.fillRect(player.facingRight ? player.x+16 : player.x+4, player.y+6, 6, 6); // Oeil
+    }
+
+    particles.forEach(p => { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); });
+    
+    ctx.restore();
+    requestAnimationFrame(draw);
+}
+
+// Contrôles AZERTY + Flèches
+window.addEventListener('keydown', e => {
+    const k = e.key.toLowerCase();
+    if(k === 'd' || k === 'arrowright') keys.right = true;
+    if(k === 'q' || k === 'arrowleft') keys.left = true;
+    if(k === 'z' || k === 'arrowup' || k === ' ') { keys.up = true; state.jumpBuffer = 10; }
+    if(k === 'r') initLevel();
+    if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key)) e.preventDefault();
+});
+window.addEventListener('keyup', e => {
+    const k = e.key.toLowerCase();
+    if(k === 'd' || k === 'arrowright') keys.right = false;
+    if(k === 'q' || k === 'arrowleft') keys.left = false;
+    if(k === 'z' || k === 'arrowup' || k === ' ') keys.up = false;
+});
+
+setInterval(update, 1000/60);
+initLevel();
+draw();
+</script>
+</body>
+</html>

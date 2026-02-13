@@ -261,17 +261,23 @@
                 <div style="background:rgba(255,255,255,0.1); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.2); padding:30px; border-radius:12px; max-width:380px; width:90%; color:white; text-align:left; box-shadow:0 25px 50px rgba(0,0,0,0.5); font-family: 'Segoe UI', sans-serif;">
                     <div style="display:flex; align-items:center; gap:12px; color:#4ade80; margin-bottom:15px;">
                         <span style="font-size:1.5rem;">🛡️</span>
-                        <strong style="font-size:1rem; text-transform:uppercase; letter-spacing:1px;">Protection Active</strong>
+                        <strong style="font-size:1rem; text-transform:uppercase; letter-spacing:1px;">Informations de Securité</strong>
                     </div>
                     <p style="margin-bottom:15px; font-size:0.95rem; line-height:1.6; opacity:0.9;">
-                        Votre mot de passe est sécurisé par un <strong>hachage unidirectionnel SHA-256</strong>. Il est transformé en clé numérique avant stockage : personne ne peut le lire.
+                        Votre mot de passe est sécurisé par un <strong>hachage unidirectionnel SHA-256</strong>. Il est transformé en clé numérique avant stockage : personne ne peut le lire ni le déchiffrer.
                     </p>
                     <div style="background:rgba(255,160,0,0.2); border-left:4px solid #ffa000; padding:15px; border-radius:4px; margin-bottom:20px;">
-                        <strong style="display:block; margin-bottom:5px; color:#ffb74d;">⚠️ Conseil :</strong>
+                        <strong style="display:block; margin-bottom:5px; color:#ffb74d;">Conseil de Securité :</strong>
                         <span style="font-size:0.9rem;">Utilisez un mot de passe <strong>unique</strong>. Ne réutilisez jamais le même mot de passe que sur un autre site.</span>
                     </div>
-                    <button onclick="document.getElementById('securityPopup').style.opacity='0'; setTimeout(()=>document.getElementById('securityPopup').remove(), 300)" style="width:100%; background:white; color:black; border:none; padding:12px; border-radius:4px; font-weight:600; cursor:pointer; transition:0.2s; font-size:1rem;">J'ai compris</button>
-                    <div style="margin-top:15px; text-align:center; font-size:0.7rem; opacity:0.5;">TLS 1.3 | Chiffrement AES-256</div>
+                    <button 
+                        onclick="document.getElementById('securityPopup').style.opacity='0'; setTimeout(()=>document.getElementById('securityPopup').remove(), 300)" 
+                        onmouseover="this.style.background='black';this.style.color='white'; this.style.transform='scale(1.1)';" 
+                        onmouseout="this.style.background='white'; this.style.color='black'; this.style.transform='scale(1)';" 
+                        style="width:100%; background:white; color:black; border:none; padding:12px; border-radius:4px; font-weight:600; cursor:pointer; transition:0.2s; font-size:1rem;">
+                        J'ai compris
+                    </button>
+                <div style="margin-top:15px; text-align:center; font-size:0.7rem; opacity:0.5;">TLS 1.3 | Chiffrement AES-256</div>
                 </div>
             </div>`;
             document.body.insertAdjacentHTML('beforeend', popupHTML);

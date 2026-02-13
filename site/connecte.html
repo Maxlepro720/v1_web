@@ -1,190 +1,328 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="index, follow">
-<link rel="shortcut icon" href="Image/FDPrice.png" type="image/x-icon">
-<title>Connexion</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;}
-body,html{height:100%;display:flex;justify-content:center;align-items:center;background:#0b0c10;}
-.container{background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);border-radius:25px;padding:40px 35px;width:100%;max-width:420px;box-shadow:0 15px 40px rgba(0,0,0,0.6);text-align:center;transition:transform 0.3s ease;}
-.container:hover{transform:translateY(-5px);}
-.logo{font-size:55px;margin-bottom:25px;color:#00bfff;transition:0.3s;}
-.logo:hover{color:#1de9b6;}
-h1{color:#fff;font-size:26px;margin-bottom:12px;}
-p.subtitle{color:#aaa;margin-bottom:30px;font-size:14px;}
-.field{display:flex;align-items:center;margin-bottom:18px;background:rgba(255,255,255,0.08);backdrop-filter:blur(15px);border-radius:15px;padding:14px 12px;transition:all 0.3s ease;box-shadow:0 0 10px rgba(0,0,0,0.3);}
-.field:hover{background:rgba(255,255,255,0.12);box-shadow:0 0 15px rgba(0,191,255,0.2);}
-.field i{margin-right:12px;color:#888;font-size:18px;}
-.field input{background:transparent;border:none;outline:none;color:#fff;flex:1;font-size:15px;padding:10px;border-radius:12px;transition:all 0.3s ease;}
-.field input:focus{background:rgba(255,255,255,0.15);box-shadow:0 0 10px #00bfff88;backdrop-filter:blur(20px);}
-.toggle-password{cursor:pointer;margin-left:8px;font-size:18px;color:#888;transition:0.3s;}
-.toggle-password:hover{color:#00bfff;}
-.btn{width:100%;padding:14px;border:none;border-radius:18px;font-size:16px;font-weight:bold;cursor:pointer;margin-bottom:15px;transition:all 0.3s ease;backdrop-filter:blur(10px);}
-.btn-login{background:rgba(0,191,255,0.8);color:#fff;box-shadow:0 5px 20px rgba(0,191,255,0.4);}
-.btn-login:hover{background:rgba(0,191,255,1);box-shadow:0 0 25px #00bfff88;transform:translateY(-2px);}
-.switch-mode{background:transparent;border:2px solid #444;color:#00bfff;border-radius:18px;padding:14px;cursor:pointer;width:100%;font-weight:bold;font-size:14px;transition:all 0.3s;}
-.switch-mode:hover{background:rgba(0,191,255,0.1);box-shadow:0 0 15px #00bfff66;}
-.separator{display:flex;align-items:center;text-align:center;margin:15px 0;}
-.separator::before,.separator::after{content:"";flex:1;height:1px;background:#333;}
-.separator::before{margin-right:10px;}
-.separator::after{margin-left:10px;}
-.separator span{color:#666;font-size:12px;}
-#statusLabel{min-height:20px;margin-bottom:10px;font-size:14px;font-weight:bold;color:#ff5555;}
-.loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:9999;flex-direction:column;color:#fff;font-size:16px;padding:20px;text-align:center;}
-.spinner{width:50px;height:50px;border:5px solid #2d2d40;border-top:5px solid #00bfff;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:15px;}
-@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Écran de Connexion Style Windows</title>
+    <style>
+        /* --- CSS : Le Design (Inchangé) --- */
+        :root {
+            --primary-color: #0078d4;
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-color: white;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
+            background-size: cover;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: var(--text-color);
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            z-index: -1;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 320px;
+            text-align: center;
+            position: relative;
+        }
+
+        .avatar {
+            width: 120px;
+            height: 120px;
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 60px;
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .username-display {
+            font-size: 2rem;
+            font-weight: 300;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .form-box {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .input-group {
+            position: relative;
+            width: 100%;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid transparent;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+            font-size: 1rem;
+            outline: none;
+            box-sizing: border-box;
+            transition: 0.2s;
+        }
+
+        input:focus {
+            background: white;
+            border-color: var(--primary-color);
+            border-bottom-width: 4px;
+        }
+
+        .btn-submit {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 8px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            background-color: white;
+            color: black;
+        }
+
+        .toggle-link {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .toggle-link:hover {
+            text-decoration: underline;
+            color: white;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .footer-icons {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 20px;
+            font-size: 1.5rem;
+            opacity: 0.8;
+        }
+
+        .loader {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
-<div class="loading-overlay" id="loadingScreen" style="display:none;">
-    <div class="spinner"></div>
-    <div>Connexion au serveur...</div>
-</div>
+    <div class="container">
+        <div class="avatar">
+            <i class="fas fa-user"></i>
+        </div>
 
-<div class="container" id="authContainer">
-    <div class="logo">Projet2fdp</div>
-    <h1 id="title">Se connecter</h1>
-    <p class="subtitle" id="subtitle">Accédez à votre espace de jeu</p>
+        <div class="username-display" id="headerText">Utilisateur</div>
 
-    <div class="field">
-        <i>👤</i>
-        <input type="text" id="username" placeholder="Nom d'utilisateur">
-    </div>
-    <div class="field">
-        <i>🔒</i>
-        <input type="password" id="password" placeholder="Mot de passe">
-        <span class="toggle-password" id="togglePassword">👁</span>
-    </div>
+        <form id="loginForm" class="form-box">
+            <div class="input-group">
+                <input type="text" placeholder="Identifiant" id="loginUser" required>
+            </div>
+            <div class="input-group">
+                <input type="password" placeholder="Mot de passe" id="loginPass" required>
+            </div>
+            <button type="submit" class="btn-submit">Se connecter <i class="fas fa-arrow-right"></i></button>
+            <a href="#" class="toggle-link" onclick="toggleForm()">Pas encore de compte ? S'inscrire</a>
+        </form>
 
-    <button class="btn btn-login" id="submitBtn">Se connecter</button>
-    <div id="statusLabel"></div>
-    <div class="separator"><span>ou</span></div>
-    <button class="switch-mode" id="switchBtn">Créer un compte</button>
-</div>
- <script src="../../script/script_inspecter.js"></script>
-<script>
-    const PAGE_ID = "2000"; 
+        <form id="registerForm" class="form-box hidden">
+            <div class="input-group">
+                <input type="text" placeholder="Choisir un identifiant" id="regUser" required>
+            </div>
+            <div class="input-group">
+                <input type="password" placeholder="Mot de passe" id="regPass" required>
+            </div>
+            <button type="submit" class="btn-submit">S'inscrire</button>
+            <a href="#" class="toggle-link" onclick="toggleForm()">Retour à la connexion</a>
+        </form>
 
-    (async function() {
-        const API_URL_verif_version = "https://project-3-api-2bgb.onrender.com/get_latest_version";
-        console.log('[verif version] Demarrage')
-        try {
-            // 1. Appel de la nouvelle route optimisée
-            const response = await fetch(API_URL_verif_version);
-            const result = await response.json();
-            
-            // On vérifie que la requête a réussi et qu'on a une donnée
-            if (result.status !== "success" || !result.data) return;
+        <div id="loadingSpinner" class="hidden">
+            <div class="loader"></div>
+            <p id="loadingText">Veuillez patienter...</p>
+        </div>
+    </div>
 
-            const latestVersion = String(result.data.Version);
-            const savedVersion = localStorage.getItem(`version_${PAGE_ID}`);
+    <div class="footer-icons">
+        <i class="fas fa-wifi"></i>
+        <i class="fas fa-universal-access"></i>
+        <i style="cursor:pointer" onclick="window.close()" class="fas fa-power-off"></i>
+    </div>
 
-            // Première visite : on enregistre la version actuelle sans bloquer
-            if (!savedVersion) {
-                localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
-                return;
-            }
+    <script>
+        /* --- SYSTÈME DE CONNECTE INTÉGRÉ --- */
 
-            // Comparaison
-            if (savedVersion !== latestVersion) {
-                // Sécurité pour Ctrl+R / F5
-                window.onbeforeunload = function() {
+        const PAGE_ID = "2000"; 
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const headerText = document.getElementById('headerText');
+        const spinner = document.getElementById('loadingSpinner');
+        const loadingText = document.getElementById('loadingText');
+
+        // 1. Vérification de version (Strictement repris de connecte.html)
+        (async function() {
+            const API_URL_verif_version = "https://project-3-api-2bgb.onrender.com/get_latest_version";
+            try {
+                const response = await fetch(API_URL_verif_version);
+                const result = await response.json();
+                if (result.status !== "success" || !result.data) return;
+
+                const latestVersion = String(result.data.Version);
+                const savedVersion = localStorage.getItem(`version_${PAGE_ID}`);
+
+                if (!savedVersion) {
                     localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
-                };
+                    return;
+                }
 
-                // Écran noir bloquant
-                document.body.innerHTML = `
-                    <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:black;color:white;display:flex;justify-content:center;align-items:center;z-index:1000000;flex-direction:column;font-family:sans-serif;text-align:center;padding:20px;">
-                        <h1 style="font-size:32px;margin-bottom:15px;color:#00bfff;">Mise à jour requise</h1>
-                        <p style="color:#aaa;max-width:500px;line-height:1.6;">La version ${latestVersion} est disponible. Veuillez recharger la page pour appliquer les changements.</p>
-                        <button id="btn-update-now" style="margin-top:30px;padding:15px 40px;cursor:pointer;background:#00bfff;border:none;color:white;font-weight:bold;border-radius:12px;font-size:16px;box-shadow: 0 10px 20px rgba(0,191,255,0.3);">
-                            Mettre à jour et Recharger
-                        </button>
-                    </div>`;
-                
-                document.getElementById('btn-update-now').addEventListener('click', function() {
-                    localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
-                    window.location.reload(true);
-                });
+                if (savedVersion !== latestVersion) {
+                    window.onbeforeunload = function() {
+                        localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
+                    };
 
-                throw new Error("Mise à jour bloquante");
+                    document.body.innerHTML = `
+                        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:black;color:white;display:flex;justify-content:center;align-items:center;z-index:1000000;flex-direction:column;font-family:sans-serif;text-align:center;padding:20px;">
+                            <h1 style="font-size:32px;margin-bottom:15px;color:#00bfff;">Mise à jour requise</h1>
+                            <p style="color:#aaa;max-width:500px;line-height:1.6;">La version ${latestVersion} est disponible. Veuillez recharger la page pour appliquer les changements.</p>
+                            <button id="btn-update-now" style="margin-top:30px;padding:15px 40px;cursor:pointer;background:#00bfff;border:none;color:white;font-weight:bold;border-radius:12px;font-size:16px;box-shadow: 0 10px 20px rgba(0,191,255,0.3);">
+                                Mettre à jour et Recharger
+                            </button>
+                        </div>`;
+                    
+                    document.getElementById('btn-update-now').addEventListener('click', function() {
+                        localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
+                        window.location.reload(true);
+                    });
+                    throw new Error("Mise à jour bloquante");
+                }
+            } catch (error) {
+                if (error.message !== "Mise à jour bloquante") console.error("Erreur version:", error);
             }
-        } catch (error) {
-            if (error.message !== "Mise à jour bloquante") console.error("Erreur version:", error);
+        })();
+
+        // Initialisation cookies
+        localStorage.setItem('cookies_accepted', 'false');
+
+        // Basculer entre Inscription et Connexion
+        function toggleForm() {
+            if (loginForm.classList.contains('hidden')) {
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                headerText.textContent = "Utilisateur";
+            } else {
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+                headerText.textContent = "Créer un compte";
+            }
         }
-    })();
-// Création ou mise à jour de 'cookies_accepted' à 'false'
-localStorage.setItem('cookies_accepted', 'false');
 
-const switchBtn=document.getElementById('switchBtn');
-const title=document.getElementById('title');
-const subtitle=document.getElementById('subtitle');
-const submitBtn=document.getElementById('submitBtn');
-const passwordInput=document.getElementById('password');
-const togglePassword=document.getElementById('togglePassword');
-let isLoginMode=true;
+        // Fonction d'envoi API (Générique)
+        async function sendAuthRequest(username, password, isLogin) {
+            const url = isLogin ? "https://project-3-api-2bgb.onrender.com/login" : "https://project-3-api-2bgb.onrender.com/signup";
+            const currentForm = isLogin ? loginForm : registerForm;
+            
+            // UI : Afficher chargement
+            currentForm.classList.add('hidden');
+            spinner.classList.remove('hidden');
+            loadingText.textContent = isLogin ? "Connexion..." : "Création du compte...";
 
-// Toggle login/signup
-switchBtn.addEventListener('click',()=>{
-    isLoginMode=!isLoginMode;
-    if(isLoginMode){title.textContent="Se connecter";subtitle.textContent="Accédez à votre espace de jeu";submitBtn.textContent="Se connecter";switchBtn.textContent="Créer un compte";}
-    else{title.textContent="Créer un compte";subtitle.textContent="Inscrivez-vous pour commencer à jouer";submitBtn.textContent="S'inscrire";switchBtn.textContent="Se connecter";}
-});
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ id: username, password: password })
+                });
+                const result = await response.json();
 
-// Toggle mot de passe
-togglePassword.addEventListener('click',()=>{
-    const type=passwordInput.getAttribute('type')==='password'?'text':'password';
-    passwordInput.setAttribute('type',type);
-    togglePassword.textContent=type==='text'?'🙈':'👁';
-});
+                if (result.status === "success") {
+                    localStorage.setItem("username", username);
+                    if (isLogin) {
+                        headerText.textContent = `Bienvenue, ${username}`;
+                        setTimeout(() => { window.location.href = "menu.html"; }, 1000);
+                    } else {
+                        alert("Compte créé avec succès !");
+                        spinner.classList.add('hidden');
+                        toggleForm();
+                    }
+                } else {
+                    alert(result.message || "Erreur lors de l'opération");
+                    resetUI(currentForm);
+                }
+            } catch (err) {
+                alert("Erreur réseau : " + err);
+                resetUI(currentForm);
+            }
+        }
 
-// Fonction login/signup
-async function handleSubmit(){
-    const username=document.getElementById('username').value.trim();
-    const password=document.getElementById('password').value.trim();
-    
-    if(!username||!password){
-        alert("Veuillez remplir tous les champs !");
-        return;
-    }
-    
-   
+        function resetUI(form) {
+            spinner.classList.add('hidden');
+            form.classList.remove('hidden');
+        }
 
-    // Le reste du code (requête API normale) ne s'exécute que si ce n'est PAS l'admin.
-    const data={id:username,password};
-    const url=isLoginMode?"https://project-3-api-2bgb.onrender.com/login":"https://project-3-api-2bgb.onrender.com/signup";
-    
-    try{
-        document.getElementById('loadingScreen').style.display='flex';
-        const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-        const result=await response.json();
-        document.getElementById('loadingScreen').style.display='none';
-        if(result.status==="success"){
-            localStorage.setItem("username",username);
-            alert(isLoginMode?"Connexion réussie !":"Compte créé avec succès !");
-            window.location.href="menu.html";
-        }
-        else{
-            alert(result.message||(isLoginMode?"ID ou mot de passe incorrect":"Impossible de créer le compte"));
-        }
-    }catch(err){
-        document.getElementById('loadingScreen').style.display='none';
-        alert("Erreur réseau : "+err);
-    }
-}
+        // Event Listeners
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            sendAuthRequest(document.getElementById('loginUser').value.trim(), document.getElementById('loginPass').value.trim(), true);
+        });
 
-// Clic sur le bouton
-submitBtn.addEventListener('click',handleSubmit);
-
-// Appui sur Enter déclenche le bouton
-document.addEventListener('keydown',(e)=>{
-    if(e.key==='Enter'){handleSubmit();}
-});
-</script>
-
+        registerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            sendAuthRequest(document.getElementById('regUser').value.trim(), document.getElementById('regPass').value.trim(), false);
+        });
+    </script>
 </body>
 </html>

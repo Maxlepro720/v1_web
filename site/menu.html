@@ -91,6 +91,7 @@
     </style>
 </head>
 <body>
+    <script src="script/musique_script.js"></script>
 
 <div id="desktop"></div>
 
@@ -100,9 +101,10 @@
     </div>
 
     <div class="tb-center" id="pinned-bar">
-        <div class="tb-item" onclick="toggleWin('win-store')"><i class="fas fa-bag-shopping" style="color: #0078d4; font-size: 20px;"></i></div>
-        <div class="tb-item" onclick="toggleWin('win-settings')"><i class="fas fa-cog" style="color: #bdc3c7; font-size: 20px;"></i></div>
-        <div class="tb-item" onclick="toggleWin('win-store')"><i class="fas fa-bag-shopping" style="color: #c53030; font-size: 20px;"></i></div>
+        <div class="tb-item" onclick="toggleWin('win-store')"><i class="fas fa-bag-shopping" style="color: #ffffff; font-size: 20px;"></i></div>
+        <div class="tb-item" onclick="toggleWin('win-settings')"><i class="fas fa-cog" style="color: #a0a4a7; font-size: 20px;"></i></div>
+        <div class="tb-item" onclick="toggleWin('win-store')"><i class="fas fa-coins" style="color: yellow; font-size: 20px;"></i></div>
+        <div class="tb-item" onclick="toggleWin('win-music')"><i class="fas fa-music" style="color: #c53030; font-size: 20px;"></i></div>
     </div>
 
     <div class="tb-section sys-tray">
@@ -419,13 +421,16 @@ window.onload = () => {
         // On définit ici les icônes qui sont TOUJOURS présentes (Bleu, Paramètres, Rouge)
         p.innerHTML = `
             <div class="tb-item" onclick="toggleWin('win-store')">
-                <i class="fas fa-bag-shopping" style="color: #0078d4; font-size: 20px;"></i>
+                <i class="fas fa-bag-shopping" style="color: white; font-size: 20px;"></i>
             </div>
             <div class="tb-item" onclick="toggleWin('win-settings')">
-                <i class="fas fa-cog" style="color: #bdc3c7; font-size: 20px;"></i>
+                <i class="fas fa-cog" style="color: #a0a4a7; font-size: 20px;"></i>
             </div>
             <div class="tb-item" onclick="window.open('FDPrice_Systeme/boutique.html','_self')">
-                <i class="fas fa-bag-shopping" style="color: #c53030; font-size: 20px;"></i>
+                <i class="fas fa-coins" style="color: yellow; font-size: 20px;"></i>
+            </div>
+            <div class="tb-item" onclick="window.musique_show = 1;console.log(window.musique_show)">
+                <i class="fas fa-music" style="color: green; font-size: 20px;"></i>
             </div>
         `;
 

@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometry Dash - Neon Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --neon-cyan: #00f6ff;
+            --neon-pink: #ff00ff;
+            --neon-yellow: #ffff00;
+            --neon-green: #00ff00;
+            --neon-orange: #ff6600;
+            --bg-dark: #0a0a14;
+            --bg-darker: #050509;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-dark);
+            color: white;
+            overflow: hidden;
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="8" fill="%2300f6ff" opacity="0.6"/><circle cx="10" cy="10" r="3" fill="white"/></svg>') 10 10, auto;
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, var(--bg-darker) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s;
+        }
+
+        .loading-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 5rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, var(--neon-cyan), var(--neon-pink), var(--neon-yellow));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 246, 255, 0.5);
+            animation: pulse 2s ease-in-out infinite;
+            margin-bottom: 2rem;
+        }
+
+        .loading-bar-container {
+            width: 300px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loading-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+            width: 0%;
+            animation: loadBar 2s ease-out forwards;
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        @keyframes loadBar {
+            to { width: 100%; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        /* Main Menu */
+        #main-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a14 0%, #1a0a2e 100%);
+        }
+
+        .menu-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .bg-cube {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--neon-cyan);
+            transform: rotate(45deg);
+            animation: floatCube 10s infinite ease-in-out;
+            opacity: 0.1;
+        }
+
+        @keyframes floatCube {
+            0%, 100% { transform: rotate(45deg) translateY(0); }
+            50% { transform: rotate(225deg) translateY(-100px); }
+        }
+
+        .menu-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .menu-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 6rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, var(--neon-cyan), var(--neon-pink));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 40px rgba(0, 246, 255, 0.6);
+            margin-bottom: 3rem;
+            animation: titleGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% { filter: drop-shadow(0 0 20px var(--neon-cyan)); }
+            50% { filter: drop-shadow(0 0 40px var(--neon-pink)); }
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .menu-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            padding: 1.2rem 3rem;
+            background: rgba(0, 246, 255, 0.1);
+            border: 3px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .menu-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: var(--neon-cyan);
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+            z-index: -1;
+        }
+
+        .menu-btn:hover {
+            color: var(--bg-dark);
+            transform: scale(1.05);
+            box-shadow: 0 0 30px var(--neon-cyan);
+        }
+
+        .menu-btn:hover::before {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Level Select */
+        #level-select {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a14 0%, #2e0a1a 100%);
+            padding: 3rem;
+        }
+
+        .level-header {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 3rem;
+            color: var(--neon-pink);
+            text-shadow: 0 0 20px var(--neon-pink);
+        }
+
+        .levels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto 2rem;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .level-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--neon-pink);
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .level-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 0, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .level-card:hover::before {
+            left: 100%;
+        }
+
+        .level-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 40px var(--neon-pink);
+            border-color: var(--neon-yellow);
+        }
+
+        .level-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: var(--neon-yellow);
+        }
+
+        .level-difficulty {
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 1rem;
+        }
+
+        .level-stars {
+            color: var(--neon-yellow);
+            font-size: 1.2rem;
+        }
+
+        .back-btn {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            padding: 1rem 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid white;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: white;
+            color: var(--bg-dark);
+            box-shadow: 0 0 20px white;
+        }
+
+        /* Game Screen */
+        #game-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #game-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #0a0a14 0%, #1a0a2e 100%);
+        }
+
+        .game-ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .game-ui > * {
+            pointer-events: all;
+        }
+
+        .stat {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .pause-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            padding: 0.8rem 1.5rem;
+            background: rgba(0, 246, 255, 0.2);
+            border: 2px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pause-btn:hover {
+            background: var(--neon-cyan);
+            color: var(--bg-dark);
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        /* Death Screen */
+        #death-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .death-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 5rem;
+            color: #ff0000;
+            text-shadow: 0 0 40px #ff0000;
+            margin-bottom: 2rem;
+            animation: deathShake 0.5s;
+        }
+
+        @keyframes deathShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-20px) rotate(-5deg); }
+            75% { transform: translateX(20px) rotate(5deg); }
+        }
+
+        .death-stats {
+            font-size: 1.5rem;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .death-buttons {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .retry-btn, .menu-return-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            padding: 1rem 2.5rem;
+            border: 3px solid;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .retry-btn {
+            background: rgba(0, 255, 0, 0.1);
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+        }
+
+        .retry-btn:hover {
+            background: var(--neon-green);
+            color: var(--bg-dark);
+            box-shadow: 0 0 30px var(--neon-green);
+        }
+
+        .menu-return-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+            color: white;
+        }
+
+        .menu-return-btn:hover {
+            background: white;
+            color: var(--bg-dark);
+            box-shadow: 0 0 30px white;
+        }
+
+        /* Shop Screen */
+        #shop-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a14 0%, #0a2e1a 100%);
+            padding: 3rem;
+        }
+
+        .shop-header {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: var(--neon-green);
+            text-shadow: 0 0 20px var(--neon-green);
+        }
+
+        .shop-currency {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 3rem;
+            color: var(--neon-yellow);
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto 2rem;
+            max-height: 55vh;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .shop-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--neon-green);
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            position: relative;
+        }
+
+        .shop-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 40px var(--neon-green);
+        }
+
+        .shop-item.owned {
+            border-color: var(--neon-cyan);
+            opacity: 0.6;
+        }
+
+        .shop-item.equipped {
+            border-color: var(--neon-yellow);
+            box-shadow: 0 0 30px var(--neon-yellow);
+        }
+
+        .item-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1rem;
+        }
+
+        .item-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--neon-yellow);
+        }
+
+        .item-price {
+            font-size: 1rem;
+            color: var(--neon-green);
+        }
+
+        /* Particles */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleFade 1s forwards;
+        }
+
+        @keyframes particleFade {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0); }
+        }
+
+        /* Settings Screen */
+        #settings-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a14 0%, #1a1a2e 100%);
+            padding: 3rem;
+        }
+
+        .settings-content {
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--neon-cyan);
+            padding: 2rem;
+            border-radius: 10px;
+        }
+
+        .setting-item {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .setting-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            color: var(--neon-cyan);
+        }
+
+        .setting-slider {
+            width: 200px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            border-radius: 5px;
+        }
+
+        .setting-slider::-webkit-slider-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--neon-cyan);
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .toggle-btn {
+            font-family: 'Orbitron', sans-serif;
+            padding: 0.5rem 1.5rem;
+            background: rgba(255, 0, 0, 0.3);
+            border: 2px solid #ff0000;
+            color: #ff0000;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 700;
+        }
+
+        .toggle-btn.active {
+            background: rgba(0, 255, 0, 0.3);
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+        }
+
+        .credits-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .menu-title {
+                font-size: 3.5rem;
+            }
+
+            .menu-btn {
+                font-size: 1.3rem;
+                padding: 1rem 2rem;
+            }
+
+            .level-header, .shop-header {
+                font-size: 2rem;
+            }
+
+            .levels-grid, .shop-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 1rem;
+            }
+
+            .death-title {
+                font-size: 3rem;
+            }
+
+            .game-ui {
+                padding: 1rem;
+            }
+
+            .stat {
+                font-size: 1rem;
+            }
+
+            .settings-content {
+                padding: 1.5rem;
+            }
+
+            .setting-item {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .setting-slider {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .menu-title {
+                font-size: 2.5rem;
+            }
+
+            .menu-btn {
+                font-size: 1rem;
+                padding: 0.8rem 1.5rem;
+            }
+
+            .loading-logo {
+                font-size: 3rem;
+            }
+
+            .levels-grid, .shop-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .death-buttons {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--neon-cyan);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--neon-pink);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-logo">GEOMETRY<br>DASH</div>
+        <div class="loading-bar-container">
+            <div class="loading-bar"></div>
+        </div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu">
+        <div class="menu-bg" id="menu-bg"></div>
+        <div class="menu-content">
+            <h1 class="menu-title">GEOMETRY<br>DASH</h1>
+            <div class="menu-buttons">
+                <button class="menu-btn" onclick="showLevelSelect()">Jouer</button>
+                <button class="menu-btn" onclick="showShop()">Boutique</button>
+                <button class="menu-btn" onclick="showSettings()">Options</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Select -->
+    <div id="level-select">
+        <h2 class="level-header">SÉLECTION DE NIVEAU</h2>
+        <div class="levels-grid" id="levels-grid"></div>
+        <button class="back-btn" onclick="backToMenu()">Retour</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen">
+        <canvas id="game-canvas"></canvas>
+        <div class="game-ui">
+            <div>
+                <div class="stat">Niveau: <span id="level-name-display"></span></div>
+                <div class="stat">Tentatives: <span id="attempts">0</span></div>
+                <div class="stat">Progression: <span id="progress">0</span>%</div>
+            </div>
+            <button class="pause-btn" onclick="pauseGame()">PAUSE</button>
+        </div>
+    </div>
+
+    <!-- Death Screen -->
+    <div id="death-screen">
+        <div class="death-title">GAME OVER</div>
+        <div class="death-stats">
+            <div style="font-size: 2rem; margin-bottom: 1rem;">Progression: <span id="death-progress" style="color: var(--neon-yellow);">0%</span></div>
+            <div>Tentatives: <span id="death-attempts" style="color: var(--neon-cyan);">0</span></div>
+        </div>
+        <div class="death-buttons">
+            <button class="retry-btn" onclick="retryLevel()">RÉESSAYER</button>
+            <button class="menu-return-btn" onclick="quitToMenu()">MENU</button>
+        </div>
+    </div>
+
+    <!-- Shop Screen -->
+    <div id="shop-screen">
+        <h2 class="shop-header">BOUTIQUE</h2>
+        <div class="shop-currency">Étoiles: <span id="stars-count">0</span> ⭐</div>
+        <div class="shop-grid" id="shop-grid"></div>
+        <button class="back-btn" onclick="backToMenu()">Retour</button>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-screen">
+        <h2 class="shop-header">PARAMÈTRES</h2>
+        <div class="settings-content">
+            <div class="setting-item">
+                <div class="setting-label">Volume Musique</div>
+                <input type="range" class="setting-slider" min="0" max="100" value="70">
+            </div>
+            <div class="setting-item">
+                <div class="setting-label">Volume Effets</div>
+                <input type="range" class="setting-slider" min="0" max="100" value="80">
+            </div>
+            <div class="setting-item">
+                <div class="setting-label">Particules</div>
+                <button class="toggle-btn active" onclick="toggleSetting(this)">ON</button>
+            </div>
+            <div class="setting-item">
+                <div class="setting-label">Mode Sombre</div>
+                <button class="toggle-btn active" onclick="toggleSetting(this)">ON</button>
+            </div>
+            <div class="credits-section">
+                <h3 style="font-family: 'Orbitron', sans-serif; color: var(--neon-cyan); margin-bottom: 1rem; font-size: 2rem;">CRÉDITS</h3>
+                <p style="font-size: 1.5rem; color: var(--neon-pink); font-family: 'Orbitron', sans-serif; text-shadow: 0 0 20px var(--neon-pink);">Créé par: maxbryx11</p>
+                <p style="font-size: 1rem; color: #888; margin-top: 0.5rem;">Geometry Dash - Neon Edition</p>
+                <p style="font-size: 0.9rem; color: #666; margin-top: 2rem;">Version 1.0.0 - 2026</p>
+            </div>
+        </div>
+        <button class="back-btn" onclick="backToMenu()">Retour</button>
+    </div>
+
+    <script>
+        // Game State
+        const gameState = {
+            screen: 'loading',
+            currentLevel: null,
+            attempts: 0,
+            stars: parseInt(localStorage.getItem('gd_stars') || '0'),
+            ownedIcons: JSON.parse(localStorage.getItem('gd_owned') || '["cube1"]'),
+            equippedIcon: localStorage.getItem('gd_equipped') || 'cube1',
+            bestScores: JSON.parse(localStorage.getItem('gd_scores') || '{}')
+        };
+
+        // Levels Data
+        const levels = [
+            { id: 1, name: 'Stereo Madness', difficulty: 'Facile', stars: 1, speed: 4, obstacles: 'basic' },
+            { id: 2, name: 'Back On Track', difficulty: 'Facile', stars: 1, speed: 5, obstacles: 'basic' },
+            { id: 3, name: 'Polargeist', difficulty: 'Normal', stars: 2, speed: 5.5, obstacles: 'medium' },
+            { id: 4, name: 'Dry Out', difficulty: 'Normal', stars: 2, speed: 6, obstacles: 'medium' },
+            { id: 5, name: 'Base After Base', difficulty: 'Difficile', stars: 3, speed: 6.5, obstacles: 'hard' },
+            { id: 6, name: 'Cant Let Go', difficulty: 'Difficile', stars: 3, speed: 7, obstacles: 'hard' },
+            { id: 7, name: 'Jumper', difficulty: 'Difficile', stars: 3, speed: 7.5, obstacles: 'hard' },
+            { id: 8, name: 'Time Machine', difficulty: 'Très Difficile', stars: 4, speed: 8, obstacles: 'extreme' },
+            { id: 9, name: 'Cycles', difficulty: 'Très Difficile', stars: 4, speed: 8.5, obstacles: 'extreme' },
+            { id: 10, name: 'xStep', difficulty: 'Extrême', stars: 5, speed: 9, obstacles: 'extreme' }
+        ];
+
+        // Shop Items
+        const shopItems = [
+            { id: 'cube1', name: 'Cube Classique', price: 0, color: '#00f6ff' },
+            { id: 'cube2', name: 'Cube Rouge', price: 50, color: '#ff0000' },
+            { id: 'cube3', name: 'Cube Vert', price: 100, color: '#00ff00' },
+            { id: 'cube4', name: 'Cube Violet', price: 150, color: '#ff00ff' },
+            { id: 'cube5', name: 'Cube Or', price: 200, color: '#ffd700' },
+            { id: 'cube6', name: 'Cube Arc-en-ciel', price: 300, color: 'rainbow' },
+            { id: 'ship1', name: 'Vaisseau Basique', price: 250, type: 'ship' },
+            { id: 'ship2', name: 'Vaisseau Rapide', price: 400, type: 'ship' }
+        ];
+
+        // Canvas and Game Variables
+        let canvas, ctx;
+        let player = { x: 100, y: 0, size: 30, velocityY: 0, isJumping: false, rotation: 0 };
+        let gameRunning = false;
+        let obstacles = [];
+        let particles = [];
+        let levelProgress = 0;
+        let cameraX = 0;
+        const gravity = 0.8;
+        const jumpForce = -15;
+        let groundY = 0;
+
+        // Initialize
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loading-screen').style.display = 'none';
+                    showMainMenu();
+                }, 500);
+            }, 2000);
+
+            // Create background cubes for menu
+            const menuBg = document.getElementById('menu-bg');
+            for (let i = 0; i < 20; i++) {
+                const cube = document.createElement('div');
+                cube.className = 'bg-cube';
+                cube.style.left = Math.random() * 100 + '%';
+                cube.style.top = Math.random() * 100 + '%';
+                cube.style.animationDelay = Math.random() * 5 + 's';
+                cube.style.width = (20 + Math.random() * 40) + 'px';
+                cube.style.height = cube.style.width;
+                menuBg.appendChild(cube);
+            }
+
+            // Initialize level select
+            renderLevelSelect();
+            renderShop();
+        });
+
+        function showMainMenu() {
+            hideAllScreens();
+            document.getElementById('main-menu').style.display = 'block';
+            gameState.screen = 'menu';
+        }
+
+        function showLevelSelect() {
+            hideAllScreens();
+            document.getElementById('level-select').style.display = 'block';
+            gameState.screen = 'levelSelect';
+        }
+
+        function showShop() {
+            hideAllScreens();
+            document.getElementById('shop-screen').style.display = 'block';
+            document.getElementById('stars-count').textContent = gameState.stars;
+            gameState.screen = 'shop';
+            renderShop();
+        }
+
+        function showSettings() {
+            hideAllScreens();
+            document.getElementById('settings-screen').style.display = 'block';
+            gameState.screen = 'settings';
+        }
+
+        function toggleSetting(button) {
+            button.classList.toggle('active');
+            button.textContent = button.classList.contains('active') ? 'ON' : 'OFF';
+        }
+
+        function backToMenu() {
+            showMainMenu();
+        }
+
+        function hideAllScreens() {
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('level-select').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('death-screen').style.display = 'none';
+            document.getElementById('shop-screen').style.display = 'none';
+            document.getElementById('settings-screen').style.display = 'none';
+        }
+
+        function renderLevelSelect() {
+            const grid = document.getElementById('levels-grid');
+            grid.innerHTML = '';
+            
+            levels.forEach(level => {
+                const card = document.createElement('div');
+                card.className = 'level-card';
+                const bestScore = gameState.bestScores[level.id] || 0;
+                card.innerHTML = `
+                    <div class="level-name">${level.name}</div>
+                    <div class="level-difficulty">${level.difficulty}</div>
+                    <div class="level-stars">${'★'.repeat(level.stars)}</div>
+                    <div style="margin-top: 1rem; color: var(--neon-cyan);">Meilleur: ${bestScore}%</div>
+                `;
+                card.onclick = () => startLevel(level);
+                grid.appendChild(card);
+            });
+        }
+
+        function renderShop() {
+            const grid = document.getElementById('shop-grid');
+            grid.innerHTML = '';
+            
+            shopItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'shop-item';
+                const owned = gameState.ownedIcons.includes(item.id);
+                const equipped = gameState.equippedIcon === item.id;
+                
+                if (owned) card.classList.add('owned');
+                if (equipped) card.classList.add('equipped');
+                
+                const icon = document.createElement('div');
+                icon.className = 'item-icon';
+                icon.style.width = '60px';
+                icon.style.height = '60px';
+                icon.style.margin = '0 auto 1rem';
+                icon.style.background = item.color === 'rainbow' 
+                    ? 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)'
+                    : item.color || 'var(--neon-cyan)';
+                icon.style.transform = 'rotate(45deg)';
+                icon.style.boxShadow = `0 0 20px ${item.color || 'var(--neon-cyan)'}`;
+                
+                card.innerHTML = `
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-price">${owned ? (equipped ? 'ÉQUIPÉ' : 'CLIQUER POUR ÉQUIPER') : item.price + ' ⭐'}</div>
+                `;
+                card.insertBefore(icon, card.firstChild);
+                
+                card.onclick = () => {
+                    if (owned) {
+                        gameState.equippedIcon = item.id;
+                        localStorage.setItem('gd_equipped', item.id);
+                        renderShop();
+                    } else if (gameState.stars >= item.price) {
+                        gameState.stars -= item.price;
+                        gameState.ownedIcons.push(item.id);
+                        gameState.equippedIcon = item.id;
+                        localStorage.setItem('gd_stars', gameState.stars);
+                        localStorage.setItem('gd_owned', JSON.stringify(gameState.ownedIcons));
+                        localStorage.setItem('gd_equipped', item.id);
+                        document.getElementById('stars-count').textContent = gameState.stars;
+                        renderShop();
+                        createParticles(card);
+                    } else {
+                        alert('Pas assez d\'étoiles!');
+                    }
+                };
+                
+                grid.appendChild(card);
+            });
+        }
+
+        function startLevel(level) {
+            hideAllScreens();
+            document.getElementById('game-screen').style.display = 'block';
+            gameState.screen = 'game';
+            gameState.currentLevel = level;
+            gameState.attempts = 0;
+            document.getElementById('level-name-display').textContent = level.name;
+            document.getElementById('attempts').textContent = '0';
+            
+            // Initialize canvas
+            canvas = document.getElementById('game-canvas');
+            ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            groundY = canvas.height - 100;
+            
+            initGame();
+            gameLoop();
+        }
+
+        function initGame() {
+            player = { 
+                x: 100, 
+                y: groundY - 30, 
+                size: 30, 
+                velocityY: 0, 
+                isJumping: false,
+                rotation: 0
+            };
+            obstacles = [];
+            particles = [];
+            levelProgress = 0;
+            cameraX = 0;
+            gameRunning = true;
+            gameState.attempts++;
+            document.getElementById('attempts').textContent = gameState.attempts;
+            
+            // Generate obstacles
+            generateObstacles();
+            
+            // Input handling
+            canvas.onclick = jump;
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && gameRunning) jump();
+            });
+        }
+
+        function generateObstacles() {
+            const level = gameState.currentLevel;
+            const obstacleCount = 50 + level.id * 10;
+            const minGap = 200;
+            const maxGap = 400;
+            
+            let currentX = 500;
+            
+            for (let i = 0; i < obstacleCount; i++) {
+                const gap = minGap + Math.random() * (maxGap - minGap);
+                currentX += gap;
+                
+                const type = Math.random();
+                if (type < 0.5) {
+                    // Spike
+                    obstacles.push({
+                        x: currentX,
+                        y: groundY - 30,
+                        width: 30,
+                        height: 30,
+                        type: 'spike'
+                    });
+                } else if (type < 0.8) {
+                    // Platform
+                    const platformHeight = 20 + Math.random() * 80;
+                    obstacles.push({
+                        x: currentX,
+                        y: groundY - platformHeight,
+                        width: 60,
+                        height: platformHeight,
+                        type: 'platform'
+                    });
+                } else {
+                    // Double spike
+                    obstacles.push({
+                        x: currentX,
+                        y: groundY - 30,
+                        width: 30,
+                        height: 30,
+                        type: 'spike'
+                    });
+                    obstacles.push({
+                        x: currentX + 50,
+                        y: groundY - 30,
+                        width: 30,
+                        height: 30,
+                        type: 'spike'
+                    });
+                }
+            }
+            
+            // End portal
+            obstacles.push({
+                x: currentX + 500,
+                y: groundY - 100,
+                width: 60,
+                height: 100,
+                type: 'portal'
+            });
+        }
+
+        function jump() {
+            if (!player.isJumping) {
+                player.velocityY = jumpForce;
+                player.isJumping = true;
+            }
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            // Update
+            player.velocityY += gravity;
+            player.y += player.velocityY;
+            
+            // Ground collision
+            if (player.y >= groundY - player.size) {
+                player.y = groundY - player.size;
+                player.velocityY = 0;
+                player.isJumping = false;
+                player.rotation = 0;
+            }
+            
+            // Rotation
+            if (player.isJumping) {
+                player.rotation += 5;
+            }
+            
+            // Camera follow
+            cameraX += gameState.currentLevel.speed;
+            
+            // Progress
+            const maxDistance = obstacles[obstacles.length - 1].x;
+            levelProgress = Math.min(100, Math.floor((cameraX / maxDistance) * 100));
+            document.getElementById('progress').textContent = levelProgress;
+            
+            // Platform collision detection (must be before spike collision)
+            let onPlatform = false;
+            obstacles.forEach(obstacle => {
+                if (obstacle.type === 'platform') {
+                    // Calculate player position in world space
+                    const playerWorldX = player.x + cameraX;
+                    
+                    // Check if player is landing on top of platform
+                    if (player.velocityY >= 0 && 
+                        playerWorldX + player.size > obstacle.x + 5 &&
+                        playerWorldX < obstacle.x + obstacle.width - 5 &&
+                        player.y + player.size >= obstacle.y &&
+                        player.y + player.size <= obstacle.y + 20) {
+                        player.y = obstacle.y - player.size;
+                        player.velocityY = 0;
+                        player.isJumping = false;
+                        player.rotation = 0;
+                        onPlatform = true;
+                    }
+                }
+            });
+            
+            // Spike and portal collision
+            obstacles.forEach(obstacle => {
+                if (obstacle.type === 'spike') {
+                    if (checkCollision(player, obstacle, cameraX)) {
+                        die();
+                    }
+                } else if (obstacle.type === 'portal') {
+                    if (checkCollision(player, obstacle, cameraX)) {
+                        winLevel();
+                    }
+                }
+            });
+            
+            // Render
+            render();
+            
+            // Particles update
+            particles = particles.filter(p => p.life > 0);
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+            });
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function render() {
+            // Clear
+            ctx.fillStyle = '#0a0a14';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Grid background
+            ctx.strokeStyle = 'rgba(0, 246, 255, 0.1)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.width; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(i - (cameraX % 50), 0);
+                ctx.lineTo(i - (cameraX % 50), canvas.height);
+                ctx.stroke();
+            }
+            
+            // Ground
+            ctx.fillStyle = 'rgba(0, 246, 255, 0.2)';
+            ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+            
+            ctx.strokeStyle = 'var(--neon-cyan)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(canvas.width, groundY);
+            ctx.stroke();
+            
+            // Obstacles
+            obstacles.forEach(obstacle => {
+                const screenX = obstacle.x - cameraX;
+                if (screenX < -100 || screenX > canvas.width + 100) return;
+                
+                ctx.save();
+                
+                if (obstacle.type === 'spike') {
+                    ctx.fillStyle = '#ff0000';
+                    ctx.shadowColor = '#ff0000';
+                    ctx.shadowBlur = 20;
+                    ctx.beginPath();
+                    ctx.moveTo(screenX + obstacle.width / 2, obstacle.y);
+                    ctx.lineTo(screenX, obstacle.y + obstacle.height);
+                    ctx.lineTo(screenX + obstacle.width, obstacle.y + obstacle.height);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (obstacle.type === 'platform') {
+                    ctx.fillStyle = '#ff00ff';
+                    ctx.shadowColor = '#ff00ff';
+                    ctx.shadowBlur = 15;
+                    ctx.fillRect(screenX, obstacle.y, obstacle.width, obstacle.height);
+                    
+                    // Draw platform top edge
+                    ctx.strokeStyle = '#ffff00';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(screenX, obstacle.y);
+                    ctx.lineTo(screenX + obstacle.width, obstacle.y);
+                    ctx.stroke();
+                } else if (obstacle.type === 'portal') {
+                    const gradient = ctx.createLinearGradient(screenX, obstacle.y, screenX, obstacle.y + obstacle.height);
+                    gradient.addColorStop(0, '#00f6ff');
+                    gradient.addColorStop(0.5, '#ff00ff');
+                    gradient.addColorStop(1, '#ffff00');
+                    ctx.fillStyle = gradient;
+                    ctx.shadowColor = '#00f6ff';
+                    ctx.shadowBlur = 30;
+                    ctx.fillRect(screenX, obstacle.y, obstacle.width, obstacle.height);
+                }
+                
+                ctx.restore();
+            });
+            
+            // Player
+            ctx.save();
+            ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
+            ctx.rotate(player.rotation * Math.PI / 180);
+            
+            const equippedItem = shopItems.find(item => item.id === gameState.equippedIcon);
+            const playerColor = equippedItem ? equippedItem.color : '#00f6ff';
+            
+            if (playerColor === 'rainbow') {
+                const gradient = ctx.createLinearGradient(-player.size/2, -player.size/2, player.size/2, player.size/2);
+                gradient.addColorStop(0, '#ff0000');
+                gradient.addColorStop(0.33, '#00ff00');
+                gradient.addColorStop(0.66, '#0000ff');
+                gradient.addColorStop(1, '#ff00ff');
+                ctx.fillStyle = gradient;
+            } else {
+                ctx.fillStyle = playerColor;
+            }
+            
+            ctx.shadowColor = playerColor;
+            ctx.shadowBlur = 25;
+            ctx.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
+            
+            // Eyes
+            ctx.fillStyle = '#000';
+            ctx.fillRect(-8, -8, 6, 6);
+            ctx.fillRect(2, -8, 6, 6);
+            
+            ctx.restore();
+            
+            // Particles
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / 30;
+                ctx.fillRect(p.x, p.y, 3, 3);
+            });
+            ctx.globalAlpha = 1;
+            
+            // Trail particles
+            if (Math.random() < 0.3) {
+                particles.push({
+                    x: player.x + player.size / 2,
+                    y: player.y + player.size / 2,
+                    vx: -3 - Math.random() * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    life: 30,
+                    color: playerColor === 'rainbow' ? `hsl(${Math.random() * 360}, 100%, 50%)` : playerColor
+                });
+            }
+        }
+
+        function checkCollision(player, obstacle, cameraX) {
+            // Calculate player position in world space
+            const playerWorldX = player.x + cameraX;
+            
+            // Use AABB collision detection with proper margins
+            return playerWorldX + 3 < obstacle.x + obstacle.width &&
+                   playerWorldX + player.size - 3 > obstacle.x &&
+                   player.y + 3 < obstacle.y + obstacle.height &&
+                   player.y + player.size - 3 > obstacle.y;
+        }
+
+        function die() {
+            gameRunning = false;
+            
+            // Create death explosion
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: player.x + player.size / 2,
+                    y: player.y + player.size / 2,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 60,
+                    color: `hsl(${Math.random() * 360}, 100%, 50%)`
+                });
+            }
+            
+            setTimeout(() => {
+                document.getElementById('death-screen').style.display = 'flex';
+                document.getElementById('death-progress').textContent = levelProgress + '%';
+                document.getElementById('death-attempts').textContent = gameState.attempts;
+            }, 500);
+        }
+
+        function winLevel() {
+            gameRunning = false;
+            
+            // Award stars
+            const earnedStars = gameState.currentLevel.stars;
+            gameState.stars += earnedStars;
+            localStorage.setItem('gd_stars', gameState.stars);
+            
+            // Save best score
+            if (!gameState.bestScores[gameState.currentLevel.id] || levelProgress > gameState.bestScores[gameState.currentLevel.id]) {
+                gameState.bestScores[gameState.currentLevel.id] = levelProgress;
+                localStorage.setItem('gd_scores', JSON.stringify(gameState.bestScores));
+            }
+            
+            alert(`🎉 NIVEAU TERMINÉ! 🎉\n\nVous avez gagné ${earnedStars} étoiles!\nTotal: ${gameState.stars} ⭐`);
+            backToMenu();
+        }
+
+        function retryLevel() {
+            document.getElementById('death-screen').style.display = 'none';
+            initGame();
+            gameLoop();
+        }
+
+        function quitToMenu() {
+            gameRunning = false;
+            document.getElementById('death-screen').style.display = 'none';
+            backToMenu();
+        }
+
+        function pauseGame() {
+            gameRunning = !gameRunning;
+            if (gameRunning) {
+                gameLoop();
+            }
+        }
+
+        function createParticles(element) {
+            const rect = element.getBoundingClientRect();
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = rect.left + rect.width / 2 + 'px';
+                particle.style.top = rect.top + rect.height / 2 + 'px';
+                particle.style.transform = `translate(${(Math.random() - 0.5) * 100}px, ${(Math.random() - 0.5) * 100}px)`;
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 1000);
+            }
+        }
+
+        // Resize handler
+        window.addEventListener('resize', () => {
+            if (canvas) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                groundY = canvas.height - 100;
+            }
+        });
+    </script>
+</body>
+</html>

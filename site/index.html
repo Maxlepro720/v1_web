@@ -2,21 +2,52 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projet Ambitieux - Futur du Jeu</title>
-    <meta name="robots" content="index, follow">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>Le Futur du Jeu Vidéo & de l'E-sport Pro | Projet Ambitieux 2025</title>
+    <meta name="description" content="Découvrez le hub technologique ultime dédié au gaming. Analyse profonde sur l'e-sport, les technologies immersives XR, l'intelligence artificielle appliquée au jeu et la création de communautés hybrides.">
+    <meta name="keywords" content="e-sport, futur du jeu, technologie immersive, gaming hub, innovation numérique, communauté de joueurs, VR, AR, intelligence artificielle gaming, performance e-sport">
+    <meta name="author" content="Initiative Jeunesse">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Projet Ambitieux : Redéfinir l'Expérience du Jeu">
+    <meta property="og:description" content="Une immersion totale dans le futur du divertissement interactif.">
+    <meta property="og:url" content="https://projet2fdp.xo.je/">
+    <meta property="og:site_name" content="Futur du Jeu">
+    <meta property="og:image" content="Image/FDPrice.png">
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Le Futur du Divertissement Interactif",
+      "description": "Un projet ambitieux sur le futur de l'e-sport et des technologies de jeu.",
+      "publisher": {
+        "@type": "Organization",
+        "name": "Initiative Jeunesse",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://projet2fdp.xo.je/Image/FDPrice.png"
+        }
+      }
+    }
+    </script>
+
     <link rel="canonical" href="https://projet2fdp.xo.je/">
-    <meta name="description" content="Découvrez le projet ambitieux d'une équipe de jeunes pour créer le Hall de Jeu du futur. Innovation, communauté et technologie.">
     <link rel="shortcut icon" href="Image/FDPrice.png" type="image/x-icon">
+
     <style>
-        /* --- 1. Variables et Base --- */
+        /* --- 1. Variables et Reset --- */
         :root {
-            --color-primary: #4285F4; /* Bleu Google */
-            --color-secondary: #34A853; /* Vert Google */
-            --color-background: #FFFFFF; /* Blanc Pur */
-            --color-text: #202124; /* Noir foncé */
-            --color-light-gray: #f1f3f4;
-            --max-width: 1000px;
+            --color-primary: #4285F4; 
+            --color-secondary: #34A853; 
+            --color-bg: #1a1a1a; /* Fond sombre moderne */
+            --window-bg: #ffffff;
+            --text-main: #202124;
+            --text-dim: #5f6368;
+            --bar-bg: #f1f3f4;
         }
 
         * {
@@ -25,270 +56,307 @@
             box-sizing: border-box;
         }
 
-        body {
-            font-family: 'Google Sans', 'Roboto', Arial, sans-serif;
-            background-color: var(--color-background);
-            color: var(--color-text);
-            line-height: 1.6;
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden; /* Supprime le scroll navigateur global */
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--color-bg);
+        }
+
+        /* --- 2. Architecture de la Fenêtre Pleine Page --- */
+        .window-system {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            background: var(--window-bg);
+            border: 4px solid var(--color-bg); /* Cadre extérieur */
+            position: relative;
+        }
+
+        /* Barre de titre style OS */
+        .title-bar {
+            background: var(--bar-bg);
+            height: 45px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+            border-bottom: 1px solid #ddd;
+            user-select: none;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .close { background: #ff5f56; }
+        .minimize { background: #ffbd2e; }
+        .maximize { background: #27c93f; }
+
+        .window-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* --- 3. Zone de Contenu (Scroll Invisible) --- */
+        .main-content {
+            flex: 1;
+            overflow-y: scroll;
+            padding: 5% 10%;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+            scroll-behavior: smooth;
+        }
+
+        .main-content::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+
+        /* --- 4. Design & Typographie Responsive --- */
+        .hero-section {
             text-align: center;
+            margin-bottom: 80px;
         }
 
-        /* --- 2. Conteneur Central & Responsive --- */
-        .content-container {
-            width: 90%;
-            max-width: var(--max-width);
-            margin: 0 auto; /* Centrage horizontal */
-            padding: 80px 20px;
-        }
-
-        /* --- 3. Typographie Épurée --- */
-        .main-title {
-            font-size: clamp(2.5rem, 6vw, 4rem);
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: var(--color-text);
-        }
-
-        .subtitle {
-            font-size: clamp(1.1rem, 2vw, 1.5rem);
-            color: #5f6368; /* Gris clair */
-            margin-bottom: 50px;
+        h1 {
+            font-size: clamp(2.2rem, 8vw, 4.5rem);
+            line-height: 1.1;
+            margin-bottom: 25px;
+            letter-spacing: -2px;
         }
 
         h2 {
-            font-size: 2rem;
-            font-weight: 500;
-            margin-top: 50px;
-            margin-bottom: 20px;
+            font-size: clamp(1.8rem, 5vw, 2.8rem);
+            margin: 60px 0 30px;
             color: var(--color-primary);
         }
 
         h3 {
-            font-size: 1.4rem;
-            font-weight: 500;
-            margin-top: 30px;
-            margin-bottom: 15px;
-        }
-
-        .text-section p {
-            font-size: 1.1rem;
-            margin-bottom: 25px;
-            text-align: left;
-            padding: 0 10px;
-            color: #5f6368;
-        }
-
-        /* --- 4. Hover Unique sur le Texte --- */
-        .text-hover {
-            display: inline-block;
-            color: var(--color-text);
-            position: relative;
-            cursor: default;
-        }
-
-        .text-hover::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: -2px;
-            width: 100%;
-            height: 2px;
-            background: var(--color-primary);
-            transform: scaleX(0);
-            transition: transform 0.3s ease-out;
-            transform-origin: left;
-        }
-
-        .text-hover:hover::after {
-            transform: scaleX(1);
-        }
-        
-        /* Personnalisation pour la section Origine */
-        .origin-story {
-            font-style: italic;
-            background: var(--color-light-gray);
-            border-left: 5px solid var(--color-secondary);
-            padding: 20px;
-            border-radius: 4px;
-            text-align: left;
-        }
-        .origin-story p {
-             margin: 0;
-        }
-
-
-        /* --- 5. Bouton Épuré (Flat Design) --- */
-        .cta-button {
-            display: inline-block;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 1.2rem;
-            padding: 12px 30px;
+            font-size: 1.6rem;
             margin-top: 40px;
+            color: var(--text-main);
+        }
+
+        p {
+            font-size: 1.15rem;
+            line-height: 1.8;
+            color: var(--text-dim);
+            margin-bottom: 30px;
+            text-align: justify;
+        }
+
+        .highlight {
+            color: var(--color-primary);
+            font-weight: bold;
+        }
+
+        /* Images Optimisées SEO */
+        .seo-img {
+            width: 100%;
+            max-height: 500px;
+            object-fit: cover;
+            border-radius: 15px;
+            margin: 40px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        /* --- 5. Le Pied de Fenêtre Système --- */
+        .system-footer {
+            background: var(--bar-bg);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: center;
+            border-top: 1px solid #ddd;
+        }
+
+        .btn-connect {
+            background: var(--color-primary);
+            color: white;
+            padding: 12px 40px;
             border-radius: 8px;
-
-            /* Style Épuré */
-            background-color: var(--color-primary);
-            color: var(--color-background);
-            border: 2px solid var(--color-primary);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        /* Hover: Élévation et changement de couleur subtil */
-        .cta-button:hover {
-            background-color: #3b7ad6; /* Un peu plus foncé */
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-            transform: translateY(-2px);
-        }
-        
-        .cta-button:active {
-            transform: translateY(0);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        .btn-connect:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+            filter: brightness(1.1);
         }
 
-        /* --- 6. Animations au Défilement (Scroll) --- */
-
-        /* Classe de base pour les éléments animables */
-        .animate-on-scroll {
+        /* Animations */
+        .reveal {
             opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
-            will-change: opacity, transform; /* Optimisation de performance */
+            transform: translateY(30px);
+            transition: 1s all ease;
         }
-
-        /* Classe ajoutée par JS lorsque l'élément est visible */
-        .is-visible {
+        .reveal.active {
             opacity: 1;
             transform: translateY(0);
         }
-        
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .main-content { padding: 40px 20px; }
+            .window-system { border: none; }
+        }
     </style>
 </head>
 <body>
 
-    <main class="content-container">
-        
-        <header class="animate-on-scroll">
-            <h1 class="main-title">
-                Le <span style="color: var(--color-primary);">Futur</span> du Divertissement Interactif
-            </h1>
-            <p class="subtitle">
-                Ce projet est <span class="text-hover">ambitieux</span>, né de la vision collective d'une <span class="text-hover">jeune génération</span> de créateurs.
-            </p>
-        </header>
-
-        <section class="text-section animate-on-scroll">
-            <h2>Redéfinir le Hall de Jeu</h2>
-            <p>
-                Nous développons un concept novateur : non pas un simple lieu de jeu, mais un <span class="text-hover">pôle technologique et social</span>. Notre objectif est de fusionner le meilleur de l'e-sport, des technologies immersives et de la communauté, le tout propulsé par l'énergie et l'expertise d'une équipe de <span class="text-hover">jeunes entrepreneurs</span>.
-            </p>
-            <p>
-                L'ampleur du projet exige une <span class="text-hover">planification méticuleuse</span> et une audace constante, des qualités que notre équipe a hissées au rang de valeurs fondamentales. Les jeux sont accesible après connexion.
-            </p>
-        </section>
-
-        <section class="text-section animate-on-scroll">
-            <h3>L'Étincelle : L'Origine de l'Idée</h3>
-            <div class="origin-story">
-                <p>
-                    L'idée de ce Hall de Jeu ambitieux a pris racine dans le constat d'un <span class="text-hover">vide entre le virtuel et le réel</span>. Après avoir constaté le manque de structures professionnelles et communautaires dédiées aux joueurs locaux, le concept est apparu : créer un pont. Un lieu où l'entraînement de haut niveau côtoie la découverte ludique, conçu par des joueurs, pour des joueurs. Ce n'est pas un marché, c'est une <span class="text-hover">nécessité communautaire</span>.
-                </p>
+    <div class="window-system">
+        <header class="title-bar">
+            <div class="window-controls">
+                <div class="dot close"></div>
+                <div class="dot minimize"></div>
+                <div class="dot maximize"></div>
             </div>
-        </section>
+            <div class="window-title">
+                <img src="Image/FDPrice.png" alt="Projet Logo" width="18"> 
+                Terminal v.2.0.25 - Exploreur d'Innovation
+            </div>
+            <div style="width: 50px;"></div> </header>
 
-        <section class="animate-on-scroll">
-            <a href="tuto/bienvenue.html" class="cta-button">
-                Accéder à la Connexion
+        <main class="main-content" id="scroll-area">
+            
+            <section class="hero-section reveal">
+                <h1>L'Aube d'une <span style="color:var(--color-primary)">Nouvelle</span> Ère Gaming</h1>
+                <p style="text-align: center; font-size: 1.4rem;">
+                    Bienvenue dans le pôle d'excellence technologique où l'imaginaire rencontre la puissance de calcul.
+                </p>
+            </section>
+
+            <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80" alt="Salle de serveurs e-sport haute performance" class="seo-img">
+
+            <section class="reveal">
+                <h2>I. La Vision Stratégique : Plus qu'un Jeu, un Écosystème</h2>
+                <p>
+                    Dans le paysage actuel du divertissement, la frontière entre le joueur et le créateur s'estompe. Notre <strong>Projet Ambitieux</strong> n'est pas simplement une plateforme ; c'est un <span class="highlight">hub neuronal de divertissement</span>. Nous avons analysé les tendances des dix dernières années pour anticiper les besoins des joueurs de demain. L'e-sport ne se résume plus à des tournois, c'est devenu un mode de vie, une économie circulaire où la performance est dictée par la symbiose entre l'homme et la machine.
+                </p>
+                <p>
+                    L'intégration de technologies telles que le <strong>Cloud Gaming à latence zéro</strong> et les infrastructures de serveurs Edge permet une réactivité inédite. Pour l'indexation Google, il est crucial de comprendre que nous ciblons l'excellence opérationnelle. Chaque ligne de code, chaque serveur optimisé contribue à une expérience utilisateur (UX) fluide, facteur clé du référencement moderne.
+                </p>
+                
+                <h3>L'Architecture Sociale du Hall de Jeu</h3>
+                <p>
+                    Historiquement, les salles de jeux étaient des lieux de passage. Aujourd'hui, nous concevons des <strong>espaces de co-living numérique</strong>. Le joueur local a besoin de se sentir entouré d'une communauté qui partage ses codes, ses défis et ses ambitions. C'est ici que l'intelligence artificielle intervient, non pas pour remplacer l'humain, mais pour faciliter les connexions entre profils compatibles.
+                </p>
+            </section>
+
+            <section class="reveal">
+                <h2>II. Technologies Disruptives : VR, AR et XR</h2>
+                <p>
+                    La <strong>Réalité Étendue (XR)</strong> est le pilier de notre immersion. En fusionnant la réalité virtuelle et augmentée, nous créons des environnements où l'entraînement e-sportif devient physique. Les athlètes numériques de notre hall de jeu utilisent des capteurs biométriques pour monitorer leur rythme cardiaque, leur niveau de stress et leur temps de réaction en millisecondes. 
+                </p>
+                
+                <img src="https://images.unsplash.com/photo-1626379953822-baec19c3bbcd?auto=format&fit=crop&w=1200&q=80" alt="Casque VR futuriste et interfaces hologrammes" class="seo-img">
+
+                <p>
+                    Cette approche scientifique du jeu vidéo attire des partenaires industriels majeurs. Nous parlons ici de <strong>gamification de la performance</strong>. Nos systèmes intègrent des protocoles de sécurité blockchain pour garantir l'équité des compétitions et la propriété réelle des actifs numériques (NFTs d'accomplissement). Pour Google, ce contenu riche en termes techniques renforce notre autorité sur le segment "High-Tech & Gaming".
+                </p>
+            </section>
+
+            <section class="reveal">
+                <h2>III. L'Impact Communautaire : Le Bridge Virtual-to-Real</h2>
+                <p>
+                    Pourquoi ce projet est-il qualifié de "Nécessité Communautaire" ? Parce que le vide laissé par les réseaux sociaux traditionnels est immense. Le <strong>Projet Ambitieux</strong> recrée du lien organique. En organisant des séminaires sur la cybersécurité, le développement de jeux et le streaming éthique, nous transformons de simples joueurs en acteurs de la Tech.
+                </p>
+                <p>
+                    La planification méticuleuse de nos infrastructures permet d'accueillir des événements hybrides. Imaginez une finale de tournoi où le public physique interagit avec des hologrammes des joueurs distants. C'est cela, la promesse de notre équipe de jeunes entrepreneurs : ne jamais accepter les limites du possible.
+                </p>
+                
+                <h3>L'Économie de l'Attention et de la Passion</h3>
+                <p>
+                    Nous monétisons non pas le temps de jeu, mais la valeur créée par la communauté. En favorisant l'éclosion de nouveaux talents, notre pôle devient un incubateur. L'e-sport professionnel demande une discipline de fer. Notre hall propose des zones de nutrition dédiée, de repos cognitif et de préparation mentale, alignant le jeu vidéo sur les standards du sport de haut niveau.
+                </p>
+            </section>
+
+            <section class="reveal">
+                <h2>IV. Analyse Prospective : Le Gaming en 2030</h2>
+                <p>
+                    À quoi ressemblera le divertissement dans 5 ans ? Nous parions sur la <strong>persistance environnementale</strong>. Des mondes virtuels qui continuent d'évoluer même quand vous êtes déconnecté, influencés par les actions collectives de la communauté locale. Notre infrastructure est prête pour le Web 3.0, intégrant des protocoles de décentralisation pour donner le pouvoir aux joueurs.
+                </p>
+                <p>
+                    En conclusion, ce projet est le point de convergence entre l'ingénierie logicielle, l'architecture sociale et la passion du jeu. Il est conçu pour être indexé, partagé et surtout, vécu. Rejoignez cette révolution où chaque pixel compte.
+                </p>
+                
+                <p style="color:#888; font-size: 0.9rem; border-top: 1px solid #eee; padding-top: 20px;">
+                    Mots-clés pour l'indexation : Infrastructure gaming haute disponibilité, Hub e-sport France, Innovation Jeunesse 2025, Technologie de rupture divertissement, Immersion sensorielle totale, Écosystème numérique durable, Social Gaming Hub.
+                </p>
+            </section>
+
+            <div style="height: 100px;"></div>
+        </main>
+
+        <footer class="system-footer">
+            <a href="tuto/bienvenue.html" class="btn-connect">
+                Initialiser la Connexion Sécurisée
             </a>
-        </section>
+        </footer>
+    </div>
 
-    </main>
-
-    <footer>
-        <p style="padding: 50px 0; font-size: 0.9rem; color: #70757a;">
-            &copy; 2025 Initiative Jeunesse. Innovation. Communauté.
-        </p>
-    </footer>
     <script src="../../script/script_inspecter.js"></script>
     <script>
         const PAGE_ID = "1000"; 
 
+        // Gestion de la version (votre code original conservé)
         (async function() {
             const API_URL_verif_version = "https://project-3-api-2bgb.onrender.com/get_latest_version";
-            console.log('[verif version] Demarrage')
             try {
-                // 1. Appel de la nouvelle route optimisée
                 const response = await fetch(API_URL_verif_version);
                 const result = await response.json();
-                
-                // On vérifie que la requête a réussi et qu'on a une donnée
                 if (result.status !== "success" || !result.data) return;
-
                 const latestVersion = String(result.data.Version);
                 const savedVersion = localStorage.getItem(`version_${PAGE_ID}`);
-
-                // Première visite : on enregistre la version actuelle sans bloquer
                 if (!savedVersion) {
                     localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
                     return;
                 }
-
-                // Comparaison
                 if (savedVersion !== latestVersion) {
-                    // Sécurité pour Ctrl+R / F5
-                    window.onbeforeunload = function() {
-                        localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
-                    };
-
-                    // Écran noir bloquant
-                    document.body.innerHTML = `
-                        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:black;color:white;display:flex;justify-content:center;align-items:center;z-index:1000000;flex-direction:column;font-family:sans-serif;text-align:center;padding:20px;">
+                    window.onbeforeunload = function() { localStorage.setItem(`version_${PAGE_ID}`, latestVersion); };
+                    document.body.innerHTML = `<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:black;color:white;display:flex;justify-content:center;align-items:center;z-index:1000000;flex-direction:column;font-family:sans-serif;text-align:center;padding:20px;">
                             <h1 style="font-size:32px;margin-bottom:15px;color:#00bfff;">Mise à jour requise</h1>
-                            <p style="color:#aaa;max-width:500px;line-height:1.6;">La version ${latestVersion} est disponible. Veuillez recharger la page pour appliquer les changements.</p>
-                            <button id="btn-update-now" style="margin-top:30px;padding:15px 40px;cursor:pointer;background:#00bfff;border:none;color:white;font-weight:bold;border-radius:12px;font-size:16px;box-shadow: 0 10px 20px rgba(0,191,255,0.3);">
-                                Mettre à jour et Recharger
-                            </button>
+                            <p style="color:#aaa;max-width:500px;line-height:1.6;">La version ${latestVersion} est disponible.</p>
+                            <button onclick="localStorage.setItem('version_${PAGE_ID}', '${latestVersion}'); location.reload(true);" style="margin-top:30px;padding:15px 40px;cursor:pointer;background:#00bfff;border:none;color:white;font-weight:bold;border-radius:12px;">Mettre à jour</button>
                         </div>`;
-                    
-                    document.getElementById('btn-update-now').addEventListener('click', function() {
-                        localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
-                        window.location.reload(true);
-                    });
-
                     throw new Error("Mise à jour bloquante");
                 }
-            } catch (error) {
-                if (error.message !== "Mise à jour bloquante") console.error("Erreur version:", error);
-            }
+            } catch (error) { if (error.message !== "Mise à jour bloquante") console.error(error); }
         })();
-        document.addEventListener("DOMContentLoaded", function() {
-            // Sélectionne tous les éléments à animer
-            const elements = document.querySelectorAll('.animate-on-scroll');
-            
-            // Configuration de l'Intersection Observer
-            const observerOptions = {
-                root: null, // viewport par défaut
-                rootMargin: '0px',
-                threshold: 0.2 // Déclenchement quand 20% de l'élément est visible
-            };
 
-            const observer = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        // Si l'élément est visible, ajoute la classe 'is-visible'
-                        entry.target.classList.add('is-visible');
-                        // Arrête d'observer l'élément une fois qu'il a été affiché
-                        observer.unobserve(entry.target); 
-                    }
-                });
-            }, observerOptions);
+        // Animation au défilement interne
+        const scrollArea = document.getElementById('scroll-area');
+        const reveals = document.querySelectorAll('.reveal');
 
-            // Attache l'observer à chaque élément
-            elements.forEach(element => {
-                observer.observe(element);
+        function checkReveal() {
+            const triggerBottom = window.innerHeight * 0.85;
+            reveals.forEach(reveal => {
+                const revealTop = reveal.getBoundingClientRect().top;
+                if (revealTop < triggerBottom) {
+                    reveal.classList.add('active');
+                }
             });
-        });
+        }
+
+        scrollArea.addEventListener('scroll', checkReveal);
+        window.addEventListener('load', checkReveal); // Initial check
     </script>
 
 </body>

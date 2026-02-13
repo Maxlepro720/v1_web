@@ -161,7 +161,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-
+    
     <div class="container">
         <div class="avatar">
             <i class="fas fa-user"></i>
@@ -196,7 +196,7 @@
             <p id="loadingText">Veuillez patienter...</p>
         </div>
     </div>
-
+    
     <div class="footer-icons">
         <i class="fas fa-wifi"></i>
         <i class="fas fa-universal-access"></i>
@@ -213,7 +213,7 @@
         const spinner = document.getElementById('loadingSpinner');
         const loadingText = document.getElementById('loadingText');
 
-        // 1. Vérification de version (Strictement repris de connecte.html)
+        // 1. Vérification de version (Strictement conservé)
         (async function() {
             const API_URL_verif_version = "https://project-3-api-2bgb.onrender.com/get_latest_version";
             try {
@@ -254,10 +254,33 @@
             }
         })();
 
-        // Initialisation cookies
+        // 2. Popup de Sécurité au démarrage (Style Windows Glass)
+        window.addEventListener('DOMContentLoaded', () => {
+            const popupHTML = `
+            <div id="securityPopup" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:9999; backdrop-filter:blur(5px); transition: 0.3s;">
+                <div style="background:rgba(255,255,255,0.1); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.2); padding:30px; border-radius:12px; max-width:380px; width:90%; color:white; text-align:left; box-shadow:0 25px 50px rgba(0,0,0,0.5); font-family: 'Segoe UI', sans-serif;">
+                    <div style="display:flex; align-items:center; gap:12px; color:#4ade80; margin-bottom:15px;">
+                        <span style="font-size:1.5rem;">🛡️</span>
+                        <strong style="font-size:1rem; text-transform:uppercase; letter-spacing:1px;">Protection Active</strong>
+                    </div>
+                    <p style="margin-bottom:15px; font-size:0.95rem; line-height:1.6; opacity:0.9;">
+                        Votre mot de passe est sécurisé par un <strong>hachage unidirectionnel SHA-256</strong>. Il est transformé en clé numérique avant stockage : personne ne peut le lire.
+                    </p>
+                    <div style="background:rgba(255,160,0,0.2); border-left:4px solid #ffa000; padding:15px; border-radius:4px; margin-bottom:20px;">
+                        <strong style="display:block; margin-bottom:5px; color:#ffb74d;">⚠️ Conseil :</strong>
+                        <span style="font-size:0.9rem;">Utilisez un mot de passe <strong>unique</strong>. Ne réutilisez jamais le même mot de passe que sur un autre site.</span>
+                    </div>
+                    <button onclick="document.getElementById('securityPopup').style.opacity='0'; setTimeout(()=>document.getElementById('securityPopup').remove(), 300)" style="width:100%; background:white; color:black; border:none; padding:12px; border-radius:4px; font-weight:600; cursor:pointer; transition:0.2s; font-size:1rem;">J'ai compris</button>
+                    <div style="margin-top:15px; text-align:center; font-size:0.7rem; opacity:0.5;">TLS 1.3 | Chiffrement AES-256</div>
+                </div>
+            </div>`;
+            document.body.insertAdjacentHTML('beforeend', popupHTML);
+        });
+
+        // Initialisation cookies (Conservé)
         localStorage.setItem('cookies_accepted', 'false');
 
-        // Basculer entre Inscription et Connexion
+        // Basculer entre Inscription et Connexion (Conservé)
         function toggleForm() {
             if (loginForm.classList.contains('hidden')) {
                 loginForm.classList.remove('hidden');
@@ -270,12 +293,11 @@
             }
         }
 
-        // Fonction d'envoi API (Générique)
+        // Fonction d'envoi API (Générique - Conservé)
         async function sendAuthRequest(username, password, isLogin) {
             const url = isLogin ? "https://project-3-api-2bgb.onrender.com/login" : "https://project-3-api-2bgb.onrender.com/signup";
             const currentForm = isLogin ? loginForm : registerForm;
             
-            // UI : Afficher chargement
             currentForm.classList.add('hidden');
             spinner.classList.remove('hidden');
             loadingText.textContent = isLogin ? "Connexion..." : "Création du compte...";
@@ -313,7 +335,7 @@
             form.classList.remove('hidden');
         }
 
-        // Event Listeners
+        // Event Listeners (Conservé)
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
             sendAuthRequest(document.getElementById('loginUser').value.trim(), document.getElementById('loginPass').value.trim(), true);

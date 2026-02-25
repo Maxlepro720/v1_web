@@ -92,6 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             slot.addEventListener('dragover', e => e.preventDefault());
             slot.addEventListener('drop', handleDrop);
+
+            slot.addEventListener('touchstart', handleTouchStart);
+            slot.addEventListener('touchmove', handleTouchMove);
+            slot.addEventListener('touchend', handleTouchEnd);
             grid.appendChild(slot);
         });
     }
@@ -116,7 +120,63 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- SYSTÈME DE MERGE ---
-    let draggedItemIndex = null;
+    let touchTargetIndex = null;
+
+function handleTouchStart(e) {
+    const slotElement = e.target.closest('.slot');
+    if (!slotElement) return;
+
+    draggedItemIndex = parseInt(slotElement.dataset.index);
+}
+
+function handleTouchMove(e) {
+    const touch = e.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    const slotElement = element ? element.closest('.slot') : null;
+
+    if (slotElement) {
+        touchTargetIndex = parseInt(slotElement.dataset.index);
+    }
+}
+
+function handleTouchEnd() {
+    if (draggedItemIndex === null || touchTargetIndex === null) return;
+
+    const sourceIndex = draggedItemIndex;
+    const targetIndex = touchTargetIndex;
+
+    if (sourceIndex === targetIndex) return;
+
+    const sourceItem = inventory[sourceIndex];
+    const targetItem = inventory[targetIndex];
+
+    if (targetItem && sourceItem.id === targetItem.id) {
+        const nextLevelIndex = sourceItem.id;
+        if (itemsData[nextLevelIndex]) {
+            inventory[targetIndex] = { ...itemsData[nextLevelIndex] };
+            inventory[sourceIndex] = null;
+
+            if (currentLevel < 20) {
+                xp += 20;
+                if (xp >= 100) {
+                    xp = 0;
+                    currentLevel++;
+                    inventory.push(null);
+                }
+            }
+
+            calculateIncome();
+            updateUI();
+        }
+    } else if (!targetItem) {
+        inventory[targetIndex] = sourceItem;
+        inventory[sourceIndex] = null;
+        updateUI();
+    }
+
+    draggedItemIndex = null;
+    touchTargetIndex = null;
+}
 
     function handleDragStart(e) {
         draggedItemIndex = e.target.dataset.index;

@@ -4,278 +4,825 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gun Merge</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@900&display=swap" rel="stylesheet">
-    <link rel="apple-touch-icon" href="../../Image/Apple_Image_Merge_Gun.png">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
     <style>
-        /* --- RESET & BASE --- */
         :root {
-            --bg-blue: #1e29eb;
-            --dark-panel: #3a3a3a;
-            --topbar-gray: #4a4a4a;
-            --coin-yellow: #f1c40f;
-            --buy-green: #5cdb2d;
-            --progress-blue: #00a2ff;
+            --bg-dark: #0d1117;
+            --bg-panel: #161c27;
+            --bg-slot: #1a2235;
+            --bg-slot-hover: #1e2940;
+            --border-slot: #2a3650;
+            --gold: #f5c518;
+            --gold-light: #ffe066;
+            --green-btn: #27c15e;
+            --green-shadow: #17803e;
+            --blue-accent: #3d8bff;
+            --topbar-bg: #151c2e;
+            --text-main: #e8eaf0;
+            --text-muted: #6b7a99;
+
+            --r1: #4caf50;
+            --r2: #2196f3;
+            --r3: #9c27b0;
+            --r4: #ff9800;
+            --r5: #f44336;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
 
         body, html {
-            height: 100%;
-            width: 100%;
-            overflow: hidden; /* Empêche tout scroll */
-            background-color: var(--bg-blue);
-            font-family: 'Roboto', sans-serif;
+            height: 100%; width: 100%;
+            overflow: hidden;
+            background: var(--bg-dark);
+            font-family: 'Rajdhani', sans-serif;
         }
 
-        /* --- LAYOUT PRINCIPAL --- */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(ellipse at 20% 30%, rgba(61,139,255,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 70%, rgba(156,39,176,0.07) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .stars {
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            overflow: hidden;
+        }
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            background: white;
+            animation: twinkle var(--dur, 3s) ease-in-out infinite var(--delay, 0s);
+        }
+        @keyframes twinkle {
+            0%,100% { opacity: 0.15; transform: scale(1); }
+            50%      { opacity: 0.9;  transform: scale(1.4); }
+        }
+
         .app-container {
-            display: flex;
-            flex-direction: column;
+            position: relative; z-index: 1;
+            display: flex; flex-direction: column;
             height: 100vh;
-            padding: 12px;
-            gap: 12px;
+            padding: 10px;
+            gap: 10px;
         }
 
-        /* --- TOPBAR GRISE ARROUNDIE --- */
+        /* ── TOPBAR ── */
         .topbar {
-            background-color: var(--topbar-gray);
-            height: 65px;
-            border-radius: 15px; /* Coins arrondis selon ta demande */
+            background: var(--topbar-bg);
+            border: 1px solid #1e2d4a;
+            border-radius: 18px;
+            height: 66px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            flex-shrink: 0; /* Empêche la topbar de s'écraser */
+            padding: 0 16px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+            transition: border-color 0.4s, box-shadow 0.4s;
+        }
+        /* Topbar glows gold when x2 active */
+        .topbar.x2-active {
+            border-color: rgba(245,197,24,0.35);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04), 0 0 20px rgba(245,197,24,0.12);
         }
 
-        .level-section {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .level-section { display: flex; align-items: center; gap: 10px; }
 
-        .level-circle {
-            background: var(--progress-blue);
-            width: 40px;
-            height: 40px;
+        .level-badge {
+            position: relative;
+            width: 44px; height: 44px;
             border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-size: 1.2rem;
-            border: 3px solid #007acc;
+            background: conic-gradient(var(--blue-accent) 0%, var(--blue-accent) 65%, #1e2d4a 65%);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .level-badge::before {
+            content: '';
+            position: absolute; inset: 3px;
+            border-radius: 50%;
+            background: var(--topbar-bg);
+        }
+        .level-badge span {
+            position: relative; z-index: 1;
+            color: var(--blue-accent);
+            font-family: 'Exo 2', sans-serif;
+            font-size: 1.1rem; font-weight: 900;
         }
 
+        .level-info { display: flex; flex-direction: column; gap: 3px; }
+        .level-label { color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
         .exp-bar-bg {
-            width: 70px;
-            height: 20px;
-            background: #333;
-            border-radius: 4px;
-            overflow: hidden;
+            width: 80px; height: 6px;
+            background: #1e2d4a;
+            border-radius: 3px; overflow: hidden;
         }
-
         .exp-fill {
-            width: 65%;
             height: 100%;
-            background: var(--progress-blue);
+            background: linear-gradient(90deg, #2979ff, #00e5ff);
+            border-radius: 3px;
+            transition: width 0.4s ease;
+            width: 65%;
+            box-shadow: 0 0 8px rgba(41,121,255,0.7);
         }
 
         .game-logo {
-            color: white;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
-            letter-spacing: 1px;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 1.4rem; font-weight: 900;
+            letter-spacing: 2px;
+            color: transparent;
+            background: linear-gradient(135deg, #f5c518, #ff9f1c, #f5c518);
+            -webkit-background-clip: text;
+            background-clip: text;
+            filter: drop-shadow(0 0 8px rgba(245,197,24,0.5));
         }
 
-        .money-section {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-        }
-
+        .money-section { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
         .money-amount {
-            color: white;
-            font-size: 1.4rem;
-            font-style: italic;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            display: flex; align-items: center; gap: 6px;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 1.3rem; font-weight: 700;
+            color: var(--text-main);
+            transition: color 0.3s;
         }
-
-        .money-amount span { color: var(--coin-yellow); }
-
-        .income-text {
-            color: #aaa;
-            font-size: 0.75rem;
-            font-weight: normal;
+        .coin-icon {
+            width: 22px; height: 22px;
+            background: radial-gradient(circle at 35% 35%, #ffe066, #f5c518, #c8960a);
+            border-radius: 50%;
+            border: 2px solid #c8960a;
+            box-shadow: 0 0 8px rgba(245,197,24,0.5);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.55rem; color: #7a5800; font-weight: 900;
         }
+        .income-text { color: var(--text-muted); font-size: 0.7rem; letter-spacing: 0.5px; transition: color 0.3s; }
 
-        /* --- GRILLE DE JEU --- */
+        /* ── GRID ── */
         .main-grid {
             flex-grow: 1;
-            background-color: var(--dark-panel);
-            border-radius: 15px;
-
-            display: grid;
+            background: var(--bg-panel);
+            border-radius: 18px;
+            border: 1px solid #1e2d4a;
             padding: 10px;
-            gap: 8px;
+            gap: 7px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            overflow: hidden;
+            box-shadow: inset 0 2px 12px rgba(0,0,0,0.4);
+        }
 
-            grid-template-columns: repeat(8, minmax(0, 1fr));
-            grid-auto-rows: minmax(0, 1fr);
+        @media (min-width: 1025px) {
+            .main-grid { grid-template-columns: repeat(8, minmax(0,1fr)); grid-template-rows: unset; }
+        }
 
-            justify-content: center;
-            align-content: center;
-
+        .slot {
+            aspect-ratio: 1/1;
+            background: var(--bg-slot);
+            border-radius: 14px;
+            border: 1.5px solid var(--border-slot);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            min-width: 0; min-height: 0;
+            position: relative;
+            transition: transform 0.15s, box-shadow 0.15s;
             overflow: hidden;
         }
 
-/* Style de la scrollbar personnalisée */
-.main-grid::-webkit-scrollbar {
-    width: 8px;
-}
-.main-grid::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
-}
-.main-grid::-webkit-scrollbar-thumb {
-    background: var(--progress-blue);
-    border-radius: 10px;
-}
+        .slot.empty { cursor: default; }
+        .slot.empty::after {
+            content: '+';
+            color: rgba(255,255,255,0.1);
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+        .slot.empty:hover { background: var(--bg-slot-hover); }
 
-/* --- RESPONSIVE MOBILE --- */
-@media (max-width: 1024px) {
-    .game-logo { display: none; }
-    
-    .main-grid {
-        /* Mobile : 3 colonnes */
-        grid-template-columns: repeat(3, 1fr);
-    }
+        .slot.filled {
+            cursor: grab;
+            border-color: var(--item-color, var(--r1));
+            box-shadow:
+                0 0 10px rgba(var(--item-rgb, 76,175,80), 0.25),
+                inset 0 1px 0 rgba(255,255,255,0.06);
+            background: linear-gradient(160deg, var(--bg-slot) 60%, rgba(var(--item-rgb, 76,175,80), 0.12));
+        }
+        .slot.filled:active { transform: scale(0.93); }
 
-    .footer {
-        justify-content: center;
-        padding-bottom: 10px;
-    }
+        .slot.filled::before {
+            content: '';
+            position: absolute; top: 0; left: 10%; right: 10%;
+            height: 2px;
+            background: var(--item-color, var(--r1));
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 0 8px var(--item-color, var(--r1));
+        }
 
-    .btn-buy {
-        width: 90%;
-    }
-}
+        .slot img {
+            width: 55%; height: 55%;
+            max-width: 72px; max-height: 72px;
+            object-fit: contain;
+            pointer-events: none;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
 
-        .slot {
-                aspect-ratio: 1/1;
+        .gain-txt {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 0.7rem; font-weight: 700;
+            color: var(--gold);
+            text-shadow: 0 0 6px rgba(245,197,24,0.6);
+            pointer-events: none;
+            margin-top: 2px;
+            letter-spacing: 0.3px;
+        }
 
-                display:flex;
-                justify-content:center;
-                align-items:center;
+        .item-level {
+            position: absolute; top: 5px; right: 6px;
+            font-size: 0.6rem; font-weight: 900;
+            color: white;
+            background: var(--item-color, var(--r1));
+            border-radius: 6px;
+            padding: 1px 5px;
+            font-family: 'Exo 2', sans-serif;
+            box-shadow: 0 0 6px rgba(0,0,0,0.4);
+        }
 
-                min-width:0;
-                min-height:0;
+        .slot.drag-over {
+            border-color: var(--gold) !important;
+            box-shadow: 0 0 16px rgba(245,197,24,0.5) !important;
+        }
 
-                color: rgba(255,255,255,0.5);
-
-                font-size: clamp(14px, 3vw, 28px);
-            }
-
-        /* --- BOUTON BUY --- */
+        /* ── FOOTER ── */
         .footer {
-            height: 100px;
+            height: 90px;
             display: flex;
-            justify-content: flex-end;
+            justify-content: center;
             align-items: center;
             flex-shrink: 0;
+            gap: 14px;
         }
 
         .btn-buy {
-            background-color: var(--buy-green);
+            background: linear-gradient(160deg, #2fd468, var(--green-btn));
             border: none;
             border-radius: 50px;
-            padding: 10px 45px;
+            padding: 0 44px;
+            height: 62px;
+            width: 90%;
+            max-width: 380px;
             color: white;
             cursor: pointer;
-            box-shadow: 0 6px 0px #3d8f1e;
-            transition: 0.1s;
+            box-shadow: 0 6px 0 var(--green-shadow), 0 0 20px rgba(39,193,94,0.25);
+            transition: transform 0.1s, box-shadow 0.1s;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-buy::after {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0;
+            height: 50%;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50px 50px 0 0;
+        }
+        .btn-buy:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--green-shadow), 0 0 12px rgba(39,193,94,0.2); }
+        .btn-buy .label { font-family: 'Exo 2', sans-serif; font-size: 1.5rem; font-weight: 900; line-height: 1; letter-spacing: 1px; }
+        .btn-buy .price {
+            font-size: 0.9rem; font-weight: 700; opacity: 0.9;
+            display: flex; align-items: center; gap: 4px;
         }
 
-        .btn-buy:active {
-            transform: translateY(3px);
-            box-shadow: 0 3px 0px #3d8f1e;
+        /* ── MERGE FLASH ── */
+        @keyframes mergeFlash {
+            0%   { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%,-50%) scale(2.5); }
+        }
+        .merge-burst {
+            position: fixed;
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            pointer-events: none; z-index: 9999;
+            background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(245,197,24,0.4) 50%, transparent 70%);
+            animation: mergeFlash 0.5s ease-out forwards;
         }
 
-        .btn-buy .label { font-size: 2rem; display: block; line-height: 1; }
-        .btn-buy .price { font-size: 1rem; opacity: 0.9; }
+        /* ── CLICK RING ── */
+        @keyframes ringOut {
+            0%   { transform: translate(-50%,-50%) scale(0.5); opacity: 0.8; }
+            100% { transform: translate(-50%,-50%) scale(2);   opacity: 0; }
+        }
+        .click-ring {
+            position: fixed;
+            width: 44px; height: 44px;
+            border: 1.5px solid rgba(245,197,24,0.6);
+            border-radius: 50%;
+            pointer-events: none; z-index: 9999;
+            animation: ringOut 0.5s ease-out forwards;
+        }
 
-        /* --- RESPONSIVE MOBILE --- */
-        @media (max-width: 1024px) {
-            .game-logo { display: none; } /* On cache le titre sur mobile */
-            
-            .main-grid {
-                grid-template-columns: repeat(3, 1fr);
-                grid-template-rows: repeat(5, 1fr);
-            }
+        /* ── FLOAT TEXT ── */
+        @keyframes floatUp {
+            0%   { opacity: 1; transform: translateY(0) scale(1); }
+            30%  { transform: translateY(-12px) scale(1.1); }
+            100% { opacity: 0; transform: translateY(-44px) scale(0.85); }
+        }
+        .float-text {
+            position: fixed;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 0.85rem; font-weight: 900;
+            color: var(--gold-light);
+            pointer-events: none; z-index: 9999;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(245,197,24,0.6);
+            animation: floatUp 0.85s ease-out forwards;
+        }
 
-            .footer {
-                justify-content: center;
-                padding-bottom: 10px;
-            }
+        /* ────────────────────────────────────────────────
+           ── X2 BONUS – EFFETS RAFFINÉS ──
+        ──────────────────────────────────────────────── */
 
-            .btn-buy {
-                width: 90%;
-            }
+        /* 4 coins lumineux */
+        .x2-corner {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9990;
+            width: 180px; height: 180px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .x2-corner.visible { opacity: 1; }
+
+        .x2-corner--tl { top: 0; left: 0; background: radial-gradient(circle at 0% 0%, rgba(245,197,24,0.22) 0%, transparent 70%); }
+        .x2-corner--tr { top: 0; right: 0; background: radial-gradient(circle at 100% 0%, rgba(245,197,24,0.22) 0%, transparent 70%); }
+        .x2-corner--bl { bottom: 0; left: 0; background: radial-gradient(circle at 0% 100%, rgba(245,197,24,0.22) 0%, transparent 70%); }
+        .x2-corner--br { bottom: 0; right: 0; background: radial-gradient(circle at 100% 100%, rgba(245,197,24,0.22) 0%, transparent 70%); }
+
+        /* Bordure fine qui pulse */
+        .x2-border {
+            position: fixed; inset: 6px;
+            pointer-events: none; z-index: 9989;
+            border-radius: 20px;
+            border: 1px solid rgba(245,197,24,0);
+            box-shadow: inset 0 0 0 1px rgba(245,197,24,0);
+            transition: border-color 0.5s ease, box-shadow 0.5s ease;
+        }
+        .x2-border.visible {
+            border-color: rgba(245,197,24,0.18);
+            box-shadow: inset 0 0 0 1px rgba(245,197,24,0.08), 0 0 18px rgba(245,197,24,0.06);
+            animation: borderPulse 2s ease-in-out infinite;
+        }
+        @keyframes borderPulse {
+            0%,100% { border-color: rgba(245,197,24,0.14); }
+            50%      { border-color: rgba(245,197,24,0.28); }
+        }
+
+        /* Badge x2 discret en bas à droite */
+        .x2-badge {
+            position: fixed;
+            bottom: 18px; right: 18px;
+            pointer-events: none; z-index: 9995;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 0.75rem; font-weight: 900;
+            letter-spacing: 1.5px;
+            color: rgba(245,197,24,0.9);
+            background: rgba(245,197,24,0.08);
+            border: 1px solid rgba(245,197,24,0.2);
+            border-radius: 20px;
+            padding: 4px 10px;
+            opacity: 0;
+            transform: translateY(6px) scale(0.9);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            backdrop-filter: blur(4px);
+        }
+        .x2-badge.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+        @keyframes badgePulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(245,197,24,0); }
+            50%      { box-shadow: 0 0 12px 2px rgba(245,197,24,0.12); }
+        }
+
+        /* Petites particules dorées flottantes */
+        @keyframes particleDrift {
+            0%   { opacity: 0; transform: translate(0, 0) scale(0); }
+            15%  { opacity: 0.8; transform: translate(var(--px, 0px), var(--py, -20px)) scale(1); }
+            100% { opacity: 0; transform: translate(calc(var(--px, 0px)*1.5), calc(var(--py, -20px)*2)) scale(0.3); }
+        }
+        .x2-particle {
+            position: fixed;
+            pointer-events: none; z-index: 9993;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffe066 0%, #f5c518 60%, transparent 100%);
+            box-shadow: 0 0 4px rgba(245,197,24,0.6);
+            animation: particleDrift var(--dur, 1.2s) ease-out forwards;
+        }
+
+        @media (min-width: 1025px) {
+            .game-logo { display: block; }
+            .footer { justify-content: flex-end; }
+            .btn-buy { width: auto; }
         }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        <header class="topbar">
-            <div class="level-section">
-                <div class="level-circle">7</div>
-                <div class="exp-bar-bg"><div class="exp-fill"></div></div>
+<div class="stars" id="stars"></div>
+
+<!-- X2 BONUS ELEMENTS -->
+<div class="x2-corner x2-corner--tl" id="xCornerTL"></div>
+<div class="x2-corner x2-corner--tr" id="xCornerTR"></div>
+<div class="x2-corner x2-corner--bl" id="xCornerBL"></div>
+<div class="x2-corner x2-corner--br" id="xCornerBR"></div>
+<div class="x2-border" id="xBorder"></div>
+<div class="x2-badge" id="xBadge">✦ x2</div>
+
+<div class="app-container">
+    <header class="topbar" id="topbar">
+        <div class="level-section">
+            <div class="level-badge"><span id="levelCircle">1</span></div>
+            <div class="level-info">
+                <span class="level-label">Niveau</span>
+                <div class="exp-bar-bg"><div class="exp-fill" id="expBar"></div></div>
             </div>
+        </div>
 
-            <div class="game-logo">GUN MERGE</div>
+        <div class="game-logo">GUN MERGE</div>
 
-            <div class="money-section">
-                <div class="money-amount"><span>$</span> 1000</div>
-                <div class="income-text">00/sec</div>
+        <div class="money-section">
+            <div class="money-amount">
+                <div class="coin-icon">$</div>
+                <span id="moneyVal">0</span>
             </div>
-        </header>
+            <div class="income-text" id="incomeVal">0/sec</div>
+        </div>
+    </header>
 
-        <main class="main-grid" id="grid">
-            </main>
+    <main class="main-grid" id="grid"></main>
 
-        <footer class="footer">
-            <button class="btn-buy" style="position: sticky">
-                <span class="label">buy</span>
-                <span class="price">$500</span>
-            </button>
-        </footer>
-    </div>
+    <footer class="footer">
+        <button class="btn-buy" id="buyBtn">
+            <span class="label">ACHETER</span>
+            <span class="price"><span class="coin-icon" style="width:16px;height:16px;font-size:0.4rem;">$</span> <span id="buyPriceVal">1</span></span>
+        </button>
+    </footer>
+</div>
 
-    <script>
-        const grid = document.getElementById('grid');
-        // On crée 15 slots pour remplir la grille 3x5 du mobile
-        for (let i = 0; i < 15; i++) {
-            const div = document.createElement('div');
-            div.className = 'slot';
-            div.textContent = '+';
-            grid.appendChild(div);
+<script>
+// ── STARS ──
+(function spawnStars() {
+    const c = document.getElementById('stars');
+    for (let i = 0; i < 80; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        const size = Math.random() * 2 + 1;
+        s.style.cssText = `
+            width:${size}px; height:${size}px;
+            left:${Math.random()*100}%; top:${Math.random()*100}%;
+            --dur:${2+Math.random()*4}s; --delay:${Math.random()*4}s;
+        `;
+        c.appendChild(s);
+    }
+})();
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    const RARITY = [
+        { color: '#4caf50', rgb: '76,175,80'  },
+        { color: '#2196f3', rgb: '33,150,243' },
+        { color: '#9c27b0', rgb: '156,39,176' },
+        { color: '#ff9800', rgb: '255,152,0'  },
+        { color: '#f44336', rgb: '244,67,54'  },
+        { color: '#e91e63', rgb: '233,30,99'  },
+        { color: '#00bcd4', rgb: '0,188,212'  },
+        { color: '#ffeb3b', rgb: '255,235,59' },
+        { color: '#ff5722', rgb: '255,87,34'  },
+        { color: '#ffffff', rgb: '255,255,255'},
+    ];
+
+    function rarityFor(id) {
+        return RARITY[Math.min(id-1, RARITY.length-1)];
+    }
+    let money = 1, xp = 0, currentLevel = 1, buyPrice = 1, incomePerSec = 0;
+    const MAX_SLOTS = 24;
+
+    const itemsData = [
+        { id:1,  name:"Revolver",     img:"https://t3.ftcdn.net/jpg/14/82/79/82/360_F_1482798267_4lYS93TYwatvqI8O1gkd9JbdBB7YzJLf.png", gain_sec:1   },
+        { id:2,  name:"Pistolet",     img:"https://svgsilh.com/png-1024/906612.png",                                                         gain_sec:3   },
+        { id:3,  name:"Uzi",          img:"https://www.onlygfx.com/wp-content/uploads/2021/08/uzi-rifle-0962.png",                          gain_sec:8   },
+        { id:4,  name:"Akimbo",       img:"https://png.pngtree.com/png-vector/20230907/ourmid/pngtree-twoisolatedpistols-musket-firearm-png-image_9208391.png",      gain_sec:20  },
+        { id:5,  name:"Mitraillette", img:"https://cdn-icons-png.flaticon.com/512/238/238506.png",                                           gain_sec:50  },
+        { id:6,  name:"AR",           img:"https://static.vecteezy.com/system/resources/thumbnails/048/783/153/small/an-ar-15-rifle-free-png.png", gain_sec: 120 },
+        { id:7,  name:"Mammadou",     img:"https://ipj.eu/wp-content/uploads/2020/01/mamadoundiaye-e1651850955259.jpg",                       gain_sec:300 },
+        { id:8,  name:"Sniper",       img:"https://www.pngall.com/wp-content/uploads/15/Sniper-PNG-Picture.png",                             gain_sec:800},
+        { id:9,  name:"Rocket",       img:"https://cdn3d.iconscout.com/3d/premium/thumb/lance-roquettes-3d-icon-png-download-4846082.png",   gain_sec:2000 },
+        { id:10, name:"Missile",      img:"https://png.pngtree.com/png-clipart/20241125/original/pngtree-nuclear-missile-png-image_17292982.png", gain_sec:5000},
+    ];
+
+    let inventory = Array(Math.min(4 + currentLevel, MAX_SLOTS)).fill(null);
+
+    const moneyDisplay   = document.getElementById('moneyVal');
+    const incomeDisplay  = document.getElementById('incomeVal');
+    const buyPriceDisplay= document.getElementById('buyPriceVal');
+    const levelDisplay   = document.getElementById('levelCircle');
+    const expBar         = document.getElementById('expBar');
+    const buyBtn         = document.getElementById('buyBtn');
+    const grid           = document.getElementById('grid');
+    const logoEl         = document.querySelector('.game-logo');
+    const topbar         = document.getElementById('topbar');
+
+    // X2 bonus elements
+    const xCorners = [
+        document.getElementById('xCornerTL'),
+        document.getElementById('xCornerTR'),
+        document.getElementById('xCornerBL'),
+        document.getElementById('xCornerBR'),
+    ];
+    const xBorder = document.getElementById('xBorder');
+    const xBadge  = document.getElementById('xBadge');
+
+    // ── SAVE / LOAD ──
+    function saveGame() {
+        localStorage.setItem("mergeGameSave2", JSON.stringify({ money, xp, currentLevel, buyPrice, inventory }));
+    }
+    function loadGame() {
+        const raw = localStorage.getItem("mergeGameSave2");
+        if (!raw) return;
+        const d = JSON.parse(raw);
+        money = d.money ?? 0; xp = d.xp ?? 0;
+        currentLevel = d.currentLevel ?? 1; buyPrice = d.buyPrice ?? 1;
+        inventory = (d.inventory ?? Array(Math.min(4+currentLevel,MAX_SLOTS)).fill(null)).slice(0,MAX_SLOTS);
+    }
+
+    function fmt(n) {
+        if (n >= 1e9) return (n/1e9).toFixed(1)+'B';
+        if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+        if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+        return Math.floor(n).toString();
+    }
+
+    function updateUI() {
+        moneyDisplay.textContent  = fmt(money);
+        incomeDisplay.textContent = fmt(incomePerSec)+'/sec';
+        buyPriceDisplay.textContent = fmt(buyPrice);
+        levelDisplay.textContent  = currentLevel;
+        const xpNeeded = 100 + currentLevel * 20;
+        expBar.style.width = Math.min((xp / xpNeeded)*100, 100) + '%';
+        const pct = Math.min((xp / xpNeeded)*100, 100);
+        document.querySelector('.level-badge').style.background =
+            `conic-gradient(var(--blue-accent) 0%, var(--blue-accent) ${pct}%, #1e2d4a ${pct}%)`;
+        if (currentLevel >= 10 && currentLevel < 20) logoEl.textContent = "Mammadou est chaud !";
+        renderGrid();
+        saveGame();
+    }
+
+    function renderGrid() {
+        grid.innerHTML = '';
+        inventory.forEach((item, idx) => {
+            const slot = document.createElement('div');
+            slot.className = 'slot ' + (item ? 'filled' : 'empty');
+            slot.dataset.index = idx;
+
+            if (item) {
+                const r = rarityFor(item.id);
+                slot.style.setProperty('--item-color', r.color);
+                slot.style.setProperty('--item-rgb', r.rgb);
+
+                const chip = document.createElement('span');
+                chip.className = 'item-level';
+                chip.textContent = 'Lv' + item.id;
+                slot.appendChild(chip);
+
+                const img = document.createElement('img');
+                img.src = item.img; img.alt = item.name;
+                img.style.pointerEvents = 'none';
+                slot.appendChild(img);
+
+                const gain = document.createElement('div');
+                gain.className = 'gain-txt';
+                gain.textContent = '+'+fmt(item.gain_sec)+'$/s';
+                slot.appendChild(gain);
+
+                slot.setAttribute('draggable', true);
+                slot.addEventListener('dragstart', handleDragStart);
+                slot.addEventListener('dragend', handleDragEnd);
+            }
+
+            slot.addEventListener('dragover', handleDragOver);
+            slot.addEventListener('dragleave', handleDragLeave);
+            slot.addEventListener('drop', handleDrop);
+            slot.addEventListener('touchstart', handleTouchStart, {passive:false});
+            slot.addEventListener('touchmove',  handleTouchMove,  {passive:false});
+            slot.addEventListener('touchend',   handleTouchEnd);
+            grid.appendChild(slot);
+        });
+    }
+
+    function buyItem() {
+        if (money < buyPrice) return;
+        const emptyIndex = inventory.indexOf(null);
+        if (emptyIndex === -1) return;
+        money -= buyPrice;
+        inventory[emptyIndex] = { ...itemsData[0] };
+        buyPrice = Math.round(buyPrice * 2);
+        calculateIncome();
+        updateUI();
+    }
+
+    function calculateIncome() {
+        incomePerSec = inventory.reduce((t, i) => t + (i ? i.gain_sec : 0), 0);
+    }
+
+    function tryMerge(srcIdx, tgtIdx) {
+        if (srcIdx === tgtIdx) return false;
+        const src = inventory[srcIdx], tgt = inventory[tgtIdx];
+        if (!src) return false;
+
+        if (tgt && src.id === tgt.id) {
+            const next = itemsData[src.id];
+            if (!next) return false;
+
+            const slotEl = grid.querySelector(`[data-index="${tgtIdx}"]`);
+            if (slotEl) spawnMergeBurst(slotEl);
+
+            inventory[tgtIdx] = { ...next };
+            inventory[srcIdx] = null;
+            xp += src.id * 10;
+            const xpNeeded = 100 + currentLevel * 20;
+            if (xp >= xpNeeded) { xp -= xpNeeded; currentLevel++; if (inventory.length < MAX_SLOTS) inventory.push(null); }
+            calculateIncome(); updateUI();
+            return true;
+        } else if (!tgt) {
+            inventory[tgtIdx] = src;
+            inventory[srcIdx] = null;
+            updateUI();
+            return true;
         }
-    </script>
-    <script src="script_merge_gun.js"></script>
-<script src="../script/script_inspecter.js"></script>
-<script src="../../script/script_mbn_title.js"></script>
-<script src="../../FDPrice_Systeme/script/script_affichage_raccourcis.js"></script>
+        return false;
+    }
+
+    function spawnMergeBurst(slotEl) {
+        const rect = slotEl.getBoundingClientRect();
+        const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+        const b = document.createElement('div');
+        b.className = 'merge-burst';
+        b.style.left = cx+'px'; b.style.top = cy+'px';
+        document.body.appendChild(b);
+        setTimeout(() => b.remove(), 500);
+    }
+
+    // ── DRAG ──
+    let draggedIdx = null;
+
+    function handleDragStart(e) {
+        draggedIdx = parseInt(e.currentTarget.dataset.index);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', draggedIdx);
+        e.currentTarget.style.opacity = '0.4';
+    }
+    function handleDragEnd(e) { e.currentTarget.style.opacity = ''; draggedIdx = null; }
+    function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+    function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+    function handleDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        const tgt = parseInt(e.currentTarget.dataset.index);
+        if (draggedIdx !== null) tryMerge(draggedIdx, tgt);
+        draggedIdx = null;
+    }
+
+    // ── TOUCH ──
+    let touchSrcIdx = null, touchTgtIdx = null, ghost = null;
+
+    function handleTouchStart(e) {
+        e.preventDefault();
+        const slot = e.currentTarget;
+        touchSrcIdx = parseInt(slot.dataset.index);
+        if (!inventory[touchSrcIdx]) return;
+        const t = e.touches[0];
+        const img = slot.querySelector('img');
+        ghost = document.createElement('img');
+        ghost.src = img ? img.src : '';
+        ghost.style.cssText = `position:fixed;width:60px;height:60px;pointer-events:none;z-index:9999;
+            object-fit:contain;transform:translate(-50%,-50%);
+            filter:drop-shadow(0 4px 12px rgba(0,0,0,0.7));`;
+        ghost.style.left = t.clientX+'px'; ghost.style.top = t.clientY+'px';
+        document.body.appendChild(ghost);
+    }
+    function handleTouchMove(e) {
+        e.preventDefault();
+        const t = e.touches[0];
+        if (ghost) { ghost.style.left = t.clientX+'px'; ghost.style.top = t.clientY+'px'; }
+        const el = document.elementFromPoint(t.clientX, t.clientY);
+        const slot = el ? el.closest('.slot') : null;
+        touchTgtIdx = slot ? parseInt(slot.dataset.index) : null;
+        document.querySelectorAll('.slot.drag-over').forEach(s => s.classList.remove('drag-over'));
+        if (slot) slot.classList.add('drag-over');
+    }
+    function handleTouchEnd() {
+        if (ghost) { ghost.remove(); ghost = null; }
+        document.querySelectorAll('.slot.drag-over').forEach(s => s.classList.remove('drag-over'));
+        if (touchSrcIdx !== null && touchTgtIdx !== null) tryMerge(touchSrcIdx, touchTgtIdx);
+        touchSrcIdx = null; touchTgtIdx = null;
+    }
+
+    // ── INCOME TICK ──
+    let clickMultiplier = 1;
+    setInterval(() => { money += incomePerSec * clickMultiplier; updateUI(); }, 1000);
+    setInterval(saveGame, 5000);
+
+    // ── X2 BONUS UI HELPERS ──
+    function showX2Visuals() {
+        xCorners.forEach(c => c.classList.add('visible'));
+        xBorder.classList.add('visible');
+        xBadge.classList.add('visible');
+        topbar.classList.add('x2-active');
+        moneyDisplay.style.color = '#f5c518';
+        incomeDisplay.style.color = 'rgba(245,197,24,0.75)';
+    }
+    function hideX2Visuals() {
+        xCorners.forEach(c => c.classList.remove('visible'));
+        xBorder.classList.remove('visible');
+        xBadge.classList.remove('visible');
+        topbar.classList.remove('x2-active');
+        moneyDisplay.style.color = '';
+        incomeDisplay.style.color = '';
+    }
+
+    // Spawn small floating gold particles near click point
+    function spawnGoldParticles(x, y) {
+        const count = 5;
+        for (let i = 0; i < count; i++) {
+            const p = document.createElement('div');
+            p.className = 'x2-particle';
+            const size = 3 + Math.random() * 4;
+            const angle = (Math.random() * 360) * Math.PI / 180;
+            const dist  = 18 + Math.random() * 28;
+            p.style.cssText = `
+                width:${size}px; height:${size}px;
+                left:${x}px; top:${y}px;
+                --px:${Math.cos(angle)*dist}px;
+                --py:${Math.sin(angle)*dist - 20}px;
+                --dur:${0.8 + Math.random()*0.5}s;
+            `;
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), 1400);
+        }
+    }
+
+    // ── SPAM CLICK BONUS ──
+    let clickCount = 0, lastClickTime = Date.now(), bonusActive = false;
+
+    function resetBonus() {
+        clickCount = 0; bonusActive = false; clickMultiplier = 1;
+        hideX2Visuals();
+    }
+
+    function spawnClickRing(x, y) {
+        const r = document.createElement('div');
+        r.className = 'click-ring';
+        r.style.left = x+'px'; r.style.top = y+'px';
+        document.body.appendChild(r);
+        setTimeout(() => r.remove(), 500);
+    }
+    function spawnFloatText(x, y, text) {
+        const f = document.createElement('div');
+        f.className = 'float-text';
+        f.textContent = text;
+        f.style.left = (x - 14)+'px'; f.style.top = (y - 16)+'px';
+        document.body.appendChild(f);
+        setTimeout(() => f.remove(), 900);
+    }
+
+    function handleSpamClick(e) {
+        if (e.target.closest('#buyBtn')) return;
+        let x = e.clientX ?? (e.touches?.[0]?.clientX ?? 0);
+        let y = e.clientY ?? (e.touches?.[0]?.clientY ?? 0);
+        const now = Date.now();
+        if (now - lastClickTime > 1000) resetBonus();
+        clickCount++; lastClickTime = now;
+        if (clickCount === 1 && !bonusActive) {
+            bonusActive = true; clickMultiplier = 2;
+            showX2Visuals();
+        }
+        if (bonusActive) {
+            spawnClickRing(x, y);
+            spawnFloatText(x, y, 'x2');
+            spawnGoldParticles(x, y);
+        }
+    }
+
+    document.addEventListener('click', handleSpamClick, {passive:true});
+    document.addEventListener('touchstart', handleSpamClick, {passive:true});
+    setInterval(() => { if (Date.now() - lastClickTime > 1000) resetBonus(); }, 250);
+
+    buyBtn.addEventListener('click', buyItem);
+    loadGame();
+    calculateIncome();
+    updateUI();
+});
+</script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- DONNÉES ---
-    let money = 100000;
+    let money = 1;
     let xp = 0;
-    let currentLevel =10;
+    let currentLevel =1;
     let buyPrice = 1;
     let incomePerSec = 0;
     function saveGame() {

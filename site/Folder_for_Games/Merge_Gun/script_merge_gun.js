@@ -290,4 +290,5 @@ document.addEventListener('DOMContentLoaded', () => {
     loadGame();
     calculateIncome();
     updateUI();
+    setInterval(saveGame, 1000);
 });

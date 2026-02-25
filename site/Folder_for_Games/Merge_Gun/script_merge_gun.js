@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let incomePerSec = 0;
 
     const itemsData = [
-        { id: 8, name: "Revolver", img: "https://t3.ftcdn.net/jpg/14/82/79/82/360_F_1482798267_4lYS93TYwatvqI8O1gkd9JbdBB7YzJLf.png", gain_sec: 1 },
+        { id: 1, name: "Revolver", img: "https://t3.ftcdn.net/jpg/14/82/79/82/360_F_1482798267_4lYS93TYwatvqI8O1gkd9JbdBB7YzJLf.png", gain_sec: 1 },
         { id: 2, name: "Petit pistolet", img: "https://svgsilh.com/png-1024/906612.png", gain_sec: 2 },
         { id: 3, name: "Uzi", img: "https://www.onlygfx.com/wp-content/uploads/2021/08/uzi-rifle-0962.png", gain_sec: 5 },
         { id: 4, name: "Akimbo", img: "https://img.freepik.com/premium-vector/two-gun-hand-drawn-vector-illustrative_6689-769.jpg", gain_sec: 11 },
@@ -121,62 +121,89 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- SYSTÈME DE MERGE ---
     let touchTargetIndex = null;
+    let dragGhost = null;
 
-function handleTouchStart(e) {
-    const slotElement = e.target.closest('.slot');
-    if (!slotElement) return;
+    function handleTouchStart(e) {
+        const slotElement = e.target.closest('.slot');
+        if (!slotElement) return;
 
-    draggedItemIndex = parseInt(slotElement.dataset.index);
-}
+        draggedItemIndex = parseInt(slotElement.dataset.index);
+        const item = inventory[draggedItemIndex];
+        if (!item) return;
 
-function handleTouchMove(e) {
-    const touch = e.touches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    const slotElement = element ? element.closest('.slot') : null;
+        const touch = e.touches[0];
 
-    if (slotElement) {
-        touchTargetIndex = parseInt(slotElement.dataset.index);
+        dragGhost = document.createElement("img");
+        dragGhost.src = item.img;
+        dragGhost.style.position = "fixed";
+        dragGhost.style.left = touch.clientX + "px";
+        dragGhost.style.top = touch.clientY + "px";
+        dragGhost.style.width = "60px";
+        dragGhost.style.height = "60px";
+        dragGhost.style.pointerEvents = "none";
+        dragGhost.style.zIndex = "9999";
+        dragGhost.style.transform = "translate(-50%, -50%)";
+
+        document.body.appendChild(dragGhost);
     }
-}
 
-function handleTouchEnd() {
-    if (draggedItemIndex === null || touchTargetIndex === null) return;
+    function handleTouchMove(e) {
+        const touch = e.touches[0];
 
-    const sourceIndex = draggedItemIndex;
-    const targetIndex = touchTargetIndex;
+        if (dragGhost) {
+            dragGhost.style.left = touch.clientX + "px";
+            dragGhost.style.top = touch.clientY + "px";
+        }
 
-    if (sourceIndex === targetIndex) return;
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        const slotElement = element ? element.closest('.slot') : null;
 
-    const sourceItem = inventory[sourceIndex];
-    const targetItem = inventory[targetIndex];
+        if (slotElement) {
+            touchTargetIndex = parseInt(slotElement.dataset.index);
+        }
+    }
 
-    if (targetItem && sourceItem.id === targetItem.id) {
-        const nextLevelIndex = sourceItem.id;
-        if (itemsData[nextLevelIndex]) {
-            inventory[targetIndex] = { ...itemsData[nextLevelIndex] };
-            inventory[sourceIndex] = null;
+    function handleTouchEnd() {
+        if (draggedItemIndex === null || touchTargetIndex === null) return;
+        if (dragGhost) {
+            dragGhost.remove();
+            dragGhost = null;
+        }
+        const sourceIndex = draggedItemIndex;
+        const targetIndex = touchTargetIndex;
 
-            if (currentLevel < 20) {
-                xp += 20;
-                if (xp >= 100) {
-                    xp = 0;
-                    currentLevel++;
-                    inventory.push(null);
+        if (sourceIndex === targetIndex) return;
+
+        const sourceItem = inventory[sourceIndex];
+        const targetItem = inventory[targetIndex];
+
+        if (targetItem && sourceItem.id === targetItem.id) {
+            const nextLevelIndex = sourceItem.id;
+            if (itemsData[nextLevelIndex]) {
+                inventory[targetIndex] = { ...itemsData[nextLevelIndex] };
+                inventory[sourceIndex] = null;
+
+                if (currentLevel < 20) {
+                    xp += 20;
+                    if (xp >= 100) {
+                        xp = 0;
+                        currentLevel++;
+                        inventory.push(null);
+                    }
                 }
-            }
 
-            calculateIncome();
+                calculateIncome();
+                updateUI();
+            }
+        } else if (!targetItem) {
+            inventory[targetIndex] = sourceItem;
+            inventory[sourceIndex] = null;
             updateUI();
         }
-    } else if (!targetItem) {
-        inventory[targetIndex] = sourceItem;
-        inventory[sourceIndex] = null;
-        updateUI();
-    }
 
-    draggedItemIndex = null;
-    touchTargetIndex = null;
-}
+        draggedItemIndex = null;
+        touchTargetIndex = null;
+    }
 
     function handleDragStart(e) {
         draggedItemIndex = e.target.dataset.index;

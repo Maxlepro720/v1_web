@@ -142,6 +142,11 @@
             background-clip: text;
             filter: drop-shadow(0 0 8px rgba(245,197,24,0.5));
         }
+        @media (max-width: 768px) {
+            .game-logo {
+                display: none !important;
+            }
+        }
 
         .money-section { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
         .money-amount {
@@ -453,7 +458,7 @@
             </div>
         </div>
 
-        <div class="game-logo">GUN MERGE</div>
+        <div class="game-logo" >GUN MERGE</div>
 
         <div class="money-section">
             <div class="money-amount">

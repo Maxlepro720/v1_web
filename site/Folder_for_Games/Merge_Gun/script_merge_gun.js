@@ -75,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         renderGrid();
+        saveGame();
     }
 
     function renderGrid() {

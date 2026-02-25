@@ -5,6 +5,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentLevel =10;
     let buyPrice = 1;
     let incomePerSec = 0;
+    function saveGame() {
+        const saveData = {
+            money,
+            xp,
+            currentLevel,
+            buyPrice,
+            inventory
+        };
+
+        localStorage.setItem("mergeGameSave", JSON.stringify(saveData));
+    }
+
+    function loadGame() {
+        const saveData = localStorage.getItem("mergeGameSave");
+
+        if (!saveData) return;
+
+        const data = JSON.parse(saveData);
+
+        money = data.money ?? 0;
+        xp = data.xp ?? 0;
+        currentLevel = data.currentLevel ?? 1;
+        buyPrice = data.buyPrice ?? 1;
+        inventory = data.inventory ?? Array(4 + currentLevel).fill(null);
+    }
 
     const itemsData = [
         { id: 1, name: "Revolver", img: "https://t3.ftcdn.net/jpg/14/82/79/82/360_F_1482798267_4lYS93TYwatvqI8O1gkd9JbdBB7YzJLf.png", gain_sec: 1 },
@@ -261,5 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INITIALISATION ---
     if (buyBtn) buyBtn.addEventListener('click', buyItem);
+    loadGame();
+    calculateIncome();
     updateUI();
 });

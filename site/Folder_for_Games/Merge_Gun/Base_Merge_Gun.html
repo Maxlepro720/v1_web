@@ -131,13 +131,14 @@
     display: grid;
     padding: 20px;
     gap: 10px;
+    grid-auto-rows: 1fr;
     
     /* Par défaut (PC) : 8 colonnes */
     grid-template-columns: repeat(8, 1fr); 
     align-content: start;
     
     /* Gestion du scroll pour ne pas gêner le bouton buy */
-    overflow-y: auto;
+    overflow-y: hidden;
     max-height: 100%;
 }
 
@@ -175,6 +176,8 @@
 
         .slot {
             aspect-ratio: 1/1;
+            min-width: 0;
+            min-height: 0;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -271,5 +274,7 @@
     </script>
     <script src="script_merge_gun.js"></script>
 <script src="../script/script_inspecter.js"></script>
+<script src="../../script/script_mbn_title.js"></script>
+<script src="../../FDPrice_Systeme/script/script_affichage_raccourcis.js"></script>
 </body>
 </html>

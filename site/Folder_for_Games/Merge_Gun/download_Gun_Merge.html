@@ -214,7 +214,7 @@
 
                 if (result.status === "success") {
                     localStorage.setItem("username", username);
-                    window.location.open = ('DESTINATION','_self');
+                    window.location.href = DESTINATION;
                 } else {
                     alert("Identifiants incorrects.");
                     document.getElementById('checkSession').classList.add('hidden');

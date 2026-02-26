@@ -632,7 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (emptyIndex === -1) return;
         money -= buyPrice;
         inventory[emptyIndex] = { ...itemsData[0] };
-        buyPrice = Math.round(buyPrice * 2);
+        buyPrice = Math.round(buyPrice * 1.5);
         calculateIncome();
         updateUI();
     }

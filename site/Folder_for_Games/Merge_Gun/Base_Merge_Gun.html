@@ -476,10 +476,11 @@
     </footer>
 </div>
 
-<script>
+<script> 
 // ── STARS ──
 (function spawnStars() {
     const c = document.getElementById('stars');
+    if (!c) return;
     for (let i = 0; i < 80; i++) {
         const s = document.createElement('div');
         s.className = 'star';
@@ -493,8 +494,8 @@
     }
 })();
 
-document.addEventListener('DOMContentLoaded', () => {
-
+document.addEventListener('DOMContentLoaded', async() => {
+    const username = localStorage.getItem('username');
     const RARITY = [
         { color: '#4caf50', rgb: '76,175,80'  },
         { color: '#2196f3', rgb: '33,150,243' },
@@ -511,7 +512,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function rarityFor(id) {
         return RARITY[Math.min(id-1, RARITY.length-1)];
     }
-    let money = 1, xp = 0, currentLevel = 1, buyPrice = 1, incomePerSec = 0;
+
+    let money = 1.0, xp = 0, currentLevel = 1, buyPrice = 1.0, incomePerSec = 0;
     const MAX_SLOTS = 24;
 
     const itemsData = [
@@ -539,7 +541,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoEl         = document.querySelector('.game-logo');
     const topbar         = document.getElementById('topbar');
 
-    // X2 bonus elements
     const xCorners = [
         document.getElementById('xCornerTL'),
         document.getElementById('xCornerTR'),
@@ -550,23 +551,60 @@ document.addEventListener('DOMContentLoaded', () => {
     const xBadge  = document.getElementById('xBadge');
 
     // ── SAVE / LOAD ──
-    function saveGame() {
-        localStorage.setItem("mergeGameSave2", JSON.stringify({ money, xp, currentLevel, buyPrice, inventory }));
+    async function saveGame() {
+    if (!username) return;
+        try {
+            await fetch("https://project-3-api-2bgb.onrender.com/gun_merge_update_data", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: username,
+                    save: { 
+                        money, 
+                        xp, 
+                        currentLevel, 
+                        buyPrice, 
+                        inventory 
+                    }
+                })
+            });
+        } catch (e) { 
+            console.log("Save error", e); 
+        }
     }
-    function loadGame() {
-        const raw = localStorage.getItem("mergeGameSave2");
-        if (!raw) return;
-        const d = JSON.parse(raw);
-        money = d.money ?? 0; xp = d.xp ?? 0;
-        currentLevel = d.currentLevel ?? 1; buyPrice = d.buyPrice ?? 1;
-        inventory = (d.inventory ?? Array(Math.min(4+currentLevel,MAX_SLOTS)).fill(null)).slice(0,MAX_SLOTS);
+
+    async function loadGame() {
+        if (!username) return;
+        try {
+            const res = await fetch("https://project-3-api-2bgb.onrender.com/gun_merge_get_data", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: username })
+            });
+            const data = await res.json();
+            if (!data.data) return;
+
+            const d = data.data; // C'est ici que le serveur renvoie l'objet 'save'
+            
+            // On garde ta logique de conversion
+            money = parseFloat(d.money ?? 1.0);
+            xp = d.xp ?? 0;
+            currentLevel = d.currentLevel ?? 1;
+            buyPrice = parseFloat(d.buyPrice ?? 1.0);
+            
+            // On s'assure que l'inventaire est bien chargé
+            inventory = (d.inventory ?? Array(Math.min(4 + currentLevel, MAX_SLOTS)).fill(null)).slice(0, MAX_SLOTS);
+            
+        } catch (e) { 
+            console.log("Load error", e); 
+        }
     }
 
     function fmt(n) {
         if (n >= 1e9) return (n/1e9).toFixed(1)+'B';
         if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
         if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
-        return Math.floor(n).toString();
+        return (Math.round(n * 10) / 10).toString();
     }
 
     function updateUI() {
@@ -575,13 +613,12 @@ document.addEventListener('DOMContentLoaded', () => {
         buyPriceDisplay.textContent = fmt(buyPrice);
         levelDisplay.textContent  = currentLevel;
         const xpNeeded = 100 + currentLevel * 20;
-        expBar.style.width = Math.min((xp / xpNeeded)*100, 100) + '%';
         const pct = Math.min((xp / xpNeeded)*100, 100);
-        document.querySelector('.level-badge').style.background =
-            `conic-gradient(var(--blue-accent) 0%, var(--blue-accent) ${pct}%, #1e2d4a ${pct}%)`;
-        if (currentLevel >= 10 && currentLevel < 20) logoEl.textContent = "Mammadou est chaud !";
+        expBar.style.width = pct + '%';
+        const badge = document.querySelector('.level-badge');
+        if(badge) badge.style.background = `conic-gradient(var(--blue-accent) 0%, var(--blue-accent) ${pct}%, #1e2d4a ${pct}%)`;
+        if (currentLevel >= 10 && currentLevel < 20 && logoEl) logoEl.textContent = "Mammadou est chaud !";
         renderGrid();
-        saveGame();
     }
 
     function renderGrid() {
@@ -595,27 +632,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const r = rarityFor(item.id);
                 slot.style.setProperty('--item-color', r.color);
                 slot.style.setProperty('--item-rgb', r.rgb);
-
                 const chip = document.createElement('span');
                 chip.className = 'item-level';
                 chip.textContent = 'Lv' + item.id;
                 slot.appendChild(chip);
-
                 const img = document.createElement('img');
                 img.src = item.img; img.alt = item.name;
                 img.style.pointerEvents = 'none';
                 slot.appendChild(img);
-
                 const gain = document.createElement('div');
                 gain.className = 'gain-txt';
                 gain.textContent = '+'+fmt(item.gain_sec)+'$/s';
                 slot.appendChild(gain);
-
                 slot.setAttribute('draggable', true);
                 slot.addEventListener('dragstart', handleDragStart);
                 slot.addEventListener('dragend', handleDragEnd);
             }
-
             slot.addEventListener('dragover', handleDragOver);
             slot.addEventListener('dragleave', handleDragLeave);
             slot.addEventListener('drop', handleDrop);
@@ -630,9 +662,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (money < buyPrice) return;
         const emptyIndex = inventory.indexOf(null);
         if (emptyIndex === -1) return;
-        money -= buyPrice;
+        money = Math.round((money - buyPrice) * 10) / 10;
         inventory[emptyIndex] = { ...itemsData[0] };
-        buyPrice = Math.round(buyPrice * 1.3);
+        buyPrice = Math.round((buyPrice * 1.37) * 10) / 10;
         calculateIncome();
         updateUI();
     }
@@ -645,14 +677,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (srcIdx === tgtIdx) return false;
         const src = inventory[srcIdx], tgt = inventory[tgtIdx];
         if (!src) return false;
-
         if (tgt && src.id === tgt.id) {
             const next = itemsData[src.id];
             if (!next) return false;
-
             const slotEl = grid.querySelector(`[data-index="${tgtIdx}"]`);
             if (slotEl) spawnMergeBurst(slotEl);
-
             inventory[tgtIdx] = { ...next };
             inventory[srcIdx] = null;
             xp += src.id * 10;
@@ -679,29 +708,14 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => b.remove(), 500);
     }
 
-    // ── DRAG ──
     let draggedIdx = null;
-
-    function handleDragStart(e) {
-        draggedIdx = parseInt(e.currentTarget.dataset.index);
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', draggedIdx);
-        e.currentTarget.style.opacity = '0.4';
-    }
+    function handleDragStart(e) { draggedIdx = parseInt(e.currentTarget.dataset.index); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', draggedIdx); e.currentTarget.style.opacity = '0.4'; }
     function handleDragEnd(e) { e.currentTarget.style.opacity = ''; draggedIdx = null; }
     function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
     function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
-    function handleDrop(e) {
-        e.preventDefault();
-        e.currentTarget.classList.remove('drag-over');
-        const tgt = parseInt(e.currentTarget.dataset.index);
-        if (draggedIdx !== null) tryMerge(draggedIdx, tgt);
-        draggedIdx = null;
-    }
+    function handleDrop(e) { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); const tgt = parseInt(e.currentTarget.dataset.index); if (draggedIdx !== null) tryMerge(draggedIdx, tgt); draggedIdx = null; }
 
-    // ── TOUCH ──
     let touchSrcIdx = null, touchTgtIdx = null, ghost = null;
-
     function handleTouchStart(e) {
         e.preventDefault();
         const slot = e.currentTarget;
@@ -711,9 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const img = slot.querySelector('img');
         ghost = document.createElement('img');
         ghost.src = img ? img.src : '';
-        ghost.style.cssText = `position:fixed;width:60px;height:60px;pointer-events:none;z-index:9999;
-            object-fit:contain;transform:translate(-50%,-50%);
-            filter:drop-shadow(0 4px 12px rgba(0,0,0,0.7));`;
+        ghost.style.cssText = `position:fixed;width:60px;height:60px;pointer-events:none;z-index:9999;object-fit:contain;transform:translate(-50%,-50%);filter:drop-shadow(0 4px 12px rgba(0,0,0,0.7));`;
         ghost.style.left = t.clientX+'px'; ghost.style.top = t.clientY+'px';
         document.body.appendChild(ghost);
     }
@@ -734,73 +746,45 @@ document.addEventListener('DOMContentLoaded', () => {
         touchSrcIdx = null; touchTgtIdx = null;
     }
 
-    // ── INCOME TICK ──
     let clickMultiplier = 1;
-    setInterval(() => { money += incomePerSec * clickMultiplier; updateUI(); }, 1000);
+    setInterval(() => { 
+        money = Math.round((money + (incomePerSec * clickMultiplier)) * 10) / 10; 
+        updateUI(); 
+    }, 1000);
     setInterval(saveGame, 5000);
 
-    // ── X2 BONUS UI HELPERS ──
     function showX2Visuals() {
-        xCorners.forEach(c => c.classList.add('visible'));
-        xBorder.classList.add('visible');
-        xBadge.classList.add('visible');
-        topbar.classList.add('x2-active');
+        xCorners.forEach(c => c && c.classList.add('visible'));
+        if(xBorder) xBorder.classList.add('visible');
+        if(xBadge) xBadge.classList.add('visible');
+        if(topbar) topbar.classList.add('x2-active');
         moneyDisplay.style.color = '#f5c518';
         incomeDisplay.style.color = 'rgba(245,197,24,0.75)';
     }
     function hideX2Visuals() {
-        xCorners.forEach(c => c.classList.remove('visible'));
-        xBorder.classList.remove('visible');
-        xBadge.classList.remove('visible');
-        topbar.classList.remove('x2-active');
+        xCorners.forEach(c => c && c.classList.remove('visible'));
+        if(xBorder) xBorder.classList.remove('visible');
+        if(xBadge) xBadge.classList.remove('visible');
+        if(topbar) topbar.classList.remove('x2-active');
         moneyDisplay.style.color = '';
         incomeDisplay.style.color = '';
     }
 
-    // Spawn small floating gold particles near click point
     function spawnGoldParticles(x, y) {
-        const count = 5;
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < 5; i++) {
             const p = document.createElement('div');
             p.className = 'x2-particle';
             const size = 3 + Math.random() * 4;
             const angle = (Math.random() * 360) * Math.PI / 180;
             const dist  = 18 + Math.random() * 28;
-            p.style.cssText = `
-                width:${size}px; height:${size}px;
-                left:${x}px; top:${y}px;
-                --px:${Math.cos(angle)*dist}px;
-                --py:${Math.sin(angle)*dist - 20}px;
-                --dur:${0.8 + Math.random()*0.5}s;
-            `;
+            p.style.cssText = `width:${size}px; height:${size}px; left:${x}px; top:${y}px; --px:${Math.cos(angle)*dist}px; --py:${Math.sin(angle)*dist - 20}px; --dur:${0.8 + Math.random()*0.5}s;`;
             document.body.appendChild(p);
             setTimeout(() => p.remove(), 1400);
         }
     }
 
-    // ── SPAM CLICK BONUS ──
     let clickCount = 0, lastClickTime = Date.now(), bonusActive = false;
-
-    function resetBonus() {
-        clickCount = 0; bonusActive = false; clickMultiplier = 1;
-        hideX2Visuals();
-    }
-
-    function spawnClickRing(x, y) {
-        const r = document.createElement('div');
-        r.className = 'click-ring';
-        r.style.left = x+'px'; r.style.top = y+'px';
-        document.body.appendChild(r);
-        setTimeout(() => r.remove(), 500);
-    }
-    function spawnFloatText(x, y, text) {
-        const f = document.createElement('div');
-        f.className = 'float-text';
-        f.textContent = text;
-        f.style.left = (x - 14)+'px'; f.style.top = (y - 16)+'px';
-        document.body.appendChild(f);
-        setTimeout(() => f.remove(), 900);
-    }
+    function resetBonus() { clickCount = 0; bonusActive = false; clickMultiplier = 1; hideX2Visuals(); }
 
     function handleSpamClick(e) {
         if (e.target.closest('#buyBtn')) return;
@@ -809,15 +793,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const now = Date.now();
         if (now - lastClickTime > 1000) resetBonus();
         clickCount++; lastClickTime = now;
-        if (clickCount === 1 && !bonusActive) {
-            bonusActive = true; clickMultiplier = 2;
-            showX2Visuals();
-        }
-        if (bonusActive) {
-            spawnClickRing(x, y);
-            spawnFloatText(x, y, 'x2');
-            spawnGoldParticles(x, y);
-        }
+        if (clickCount === 1 && !bonusActive) { bonusActive = true; clickMultiplier = 2; showX2Visuals(); }
+        if (bonusActive) { spawnGoldParticles(x, y); }
     }
 
     document.addEventListener('click', handleSpamClick, {passive:true});
@@ -825,9 +802,32 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(() => { if (Date.now() - lastClickTime > 1000) resetBonus(); }, 250);
 
     buyBtn.addEventListener('click', buyItem);
-    loadGame();
+
+    // ── CHARGEMENT INITIAL + GAIN HORS-LIGNE ──
+    await loadGame();
     calculateIncome();
+    console.log("Game loaded.");
+    if (username) {
+        console.log('username existant', username);
+        try {
+            console.log('essai de gain HL')
+            const hlRes = await fetch("https://project-3-api-2bgb.onrender.com/get_HL_money", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ username: username })
+            });
+            console.log("recu")
+            const hlData = await hlRes.json();
+            if (hlData.status === "success") {
+                console.log("success HL gain", hlData.gain);
+                money = Math.round((money + hlData.gain) * 10) / 10;
+                alert(`Bon retour ! Tu as gagné ${hlData.gain}$ pendant ton absence.`);
+            }
+        } catch(e) { console.log("Erreur gain HL", e); }
+    }
+
     updateUI();
+    window.addEventListener("beforeunload", saveGame);
 });
 </script>
 </body>

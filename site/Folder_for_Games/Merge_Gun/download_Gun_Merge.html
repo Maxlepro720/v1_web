@@ -166,36 +166,13 @@
     window.onload = function() {
         const savedUser = localStorage.getItem("username");
 
-        // Auto-login : si déjà connecté, cacher la page et aspirer Base_Merge_Gun.html
+        // Auto-login : si déjà connecté, cacher la page et charger Base_Merge_Gun.html dans un iframe
         if (savedUser) {
             document.body.innerHTML = ''; // cacher tout le contenu actuel
-            const container = document.createElement('div');
-            document.body.appendChild(container);
-
-            fetch(DESTINATION)
-                .then(response => {
-                    if (!response.ok) throw new Error('Erreur de chargement du jeu');
-                    return response.text();
-                })
-                .then(html => {
-                    container.innerHTML = html;
-
-                    // Ré-exécuter les scripts du fichier chargé
-                    container.querySelectorAll('script').forEach(oldScript => {
-                        const newScript = document.createElement('script');
-                        if (oldScript.src) {
-                            newScript.src = oldScript.src;
-                        } else {
-                            newScript.textContent = oldScript.textContent;
-                        }
-                        document.body.appendChild(newScript);
-                    });
-                })
-                .catch(err => {
-                    console.error(err);
-                    container.innerHTML = '<p>Impossible de charger le jeu.</p>';
-                });
-
+            const iframe = document.createElement('iframe');
+            iframe.src = DESTINATION;
+            iframe.style.cssText = 'position:fixed; inset:0; width:100%; height:100%; border:none;';
+            document.body.appendChild(iframe);
             return; // on ne continue pas l'affichage de la page de login
         }
 
@@ -242,25 +219,12 @@
             if (result.status === "success") {
                 localStorage.setItem("username", username);
 
-                // Charger Base_Merge_Gun.html au lieu de rediriger
+                // Charger Base_Merge_Gun.html dans un iframe
                 document.body.innerHTML = '';
-                const container = document.createElement('div');
-                document.body.appendChild(container);
-
-                fetch(DESTINATION)
-                    .then(res => res.text())
-                    .then(html => {
-                        container.innerHTML = html;
-                        container.querySelectorAll('script').forEach(oldScript => {
-                            const newScript = document.createElement('script');
-                            if (oldScript.src) {
-                                newScript.src = oldScript.src;
-                            } else {
-                                newScript.textContent = oldScript.textContent;
-                            }
-                            document.body.appendChild(newScript);
-                        });
-                    });
+                const iframe = document.createElement('iframe');
+                iframe.src = DESTINATION;
+                iframe.style.cssText = 'position:fixed; inset:0; width:100%; height:100%; border:none;';
+                document.body.appendChild(iframe);
             } else {
                 alert("Identifiants incorrects.");
                 document.getElementById('checkSession').classList.add('hidden');

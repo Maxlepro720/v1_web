@@ -7,6 +7,24 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="apple-touch-icon" href="../../Image/Apple_Image_Merge_Gun.png">
     <link rel="shortcut icon" href="../../Image/FDPrice.png" type="image/x-icon">
+    <script>
+    // Empêche l'ouverture dans une nouvelle fenêtre Safari sur iOS
+    (function(document, navigator, standalone) {
+        if ((standalone in navigator) && navigator[standalone]) {
+            var curnode, location = document.location, stop = /^(a|html)$/i;
+            document.addEventListener('click', function(e) {
+                curnode = e.target;
+                while (!(stop).test(curnode.nodeName)) {
+                    curnode = curnode.parentNode;
+                }
+                if ('href' in curnode && (curnode.href.indexOf('http') || ~curnode.href.indexOf(location.host)) && (curnode.target !== '_blank')) {
+                    e.preventDefault();
+                    location.href = curnode.href;
+                }
+            }, false);
+        }
+    })(document, window.navigator, 'standalone');
+</script>
     <title>Gun Merge</title>
     <style>
         :root {

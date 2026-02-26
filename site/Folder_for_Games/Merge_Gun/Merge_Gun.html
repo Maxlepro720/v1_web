@@ -151,127 +151,81 @@
     </div>
 
     <script>
-    // 1. Détection PC (Retour arrière)
-    if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        alert("Accès réservé aux mobiles.");
-        window.location.href = "https://www.google.com";
-    }
+        // 1. Détection PC (Retour arrière)
+        if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            alert("Accès réservé aux mobiles.");
+            window.location.href = "https://www.google.com";
+        }
 
-    const DESTINATION = "Base_Merge_Gun.html";
-    const API_LOGIN = "https://project-3-api-2bgb.onrender.com/login";
+        const DESTINATION = "Base_Merge_Gun.html";
+        const API_LOGIN = "https://project-3-api-2bgb.onrender.com/login";
 
-    // 2. Vérification si l'app est sur l'écran d'accueil (Mode Standalone)
-    const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+        // 2. Vérification si l'app est sur l'écran d'accueil (Mode Standalone)
+        const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
-    window.onload = function() {
-        const savedUser = localStorage.getItem("username");
+        window.onload = function() {
+            const savedUser = localStorage.getItem("username");
+            
+            // Si déjà sur l'écran d'accueil
+            if (isStandalone) {
+                document.getElementById('bodyTag').classList.remove('is-browser');
+                document.getElementById('installNotice').classList.add('hidden');
+                document.getElementById('statusMsg').textContent = "Identifiez-vous pour accéder au jeu.";
+                document.getElementById('submitBtn').classList.remove('btn-disabled');
+                document.getElementById('submitBtn').textContent = "Se connecter";
 
-        // Auto-login : si déjà connecté, cacher la page et aspirer Base_Merge_Gun.html
-        if (savedUser) {
-            document.body.innerHTML = ''; // cacher tout le contenu actuel
-            const container = document.createElement('div');
-            document.body.appendChild(container);
+                // Auto-login si déjà connecté
+                if (savedUser) {
+                    window.location.replace(DESTINATION);
+                    return;
+                }
+            }
 
-            fetch(DESTINATION)
-                .then(response => {
-                    if (!response.ok) throw new Error('Erreur de chargement du jeu');
-                    return response.text();
-                })
-                .then(html => {
-                    container.innerHTML = html;
+            // Affichage UI
+            setTimeout(() => {
+                document.getElementById('checkSession').classList.add('hidden');
+                document.getElementById('loginUI').classList.remove('hidden');
+            }, 800);
+        };
 
-                    // Ré-exécuter les scripts du fichier chargé
-                    container.querySelectorAll('script').forEach(oldScript => {
-                        const newScript = document.createElement('script');
-                        if (oldScript.src) {
-                            newScript.src = oldScript.src;
-                        } else {
-                            newScript.textContent = oldScript.textContent;
-                        }
-                        document.body.appendChild(newScript);
-                    });
-                })
-                .catch(err => {
-                    console.error(err);
-                    container.innerHTML = '<p>Impossible de charger le jeu.</p>';
+        // 3. Logique du Formulaire
+        document.getElementById('authForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!isStandalone) {
+                alert("Action impossible : Vous devez d'abord ajouter l'application à votre écran d'accueil via le bouton de partage de votre navigateur.");
+                return;
+            }
+
+            const username = document.getElementById('userField').value.trim();
+            const password = document.getElementById('passField').value.trim();
+
+            document.getElementById('checkSession').classList.remove('hidden');
+            document.getElementById('loginUI').classList.add('hidden');
+
+            try {
+                const response = await fetch(API_LOGIN, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ id: username, password: password })
                 });
 
-            return; // on ne continue pas l'affichage de la page de login
-        }
+                const result = await response.json();
 
-        // Si pas encore connecté
-        if (isStandalone) {
-            document.getElementById('bodyTag').classList.remove('is-browser');
-            document.getElementById('installNotice').classList.add('hidden');
-            document.getElementById('statusMsg').textContent = "Identifiez-vous pour accéder au jeu.";
-            document.getElementById('submitBtn').classList.remove('btn-disabled');
-            document.getElementById('submitBtn').textContent = "Se connecter";
-        }
-
-        // Affichage UI login
-        setTimeout(() => {
-            document.getElementById('checkSession').classList.add('hidden');
-            document.getElementById('loginUI').classList.remove('hidden');
-        }, 800);
-    };
-
-    // 3. Logique du Formulaire
-    document.getElementById('authForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        if (!isStandalone) {
-            alert("Action impossible : Vous devez d'abord ajouter l'application à votre écran d'accueil via le bouton de partage de votre navigateur.");
-            return;
-        }
-
-        const username = document.getElementById('userField').value.trim();
-        const password = document.getElementById('passField').value.trim();
-
-        document.getElementById('checkSession').classList.remove('hidden');
-        document.getElementById('loginUI').classList.add('hidden');
-
-        try {
-            const response = await fetch(API_LOGIN, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ id: username, password: password })
-            });
-
-            const result = await response.json();
-
-            if (result.status === "success") {
-                localStorage.setItem("username", username);
-
-                // Charger Base_Merge_Gun.html au lieu de rediriger
-                document.body.innerHTML = '';
-                const container = document.createElement('div');
-                document.body.appendChild(container);
-
-                fetch(DESTINATION)
-                    .then(res => res.text())
-                    .then(html => {
-                        container.innerHTML = html;
-                        container.querySelectorAll('script').forEach(oldScript => {
-                            const newScript = document.createElement('script');
-                            if (oldScript.src) {
-                                newScript.src = oldScript.src;
-                            } else {
-                                newScript.textContent = oldScript.textContent;
-                            }
-                            document.body.appendChild(newScript);
-                        });
-                    });
-            } else {
-                alert("Identifiants incorrects.");
+                if (result.status === "success") {
+                    localStorage.setItem("username", username);
+                    window.location.href = DESTINATION;
+                } else {
+                    alert("Identifiants incorrects.");
+                    document.getElementById('checkSession').classList.add('hidden');
+                    document.getElementById('loginUI').classList.remove('hidden');
+                }
+            } catch (error) {
+                alert("Erreur serveur.");
                 document.getElementById('checkSession').classList.add('hidden');
                 document.getElementById('loginUI').classList.remove('hidden');
             }
-        } catch (error) {
-            alert("Erreur serveur.");
-            document.getElementById('checkSession').classList.add('hidden');
-            document.getElementById('loginUI').classList.remove('hidden');
-        }
-    });
-</script>
+        });
+    </script>
 </body>
 </html>

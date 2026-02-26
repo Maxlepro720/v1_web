@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Installer notre Web App (iOS)</title>
+    <style>
+        /* === RESET & ANTI-SCROLL === */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden; /* Empêche tout scroll */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f2f2f7; /* Gris iOS */
+            color: #1c1c1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* === LAYOUT PRINCIPAL === */
+        .container {
+            display: flex;
+            width: 95vw;
+            max-width: 1000px;
+            height: 90vh;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        /* GAUCHE : QR CODE */
+        .left-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #fafafa;
+            border-right: 1px solid #e5e5ea;
+            padding: 2rem;
+        }
+
+        .qr-placeholder {
+            width: clamp(180px, 30vh, 250px); /* Taille dynamique */
+            aspect-ratio: 1/1;
+            background: white;
+            padding: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .qr-placeholder img { width: 100%; height: 100%; object-fit: cover; }
+        .left-panel h2 { font-size: clamp(1.2rem, 3vh, 1.8rem); margin-bottom: 5px; }
+        .left-panel p { color: #8e8e93; font-size: clamp(0.8rem, 2vh, 1rem); text-align: center; }
+
+        /* DROITE : EXPLICATIONS ET ANIMATION */
+        .right-panel {
+            flex: 1.5;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: clamp(1rem, 3vh, 2rem);
+        }
+
+        .steps-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: auto; }
+        .step-item {
+            display: flex;
+            align-items: center;
+            font-size: clamp(0.9rem, 2.2vh, 1.1rem);
+            line-height: 1.4;
+        }
+        .step-num {
+            background: #007aff; /* Bleu iOS */
+            color: white;
+            width: clamp(24px, 4vh, 32px);
+            height: clamp(24px, 4vh, 32px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: 600;
+            flex-shrink: 0;
+            font-size: clamp(0.8rem, 2vh, 1rem);
+        }
+
+        /* === ANIMATION SMARTPHONE iOS === */
+        .animation-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 0; /* Important pour le flexbox vertical sans scroll */
+        }
+
+        .iphone {
+            position: relative;
+            width: clamp(140px, 35vh, 200px);
+            aspect-ratio: 10/16;
+            border: 8px solid #3a3a3c;
+            border-radius: 28px;
+            background: #000;
+            overflow: hidden;
+            box-shadow: inset 0 0 0 4px #000, 0 10px 20px rgba(0,0,0,0.15);
+        }
+
+        /* L'encoche (Notch) */
+        .notch {
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 40%; height: 15px;
+            background: #3a3a3c;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            z-index: 20;
+        }
+
+        /* Scène 1 : Appareil Photo */
+        .camera-app {
+            position: absolute; inset: 0;
+            background: #111;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 1;
+            animation: cameraPhase 8s infinite;
+        }
+        .camera-square { width: 50%; aspect-ratio: 1/1; border: 2px dashed #ffcc00; position: relative; }
+        .camera-scanline { width: 100%; height: 2px; background: #ffcc00; position: absolute; top:0; left:0; animation: scanLine 8s infinite; }
+        .camera-link { position: absolute; bottom: 30%; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 20px; font-size: 8px; color: #000; display: flex; align-items: center; gap: 5px; opacity: 0; animation: showLink 8s infinite; }
+        .camera-link::before { content: ''; display: block; width: 12px; height: 12px; background: #ffcc00; border-radius: 50%; }
+
+        /* Scène 2 : Safari */
+        .safari-app {
+            position: absolute; inset: 0;
+            background: #fff;
+            display: flex; flex-direction: column; justify-content: space-between;
+            opacity: 0;
+            animation: safariPhase 8s infinite;
+        }
+        .safari-top { height: 10%; background: #f9f9f9; border-bottom: 1px solid #ddd; margin-top: 15px; }
+        .safari-content { flex-grow: 1; display: flex; align-items: center; justify-content: center; background: #f0f2f5; font-size: 10px; color: #8e8e93; }
+        .safari-bottom { height: 15%; background: rgba(249,249,249,0.9); border-top: 1px solid #ddd; display: flex; justify-content: center; align-items: center; padding-bottom: 5px; position: relative;}
+        /* Bouton Partage iOS */
+        .share-icon { width: 16px; height: 16px; border: 2px solid #007aff; border-top: none; position: relative; }
+        .share-icon::after { content: '↑'; position: absolute; top: -14px; left: 50%; transform: translateX(-50%); color: #007aff; font-size: 14px; font-weight: bold; }
+
+        /* Menu de Partage "Sur l'écran d'accueil" */
+        .share-sheet {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 65%;
+            background: #f2f2f7; border-top-left-radius: 15px; border-top-right-radius: 15px;
+            transform: translateY(100%);
+            display: flex; flex-direction: column; align-items: center; padding-top: 20px;
+            animation: sheetPhase 8s infinite;
+        }
+        .sheet-row { width: 90%; background: #fff; border-radius: 10px; padding: 10px; display: flex; align-items: center; gap: 10px; font-size: 9px; margin-bottom: 5px; }
+        .sheet-icon { width: 16px; height: 16px; background: #e5e5ea; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #8e8e93; font-weight: bold; }
+        .add-icon::before { content: '+'; font-size: 12px; }
+
+        /* Le curseur / doigt qui clique */
+        .pointer {
+            position: absolute; width: 20px; height: 20px; background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.8); border-radius: 50%;
+            z-index: 100;
+            top: 100%; left: 50%; opacity: 0;
+            animation: pointerAction 8s infinite;
+        }
+
+        /* === KEYFRAMES D'ANIMATION (CYCLE DE 8 SECONDES) === */
+        
+        /* Appareil photo : visible de 0% à 25% */
+        @keyframes cameraPhase { 0%, 20% { opacity: 1; z-index: 2;} 25%, 100% { opacity: 0; z-index: 0; } }
+        
+        /* Scan ligne qui descend et remonte */
+        @keyframes scanLine { 0% { top: 0; } 10% { top: 100%; } 20% { top: 0; } 100% { top: 0; } }
+        
+        /* Le lien Safari apparait dans la caméra */
+        @keyframes showLink { 0%, 12% { opacity: 0; transform: translateY(10px); } 15%, 22% { opacity: 1; transform: translateY(0); } 25%, 100% { opacity: 0; } }
+
+        /* Safari s'ouvre : visible de 25% à 95% */
+        @keyframes safariPhase { 0%, 24% { opacity: 0; z-index: 0;} 25%, 95% { opacity: 1; z-index: 1; } 100% { opacity: 0; } }
+
+        /* Le menu de partage remonte (visible de 55% à 85%) */
+        @keyframes sheetPhase { 0%, 50% { transform: translateY(100%); } 55%, 80% { transform: translateY(0); } 85%, 100% { transform: translateY(100%); } }
+
+        /* Action du doigt */
+        @keyframes pointerAction {
+            0%, 15% { top: 100%; opacity: 0; transform: scale(1); }
+            /* Clic sur le lien QR code */
+            18% { top: 68%; left: 50%; transform: translateX(-50%) scale(1); opacity: 1; }
+            20% { top: 68%; left: 50%; transform: translateX(-50%) scale(0.7); opacity: 1; } /* Clic */
+            22% { opacity: 0; }
+            /* Déplacement vers le bouton partage Safari */
+            40% { top: 90%; left: 50%; transform: translateX(-50%) scale(1); opacity: 0; }
+            45% { top: 90%; left: 50%; transform: translateX(-50%) scale(1); opacity: 1; }
+            48% { top: 90%; left: 50%; transform: translateX(-50%) scale(0.7); opacity: 1; } /* Clic Partage */
+            52% { top: 90%; left: 50%; transform: translateX(-50%) scale(1); opacity: 1; }
+            /* Déplacement vers "Ajouter à l'écran" */
+            60% { top: 65%; left: 50%; transform: translateX(-50%) scale(1); opacity: 1; }
+            65% { top: 65%; left: 50%; transform: translateX(-50%) scale(0.7); opacity: 1; } /* Clic Ajouter */
+            70% { opacity: 0; top: 100%; }
+            100% { opacity: 0; }
+        }
+
+        /* === RESPONSIVE MOBILE (ZÉRO SCROLL) === */
+        @media (max-width: 768px) {
+            .container { flex-direction: column; width: 100vw; height: 100vh; border-radius: 0; }
+            .left-panel { flex: 0.6; padding: 1rem; border-right: none; border-bottom: 1px solid #e5e5ea; }
+            .right-panel { flex: 1; padding: 1rem; }
+            .steps-list { margin-bottom: 10px; }
+            .qr-placeholder { margin-bottom: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="left-panel">
+        <h2>Installer l'App</h2>
+        <div class="qr-placeholder">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://projet2fdp.xo.je/Folder_for_Games/Merge_Gun/Download_Merge_Gun.html" alt="QR Code iOS">
+        </div>
+        <p>Visez le code avec l'appareil photo iPhone</p>
+    </div>
+
+    <div class="right-panel">
+        <div class="steps-list">
+            <div class="step-item"><div class="step-num">1</div> Scannez le code et ouvrez le lien.</div>
+            <div class="step-item"><div class="step-num">2</div> Touchez l'icône Partage en bas de l'écran.</div>
+            <div class="step-item"><div class="step-num">3</div> Sélectionnez "Sur l'écran d'accueil".</div>
+        </div>
+
+        <div class="animation-container">
+            <div class="iphone">
+                <div class="notch"></div>
+                
+                <div class="camera-app">
+                    <div class="camera-square">
+                        <div class="camera-scanline"></div>
+                    </div>
+                    <div class="camera-link">safari.com</div>
+                </div>
+
+                <div class="safari-app">
+                    <div class="safari-top"></div>
+                    <div class="safari-content">VOTRE SITE WEB</div>
+                    <div class="safari-bottom">
+                        <div class="share-icon"></div>
+                    </div>
+
+                    <div class="share-sheet">
+                        <div class="sheet-row" style="opacity: 0.5;">
+                            <div class="sheet-icon"></div> Copier
+                        </div>
+                        <div class="sheet-row">
+                            <div class="sheet-icon add-icon"></div> Sur l'écran d'accueil
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pointer"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

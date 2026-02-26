@@ -4,147 +4,118 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="shortcut icon" href="../../Image/FDPrice.png" type="image/x-icon">
-    <link rel="apple-touch-icon" href="../../Image/Apple_Image_Merge_Gun.png">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Accès Sécurisé</title>
     <style>
         :root {
-            --accent: #2478cd; /* Bleu iOS Dark */
+            --accent: #2478cd;
+            --warning: #ff3b30; /* Rouge iOS */
             --bg: #ffffff;
-            --card: #ffffff;
-            --input: #ffffff;
             --text: black;
         }
 
-        /* --- CONTRAINTES MOBILE --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100vh;
-            overflow: hidden; /* Aucune barre de scroll */
-            background-color: var(--bg);
+            margin: 0; padding: 0; width: 100%; height: 100vh;
+            overflow: hidden; background-color: var(--bg);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             color: var(--text);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            display: flex; justify-content: center; align-items: center;
         }
 
-        /* Affichage seulement sur mobile (simulé ou réel) */
         .container {
-            width: 100%;
-            max-width: 400px;
-            padding: 40px 30px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        /* --- LOGO / TITRE --- */
-        .shield-icon {
-            font-size: 50px;
-            color: var(--accent);
-            margin-bottom: 20px;
-        }
-
-        h1 {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 10px;
-            letter-spacing: -0.5px;
-        }
-
-        p.subtitle {
-            color: #8e8e93;
-            font-size: 14px;
-            margin-bottom: 40px;
+            width: 100%; max-width: 400px;
+            padding: 20px 30px;
+            display: flex; flex-direction: column; align-items: center;
             text-align: center;
         }
 
-        /* --- FORMULAIRE --- */
-        .form-group {
-            width: 100%;
-            margin-bottom: 15px;
+        /* --- BLOC ALERTE ÉCRAN D'ACCUEIL --- */
+        .pwa-notice {
+            background-color: #fff2f2;
+            border: 2px solid var(--warning);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            color: var(--warning);
+            animation: pulse 2s infinite;
         }
 
+        .pwa-notice i { font-size: 30px; margin-bottom: 10px; }
+        .pwa-notice h2 { margin: 0; font-size: 18px; text-transform: uppercase; }
+        .pwa-notice p { font-size: 13px; font-weight: bold; margin: 5px 0 0; line-height: 1.4; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); box-shadow: 0 0 15px rgba(255,59,48,0.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* --- LOGO & UI --- */
+        .app-icon { margin-bottom: 15px; }
+        h1 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+        .subtitle { color: #8e8e93; font-size: 14px; margin-bottom: 25px; }
+
+        /* --- ÉTAT BLOQUÉ --- */
+        .is-browser #authForm {
+            filter: blur(4px);
+            pointer-events: none; /* Empêche de cliquer */
+            opacity: 0.6;
+        }
+
+        .form-group { width: 100%; margin-bottom: 12px; }
         input {
-            width: 100%;
-            background: var(--input);
-            border: 1px solid #3a3a3c;
-            border-radius: 12px;
-            padding: 16px;
-            color: rgb(0, 0, 0);
-            font-size: 16px; /* Évite le zoom auto iOS */
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        input:focus {
-            border-color: var(--accent);
+            width: 100%; background: #f2f2f7; border: 1px solid #d1d1d6;
+            border-radius: 12px; padding: 16px; font-size: 16px; outline: none;
         }
 
         .btn-login {
-            width: 100%;
-            background: var(--accent);
-            color: rgb(0, 0, 0);
-            border: none;
-            border-radius: 12px;
-            padding: 16px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: opacity 0.2s;
+            width: 100%; background: var(--accent); color: white;
+            border: none; border-radius: 12px; padding: 16px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
         }
 
-        .btn-login:active {
-            opacity: 0.7;
-        }
+        .btn-disabled { background: #c7c7cc !important; cursor: not-allowed; }
 
-        /* --- CHARGEMENT --- */
+        /* --- LOADER --- */
         .loader-screen {
-            position: fixed;
-            inset: 0;
-            background: var(--bg);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            position: fixed; inset: 0; background: white;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 100;
         }
-
         .spinner {
-            width: 30px;
-            height: 30px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top: 3px solid var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-bottom: 15px;
+            width: 30px; height: 30px; border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--accent); border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin-bottom: 10px;
         }
-
         @keyframes spin { to { transform: rotate(360deg); } }
         .hidden { display: none !important; }
-
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
+<body class="is-browser" id="bodyTag">
 
     <div id="checkSession" class="loader-screen">
         <div class="spinner"></div>
-        <p style="font-size: 14px; color: #8e8e93;">Chargement..</p>
+        <p style="font-size: 14px; color: #8e8e93;">Initialisation...</p>
     </div>
 
     <div class="container hidden" id="loginUI">
-        <div class="shield-icon">
-            <image src="../../Image/Apple_Image_Merge_Gun.png" width="50" height="50"></image>
+        
+        <div class="pwa-notice" id="installNotice">
+            <i class="fas fa-arrow-up-from-bracket"></i>
+            <h2>Action Requise</h2>
+            <p>VOUS DEVEZ AJOUTER CETTE PAGE À VOTRE ÉCRAN D'ACCUEIL.<br>
+            LA CONNEXION EST BLOQUÉE TANT QUE CE N'EST PAS FAIT.</p>
         </div>
-        <h1>Connexion a votre Compte</h1>
-        <p class="subtitle">Ceci est un ecran de Connexion menant vers le jeu Gun Merge. Veuillez y renseigner votre compte pour pouvoir y accéder.</p>
+
+        <div class="app-icon">
+            <img src="../../Image/Apple_Image_Merge_Gun.png" width="60" height="60" onerror="this.src='https://cdn-icons-png.flaticon.com/512/575/575454.png'">
+        </div>
+
+        <h1>Connexion</h1>
+        <p class="subtitle" id="statusMsg">Veuillez installer l'application pour vous connecter.</p>
 
         <form id="authForm" style="width: 100%;">
             <div class="form-group">
@@ -153,54 +124,62 @@
             <div class="form-group">
                 <input type="password" id="passField" placeholder="Mot de passe" required>
             </div>
-            <button type="submit" class="btn-login">Continuer</button>
+            <button type="submit" id="submitBtn" class="btn-login btn-disabled">Connexion impossible</button>
         </form>
     </div>
 
     <script>
-        // Détection mobile simple
+        // 1. Détection PC (Retour arrière)
         if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-            alert("Cet accès est réservé exclusivement aux appareils mobiles.");
-            
-            if (document.referrer) {
-                window.history.back(); // Retourne à la page précédente
-            } else {
-                window.location.href = "https://www.google.com"; // Redirection de secours si pas d'historique
-            }
+            alert("Accès réservé aux mobiles.");
+            window.location.href = "https://www.google.com";
         }
+
         const DESTINATION = "Base_Merge_Gun.html";
         const API_LOGIN = "https://project-3-api-2bgb.onrender.com/login";
 
-        const checkScreen = document.getElementById('checkSession');
-        const loginUI = document.getElementById('loginUI');
-        const authForm = document.getElementById('authForm');
+        // 2. Vérification si l'app est sur l'écran d'accueil (Mode Standalone)
+        const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
-        // 1. Logique Auto-Connexion
         window.onload = function() {
             const savedUser = localStorage.getItem("username");
             
-            if (savedUser) {
-                // Si déjà stocké, on saute l'étape de login
-                window.location.replace(DESTINATION);
-            } else {
-                // Sinon, on affiche le formulaire après un court délai pour le style
-                setTimeout(() => {
-                    checkScreen.classList.add('hidden');
-                    loginUI.classList.remove('hidden');
-                }, 800);
+            // Si déjà sur l'écran d'accueil
+            if (isStandalone) {
+                document.getElementById('bodyTag').classList.remove('is-browser');
+                document.getElementById('installNotice').classList.add('hidden');
+                document.getElementById('statusMsg').textContent = "Identifiez-vous pour accéder au jeu.";
+                document.getElementById('submitBtn').classList.remove('btn-disabled');
+                document.getElementById('submitBtn').textContent = "Se connecter";
+
+                // Auto-login si déjà connecté
+                if (savedUser) {
+                    window.location.replace(DESTINATION);
+                    return;
+                }
             }
+
+            // Affichage UI
+            setTimeout(() => {
+                document.getElementById('checkSession').classList.add('hidden');
+                document.getElementById('loginUI').classList.remove('hidden');
+            }, 800);
         };
 
-        // 2. Traitement du Formulaire
-        authForm.addEventListener('submit', async (e) => {
+        // 3. Logique du Formulaire
+        document.getElementById('authForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            if (!isStandalone) {
+                alert("Action impossible : Vous devez d'abord ajouter l'application à votre écran d'accueil via le bouton de partage de votre navigateur.");
+                return;
+            }
+
             const username = document.getElementById('userField').value.trim();
             const password = document.getElementById('passField').value.trim();
 
-            // Affichage du loader pendant l'appel API
-            checkScreen.classList.remove('hidden');
-            loginUI.classList.add('hidden');
+            document.getElementById('checkSession').classList.remove('hidden');
+            document.getElementById('loginUI').classList.add('hidden');
 
             try {
                 const response = await fetch(API_LOGIN, {
@@ -212,19 +191,17 @@
                 const result = await response.json();
 
                 if (result.status === "success") {
-                    // Stockage et Redirection
                     localStorage.setItem("username", username);
                     window.location.href = DESTINATION;
                 } else {
-                    // Erreur : Retour au formulaire
-                    alert("Accès refusé : Identifiants incorrects.");
-                    checkScreen.classList.add('hidden');
-                    loginUI.classList.remove('hidden');
+                    alert("Identifiants incorrects.");
+                    document.getElementById('checkSession').classList.add('hidden');
+                    document.getElementById('loginUI').classList.remove('hidden');
                 }
             } catch (error) {
-                alert("Erreur de connexion au serveur.");
-                checkScreen.classList.add('hidden');
-                loginUI.classList.remove('hidden');
+                alert("Erreur serveur.");
+                document.getElementById('checkSession').classList.add('hidden');
+                document.getElementById('loginUI').classList.remove('hidden');
             }
         });
     </script>

@@ -694,7 +694,22 @@ document.addEventListener('DOMContentLoaded', async() => {
         const emptyIndex = inventory.indexOf(null);
         if (emptyIndex === -1) return;
         money = Math.round((money - buyPrice) * 10) / 10;
-        inventory[emptyIndex] = { ...itemsData[Math.max(0, currentLevel - 5)] };
+        // 1. On trouve l'arme avec le plus haut ID dans l'inventaire
+        // On filtre les cases vides (null) et on cherche le max des IDs
+        const maxWeaponId = inventory.reduce((max, item) => {
+            return (item && item.id > max) ? item.id : max;
+        }, 1); // 1 est l'id par défaut (le Revolver)
+
+        // 2. Ta condition : si la dernière arme est la 6 (AR) ou plus
+        if (maxWeaponId >= 6) {
+            // On donne l'arme "Max - 4"
+            // Index = (ID - 4) - 1, donc ID - 5
+            const targetIndex = Math.max(0, maxWeaponId - 5);
+            inventory[emptyIndex] = { ...itemsData[targetIndex] };
+        } else {
+            // Sinon on donne l'arme de base (Revolver, index 0)
+            inventory[emptyIndex] = { ...itemsData[0] };
+        }
         buyPrice = Math.round((buyPrice * 1.37) * 10) / 10;
         calculateIncome();
         updateUI();

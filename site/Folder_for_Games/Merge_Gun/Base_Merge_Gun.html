@@ -69,7 +69,13 @@
             font-family: 'Rajdhani', sans-serif;
         }
         body {
-            transition: background-color 0.8s ease;
+            transition: background 1s ease-in-out;
+            background-color: #0f172a; /* Couleur de base par défaut */
+            min-height: 100vh;
+        }
+
+        #grid {
+            transition: box-shadow 1s ease;
         }
 
         body::before {
@@ -724,8 +730,15 @@ document.addEventListener('DOMContentLoaded', async() => {
     function updateBackground() {
         const maxId = inventory.reduce((max, item) => (item && item.id > max) ? item.id : max, 1);
         const rarity = rarityFor(maxId);
-        document.body.style.backgroundColor = `rgba(${rarity.rgb}, 0.15)`;
-        document.body.style.transition = "background-color 0.8s ease"; 
+        const gridEl = document.getElementById('grid');
+        if (gridEl) {
+            gridEl.style.boxShadow = `0 0 50px rgba(${rarity.rgb}, 0.3)`;
+            gridEl.style.transition = "box-shadow 0.8s ease";
+        }
+        
+        // On crée un dégradé qui part d'un bleu très sombre au centre vers la couleur de rareté sur les bords
+        document.body.style.background = `radial-gradient(circle, #0f172a 30%, rgba(${rarity.rgb}, 0.4) 100%)`;
+        document.body.style.backgroundAttachment = "fixed"; // Pour que le fond ne bouge pas au scroll
     }
     function tryMerge(srcIdx, tgtIdx) {
         if (srcIdx === tgtIdx) return false;

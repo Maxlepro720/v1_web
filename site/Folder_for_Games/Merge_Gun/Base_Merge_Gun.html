@@ -840,13 +840,29 @@ document.addEventListener('DOMContentLoaded', async() => {
     }
 
     function spawnGoldParticles(x, y) {
+        const maxId = inventory.reduce((max, item) => (item && item.id > max) ? item.id : max, 1);
+        const rarity = rarityFor(maxId);
+
         for (let i = 0; i < 5; i++) {
             const p = document.createElement('div');
             p.className = 'x2-particle';
             const size = 3 + Math.random() * 4;
             const angle = (Math.random() * 360) * Math.PI / 180;
-            const dist  = 18 + Math.random() * 28;
-            p.style.cssText = `width:${size}px; height:${size}px; left:${x}px; top:${y}px; --px:${Math.cos(angle)*dist}px; --py:${Math.sin(angle)*dist - 20}px; --dur:${0.8 + Math.random()*0.5}s;`;
+            const dist = 18 + Math.random() * 28;
+
+            // On ajoute background-color:${rarity.color}; et une lueur box-shadow
+            p.style.cssText = `
+                width:${size}px; 
+                height:${size}px; 
+                left:${x}px; 
+                top:${y}px; 
+                background-color:${rarity.color};
+                box-shadow: 0 0 8px ${rarity.color};
+                --px:${Math.cos(angle)*dist}px; 
+                --py:${Math.sin(angle)*dist - 20}px; 
+                --dur:${0.8 + Math.random()*0.5}s;
+            `;
+
             document.body.appendChild(p);
             setTimeout(() => p.remove(), 1400);
         }

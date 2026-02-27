@@ -29,6 +29,16 @@
 </script>
     <title>Gun Merge</title>
     <style>
+        @media screen and (orientation: landscape) {
+            body {
+                transform: rotate(90deg);
+                transform-origin: center;
+                width: 100vh;
+                height: 100vw;
+                overflow: hidden;
+                position: fixed;
+            }
+            }
         body {
             margin: 0;
             padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);

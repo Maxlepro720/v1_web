@@ -718,7 +718,12 @@ document.addEventListener('DOMContentLoaded', async() => {
     function calculateIncome() {
         incomePerSec = inventory.reduce((t, i) => t + (i ? i.gain_sec : 0), 0);
     }
-
+    function updateBackground() {
+        const maxId = inventory.reduce((max, item) => (item && item.id > max) ? item.id : max, 1);
+        const rarity = rarityFor(maxId);
+        document.body.style.backgroundColor = `rgba(${rarity.rgb}, 0.15)`;
+        document.body.style.transition = "background-color 0.8s ease"; 
+    }
     function tryMerge(srcIdx, tgtIdx) {
         if (srcIdx === tgtIdx) return false;
         const src = inventory[srcIdx], tgt = inventory[tgtIdx];
@@ -730,6 +735,9 @@ document.addEventListener('DOMContentLoaded', async() => {
             if (slotEl) spawnMergeBurst(slotEl);
             inventory[tgtIdx] = { ...next };
             inventory[srcIdx] = null;
+
+            updateBackground();
+
             xp += src.id * 10;
             const xpNeeded = 100 + currentLevel * 20;
             if (xp >= xpNeeded) { xp -= xpNeeded; currentLevel++; if (inventory.length < MAX_SLOTS) inventory.push(null); }

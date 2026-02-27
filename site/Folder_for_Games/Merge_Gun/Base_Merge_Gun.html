@@ -736,7 +736,6 @@ document.addEventListener('DOMContentLoaded', async() => {
             inventory[tgtIdx] = { ...next };
             inventory[srcIdx] = null;
 
-            updateBackground();
 
             xp += src.id * 10;
             const xpNeeded = 100 + currentLevel * 20;
@@ -882,6 +881,7 @@ document.addEventListener('DOMContentLoaded', async() => {
 
     updateUI();
     window.addEventListener("beforeunload", saveGame);
+    setInterval(updateBackground, 1000);
 });
 </script>
 </body>

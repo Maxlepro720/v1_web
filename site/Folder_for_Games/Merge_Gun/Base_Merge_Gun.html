@@ -741,38 +741,47 @@ document.addEventListener('DOMContentLoaded', async() => {
     async function loadGame() {
         if (!username) return;
 
-        // 1. CRÉATION DU HTML VIA JS
+        // 1. CRÉATION IMMÉDIATE DU LOADER
         const loader = document.createElement('div');
         loader.id = 'loadingScreen';
-        // Style de l'écran principal
+        
+        // On applique les styles
         Object.assign(loader.style, {
             position: 'fixed',
-            inset: '0',
+            top: '0',
+            left: '0',
+            width: '100vw',  // Force la largeur de l'écran
+            height: '100vh', // Force la hauteur de l'écran
             zIndex: '10000',
-            backgroundColor: '#1a1a1a',
-            backgroundImage: "url('https://wallpapers.com/images/hd/epic-iphone-z3nxqt33v4qzjqhw.jpg')",
+            backgroundColor: '#0f172a', // Couleur de secours pendant que l'image charge
+            backgroundImage: "url('https://laboutiquedemei.fr/690-medium_default/papier-peint-3d-asiatique-paysage-zen-format-portrait-jardin-traditionnel-chinois.jpg')",
+            backgroundPosition: 'center',
+            backgroundSize: 'cover', // 'cover' est le mieux, mais l'image doit être dans un container 100vw/100vh
+            backgroundRepeat: 'no-repeat',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'opacity 0.6s ease'
+            transition: 'opacity 0.6s ease',
+            visibility: 'visible'
         });
 
-        // Ajout de l'overlay sombre et du contenu
         loader.innerHTML = `
             <div style="position:absolute; inset:0; background:rgba(0,0,0,0.6); z-index:-1;"></div>
-            <h1 style="color:white; font-family:'Oswald', sans-serif; letter-spacing:4px; margin-bottom:20px; text-shadow: 0 0 10px rgba(0,0,0,0.5);">CHARGEMENT</h1>
-            <div style="width:250px; height:10px; background:rgba(255,255,255,0.2); border-radius:5px; overflow:hidden;">
-                <div id="loadingBar" style="width:0%; height:100%; background:#f5c518; transition: width 0.4s ease; box-shadow: 0 0 15px #f5c518;"></div>
+            <h1 style="color:white; font-family:'Oswald', sans-serif; letter-spacing:4px; margin-bottom:20px; text-shadow: 0 0 10px rgba(0,0,0,0.5);">PRÉPARATION DU JEU...</h1>
+            <div style="width:250px; height:12px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden; border: 1px solid rgba(255,255,255,0.2);">
+                <div id="loadingBar" style="width:0%; height:100%; background:linear-gradient(90deg, #f5c518, #ff9f00); transition: width 0.4s ease; box-shadow: 0 0 15px rgba(245, 197, 24, 0.5);"></div>
             </div>
         `;
 
-        document.body.appendChild(loader);
+        // On l'ajoute au tout début du body pour qu'il passe devant
+        document.body.prepend(loader); 
+        
         const bar = loader.querySelector('#loadingBar');
 
         try {
-            // Début du chargement
-            setTimeout(() => { bar.style.width = "30%"; }, 10);
+            // Animation de départ
+            setTimeout(() => { if(bar) bar.style.width = "20%"; }, 50);
 
             const res = await fetch("https://project-3-api-2bgb.onrender.com/gun_merge_get_data", {
                 method: "POST",
@@ -780,9 +789,11 @@ document.addEventListener('DOMContentLoaded', async() => {
                 body: JSON.stringify({ username: username })
             });
 
-            bar.style.width = "75%";
+            if(bar) bar.style.width = "60%";
 
             const data = await res.json();
+            
+            // --- Traitement des données (ton code existant) ---
             if (data.data) {
                 const d = data.data;
                 money = parseFloat(d.money ?? 1.0);
@@ -791,22 +802,21 @@ document.addEventListener('DOMContentLoaded', async() => {
                 buyPrice = parseFloat(d.buyPrice ?? 1.0);
                 inventory = (d.inventory ?? Array(Math.min(4 + currentLevel, 24)).fill(null)).slice(0, 24);
             }
+            // ------------------------------------------------
 
-            // Fin du chargement
-            bar.style.width = "100%";
+            if(bar) bar.style.width = "100%";
 
-            // 2. DESTRUCTION DU HTML
+            // On laisse un délai pour que le joueur voie que c'est fini
             setTimeout(() => {
-                loader.style.opacity = "0"; // Effet de fondu
+                loader.style.opacity = "0";
                 setTimeout(() => {
-                    loader.remove(); // Supprime réellement l'élément du code HTML
-                    console.log("Loader détruit.");
-                }, 600); // Attend la fin de la transition d'opacité
-            }, 400);
+                    loader.remove();
+                }, 600);
+            }, 500);
 
         } catch (e) {
-            console.error("Load error", e);
-            loader.remove(); // Détruire même en cas d'erreur
+            console.error("Erreur de chargement", e);
+            loader.remove(); // On enlève le loader pour ne pas bloquer le joueur si l'API crash
         }
     }
 

@@ -27,6 +27,9 @@
         }
     })(document, window.navigator, 'standalone');
 </script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-dark: #0d1117;
@@ -509,6 +512,30 @@
             font-size: 35px;
             z-index: 10;
         }
+
+        #shopOverlay {
+  position: fixed; inset: 0; background: rgba(10, 0, 20, 0.75); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  z-index: 9999; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.35s ease;
+}
+#shopOverlay.is-open { opacity: 1; pointer-events: all; display: flex; }
+.shop-window {
+  width: min(90vw, 820px); height: min(80vh, 640px); border-radius: 24px; overflow: hidden; position: relative;
+  display: flex; flex-direction: column; background: linear-gradient(145deg, #5c1282 0%, #3a0760 60%, #1e0340 100%);
+  box-shadow: 0 0 0 1px rgba(200, 120, 255, 0.18), 0 30px 80px rgba(0, 0, 0, 0.7);
+  transform: scale(0.82) translateY(32px); transition: transform 0.4s cubic-bezier(0.34, 1.36, 0.64, 1), opacity 0.3s;
+}
+#shopOverlay.is-open .shop-window { transform: scale(1) translateY(0); opacity: 1; }
+.shop-header { height: 70px; background: rgba(150,40,220,0.5); border-bottom: 1px solid rgba(200,120,255,0.2); display: flex; align-items: center; justify-content: center; position: relative; }
+.shop-title { font-family: 'Oswald', sans-serif; font-size: 48px; letter-spacing: 6px; color: #f5d6ff; filter: drop-shadow(0 0 12px rgba(180,80,255,0.5)); }
+.btn-close { position: absolute; right: 16px; width: 36px; height: 36px; border-radius: 50%; border: none; cursor: pointer; background: radial-gradient(circle at 40% 35%, #ff5555, #c0000a); display: flex; align-items: center; justify-content: center; }
+.btn-close svg { width: 14px; height: 14px; stroke: #fff; stroke-width: 2.5; }
+.shop-body { flex: 1; overflow-y: auto; padding: 24px; position: relative; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+.shop-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(200,120,255,0.14); border-radius: 14px; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; }
+.shop-item:hover { background: rgba(180,80,255,0.12); transform: translateY(-3px); }
+.shop-item-icon { font-size: 32px; }
+.shop-item-name { font-size: 13px; font-weight: 600; color: #e0c0ff; }
+.shop-item-price { font-size: 12px; color: #c070ff; background: rgba(160,60,220,0.18); border-radius: 20px; padding: 2px 8px; }
     </style>
 </head>
 <script>
@@ -518,6 +545,24 @@ if (!sessionStorage.getItem("page_reloaded")) {
 }
 </script>
 <body>
+    <div id="shopOverlay">
+  <div class="shop-window">
+    <div class="shop-header">
+      <span class="shop-title">SHOP</span>
+      <button class="btn-close" id="closeShop" aria-label="Fermer">
+        <svg viewBox="0 0 14 14" fill="none"><line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/></svg>
+      </button>
+    </div>
+    <div class="shop-body">
+      <div class="shop-grid">
+        <div class="shop-item"><div class="shop-item-icon">⚔️</div><div class="shop-item-name">Épée de Feu</div><div class="shop-item-price">$ 120</div></div>
+        <div class="shop-item"><div class="shop-item-icon">🛡️</div><div class="shop-item-name">Bouclier Céleste</div><div class="shop-item-price">$ 85</div></div>
+        <div class="shop-item"><div class="shop-item-icon">🧪</div><div class="shop-item-name">Potion Rare</div><div class="shop-item-price">$ 40</div></div>
+        <div class="shop-item"><div class="shop-item-icon">🏹</div><div class="shop-item-name">Arc Lunaire</div><div class="shop-item-price">$ 95</div></div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="stars" id="stars"></div>
 
@@ -565,7 +610,29 @@ if (!sessionStorage.getItem("page_reloaded")) {
         </button>
     </footer>
 </div>
+<script>
+ const overlay = document.getElementById('shopOverlay');
+const btnOpen = document.querySelector('.v5_2'); // Ton bouton panier existant
+const btnClose = document.getElementById('closeShop');
 
+function toggleShop(show) {
+  if (show) {
+    overlay.style.display = 'flex';
+    setTimeout(() => overlay.classList.add('is-open'), 10);
+  } else {
+    overlay.classList.remove('is-open');
+    setTimeout(() => overlay.style.display = 'none', 350);
+  }
+}
+
+btnOpen.addEventListener('click', () => toggleShop(true));
+btnClose.addEventListener('click', () => toggleShop(false));
+
+// Fermer si on clique à côté de la fenêtre
+overlay.addEventListener('click', (e) => {
+  if (e.target === overlay) toggleShop(false);
+});
+</script>
 <script> 
 // ── STARS ──
 (function spawnStars() {
@@ -758,7 +825,7 @@ document.addEventListener('DOMContentLoaded', async() => {
         const maxWeaponId = inventory.reduce((max, item) => {
             return (item && item.id > max) ? item.id : max;
         }, 1); // 1 est l'id par défaut (le Revolver)
-
+        
         // 2. Ta condition : si la dernière arme est la 6 (AR) ou plus
         if (maxWeaponId >= 6) {
             // On donne l'arme "Max - 4"
@@ -769,6 +836,14 @@ document.addEventListener('DOMContentLoaded', async() => {
             // Sinon on donne l'arme de base (Revolver, index 0)
             inventory[emptyIndex] = { ...itemsData[0] };
         }
+        const newItemId = inventory[emptyIndex].id;
+
+        inventory = inventory.map(item => {
+            if (item && item.id < newItemId) {
+                return { ...itemsData[newItemId - 1] };
+            }
+            return item;
+        });
         let buyPrice_mtplier = 1.37;
         if(maxWeaponId >= 5) {
             buyPrice_mtplier = 1.15

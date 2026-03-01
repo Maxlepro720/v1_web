@@ -683,7 +683,15 @@ document.addEventListener('DOMContentLoaded', async() => {
         { id:7,  name:"Mammadou",     img:"https://ipj.eu/wp-content/uploads/2020/01/mamadoundiaye-e1651850955259.jpg",                       gain_sec:300 },
         { id:8,  name:"Sniper",       img:"https://www.pngall.com/wp-content/uploads/15/Sniper-PNG-Picture.png",                             gain_sec:800},
         { id:9,  name:"Rocket",       img:"https://cdn3d.iconscout.com/3d/premium/thumb/lance-roquettes-3d-icon-png-download-4846082.png",   gain_sec:2000 },
-        { id:10, name:"Missile",      img:"https://png.pngtree.com/png-clipart/20241125/original/pngtree-nuclear-missile-png-image_17292982.png", gain_sec:5000},
+        { id:10, name:"Noir",         img:"https://cdn.essentiels.bnf.fr/media/images/cache/crop/rc/dNB9JABF/uploads/media/image/20231002142127000000_neb_028.jpg", gain_sec:5000},
+        { id:11, name:"Chinois",      img:"https://thumbs.dreamstime.com/b/personne-chinoise-jeune-%C3%A9tonn%C3%A9e-135663232.jpg", gain_sec:12000},
+        { id:12, name:"Roux",         img:"https://www.events-tour.com/medias/images/51921-accessoire-de-deguisement-biker-roux-avec-moustache.jpg", gain_sec:30000},
+        { id:13, name:"Chinoiroux",   img:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSMigdJrg-c_V7Mvnptsrg8EkTZ5bbD777AHQ&s", gain_sec:100000},
+        { id:14, name:"Métisse",      img:"https://une-autre-histoire.org/wp-content/uploads/2013/09/Obama.jpg", gain_sec:300000},
+        { id:15, name:"Meuf",         img:"https://resize-elle.ladmedia.fr/rcrop/638,,forcex/img/var/plain_site/storage/images/beaute/cheveux/coupe-de-cheveux/cheveux-boucles/cheveux-boucles-metisse2/56048993-1-fre-FR/Cheveux-boucles-metisse.jpg", gain_sec:800000},
+        { id:16, name:"Mec",          img:"https://thumbs.dreamstime.com/b/jeune-adolescent-m%C3%A9tisse-%C3%A0-regarder-la-cam%C3%A9ra-portrait-d-un-178616269.jpg", gain_sec:1500000},
+        { id:17, name:"Bodybuilder",  img:"https://media.defense.gov/2015/Dec/08/2001455214/2000/2000/0/151208-F-ZZ000-001.jpg", gain_sec:50000000},
+
     ];
 
     let inventory = Array(Math.min(4 + currentLevel, MAX_SLOTS)).fill(null);
@@ -868,8 +876,8 @@ document.addEventListener('DOMContentLoaded', async() => {
         }
         let imageUrl = "";
 
-        if(maxId >= 1) {
-            imageUrl = "url('https://laboutiquedemei.fr/690-medium_default/papier-peint-3d-asiatique-paysage-zen-format-portrait-jardin-traditionnel-chinois.jpg')";
+        if(maxId >= 11) {
+            imageUrl = "url('https://www.drawingsandthings.com/wp-content/uploads/2023/04/Drawingsandthings-Wallpaper-Mai-2023-sans-mois.jpg')";
 
             // Application du style au body
             document.body.style.backgroundImage = imageUrl;

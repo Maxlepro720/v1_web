@@ -866,10 +866,23 @@ document.addEventListener('DOMContentLoaded', async() => {
             gridEl.style.boxShadow = `0 0 50px rgba(${rarity.rgb}, 0.3)`;
             gridEl.style.transition = "box-shadow 0.8s ease";
         }
+        let imageUrl = "";
+
+        if(maxId >= 1) {
+            imageUrl = "url('https://laboutiquedemei.fr/690-medium_default/papier-peint-3d-asiatique-paysage-zen-format-portrait-jardin-traditionnel-chinois.jpg')";
+
+            // Application du style au body
+            document.body.style.backgroundImage = imageUrl;
+            document.body.style.backgroundSize = "cover";
+            document.body.style.backgroundAttachment = "fixed";
+            document.body.style.backgroundPosition = "center";
+            return;
+        }
         
         // On crée un dégradé qui part d'un bleu très sombre au centre vers la couleur de rareté sur les bords
         document.body.style.background = `radial-gradient(circle, #0f172a 30%, rgba(${rarity.rgb}, 0.4) 100%)`;
         document.body.style.backgroundAttachment = "fixed"; // Pour que le fond ne bouge pas au scroll
+
     }
     function tryMerge(srcIdx, tgtIdx) {
         if (srcIdx === tgtIdx) return false;

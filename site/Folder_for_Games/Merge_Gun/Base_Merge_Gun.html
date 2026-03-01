@@ -463,6 +463,12 @@
         }
     </style>
 </head>
+<script>
+if (!sessionStorage.getItem("page_reloaded")) {
+    sessionStorage.setItem("page_reloaded", "true");
+    window.location.reload();
+}
+</script>
 <body>
 
 <div class="stars" id="stars"></div>

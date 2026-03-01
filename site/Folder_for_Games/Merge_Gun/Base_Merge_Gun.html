@@ -696,7 +696,7 @@ document.addEventListener('DOMContentLoaded', async() => {
 
     function buyItem() {
         if (money < buyPrice) return;
-        let emptyIndex = inventory.indexOf(null);
+        const emptyIndex = inventory.indexOf(null);
         if (emptyIndex === -1) return;
         money = Math.round((money - buyPrice) * 10) / 10;
         // 1. On trouve l'arme avec le plus haut ID dans l'inventaire
@@ -715,7 +715,7 @@ document.addEventListener('DOMContentLoaded', async() => {
             // Sinon on donne l'arme de base (Revolver, index 0)
             inventory[emptyIndex] = { ...itemsData[0] };
         }
-        const buyPrice_mtplier = 1.37;
+        let buyPrice_mtplier = 1.37;
         if(maxWeaponId >= 5) {
             buyPrice_mtplier = 1.15
         }else {

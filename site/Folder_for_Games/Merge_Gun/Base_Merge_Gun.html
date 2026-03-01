@@ -715,7 +715,13 @@ document.addEventListener('DOMContentLoaded', async() => {
             // Sinon on donne l'arme de base (Revolver, index 0)
             inventory[emptyIndex] = { ...itemsData[0] };
         }
-        buyPrice = Math.round((buyPrice * 1.37) * 10) / 10;
+        const buyPrice_mtplier = 1.37;
+        if(maxWeaponId >= 5) {
+            buyPrice_mtplier = 1.15
+        }else {
+            buyPrice_mtplier = 1.37;
+        }        
+        buyPrice = Math.round((buyPrice * buyPrice_mtplier) * 10) / 10;
         calculateIncome();
         updateUI();
     }

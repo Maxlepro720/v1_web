@@ -527,7 +527,7 @@
         }
 
         #shopOverlay {
-  position: fixed; inset: 0; background: rgba(10, 0, 20, 0.75);
+  position: fixed; inset: 0; background: rgba(10, 0, 20, 0.75); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   z-index: 9999; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.35s ease;
 }
 #shopOverlay.is-open { opacity: 1; pointer-events: all; display: flex; }
@@ -766,7 +766,7 @@ document.addEventListener('DOMContentLoaded', async() => {
             width: '100vw',  // Force la largeur de l'écran
             height: '100vh', // Force la hauteur de l'écran
             zIndex: '10000',
-            backgroundColor: '#0f172a', // Couleur de secours pendant que l'image charge
+            
             backgroundImage: "url('https://wallpapers.com/images/hd/epic-iphone-z3nxqt33v4qzjqhw.jpg')",
             backgroundPosition: 'center',
             backgroundSize: 'cover', // 'cover' est le mieux, mais l'image doit être dans un container 100vw/100vh

@@ -766,7 +766,6 @@ document.addEventListener('DOMContentLoaded', async() => {
             width: '100vw',  // Force la largeur de l'écran
             height: '100vh', // Force la hauteur de l'écran
             zIndex: '10000',
-            
             backgroundImage: "url('https://wallpapers.com/images/hd/epic-iphone-z3nxqt33v4qzjqhw.jpg')",
             backgroundPosition: 'center',
             backgroundSize: 'cover', // 'cover' est le mieux, mais l'image doit être dans un container 100vw/100vh
@@ -780,11 +779,7 @@ document.addEventListener('DOMContentLoaded', async() => {
         });
 
         loader.innerHTML = `
-            <div style="position:absolute; inset:0; background:rgba(0,0,0,0.6); z-index:-1;"></div>
-            <h1 style="color:white; font-family:'Oswald', sans-serif; letter-spacing:4px; margin-bottom:20px; text-shadow: 0 0 10px rgba(0,0,0,0.5);">PRÉPARATION DU JEU...</h1>
-            <div style="width:250px; height:12px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden; border: 1px solid rgba(255,255,255,0.2);">
-                <div id="loadingBar" style="width:0%; height:100%; background:linear-gradient(90deg, #f5c518, #ff9f00); transition: width 0.4s ease; box-shadow: 0 0 15px rgba(245, 197, 24, 0.5);"></div>
-            </div>
+            
         `;
 
         // On l'ajoute au tout début du body pour qu'il passe devant

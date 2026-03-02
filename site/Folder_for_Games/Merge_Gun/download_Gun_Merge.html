@@ -116,7 +116,7 @@
 
         /* --- LOADER --- */
         .loader-screen {
-            position: fixed; inset: 0; background: transparent;
+            position: fixed; inset: 0; background: white;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 100;
         }
@@ -169,6 +169,10 @@
     if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
         alert("Accès réservé aux mobiles.");
         window.location.href = "https://www.google.com";
+    }
+    if (!sessionStorage.getItem("page_reloaded")) {
+        sessionStorage.setItem("page_reloaded", "true");
+        window.location.reload();
     }
 
     const DESTINATION = "Base_Merge_Gun.html";

@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows 11</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <link rel="shortcut icon" href="Image/FDPrice.png" type="image/x-icon">
+    <style>
+        :root {
+            --glass: rgba(25, 25, 25, 0.75);
+            --border: rgba(255, 255, 255, 0.15);
+            --accent: #0078d4;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: url('https://pic.clubic.com/7107e4c92116647/1200x675/smart/windows-xp.jpg') no-repeat center center fixed;
+            background-size: cover;
+            height: 100vh; overflow: hidden; color: white;
+            transition: background 0.5s ease;
+        }
+
+        #desktop {
+            width: 100%; height: calc(100vh - 48px);
+            position: relative; padding: 10px;
+        }
+
+        .desktop-icon {
+            width: 100px; height: 110px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; cursor: pointer; position: absolute;
+            border: 1px solid transparent; border-radius: 4px;
+        }
+        .desktop-icon:hover { background: rgba(255, 255, 255, 0.1); border: 1px solid var(--border); }
+        .desktop-icon img {width: 50px;height: 50px;aspect-ratio: 1 / 1;object-fit: contain;filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));}
+        .desktop-icon span { font-size: 12px; margin-top: 5px; text-shadow: 1px 1px 3px black; }
+
+        #taskbar {
+            height: 48px; width: 100%; background: rgba(15, 15, 15, 0.85);
+            backdrop-filter: blur(25px); position: fixed; bottom: 0;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 10px; z-index: 10000; border-top: 1px solid var(--border);
+        }
+
+        .tb-section { display: flex; align-items: center; gap: 5px; height: 100%; }
+        .tb-center { position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; }
+
+        .tb-item {
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            border-radius: 4px; cursor: pointer; transition: 0.2s;
+        }
+        .tb-item:hover { background: rgba(255, 255, 255, 0.1); }
+        .tb-item img { width: 26px; height: 26px; object-fit: contain; }
+
+        .sys-tray { font-size: 14px; gap: 15px; padding: 0 10px; }
+        .sys-icon { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; }
+
+        /* --- FENÊTRES --- */
+        .window {
+            position: absolute; background: var(--glass); backdrop-filter: blur(35px);
+            border: 1px solid var(--border); border-radius: 8px; display: none;
+            flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.6); overflow: hidden;
+        }
+        .win-header { padding: 10px 15px; display: flex; justify-content: space-between; background: rgba(0,0,0,0.2); cursor: move; }
+        .win-content { flex-grow: 1; padding: 20px; overflow-y: auto; }
+        .win-controls button { background: transparent; border: none; color: white; width: 35px; height: 35px; cursor: pointer; }
+        .win-controls .close-btn:hover { background: #e81123; }
+
+        /* --- STORE UI --- */
+        .store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        .app-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; text-align: center; border: 1px solid transparent; }
+        .app-card:hover { border-color: var(--accent); }
+        .app-card img {
+            width: 80px;
+            height: 80px; 
+            aspect-ratio: 1 / 1;object-fit: cover;margin-bottom: 10px;border-radius: 12px;}
+        .store-btn { width: 100%; padding: 8px; margin-top: 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
+        .btn-install { background: var(--accent); color: white; }
+        .btn-pin { background: rgba(255,255,255,0.15); color: white; }
+        .btn-danger { background: rgba(232, 17, 35, 0.2); color: #ff5f5f; }
+
+        /* --- SETTINGS --- */
+        .setting-item { margin-bottom: 20px; }
+        .setting-item input { width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; border-radius: 4px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <script src="script/musique_script.js"></script>
+
+<div id="desktop"></div>
+
+<div id="taskbar">
+    <div class="tb-section">
+        <div class="tb-item" style="color: #00adef; font-size: 24px;" onclick="logout()"><i class="fab fa-windows"></i></div>
+    </div>
+
+    <div class="tb-center" id="pinned-bar">
+        <div class="tb-item" onclick="toggleWin('win-store')"><i class="fas fa-bag-shopping" style="color: #ffffff; font-size: 20px;"></i></div>
+        <div class="tb-item" onclick="toggleWin('win-settings')"><i class="fas fa-cog" style="color: #a0a4a7; font-size: 20px;"></i></div>
+        <div class="tb-item" onclick="toggleWin('win-store')"><i class="fas fa-coins" style="color: yellow; font-size: 20px;"></i></div>
+        <div class="tb-item" onclick="toggleWin('win-music')"><i class="fas fa-music" style="color: #c53030; font-size: 20px;"></i></div>
+    </div>
+
+    <div class="tb-section sys-tray">
+        <div class="sys-icon" onclick="admin_part()"><i class="fas fa-wifi" id="wifi-icon"></i></div>
+        <div class="sys-icon"><i id="batt-icon" class="fas fa-battery-full"></i> <span id="batt-level">--%</span></div>
+        <div style="text-align: right; font-size: 12px; font-weight: 500;">
+            <div id="clock-time">00:00</div>
+            <div id="clock-date" style="opacity: 0.6; font-size: 10px;">01/01/2024</div>
+        </div>
+    </div>
+</div>
+<div id="custom-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:999;"></div>
+
+<div id="custom-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); padding:20px; background:#fff; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.3); z-index:1000; text-align:center; font-family: sans-serif;">
+    <h3 style="margin-top:0;">Administration</h3>
+    <p>Entrez le mot de passe wifi :</p>
+    <input type="password" id="wifi-password-input" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc; border-radius:4px; box-sizing: border-box;">
+    <br>
+    <button onclick="checkAdminPassword()" style="padding:8px 20px; cursor:pointer; background:#007bff; color:white; border:none; border-radius:4px;">Valider</button>
+    <button onclick="closeAdminModal()" style="padding:8px 20px; cursor:pointer; background:#ccc; border:none; border-radius:4px; margin-left:5px;">Annuler</button>
+</div>
+<div id="win-store" class="window" style="width: 750px; height: 550px; top: 10%; left: 15%;">
+    <div class="win-header">
+        <span><i class="fas fa-bag-shopping"></i> Microsoft Store</span>
+        <div class="win-controls"><button class="close-btn" onclick="toggleWin('win-store')">✕</button></div>
+    </div>
+    
+    <div class="win-content">
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+            <div style="position: relative; flex-grow: 1;">
+                <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: 0.5;"></i>
+                <input type="text" id="store-search" placeholder="Rechercher un jeu..." 
+                    style="width: 100%; padding: 8px 8px 8px 35px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; border-radius: 4px;"
+                    oninput="filterStore()">
+            </div>
+            
+            <select id="store-category" 
+                style="padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; border-radius: 4px; cursor: pointer;"
+                onchange="filterStore()">
+                <option value="all">Toutes les catégories</option>
+            </select>
+        </div>
+
+        <div class="store-grid" id="store-list"></div>
+    </div>
+</div>
+
+<div id="win-settings" class="window" style="width: 450px; height: auto; min-height: 450px; top: 20%; left: 30%;">
+    <div class="win-header">
+        <span><i class="fas fa-cog"></i> Paramètres</span>
+        <div class="win-controls"><button class="close-btn" onclick="toggleWin('win-settings')">✕</button></div>
+    </div>
+    <div class="win-content">
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+            <img id="user-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" 
+                 title="Cliquez pour changer l'image"
+                 style="width: 65px; height: 65px; border-radius: 50%; cursor: pointer; object-fit: cover; border: 2px solid var(--accent);" 
+                 onclick="changeAvatar()">
+            <div>
+                <div style="font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.5px;">Compte local</div>
+                <div id="display-username" style="font-size: 18px; font-weight: 600;" >Utilisateur</div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <label>Arrière-plan (URL)</label>
+            <input type="text" id="wall-input" placeholder="https://exemple.jpeg">
+            <button class="store-btn btn-install" onclick="applyWall()" style="margin-top: 10px;">Appliquer</button>
+        </div>
+
+        <div class="setting-item" style="margin-top: 20px;">
+            <label>Luminosité</label>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                <i class="fas fa-sun" style="font-size: 14px; opacity: 0.7;"></i>
+                <input type="range" id="brightness-slider" min="30" max="100" value="100" 
+                       style="flex-grow: 1; cursor: pointer;" 
+                       oninput="updateBrightness(this.value)">
+            </div>
+        </div>
+
+        <div style="margin-top: 30px; opacity: 0.5; font-size: 12px; border-top: 1px solid var(--border); padding-top: 10px;">
+            Système d'exploitation Window 11
+        </div>
+    </div>
+</div>
+<script>
+    document.getElementById('user-avatar').addEventListener('click', () => {const url_image = prompt("Entrez l'URL de votre avatar:"); if(url_image) { document.getElementById('user-avatar').src = url_image; localStorage.setItem('win_avatar', url_image); } }); window.onload = () => { const savedAvatar = localStorage.getItem('win_avatar'); if(savedAvatar) document.getElementById('user-avatar').src = savedAvatar; };
+</script>
+<script src="script/script_mbn_title.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', (event) => {
+        const username = localStorage.getItem('username');
+        if (username) {
+        document.getElementById('display-username').textContent = username;
+        }
+    });
+    const API_URL = "https://project-3-api-2bgb.onrender.com";
+    const GRID = 110; 
+
+    const games = [
+        {id:12, name:"Naruto",           title:"Naruto",             genre:"Animé",        link:"Media/Naruto.html",          color:"yellow", img:"https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/naruto.jpg"},
+        {id:11, name:"Level_Devil",      title:"Level Devil",        genre:"Infinite",        link:"Folder_for_Games/Level_Devil/Jeu_Level_Devil.html",          color:"#969696", img:"https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=204,height=204,fit=cover,f=auto/0c3d1446c6992c2b88a9498de054688b/level-devil.png"},
+        {id:10, name:"Life_Game",        title:"Jeu de la Vie",      genre:"Role Play",        link:"Folder_for_Games/RP_Cuisine/accueil_cuisine.html",          color:"#969696", img:"https://www.notebookcheck.biz/fileadmin/Notebooks/News/_nc4/GTA5Logo.jpg"},
+        {id:9,  name:"Find_Meme",        title:"Trouve le Même",     genre:"Nerd",        link:"Folder_for_Games/Find_Meme/base_find_meme.html",            color:"#969696", img:"https://m.media-amazon.com/images/I/61-1HFujrqL._AC_UF894,1000_QL80_.jpg"},
+        {id:8,  name:"Casino",           title:"Casino",             genre:"Jeu d'Argents",    link:"Folder_for_Games/Casino/banque.html",                        color:"#969696", img:"Image/Image_Casino.avif"},
+        {id:7,  name:"Personnalité_Test",title:"Test de Personnalité",genre:"Nerd",            link:"Folder_for_Games/Personnality_Test/test_de_personnalité.html",color:"#969696",img:"Image/Image_Personnality_Test.webp"},
+        {id:6,  name:"Orbital_Chaos",    title:"Orbital Chaos",      genre:"Survie",          link:"Folder_for_Games/Orbital_Chaos/Orbital_Chaos.html",         color:"#969696", img:"Image/Image_Orbital_Chaos.png"},
+        {id:5,  name:"Snake",            title:"Snake",              genre:"Retro Gaming",     link:"Folder_for_Games/Snake/Snake_game.html",                    color:"#969696", img:"Image/Image_Snake.webp"},
+        {id:4,  name:"Tower_Defense",    title:"Tower Defense",      genre:"Survie",         link:"Folder_for_Games/Tower_Defense/tower_defense.html",         color:"#026c02", img:"Image/Image_Tower_Defense.png"},
+        {id:3,  name:"Astro_Dodge",      title:"Astro Dodge",        genre:"Infinite",         link:"Folder_for_Games/jeu2/game.html",                           color:"#07a7b3", img:"Image/Image_Astro_Dodge.png"},
+        {id:2,  name:"Stickman_Runner",  title:"Stickman Runner",    genre:"Infinite",         link:"Folder_for_Games/jeu_3/game.html",                          color:"#63D945", img:"Image/Image_Stickman_Runner.png"},
+        {id:1,  name:"Skull_Arena",      title:"Skull Arena",        genre:"Survie",          link:"Folder_for_Games/jeu_1/game.html",                          color:"#CF4F5E", img:"Image/Image_Skull_Arena.png"}
+    ];
+
+
+    let installed = JSON.parse(localStorage.getItem('win_installed')) || [];
+    let pinned = JSON.parse(localStorage.getItem('win_pinned')) || [];
+    let counters = {};
+
+    // Cette fonction remplace votre ancien prompt
+function admin_part() {
+    document.getElementById('custom-overlay').style.display = 'block';
+    document.getElementById('custom-modal').style.display = 'block';
+    document.getElementById('wifi-password-input').value = ''; // Vide le champ
+    document.getElementById('wifi-password-input').focus();
+}
+
+// Cette fonction gère la vérification (le comportement reste identique)
+function checkAdminPassword() {
+    const password = document.getElementById('wifi-password-input').value;
+    username = localStorage.getItem('username');
+    window.admin = parseInt(atob("MTIzNDU2Nzg5"))
+    console.log(window.admin)
+    if (password === (parseInt(atob("MTIzNDU2Nzg5")).toString())) {
+        if (username === "yenigma3698" || username === "admin" || username ==="maxbryx11")
+        window.open("admin/overview.html", "_blank");
+        closeAdminModal();
+    } else {
+        alert("Mot de passe incorrect.");
+        closeAdminModal();
+        //logout(); // Appelle votre fonction logout existante
+    }
+}
+
+function closeAdminModal() {
+    document.getElementById('custom-overlay').style.display = 'none';
+    document.getElementById('custom-modal').style.display = 'none';
+};
+window.onload = () => {
+        const wall = sessionStorage.getItem('win_wallpaper');
+        if(wall) document.body.style.backgroundImage = `url('${wall}')`;
+        
+        populateCategoryFilter(); // ✅ Rempli le select avec les genres des jeux
+        fetchCounters();
+        renderDesktop();
+        renderStore();
+        renderPinned();
+        initHardware();
+        setInterval(updateClock, 1000);
+        updateClock();
+    };
+
+    // ✅ Génère dynamiquement les options du filtre à partir des genres dans games[]
+    function populateCategoryFilter() {
+        const select = document.getElementById('store-category');
+        const genres = [...new Set(games.map(g => g.genre))]; // genres uniques
+        genres.forEach(genre => {
+            const opt = document.createElement('option');
+            opt.value = genre;
+            opt.textContent = genre;
+            select.appendChild(opt);
+        });
+    }
+
+    // ✅ Filtre corrigé : utilise data-genre et cherche dans le titre
+    function filterStore() {
+        const query = document.getElementById('store-search').value.toLowerCase();
+        const category = document.getElementById('store-category').value;
+        const cards = document.querySelectorAll('.app-card');
+
+        cards.forEach(card => {
+            const title = card.querySelector('.card-title').innerText.toLowerCase();
+            const cardGenre = card.getAttribute('data-genre');
+
+            const matchesSearch = title.includes(query);
+            const matchesCat = (category === 'all' || cardGenre === category);
+
+            card.style.display = (matchesSearch && matchesCat) ? 'block' : 'none';
+        });
+    }
+
+    // --- API ---
+    async function fetchCounters() {
+        try {
+            const res = await fetch(`${API_URL}/get_play_counter`);
+            const json = await res.json();
+            if(json.status === "success") {
+                json.data.forEach(d => counters[d.name] = d.counter);
+                renderStore();
+            }
+        } catch(e) { console.error("API Error:", e); }
+    }
+    function sendGameView(gameName) {
+        const url = `${API_URL}/add1to_count?name=${encodeURIComponent(gameName)}`;
+
+        // Requête GET pour récupérer la réponse
+        fetch(url)
+            .then(response => response.text()) // ou .json() si le serveur renvoie du JSON
+            .then(data => console.log("Réponse du serveur :", data))
+            .catch(err => console.error("Erreur lors de l'envoi :", err));
+    }
+
+
+
+
+    // --- GRILLE MAGNÉTIQUE & DRAG ---
+    function makeDraggable(el) {
+        let p1 = 0, p2 = 0, p3 = 0, p4 = 0;
+        const trigger = el.classList.contains('window') ? el.querySelector('.win-header') : el;
+
+        trigger.onmousedown = (e) => {
+            if (el.classList.contains('window')) el.style.zIndex = 1000;
+            e.preventDefault();
+            p3 = e.clientX; 
+            p4 = e.clientY;
+
+            document.onmousemove = (e) => {
+                p1 = p3 - e.clientX; 
+                p2 = p4 - e.clientY;
+                p3 = e.clientX; 
+                p4 = e.clientY;
+                
+                // Pendant le mouvement, l'icône suit la souris librement
+                el.style.top = (el.offsetTop - p2) + "px";
+                el.style.left = (el.offsetLeft - p1) + "px";
+            };
+
+            document.onmouseup = () => {
+                document.onmousemove = null;
+                
+                // --- LOGIQUE DE GRILLE ---
+                if (el.classList.contains('desktop-icon')) {
+                    // On arrondit la position au multiple de 100 (X) et 110 (Y) le plus proche
+                    const gridX = 100;
+                    const gridY = 110;
+                    
+                    let newX = Math.round(el.offsetLeft / gridX) * gridX;
+                    let newY = Math.round(el.offsetTop / gridY) * gridY;
+
+                    // Empêcher de sortir de l'écran (optionnel)
+                    if (newX < 0) newX = 0;
+                    if (newY < 0) newY = 0;
+
+                    el.style.left = newX + "px";
+                    el.style.top = newY + "px";
+                }
+            };
+        };
+    }
+
+    // --- GESTION LOGIQUE ---
+    function toggleApp(id) {
+        const idx = installed.indexOf(id);
+        if(idx === -1) {
+            // Installation
+            installed.push(id);
+        } else {
+            // Désinstallation
+            installed.splice(idx, 1);
+            
+            // --- AJOUT : Retirer du pin si désinstallé ---
+            const pinIdx = pinned.indexOf(id);
+            if (pinIdx !== -1) {
+                pinned.splice(pinIdx, 1);
+                localStorage.setItem('win_pinned', JSON.stringify(pinned));
+            }
+            // --------------------------------------------
+        }
+        
+        localStorage.setItem('win_installed', JSON.stringify(installed));
+        renderDesktop(); 
+        renderStore();
+        renderPinned(); // On rafraîchit la barre des tâches
+    }
+
+    function togglePin(id) {
+        const idx = pinned.indexOf(id);
+        if(idx === -1) pinned.push(id); else pinned.splice(idx, 1);
+        localStorage.setItem('win_pinned', JSON.stringify(pinned));
+        renderPinned(); renderStore();
+    }
+
+    function renderDesktop() {
+        const d = document.getElementById('desktop'); d.innerHTML = '';
+        installed.forEach((id, i) => {
+            const app = games.find(g => g.id === id);
+            if(!app) return;
+            const div = document.createElement('div');
+            div.className = 'desktop-icon';
+            
+            // Placement automatique sur la grille au démarrage
+            // On utilise des multiples de 100 (largeur) et 110 (hauteur)
+            div.style.left = (Math.floor(i / 5) * 100) + "px";
+            div.style.top = ((i % 5) * 110) + "px";
+            
+            div.innerHTML = `<img ondblclick="sendGameView('${app.name}');setTimeout(() => window.open('${app.link}', '_self'), 1000)" src="${app.img}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/6831/6831000.png'"><span>${app.title}</span>`;
+            makeDraggable(div);
+            d.appendChild(div);
+        });
+    }
+
+    function renderPinned() {
+        const p = document.getElementById('pinned-bar');
+        // On définit ici les icônes qui sont TOUJOURS présentes (Bleu, Paramètres, Rouge)
+        p.innerHTML = `
+            <div class="tb-item" onclick="toggleWin('win-store')">
+                <i class="fas fa-bag-shopping" style="color: white; font-size: 20px;"></i>
+            </div>
+            <div class="tb-item" onclick="toggleWin('win-settings')">
+                <i class="fas fa-cog" style="color: #a0a4a7; font-size: 20px;"></i>
+            </div>
+            <div class="tb-item" onclick="window.open('FDPrice_Systeme/boutique.html','_self')">
+                <i class="fas fa-coins" style="color: yellow; font-size: 20px;"></i>
+            </div>
+            <div class="tb-item" onclick="window.musique_show = 1;console.log(window.musique_show)">
+                <i class="fas fa-music" style="color: green; font-size: 20px;"></i>
+            </div>
+        `;
+
+        // On ajoute ensuite les applications que l'utilisateur a épinglées
+        pinned.forEach(id => {
+            const app = games.find(g => g.id === id);
+            if(!app) return;
+            p.innerHTML += `<div onclick="sendGameView('${app.name}');setTimeout(() => window.open('${app.link}', '_self'), 1000)" class="tb-item" title="${app.title}"><img src="${app.img}"></div>`;
+        });
+    }
+
+    function renderStore() {
+        const s = document.getElementById('store-list'); s.innerHTML = '';
+        games.forEach(app => {
+            const isIns = installed.includes(app.id);
+            const isPin = pinned.includes(app.id);
+            const card = document.createElement('div');
+            card.className = 'app-card';
+            // ✅ data-genre utilisé pour le filtre
+            card.setAttribute('data-genre', app.genre);
+            card.innerHTML = `
+                <img src="${app.img}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/6831/6831000.png'">
+                <div class="card-title" style="font-size:13px; font-weight:600;">${app.title}</div>
+                <div style="font-size:10px; opacity:0.6; margin-bottom:4px;">${app.genre}</div>
+                <div style="font-size:10px; opacity:0.6;">${counters[app.name] || 0} vues</div>
+                <button class="store-btn ${isIns ? 'btn-danger' : 'btn-install'}" onclick="toggleApp(${app.id})">
+                    ${isIns ? 'Désinstaller' : 'Installer'}
+                </button>
+                ${isIns ? `<button class="store-btn btn-pin" onclick="togglePin(${app.id})">${isPin ? 'Désépingler' : 'Épingler'}</button>` : ''}
+            `;
+            s.appendChild(card);
+        });
+    }
+
+    // --- HARDWARE & SYSTÈME ---
+    function initHardware() {
+        if (navigator.getBattery) {
+            navigator.getBattery().then(b => {
+                const updateB = () => {
+                    document.getElementById('batt-level').innerText = Math.round(b.level * 100) + "%";
+                    document.getElementById('batt-icon').className = b.charging ? "fas fa-battery-charging" : "fas fa-battery-full";
+                };
+                updateB(); b.onlevelchange = updateB; b.onchargingchange = updateB;
+            });
+        }
+        const updateWifi = () => {
+            document.getElementById('wifi-icon').className = navigator.onLine ? "fas fa-wifi" : "fas fa-wifi-slash";
+        };
+        window.addEventListener('online', updateWifi); window.addEventListener('offline', updateWifi);
+        updateWifi();
+    }
+
+    function applyWall() {
+        const url = document.getElementById('wall-input').value;
+        if(url) {
+            document.body.style.backgroundImage = `url('${url}')`;
+            sessionStorage.setItem('win_wallpaper', url);
+        }
+    }
+
+    function logout() {
+        window.location.href = "connecte.html";
+    }
+
+    function updateClock() {
+        const n = new Date();
+        document.getElementById('clock-time').innerText = n.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('clock-date').innerText = n.toLocaleDateString();
+    }
+
+    function toggleWin(id) {
+        const w = document.getElementById(id);
+        w.style.display = (w.style.display === 'flex') ? 'none' : 'flex';
+        if(w.style.display === 'flex') makeDraggable(w);
+    }
+</script>
+
+</body>
+</html>

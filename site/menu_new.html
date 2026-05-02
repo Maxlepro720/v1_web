@@ -28,7 +28,7 @@
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            padding-bottom: calc(var(--bar-h) + 30px);
+            padding-bottom: calc(var(--bar-h) + 50px);
             overflow-x: hidden;
         }
 
@@ -79,25 +79,11 @@
         /* ─── HERO / SEARCH ZONE ─── */
         .hero {
             position: relative; z-index: 10;
-            padding: 50px 48px 30px;
+            padding: 28px 48px 24px;
         }
-        .hero h1 {
-            font-family: 'Syne', sans-serif;
-            font-size: clamp(36px, 5vw, 64px);
-            font-weight: 800;
-            line-height: 1.05;
-            letter-spacing: -2px;
-            max-width: 600px;
-        }
-        .hero h1 em {
-            font-style: normal;
-            color: transparent;
-            -webkit-text-stroke: 1px var(--accent);
-        }
-        .hero p { color: var(--muted); margin-top: 12px; font-size: 15px; max-width: 420px; }
 
         .search-bar {
-            display: flex; gap: 12px; margin-top: 30px;
+            display: flex; gap: 12px;
             max-width: 580px;
         }
         .search-wrap {
@@ -332,17 +318,7 @@
         #settings-panel h2 { font-family:'Syne',sans-serif; font-size:18px; margin-bottom:20px; }
         .setting-group { margin-bottom:20px; }
         .setting-group label { font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); display:block; margin-bottom:8px; }
-        .setting-group input[type=text] {
-            width:100%; padding:11px 14px; background:rgba(0,0,0,.3);
-            border:1px solid var(--border); color:var(--text); border-radius:10px;
-            font-size:13px; outline:none; font-family:'DM Sans',sans-serif;
-        }
         .setting-group input[type=range] { width:100%; cursor:pointer; accent-color:var(--accent); }
-        .setting-group .apply-btn {
-            margin-top:10px; width:100%; padding:11px; background:var(--accent);
-            color:#fff; border:none; border-radius:10px; cursor:pointer;
-            font-weight:600; font-family:'DM Sans',sans-serif;
-        }
         .user-preview {
             display:flex; align-items:center; gap:14px;
             background:rgba(0,0,0,.2); padding:14px; border-radius:12px;
@@ -361,6 +337,128 @@
             color:var(--muted);
         }
         .empty-state i { font-size:40px; margin-bottom:16px; display:block; }
+
+        /* ─── GAME PLAYER — POKI STYLE ─── */
+
+        /* When a game is open, page switches to a two-column layout */
+        #main-content {
+            transition: all .3s ease;
+        }
+
+        /* The poki-style page: player left, games right */
+        #poki-layout {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 5000;
+            background: var(--bg);
+            flex-direction: row;
+            overflow: hidden;
+            /* Push content up so taskbar (z-index 99999) floats on top visually */
+        }
+        #poki-layout.active { display: flex; }
+
+        /* LEFT: game player */
+        #poki-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+            min-width: 0;
+            padding-bottom: calc(var(--bar-h) + 16px);
+        }
+
+        .poki-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 14px;
+            height: 44px; min-height: 44px; flex-shrink: 0;
+            background: rgba(8,11,16,.98);
+            border-bottom: 1px solid var(--border);
+        }
+        .poki-title {
+            font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .poki-title .sub { opacity: .4; font-size: 11px; font-weight: 400; }
+        .poki-actions { display: flex; gap: 6px; }
+        .poki-btn {
+            padding: 6px 12px; border: none; border-radius: 8px; cursor: pointer;
+            font-size: 12px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+            display: flex; align-items: center; gap: 5px; transition: all .15s;
+        }
+        .poki-btn-fs  { background: rgba(255,255,255,.08); color: var(--text); }
+        .poki-btn-fs:hover  { background: rgba(255,255,255,.16); }
+        .poki-btn-close { background: rgba(232,17,35,.18); color: #ff5f5f; }
+        .poki-btn-close:hover { background: rgba(232,17,35,.35); }
+
+        #game-frame-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        #game-frame {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            border: none; display: block;
+        }
+
+        /* RIGHT: scrollable game list sidebar */
+        #poki-right {
+            width: 280px;
+            flex-shrink: 0;
+            background: var(--surface);
+            border-left: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            padding-bottom: calc(var(--bar-h) + 16px);
+        }
+        .poki-sidebar-header {
+            padding: 14px 16px 10px;
+            font-family: 'Syne', sans-serif;
+            font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 2px;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .poki-game-list {
+            flex: 1; overflow-y: auto; padding: 10px;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .poki-game-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 10px; border-radius: 10px;
+            cursor: pointer; border: 1px solid transparent;
+            transition: all .15s;
+        }
+        .poki-game-item:hover { background: var(--surface2); border-color: var(--border); }
+        .poki-game-item.playing { background: rgba(230,62,47,.1); border-color: rgba(230,62,47,.3); }
+        .poki-game-item img {
+            width: 40px; height: 40px; border-radius: 8px;
+            object-fit: cover; flex-shrink: 0;
+        }
+        .poki-game-info { flex: 1; min-width: 0; }
+        .poki-game-name {
+            font-size: 13px; font-weight: 600;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .poki-game-genre { font-size: 11px; color: var(--muted); margin-top: 2px; }
+        .poki-play-icon {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: var(--accent); display: flex; align-items: center; justify-content: center;
+            font-size: 10px; color: white; flex-shrink: 0;
+            opacity: 0; transition: opacity .15s;
+        }
+        .poki-game-item:hover .poki-play-icon { opacity: 1; }
+        .poki-game-item.playing .poki-play-icon { opacity: 1; background: rgba(230,62,47,.6); }
+
+        /* FULLSCREEN: hide sidebar, take whole screen */
+        #poki-layout.fs {
+            bottom: 0;
+            z-index: 99999;
+        }
+        #poki-layout.fs #poki-right { display: none; }
+        #poki-layout.fs #poki-left { padding-bottom: 0; }
 
         /* ─── SCROLLBAR ─── */
         ::-webkit-scrollbar { width:6px; }
@@ -402,8 +500,6 @@
 
     <!-- HERO -->
     <section class="hero">
-        <h1>Joue.<br><em>Explore.</em><br>Domine.</h1>
-        <p>Tous tes jeux au même endroit. Installe, épingle, lance.</p>
         <div class="search-bar">
             <div class="search-wrap">
                 <i class="fas fa-search"></i>
@@ -421,6 +517,36 @@
     <!-- GAMES -->
     <div class="section-label">— Catalogue complet</div>
     <div class="games-grid" id="store-list"></div>
+
+    <!-- GAME PLAYER — POKI LAYOUT -->
+    <div id="poki-layout">
+        <!-- LEFT: iframe player -->
+        <div id="poki-left">
+            <div class="poki-header">
+                <div class="poki-title">
+                    <i class="fas fa-gamepad" style="color:var(--accent)"></i>
+                    <span id="game-overlay-name">Jeu</span>
+                    <span class="sub">— GameHub</span>
+                </div>
+                <div class="poki-actions">
+                    <button class="poki-btn poki-btn-fs" id="fs-btn" onclick="toggleFullscreen()">
+                        <i class="fas fa-expand"></i> Grand écran
+                    </button>
+                    <button class="poki-btn poki-btn-close" onclick="closeGame()">
+                        <i class="fas fa-times"></i> Fermer
+                    </button>
+                </div>
+            </div>
+            <div id="game-frame-container">
+                <iframe id="game-frame" src="" allowfullscreen></iframe>
+            </div>
+        </div>
+        <!-- RIGHT: sidebar with other games -->
+        <div id="poki-right">
+            <div class="poki-sidebar-header">Autres jeux</div>
+            <div class="poki-game-list" id="poki-game-list"></div>
+        </div>
+    </div>
 
     <!-- TASKBAR -->
     <div id="taskbar">
@@ -479,11 +605,6 @@
             </div>
         </div>
         <div class="setting-group">
-            <label>Arrière-plan (URL)</label>
-            <input type="text" id="wall-input" placeholder="https://exemple.jpeg">
-            <button class="apply-btn" onclick="applyWall()">Appliquer</button>
-        </div>
-        <div class="setting-group">
             <label>Luminosité</label>
             <input type="range" id="brightness-slider" min="30" max="100" value="100" oninput="updateBrightness(this.value)">
         </div>
@@ -527,11 +648,9 @@
                 document.getElementById('settings-avatar').src = savedAvatar;
             }
 
-            const username = localStorage.getItem('username');
-            if (username) {
-                document.getElementById('display-username').textContent = username;
-                document.getElementById('settings-username').textContent = username;
-            }
+            const username = localStorage.getItem('username') || 'Utilisateur';
+            document.getElementById('display-username').textContent = username;
+            document.getElementById('settings-username').textContent = username;
 
             populateCategoryFilter();
             buildTags();
@@ -630,20 +749,12 @@
                     <div class="card-body">
                         <div class="card-title">${app.title}</div>
                         <div class="card-actions">
-                            ${isIns
-                                ? `<button class="btn btn-play" onclick="launchGame('${app.name}','${app.link}')">
-                                       <i class="fas fa-play"></i> Jouer
-                                   </button>
-                                   <button class="btn ${isPin ? 'btn-pinned' : 'btn-pin'}" onclick="togglePin(${app.id})" title="${isPin?'Désépingler':'Épingler'}">
-                                       <i class="fas fa-thumbtack"></i>
-                                   </button>
-                                   <button class="btn btn-uninstall" onclick="toggleApp(${app.id})" title="Désinstaller">
-                                       <i class="fas fa-trash"></i>
-                                   </button>`
-                                : `<button class="btn btn-install" onclick="toggleApp(${app.id})">
-                                       <i class="fas fa-download"></i> Installer
-                                   </button>`
-                            }
+                            <button class="btn btn-play" onclick="launchGame('${app.name}','${app.link}','${app.title.replace(/'/g,"\\'")}',${app.id})">
+                                <i class="fas fa-play"></i> Jouer
+                            </button>
+                            <button class="btn ${isPin ? 'btn-pinned' : 'btn-pin'}" onclick="togglePin(${app.id})" title="${isPin?'Désépingler':'Épingler'}">
+                                <i class="fas fa-thumbtack"></i>
+                            </button>
                         </div>
                     </div>
                 `;
@@ -662,14 +773,76 @@
                 div.className = 'tb-item';
                 div.title = app.title;
                 div.innerHTML = `<img src="${app.img}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/6831/6831000.png'">`;
-                div.onclick = () => launchGame(app.name, app.link);
+                div.onclick = () => launchGame(app.name, app.link, app.title, app.id);
                 bar.appendChild(div);
             });
         }
 
-        function launchGame(name, link) {
+        let currentGameId = null;
+
+        function launchGame(name, link, title, id) {
             sendGameView(name);
-            setTimeout(() => window.open(link, '_self'), 300);
+            currentGameId = id;
+            document.getElementById('game-overlay-name').textContent = title || name;
+            document.getElementById('game-frame').src = link;
+            const layout = document.getElementById('poki-layout');
+            layout.classList.add('active');
+            layout.classList.remove('fs');
+            document.getElementById('fs-btn').innerHTML = '<i class="fas fa-expand"></i> Grand écran';
+            document.body.style.overflow = 'hidden';
+            renderPokiSidebar();
+        }
+
+        function closeGame() {
+            const layout = document.getElementById('poki-layout');
+            layout.classList.remove('active', 'fs');
+            document.getElementById('game-frame').src = '';
+            currentGameId = null;
+            document.body.style.overflow = '';
+            if (document.fullscreenElement) document.exitFullscreen();
+        }
+
+        function toggleFullscreen() {
+            const layout = document.getElementById('poki-layout');
+            const isFs = layout.classList.contains('fs');
+            if (!isFs) {
+                layout.classList.add('fs');
+                layout.requestFullscreen().catch(() => {});
+                document.getElementById('fs-btn').innerHTML = '<i class="fas fa-compress"></i> Réduire';
+            } else {
+                layout.classList.remove('fs');
+                if (document.fullscreenElement) document.exitFullscreen();
+                document.getElementById('fs-btn').innerHTML = '<i class="fas fa-expand"></i> Grand écran';
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                document.getElementById('poki-layout').classList.remove('fs');
+                document.getElementById('fs-btn').innerHTML = '<i class="fas fa-expand"></i> Grand écran';
+            }
+        });
+
+        function renderPokiSidebar() {
+            const list = document.getElementById('poki-game-list');
+            list.innerHTML = '';
+            games.forEach(app => {
+                const isPlaying = app.id === currentGameId;
+                const item = document.createElement('div');
+                item.className = 'poki-game-item' + (isPlaying ? ' playing' : '');
+                item.innerHTML = `
+                    <img src="${app.img}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/6831/6831000.png'">
+                    <div class="poki-game-info">
+                        <div class="poki-game-name">${app.title}</div>
+                        <div class="poki-game-genre">${app.genre}</div>
+                    </div>
+                    <div class="poki-play-icon"><i class="fas fa-play"></i></div>
+                `;
+                if (!isPlaying) {
+                    item.onclick = () => launchGame(app.name, app.link, app.title, app.id);
+                }
+                list.appendChild(item);
+            });
         }
 
         // ─── INSTALL / PIN ───
@@ -704,14 +877,6 @@
         function toggleSettings() {
             settingsOpen = !settingsOpen;
             document.getElementById('settings-panel').style.display = settingsOpen ? 'block' : 'none';
-        }
-
-        function applyWall() {
-            const url = document.getElementById('wall-input').value;
-            if (url) {
-                document.body.style.backgroundImage = `url('${url}')`;
-                sessionStorage.setItem('win_wallpaper', url);
-            }
         }
 
         function updateBrightness(val) {

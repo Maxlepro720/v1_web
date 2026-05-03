@@ -2,354 +2,481 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Écran de Connexion Style Windows</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>GameHub — Connexion</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
-        /* --- CSS : Le Design (Inchangé) --- */
         :root {
-            --primary-color: #0078d4;
-            --glass-bg: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --text-color: white;
+            --bg: #080b10;
+            --surface: #0f1520;
+            --surface2: #161e2e;
+            --border: rgba(255,255,255,0.07);
+            --accent: #e63e2f;
+            --accent2: #ff6b3d;
+            --gold: #f5c842;
+            --text: #e8eaf0;
+            --muted: #5a6070;
+            --radius: 16px;
         }
 
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body { width: 100%; min-height: 100%; }
+
         body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
-            background-size: cover;
-            height: 100vh;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            overflow: hidden;
-            color: var(--text-color);
+            justify-content: center;
+            padding: 16px 16px 60px;
+            overflow-x: hidden;
         }
 
         body::before {
             content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(8px);
-            z-index: -1;
+            position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 0; opacity: .35;
         }
 
-        .container {
+        .bg-glow { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; }
+        .bg-glow-1 { width: 500px; height: 500px; top: -200px; left: -200px; background: radial-gradient(circle, rgba(230,62,47,0.07) 0%, transparent 70%); }
+        .bg-glow-2 { width: 400px; height: 400px; bottom: -100px; right: -100px; background: radial-gradient(circle, rgba(230,62,47,0.05) 0%, transparent 70%); }
+
+        /* ─── LAYOUT ─── */
+        .page-wrap {
+            position: relative; z-index: 10;
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 320px;
-            text-align: center;
-            position: relative;
-        }
-
-        .avatar {
-            width: 120px;
-            height: 120px;
-            background-color: rgba(255,255,255,0.2);
-            border-radius: 50%;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 60px;
-            border: 2px solid rgba(255,255,255,0.3);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        .username-display {
-            font-size: 2rem;
-            font-weight: 300;
-            margin-bottom: 20px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .form-box {
             width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            transition: all 0.3s ease;
+            max-width: 800px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
         }
 
-        .input-group {
-            position: relative;
-            width: 100%;
+        /* ─── LEFT ─── */
+        .left-panel {
+            flex: 1; min-width: 0;
+            background: var(--surface);
+            padding: 40px 36px;
+            display: flex; flex-direction: column;
+            justify-content: space-between;
+            position: relative; overflow: hidden;
+        }
+        .left-panel::after {
+            content: ''; position: absolute; top: -60px; right: -60px;
+            width: 200px; height: 200px; border-radius: 50%;
+            border: 1px solid rgba(230,62,47,0.12); pointer-events: none;
         }
 
-        input {
-            width: 100%;
-            padding: 10px 15px;
-            border: 2px solid transparent;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 4px;
-            font-size: 1rem;
-            outline: none;
-            box-sizing: border-box;
-            transition: 0.2s;
+        .logo {
+            font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800;
+            letter-spacing: -0.5px; display: flex; align-items: center; gap: 9px;
+        }
+        .logo-dot {
+            width: 9px; height: 9px; border-radius: 50%;
+            background: var(--accent); box-shadow: 0 0 12px var(--accent);
+            animation: pulse 2s infinite; flex-shrink: 0;
+        }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.3)} }
+
+        .left-tagline {
+            flex: 1; display: flex; flex-direction: column;
+            justify-content: center; padding: 32px 0;
+        }
+        .left-tagline h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(24px, 3vw, 34px);
+            font-weight: 800; line-height: 1.15;
+            letter-spacing: -1px; margin-bottom: 12px;
+        }
+        .left-tagline h1 span { color: var(--accent); }
+        .left-tagline p { font-size: 13px; color: var(--muted); line-height: 1.7; max-width: 230px; }
+
+        .thumb-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 8px; }
+        .left-thumbs { display: flex; gap: 7px; align-items: center; }
+        .game-thumb {
+            width: 38px; height: 38px; border-radius: 9px;
+            background: var(--surface2); border: 1px solid var(--border);
+            overflow: hidden; opacity: 0.55; transition: opacity .2s;
+        }
+        .game-thumb:hover { opacity: 1; }
+        .game-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .game-count {
+            width: 38px; height: 38px; border-radius: 9px;
+            background: var(--surface2); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 600; color: var(--muted);
         }
 
-        input:focus {
-            background: white;
-            border-color: var(--primary-color);
-            border-bottom-width: 4px;
+        /* ─── RIGHT ─── */
+        .right-panel {
+            width: 330px; flex-shrink: 0;
+            background: var(--surface2);
+            border-left: 1px solid var(--border);
+            padding: 36px 28px;
+            display: flex; flex-direction: column;
         }
 
-        .btn-submit {
-            background-color: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid white;
-            padding: 8px 20px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: 0.2s;
-            margin-top: 10px;
+        .form-avatar {
+            width: 46px; height: 46px; border-radius: 50%;
+            background: var(--surface); border: 2px solid var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 17px; color: var(--muted); margin-bottom: 20px;
+            box-shadow: 0 0 16px rgba(230,62,47,0.18);
         }
 
-        .btn-submit:hover {
-            background-color: white;
-            color: black;
+        .eyebrow { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; color: var(--accent); margin-bottom: 5px; }
+        .form-title { font-family: 'Syne', sans-serif; font-size: 19px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 4px; }
+        .form-sub { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+
+        .form-group { margin-bottom: 11px; }
+        .form-group label { display: block; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 5px; }
+        .input-wrap { position: relative; }
+        .input-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 12px; pointer-events: none; }
+        .input-wrap input {
+            width: 100%; padding: 10px 12px 10px 35px;
+            background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+            color: var(--text); border-radius: 10px;
+            font-size: 13px; font-family: 'DM Sans', sans-serif;
+            outline: none; transition: border-color .2s, background .2s;
+        }
+        .input-wrap input:focus { border-color: var(--accent); background: rgba(0,0,0,0.45); }
+        .input-wrap input::placeholder { color: var(--muted); }
+
+        .btn-main {
+            width: 100%; padding: 11px; background: var(--accent); color: #fff; border: none;
+            border-radius: 10px; font-size: 13px; font-weight: 600;
+            font-family: 'DM Sans', sans-serif; cursor: pointer; margin-top: 6px;
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            transition: background .2s, transform .15s;
+        }
+        .btn-main:hover { background: var(--accent2); }
+        .btn-main:active { transform: scale(0.98); }
+
+        .divider { display: flex; align-items: center; gap: 8px; margin: 12px 0; }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .divider span { font-size: 10px; color: var(--muted); }
+
+        .btn-guest {
+            width: 100%; padding: 10px; background: transparent;
+            color: var(--muted); border: 1px solid var(--border);
+            border-radius: 10px; font-size: 13px; font-weight: 500;
+            font-family: 'DM Sans', sans-serif; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            transition: background .2s, border-color .2s, color .2s;
+        }
+        .btn-guest:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); color: var(--text); }
+
+        .toggle-link { text-align: center; margin-top: 14px; font-size: 12px; color: var(--muted); }
+        .toggle-link a { color: var(--accent); text-decoration: none; font-weight: 500; }
+        .toggle-link a:hover { text-decoration: underline; }
+
+        #loadingSpinner { display: none; flex: 1; align-items: center; justify-content: center; flex-direction: column; gap: 13px; }
+        .loader { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Footer */
+        .footer-bar {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 42px;
+            background: rgba(15,21,32,0.92); border-top: 1px solid var(--border);
+            backdrop-filter: blur(20px); display: flex; align-items: center;
+            justify-content: flex-end; padding: 0 24px; gap: 20px; z-index: 50;
+        }
+        .footer-bar i { color: var(--muted); font-size: 13px; cursor: pointer; transition: color .2s; }
+        .footer-bar i:hover { color: var(--text); }
+
+        /* Security popup */
+        #securityPopup {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.78);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; backdrop-filter: blur(6px);
+            transition: opacity .3s; padding: 16px;
+        }
+        .sec-card {
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 24px 22px;
+            max-width: 330px; width: 100%;
+        }
+        .sec-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25);
+            color: #4ade80; padding: 4px 10px; border-radius: 20px;
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; margin-bottom: 12px;
+        }
+        .sec-card h3 { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+        .sec-card p { font-size: 12px; color: var(--muted); line-height: 1.7; margin-bottom: 10px; }
+        .sec-warn { background: rgba(245,200,66,0.08); border-left: 3px solid var(--gold); padding: 9px 11px; border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+        .sec-warn strong { display: block; color: var(--gold); font-size: 10px; margin-bottom: 3px; }
+        .sec-warn span { font-size: 11px; color: var(--muted); }
+        .sec-confirm { width: 100%; padding: 10px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background .2s; }
+        .sec-confirm:hover { background: var(--accent2); }
+        .sec-footer { text-align: center; margin-top: 10px; font-size: 10px; color: var(--muted); }
+
+        .hidden { display: none !important; }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 640px) {
+            body { padding: 12px 12px 56px; justify-content: flex-start; padding-top: 20px; }
+
+            .page-wrap { flex-direction: column; max-width: 100%; }
+
+            .left-panel {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                padding: 18px 20px;
+                gap: 12px;
+            }
+            .left-tagline, .left-bottom { display: none; }
+            .left-panel::after { display: none; }
+
+            .right-panel {
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid var(--border);
+                padding: 22px 20px 26px;
+            }
         }
 
-        .toggle-link {
-            margin-top: 15px;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.8);
-            cursor: pointer;
-            text-decoration: none;
-        }
-        
-        .toggle-link:hover {
-            text-decoration: underline;
-            color: white;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .footer-icons {
-            position: absolute;
-            bottom: 30px;
-            right: 30px;
-            display: flex;
-            gap: 20px;
-            font-size: 1.5rem;
-            opacity: 0.8;
-        }
-
-        .loader {
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top: 4px solid white;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @media (max-width: 360px) {
+            body { padding: 8px 8px 52px; }
+            .right-panel { padding: 18px 16px 22px; }
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    
-    <div class="container">
-        <div class="avatar">
-            <i class="fas fa-user"></i>
+
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <div class="page-wrap">
+
+        <!-- LEFT -->
+        <div class="left-panel">
+            <div class="logo">
+                <div class="logo-dot"></div>
+                GameHub
+            </div>
+            <div class="left-tagline">
+                <h1>Joue.<br><span>Explore.</span><br>Domine.</h1>
+                <p>Accède à tout le catalogue de jeux depuis un seul endroit. Rapide, fluide, sans installation.</p>
+            </div>
+            <div class="left-bottom">
+                <div class="thumb-label">Catalogue</div>
+                <div class="left-thumbs">
+                    <div class="game-thumb"><img src="https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/naruto.jpg" alt=""></div>
+                    <div class="game-thumb"><img src="https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=204,height=204,fit=cover,f=auto/0c3d1446c6992c2b88a9498de054688b/level-devil.png" alt=""></div>
+                    <div class="game-thumb"><img src="https://www.notebookcheck.biz/fileadmin/Notebooks/News/_nc4/GTA5Logo.jpg" alt=""></div>
+                    <div class="game-count">+9</div>
+                </div>
+            </div>
         </div>
 
-        <div class="username-display" id="headerText">Utilisateur</div>
+        <!-- RIGHT -->
+        <div class="right-panel">
+            <div class="form-avatar"><i class="fas fa-user"></i></div>
 
-        <form id="loginForm" class="form-box">
-            <div class="input-group">
-                <input type="text" placeholder="Identifiant" id="loginUser" required>
-            </div>
-            <div class="input-group">
-                <input type="password" placeholder="Mot de passe" id="loginPass" required>
-            </div>
-            <button type="submit" class="btn-submit">Se connecter <i class="fas fa-arrow-right"></i></button>
-            <a href="#" class="toggle-link" onclick="toggleForm()">Pas encore de compte ? S'inscrire</a>
-        </form>
+            <!-- LOGIN -->
+            <form id="loginForm">
+                <div class="eyebrow">Bienvenue</div>
+                <div class="form-title">Connexion</div>
+                <div class="form-sub">Entrez vos identifiants pour accéder au hub.</div>
+                <div class="form-group">
+                    <label>Identifiant</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="loginUser" placeholder="Votre identifiant" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="loginPass" placeholder="••••••••" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-main"><i class="fas fa-gamepad"></i> Jouer maintenant</button>
+                <div class="divider"><span>ou</span></div>
+                <button type="button" class="btn-guest" onclick="continueAsGuest()"><i class="fas fa-ghost"></i> Continuer sans compte</button>
+                <div class="toggle-link">Pas encore de compte ? <a href="#" onclick="toggleForm()">S'inscrire</a></div>
+            </form>
 
-        <form id="registerForm" class="form-box hidden">
-            <div class="input-group">
-                <input type="text" placeholder="Choisir un identifiant" id="regUser" required>
-            </div>
-            <div class="input-group">
-                <input type="password" placeholder="Mot de passe" id="regPass" required>
-            </div>
-            <button type="submit" class="btn-submit">S'inscrire</button>
-            <a href="#" class="toggle-link" onclick="toggleForm()">Retour à la connexion</a>
-        </form>
+            <!-- REGISTER -->
+            <form id="registerForm" class="hidden">
+                <div class="eyebrow">Nouveau joueur</div>
+                <div class="form-title">Créer un compte</div>
+                <div class="form-sub">Rejoins la communauté en quelques secondes.</div>
+                <div class="form-group">
+                    <label>Identifiant</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="regUser" placeholder="Choisir un identifiant" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="regPass" placeholder="Choisir un mot de passe" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-main"><i class="fas fa-user-plus"></i> Créer mon compte</button>
+                <div class="divider"><span>ou</span></div>
+                <button type="button" class="btn-guest" onclick="continueAsGuest()"><i class="fas fa-ghost"></i> Continuer sans compte</button>
+                <div class="toggle-link">Déjà inscrit ? <a href="#" onclick="toggleForm()">Se connecter</a></div>
+            </form>
 
-        <div id="loadingSpinner" class="hidden">
-            <div class="loader"></div>
-            <p id="loadingText">Veuillez patienter...</p>
+            <!-- LOADING -->
+            <div id="loadingSpinner" style="display:none; flex:1; align-items:center; justify-content:center; flex-direction:column; gap:13px;">
+                <div class="loader"></div>
+                <p id="loadingText" style="font-size:13px; color:var(--muted);">Connexion en cours…</p>
+            </div>
         </div>
     </div>
-    
-    <div class="footer-icons">
+
+    <!-- FOOTER -->
+    <div class="footer-bar">
         <i class="fas fa-wifi"></i>
         <i class="fas fa-universal-access"></i>
-        <i style="cursor:pointer" onclick="window.close()" class="fas fa-power-off"></i>
+        <i class="fas fa-power-off" onclick="window.close()"></i>
+    </div>
+
+    <!-- SECURITY POPUP -->
+    <div id="securityPopup">
+        <div class="sec-card">
+            <div class="sec-badge"><i class="fas fa-shield-alt" style="font-size:10px;"></i> Sécurité</div>
+            <h3>Ton mot de passe est protégé</h3>
+            <p>Il est transformé via un <strong style="color:var(--text);">hachage SHA-256</strong> avant stockage — personne ne peut le lire ni le déchiffrer.</p>
+            <div class="sec-warn">
+                <strong>Conseil</strong>
+                <span>Utilise un mot de passe <strong style="color:var(--text);">unique</strong>. Ne réutilise jamais le même que sur un autre site.</span>
+            </div>
+            <button class="sec-confirm" onclick="closeSecurityPopup()">J'ai compris</button>
+            <div class="sec-footer">TLS 1.3 · AES-256</div>
+        </div>
     </div>
 
     <script>
-        /* --- SYSTÈME DE CONNECTE INTÉGRÉ --- */
-
-        const PAGE_ID = "2000"; 
-        const loginForm = document.getElementById('loginForm');
+        const PAGE_ID = "2000";
+        const loginForm    = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');
-        const headerText = document.getElementById('headerText');
-        const spinner = document.getElementById('loadingSpinner');
-        const loadingText = document.getElementById('loadingText');
+        const spinner      = document.getElementById('loadingSpinner');
+        const loadingText  = document.getElementById('loadingText');
 
-        // 1. Vérification de version (Strictement conservé)
-        (async function() {
-            const API_URL_verif_version = "https://project-3-api-2bgb.onrender.com/get_latest_version";
-            try {
-                const response = await fetch(API_URL_verif_version);
-                const result = await response.json();
-                if (result.status !== "success" || !result.data) return;
-
-                const latestVersion = String(result.data.Version);
-                const savedVersion = localStorage.getItem(`version_${PAGE_ID}`);
-
-                if (!savedVersion) {
-                    localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
-                    return;
-                }
-
-                if (savedVersion !== latestVersion) {
-                    window.onbeforeunload = function() {
-                        localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
-                    };
-
-                    document.body.innerHTML = `
-                        <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:black;color:white;display:flex;justify-content:center;align-items:center;z-index:1000000;flex-direction:column;font-family:sans-serif;text-align:center;padding:20px;">
-                            <h1 style="font-size:32px;margin-bottom:15px;color:#00bfff;">Mise à jour requise</h1>
-                            <p style="color:#aaa;max-width:500px;line-height:1.6;">La version ${latestVersion} est disponible. Veuillez recharger la page pour appliquer les changements.</p>
-                            <button id="btn-update-now" style="margin-top:30px;padding:15px 40px;cursor:pointer;background:#00bfff;border:none;color:white;font-weight:bold;border-radius:12px;font-size:16px;box-shadow: 0 10px 20px rgba(0,191,255,0.3);">
-                                Mettre à jour et Recharger
-                            </button>
-                        </div>`;
-                    
-                    document.getElementById('btn-update-now').addEventListener('click', function() {
-                        localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
-                        window.location.reload(true);
-                    });
-                    throw new Error("Mise à jour bloquante");
-                }
-            } catch (error) {
-                if (error.message !== "Mise à jour bloquante") console.error("Erreur version:", error);
-            }
-        })();
-
-        // 2. Popup de Sécurité au démarrage (Style Windows Glass)
-        window.addEventListener('DOMContentLoaded', () => {
-            const popupHTML = `
-            <div id="securityPopup" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:9999; backdrop-filter:blur(5px); transition: 0.3s;">
-                <div style="background:rgba(255,255,255,0.1); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.2); padding:30px; border-radius:12px; max-width:380px; width:90%; color:white; text-align:left; box-shadow:0 25px 50px rgba(0,0,0,0.5); font-family: 'Segoe UI', sans-serif;">
-                    <div style="display:flex; align-items:center; gap:12px; color:#4ade80; margin-bottom:15px;">
-                        <span style="font-size:1.5rem;">🛡️</span>
-                        <strong style="font-size:1rem; text-transform:uppercase; letter-spacing:1px;">Informations de Securité</strong>
-                    </div>
-                    <p style="margin-bottom:15px; font-size:0.95rem; line-height:1.6; opacity:0.9;">
-                        Votre mot de passe est sécurisé par un <strong>hachage unidirectionnel SHA-256</strong>. Il est transformé en clé numérique avant stockage : personne ne peut le lire ni le déchiffrer.
-                    </p>
-                    <div style="background:rgba(255,160,0,0.2); border-left:4px solid #ffa000; padding:15px; border-radius:4px; margin-bottom:20px;">
-                        <strong style="display:block; margin-bottom:5px; color:#ffb74d;">Conseil de Securité :</strong>
-                        <span style="font-size:0.9rem;">Utilisez un mot de passe <strong>unique</strong>. Ne réutilisez jamais le même mot de passe que sur un autre site.</span>
-                    </div>
-                    <button 
-                        onclick="document.getElementById('securityPopup').style.opacity='0'; setTimeout(()=>document.getElementById('securityPopup').remove(), 300)" 
-                        onmouseover="this.style.background='black';this.style.color='white'; this.style.transform='scale(1.1)';" 
-                        onmouseout="this.style.background='white'; this.style.color='black'; this.style.transform='scale(1)';" 
-                        style="width:100%; background:white; color:black; border:none; padding:12px; border-radius:4px; font-weight:600; cursor:pointer; transition:0.2s; font-size:1rem;">
-                        J'ai compris
-                    </button>
-                <div style="margin-top:15px; text-align:center; font-size:0.7rem; opacity:0.5;">TLS 1.3 | Chiffrement AES-256</div>
-                </div>
-            </div>`;
-            document.body.insertAdjacentHTML('beforeend', popupHTML);
-        });
-
-        // Initialisation cookies (Conservé)
-        localStorage.setItem('cookies_accepted', 'false');
-
-        // Basculer entre Inscription et Connexion (Conservé)
-        function toggleForm() {
-            if (loginForm.classList.contains('hidden')) {
-                loginForm.classList.remove('hidden');
-                registerForm.classList.add('hidden');
-                headerText.textContent = "Utilisateur";
-            } else {
-                loginForm.classList.add('hidden');
-                registerForm.classList.remove('hidden');
-                headerText.textContent = "Créer un compte";
-            }
+        function closeSecurityPopup() {
+            const p = document.getElementById('securityPopup');
+            p.style.opacity = '0';
+            setTimeout(() => p.remove(), 300);
         }
 
-        // Fonction d'envoi API (Générique - Conservé)
-        async function sendAuthRequest(username, password, isLogin) {
-            const url = isLogin ? "https://project-3-api-2bgb.onrender.com/login" : "https://project-3-api-2bgb.onrender.com/signup";
-            const currentForm = isLogin ? loginForm : registerForm;
-            
-            currentForm.classList.add('hidden');
-            spinner.classList.remove('hidden');
-            loadingText.textContent = isLogin ? "Connexion..." : "Création du compte...";
+        function continueAsGuest() {
+            localStorage.setItem('username', 'Invité');
+            localStorage.removeItem('win_avatar');
+            window.location.href = "menu.html";
+        }
 
+        // Version check (conservé intégralement)
+        (async function() {
             try {
-                const response = await fetch(url, {
+                const res = await fetch("https://project-3-api-2bgb.onrender.com/get_latest_version");
+                const result = await res.json();
+                if (result.status !== "success" || !result.data) return;
+                const latestVersion = String(result.data.Version);
+                const savedVersion = localStorage.getItem(`version_${PAGE_ID}`);
+                if (!savedVersion) { localStorage.setItem(`version_${PAGE_ID}`, latestVersion); return; }
+                if (savedVersion !== latestVersion) {
+                    window.onbeforeunload = () => localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
+                    document.body.innerHTML = `
+                        <div style="position:fixed;inset:0;background:#080b10;color:#e8eaf0;display:flex;justify-content:center;align-items:center;flex-direction:column;font-family:'DM Sans',sans-serif;text-align:center;padding:20px;gap:12px;">
+                            <div style="font-size:10px;text-transform:uppercase;letter-spacing:3px;color:#e63e2f;">GameHub</div>
+                            <h1 style="font-family:'Syne',sans-serif;font-size:24px;letter-spacing:-1px;">Mise à jour disponible</h1>
+                            <p style="color:#5a6070;max-width:380px;line-height:1.7;">Version <strong style="color:#e8eaf0;">${latestVersion}</strong> disponible.</p>
+                            <button id="btn-update-now" style="padding:12px 30px;cursor:pointer;background:#e63e2f;border:none;color:white;font-weight:600;border-radius:12px;font-size:13px;font-family:'DM Sans',sans-serif;margin-top:8px;">Mettre à jour</button>
+                        </div>`;
+                    document.getElementById('btn-update-now').onclick = () => {
+                        localStorage.setItem(`version_${PAGE_ID}`, latestVersion);
+                        window.location.reload(true);
+                    };
+                    throw new Error("update-required");
+                }
+            } catch(e) { if (e.message !== "update-required") console.error(e); }
+        })();
+
+        localStorage.setItem('cookies_accepted', 'false');
+
+        function toggleForm() {
+            loginForm.classList.toggle('hidden');
+            registerForm.classList.toggle('hidden');
+        }
+
+        function showSpinner(msg) {
+            loginForm.classList.add('hidden');
+            registerForm.classList.add('hidden');
+            spinner.style.display = 'flex';
+            loadingText.textContent = msg;
+        }
+
+        function hideSpinner(form) {
+            spinner.style.display = 'none';
+            form.classList.remove('hidden');
+        }
+
+        async function sendAuthRequest(username, password, isLogin) {
+            const url = isLogin
+                ? "https://project-3-api-2bgb.onrender.com/login"
+                : "https://project-3-api-2bgb.onrender.com/signup";
+            const currentForm = isLogin ? loginForm : registerForm;
+            showSpinner(isLogin ? "Connexion en cours…" : "Création du compte…");
+            try {
+                const res = await fetch(url, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ id: username, password: password })
                 });
-                const result = await response.json();
-
+                const result = await res.json();
                 if (result.status === "success") {
                     localStorage.setItem("username", username);
                     if (isLogin) {
-                        headerText.textContent = `Bienvenue, ${username}`;
-                        setTimeout(() => { window.location.href = "menu.html"; }, 1000);
+                        loadingText.textContent = `Bienvenue, ${username} !`;
+                        setTimeout(() => { window.location.href = "menu.html"; }, 900);
                     } else {
                         alert("Compte créé avec succès !");
-                        spinner.classList.add('hidden');
-                        toggleForm();
+                        hideSpinner(loginForm);
+                        registerForm.classList.add('hidden');
                     }
                 } else {
                     alert(result.message || "Erreur lors de l'opération");
-                    resetUI(currentForm);
+                    hideSpinner(currentForm);
                 }
-            } catch (err) {
+            } catch(err) {
                 alert("Erreur réseau : " + err);
-                resetUI(currentForm);
+                hideSpinner(currentForm);
             }
         }
 
-        function resetUI(form) {
-            spinner.classList.add('hidden');
-            form.classList.remove('hidden');
-        }
-
-        // Event Listeners (Conservé)
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', e => {
             e.preventDefault();
-            sendAuthRequest(document.getElementById('loginUser').value.trim(), document.getElementById('loginPass').value.trim(), true);
+            sendAuthRequest(
+                document.getElementById('loginUser').value.trim(),
+                document.getElementById('loginPass').value.trim(),
+                true
+            );
         });
 
-        registerForm.addEventListener('submit', (e) => {
+        registerForm.addEventListener('submit', e => {
             e.preventDefault();
-            sendAuthRequest(document.getElementById('regUser').value.trim(), document.getElementById('regPass').value.trim(), false);
+            sendAuthRequest(
+                document.getElementById('regUser').value.trim(),
+                document.getElementById('regPass').value.trim(),
+                false
+            );
         });
     </script>
 </body>

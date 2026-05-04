@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GameHub</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=Inter:wght@300;400;500&family=Roboto:wght@300;400;500&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #080b10;
@@ -37,6 +37,12 @@
             position: fixed; inset: 0;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
             pointer-events: none; z-index: 0; opacity: .35;
+        }
+
+        /* ─── NO ANIM ─── */
+        body.no-anim *, body.no-anim *::before, body.no-anim *::after {
+            animation: none !important;
+            transition: none !important;
         }
 
         /* ─── HEADER ─── */
@@ -75,7 +81,6 @@
         }
         .header-user span { font-size: 14px; font-weight: 500; }
 
-        /* Bouton connexion invité */
         .header-login-btn {
             display: flex; align-items: center; gap: 8px;
             background: var(--accent); color: #fff;
@@ -238,7 +243,9 @@
             z-index: 99999;
             box-shadow: 0 8px 40px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04) inset;
             white-space: nowrap;
+            transition: opacity .3s, transform .3s;
         }
+        #taskbar.hidden { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(20px); }
 
         .tb-sep { width: 1px; height: 28px; background: var(--border); margin: 0 6px; }
 
@@ -299,26 +306,106 @@
         #settings-panel {
             display: none; position: fixed;
             right: 0; bottom: calc(var(--bar-h) + 24px);
-            width: 340px; background: var(--surface2);
+            width: 360px; background: var(--surface2);
             border: 1px solid var(--border);
             border-radius: var(--radius) 0 0 var(--radius);
             padding: 24px; z-index: 9999;
             box-shadow: -20px 0 60px rgba(0,0,0,.5);
             animation: slideIn .2s ease;
+            max-height: 80vh;
+            overflow-y: auto;
         }
         @keyframes slideIn { from{transform:translateX(40px);opacity:0} to{transform:translateX(0);opacity:1} }
+
         #settings-panel h2 { font-family:'Syne',sans-serif; font-size:18px; margin-bottom:20px; }
-        .setting-group { margin-bottom:20px; }
-        .setting-group label { font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); display:block; margin-bottom:8px; }
-        .setting-group input[type=range] { width:100%; cursor:pointer; accent-color:var(--accent); }
+
         .user-preview {
             display:flex; align-items:center; gap:14px;
             background:rgba(0,0,0,.2); padding:14px; border-radius:12px;
             margin-bottom:20px; border:1px solid var(--border);
         }
         .user-preview img { width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid var(--accent); cursor:pointer; }
+
         .close-settings { float:right; background:transparent; border:none; color:var(--muted); cursor:pointer; font-size:18px; }
         .close-settings:hover { color:var(--text); }
+
+        /* ─── SETTINGS GROUPS ─── */
+        .settings-section-title {
+            font-size: 10px; text-transform: uppercase; letter-spacing: 2px;
+            color: var(--muted); margin: 20px 0 10px;
+            padding-bottom: 6px; border-bottom: 1px solid var(--border);
+        }
+
+        .setting-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.04);
+            gap: 12px;
+        }
+        .setting-row:last-child { border-bottom: none; }
+
+        .setting-left { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+        .setting-name { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 7px; }
+        .setting-name span.ico { font-size: 15px; }
+        .setting-desc { font-size: 11px; color: var(--muted); }
+
+        .setting-ctrl { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+
+        /* Range slider */
+        .setting-ctrl input[type=range] {
+            width: 90px; cursor: pointer; accent-color: var(--accent);
+            height: 4px;
+        }
+        .range-val {
+            font-size: 11px; color: var(--muted); min-width: 28px; text-align: right;
+        }
+
+        /* Color picker */
+        .setting-ctrl input[type=color] {
+            width: 32px; height: 28px; border: none; background: none;
+            cursor: pointer; border-radius: 6px; padding: 0;
+        }
+
+        /* Select */
+        .setting-ctrl select {
+            background: rgba(0,0,0,.3); border: 1px solid var(--border);
+            color: var(--text); border-radius: 8px; padding: 5px 8px;
+            font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+            outline: none; max-width: 130px;
+        }
+
+        /* Toggle switch */
+        .toggle-switch {
+            width: 40px; height: 22px; border-radius: 11px;
+            background: rgba(255,255,255,.1);
+            border: 1px solid var(--border);
+            position: relative; cursor: pointer;
+            transition: background .25s;
+            flex-shrink: 0;
+        }
+        .toggle-switch.on { background: var(--accent); border-color: var(--accent); }
+        .toggle-switch::after {
+            content: '';
+            position: absolute; top: 3px; left: 3px;
+            width: 14px; height: 14px;
+            border-radius: 50%; background: #fff;
+            transition: transform .25s;
+        }
+        .toggle-switch.on::after { transform: translateX(18px); }
+
+        /* Reset button */
+        .reset-btn {
+            width: 100%; padding: 10px; border-radius: 10px; cursor: pointer;
+            background: rgba(230,62,47,.1); color: #ff5f5f;
+            border: 1px solid rgba(230,62,47,.25); font-size: 13px;
+            font-family: 'DM Sans', sans-serif; font-weight: 600;
+            margin-top: 16px; transition: background .2s;
+        }
+        .reset-btn:hover { background: rgba(230,62,47,.2); }
+
+        .settings-version {
+            font-size: 11px; color: var(--muted);
+            border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px;
+        }
 
         /* ─── EMPTY STATE ─── */
         .empty-state { grid-column: 1/-1; text-align:center; padding:60px 20px; color:var(--muted); }
@@ -413,7 +500,6 @@
             to   { opacity:1; transform:translateY(0); }
         }
 
-
         .blocked_button {
             pointer-events: none;
             padding-left: 10px;
@@ -428,7 +514,6 @@
             <div class="logo-dot"></div>
             GameHub
         </div>
-        <!-- Zone haut-droite : remplie dynamiquement selon connexion -->
         <div id="header-user-area"></div>
     </header>
 
@@ -529,6 +614,8 @@
     <div id="settings-panel">
         <button class="close-settings" onclick="toggleSettings()"><i class="fas fa-times"></i></button>
         <h2>Paramètres</h2>
+
+        <!-- Profil utilisateur -->
         <div class="user-preview">
             <img id="settings-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" onclick="changeAvatar()" title="Changer l'avatar">
             <div>
@@ -536,9 +623,150 @@
                 <div style="font-size:16px;font-weight:600;" id="settings-username">Utilisateur</div>
             </div>
         </div>
-        <div style="font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:16px;margin-top:8px;">
-            GameHub — v2.0
+
+        <!-- APPARENCE -->
+        <div class="settings-section-title">🎨 Apparence</div>
+
+        <!-- 1. Couleur d'accent -->
+        <div class="setting-row">
+            <div class="setting-left">
+                <div class="setting-name"><span class="ico">🔴</span> Couleur d'accent</div>
+                <div class="setting-desc">Teinte principale de l'interface</div>
+            </div>
+            <div class="setting-ctrl">
+                <input type="color" id="s-accent-color" value="#e63e2f" oninput="setAccent(this.value)">
+            </div>
         </div>
+
+        <!-- 2. Luminosité -->
+        <div class="setting-row">
+            <div class="setting-left">
+                <div class="setting-name"><span class="ico">☀️</span> Luminosité</div>
+                <div class="setting-desc">Intensité de l'écran</div>
+            </div>
+            <div class="setting-ctrl">
+                <input type="range" id="s-brightness" min="40" max="120" value="100" step="1" oninput="updateBrightness(this.value); document.getElementById('s-brightness-val').textContent=this.value+'%'">
+                <span class="range-val" id="s-brightness-val">100%</span>
+            </div>
+        </div>
+
+        <!-- 3. Taille des cartes -->
+        <div class="setting-row">
+            <div class="setting-left">
+                <div class="setting-name"><span class="ico">📐</span> Taille des cartes</div>
+                <div class="setting-desc">Largeur des vignettes du catalogue</div>
+            </div>
+            <div class="setting-ctrl">
+                <select id="s-card-size" onchange="setCardSize(this.value)">
+                    <option value="180">Petites</option>
+                    <option value="260" selected>Normales</option>
+                    <option value="340">Grandes</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 4. Police d'interface -->
+        <div class="setting-row">
+            <div class="setting-left">
+                <div class="setting-name"><span class="ico">🔤</span> Police d'interface</div>
+                <div class="setting-desc">Style typographique global</div>
+            </div>
+            <div class="setting-ctrl">
+                <select id="s-font" onchange="setFont(this.value)">
+                    <option value="DM Sans">DM Sans</option>
+                    <option value="Inter">Inter</option>
+                    <option value="Roboto">Roboto</option>
+                    <option value="Space Grotesk">Space Grotesk</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 5. Animations -->
+        <div class="setting-row">
+            <div class="setting-left">
+                <div class="setting-name"><span class="ico">✨</span> Animations</div>
+                <div class="setting-desc">Effets au survol et à l'entrée des cartes</div>
+            </div>
+            <div class="setting-ctrl">
+                <div class="toggle-switch on" id="s-anim-toggle" onclick="toggleAnim(this)"></div>
+            </div>
+        </div>
+
+        <!-- INTERFACE -->
+        <div class="settings-section-title">🖥️ Interface</div>
+
+        <!-- 6. Taskbar visible -->
+        <div class="setting-row">
+            <div class="setting-left">
+                <div class="setting-name"><span class="ico">🎮</span> Barre de tâches</div>
+                <div class="setting-desc">Afficher / masquer la taskbar flottante</div>
+            </div>
+            <div class="setting-ctrl">
+                <div class="toggle-switch on" id="s-taskbar-toggle" onclick="toggleTaskbarVisibility(this)"></div>
+            </div>
+        </div>
+
+        <!-- 7. Fond d'écran -->
+        <div class="setting-row">
+            <div class="setting-left">
+                <div class="setting-name"><span class="ico">🖼️</span> Fond d'écran</div>
+                <div class="setting-desc">Image de fond personnalisée (URL)</div>
+            </div>
+            <div class="setting-ctrl">
+                <button onclick="changeWallpaper()" style="background:rgba(255,255,255,.08);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;">Changer</button>
+            </div>
+        </div>
+
+        <!-- CATALOGUE -->
+        <div class="settings-section-title">📦 Catalogue</div>
+
+        <!-- 8. Tri du catalogue -->
+        <div class="setting-row">
+            <div class="setting-left">
+                <div class="setting-name"><span class="ico">🔁</span> Ordre d'affichage</div>
+                <div class="setting-desc">Trier les jeux du catalogue</div>
+            </div>
+            <div class="setting-ctrl">
+                <select id="s-sort-order" onchange="setSortOrder(this.value)">
+                    <option value="default">Par défaut</option>
+                    <option value="pop">Popularité ↓</option>
+                    <option value="az">Nom A → Z</option>
+                    <option value="genre">Genre</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 9. Afficher les vues -->
+        <div class="setting-row">
+            <div class="setting-left">
+                <div class="setting-name"><span class="ico">👁️</span> Compteur de vues</div>
+                <div class="setting-desc">Afficher le nombre de parties sur les cartes</div>
+            </div>
+            <div class="setting-ctrl">
+                <div class="toggle-switch on" id="s-views-toggle" onclick="toggleViews(this)"></div>
+            </div>
+        </div>
+
+        <!-- SYSTÈME -->
+        <div class="settings-section-title">⚙️ Système</div>
+
+        <!-- 10. Sons système -->
+        <div class="setting-row">
+            <div class="setting-left">
+                <div class="setting-name"><span class="ico">🔇</span> Sons système</div>
+                <div class="setting-desc">Effets sonores de l'interface</div>
+            </div>
+            <div class="setting-ctrl">
+                <div class="toggle-switch" id="s-sound-toggle" onclick="toggleSounds(this)"></div>
+            </div>
+        </div>
+
+        <!-- Réinitialiser -->
+        <button class="reset-btn" onclick="resetSettings()">
+            ♻️ Réinitialiser tous les paramètres
+        </button>
+
+        <div class="settings-version">GameHub — v2.0</div>
     </div>
 
     <script>
@@ -573,7 +801,6 @@
             const username = localStorage.getItem('username') || 'Invité';
             const isGuest  = (username === 'Invité');
 
-            // ── Zone haut-droite selon statut ──
             const area = document.getElementById('header-user-area');
             if (isGuest) {
                 area.innerHTML = `
@@ -593,6 +820,9 @@
                 }
                 document.getElementById('settings-username').textContent = username;
             }
+
+            // Restore saved settings
+            restoreSettings();
 
             populateCategoryFilter();
             buildTags();
@@ -670,10 +900,20 @@
         }
 
         // ─── RENDER ───
+        function getSortedGames() {
+            const order = localStorage.getItem('s_sort_order') || 'default';
+            let sorted = [...games];
+            if (order === 'pop') sorted.sort((a,b) => (counters[b.name]||0) - (counters[a.name]||0));
+            else if (order === 'az') sorted.sort((a,b) => a.title.localeCompare(b.title));
+            else if (order === 'genre') sorted.sort((a,b) => a.genre.localeCompare(b.genre));
+            return sorted;
+        }
+
         function renderGames() {
             const container = document.getElementById('store-list');
+            const showViews = localStorage.getItem('s_show_views') !== 'false';
             container.innerHTML = '';
-            games.forEach((app, i) => {
+            getSortedGames().forEach((app, i) => {
                 const isPin = pinned.includes(app.id);
                 const card = document.createElement('div');
                 card.className = 'game-card';
@@ -684,7 +924,7 @@
                         <img src="${app.img}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/6831/6831000.png'" alt="${app.title}">
                         <div class="card-thumb-overlay"></div>
                         <span class="card-genre-badge">${app.genre}</span>
-                        <span class="card-views"><i class="fas fa-eye"></i> ${counters[app.name] || 0}</span>
+                        ${showViews ? `<span class="card-views"><i class="fas fa-eye"></i> ${counters[app.name] || 0}</span>` : ''}
                     </div>
                     <div class="card-body">
                         <div class="card-title">${app.title}</div>
@@ -795,17 +1035,183 @@
             renderPinned();
         }
 
-        // ─── SETTINGS ───
+        // ─── SETTINGS TOGGLE ───
         let settingsOpen = false;
         function toggleSettings() {
             settingsOpen = !settingsOpen;
             document.getElementById('settings-panel').style.display = settingsOpen ? 'block' : 'none';
         }
 
-        function updateBrightness(val) {
-            document.body.style.filter = `brightness(${val}%)`;
+        // ─── SETTINGS FUNCTIONS ───
+
+        // 1. Couleur d'accent
+        function setAccent(val) {
+            document.documentElement.style.setProperty('--accent', val);
+            // generate a lighter version for accent2
+            document.documentElement.style.setProperty('--accent2', val);
+            localStorage.setItem('s_accent', val);
         }
 
+        // 2. Luminosité
+        function updateBrightness(val) {
+            document.body.style.filter = `brightness(${val}%)`;
+            localStorage.setItem('s_brightness', val);
+        }
+
+        // 3. Taille des cartes
+        function setCardSize(val) {
+            document.getElementById('store-list').style.gridTemplateColumns = `repeat(auto-fill, minmax(${val}px, 1fr))`;
+            localStorage.setItem('s_card_size', val);
+        }
+
+        // 4. Police d'interface
+        function setFont(val) {
+            document.body.style.fontFamily = `'${val}', sans-serif`;
+            localStorage.setItem('s_font', val);
+        }
+
+        // 5. Animations
+        function toggleAnim(el) {
+            el.classList.toggle('on');
+            const enabled = el.classList.contains('on');
+            if (enabled) document.body.classList.remove('no-anim');
+            else document.body.classList.add('no-anim');
+            localStorage.setItem('s_anim', enabled ? '1' : '0');
+        }
+
+        // 6. Taskbar
+        function toggleTaskbarVisibility(el) {
+            el.classList.toggle('on');
+            const visible = el.classList.contains('on');
+            document.getElementById('taskbar').classList.toggle('hidden', !visible);
+            localStorage.setItem('s_taskbar', visible ? '1' : '0');
+        }
+
+        // 7. Fond d'écran
+        function changeWallpaper() {
+            const url = prompt("Entrez l'URL de l'image de fond :\n(laisser vide pour supprimer)");
+            if (url === null) return;
+            if (url.trim() === '') {
+                document.body.style.backgroundImage = '';
+                sessionStorage.removeItem('win_wallpaper');
+                localStorage.removeItem('s_wallpaper');
+            } else {
+                document.body.style.backgroundImage = `url('${url.trim()}')`;
+                sessionStorage.setItem('win_wallpaper', url.trim());
+                localStorage.setItem('s_wallpaper', url.trim());
+            }
+        }
+
+        // 8. Tri catalogue
+        function setSortOrder(val) {
+            localStorage.setItem('s_sort_order', val);
+            renderGames();
+        }
+
+        // 9. Affichage des vues
+        function toggleViews(el) {
+            el.classList.toggle('on');
+            const show = el.classList.contains('on');
+            localStorage.setItem('s_show_views', show ? 'true' : 'false');
+            renderGames();
+        }
+
+        // 10. Sons système
+        function toggleSounds(el) {
+            el.classList.toggle('on');
+            const enabled = el.classList.contains('on');
+            localStorage.setItem('s_sounds', enabled ? '1' : '0');
+        }
+
+        // Réinitialiser
+        function resetSettings() {
+            if (!confirm("Réinitialiser tous les paramètres ?")) return;
+            const keysToRemove = ['s_accent','s_brightness','s_card_size','s_font','s_anim','s_taskbar','s_wallpaper','s_sort_order','s_show_views','s_sounds'];
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+            sessionStorage.removeItem('win_wallpaper');
+            location.reload();
+        }
+
+        // Restaurer les paramètres sauvegardés
+        function restoreSettings() {
+            // Accent
+            const accent = localStorage.getItem('s_accent');
+            if (accent) {
+                document.documentElement.style.setProperty('--accent', accent);
+                const picker = document.getElementById('s-accent-color');
+                if (picker) picker.value = accent;
+            }
+
+            // Luminosité
+            const brightness = localStorage.getItem('s_brightness');
+            if (brightness) {
+                document.body.style.filter = `brightness(${brightness}%)`;
+                const slider = document.getElementById('s-brightness');
+                if (slider) { slider.value = brightness; document.getElementById('s-brightness-val').textContent = brightness + '%'; }
+            }
+
+            // Taille cartes
+            const cardSize = localStorage.getItem('s_card_size');
+            if (cardSize) {
+                document.getElementById('store-list').style.gridTemplateColumns = `repeat(auto-fill, minmax(${cardSize}px, 1fr))`;
+                const sel = document.getElementById('s-card-size');
+                if (sel) sel.value = cardSize;
+            }
+
+            // Police
+            const font = localStorage.getItem('s_font');
+            if (font) {
+                document.body.style.fontFamily = `'${font}', sans-serif`;
+                const sel = document.getElementById('s-font');
+                if (sel) sel.value = font;
+            }
+
+            // Animations
+            const anim = localStorage.getItem('s_anim');
+            if (anim === '0') {
+                document.body.classList.add('no-anim');
+                const tog = document.getElementById('s-anim-toggle');
+                if (tog) tog.classList.remove('on');
+            }
+
+            // Taskbar
+            const taskbar = localStorage.getItem('s_taskbar');
+            if (taskbar === '0') {
+                document.getElementById('taskbar').classList.add('hidden');
+                const tog = document.getElementById('s-taskbar-toggle');
+                if (tog) tog.classList.remove('on');
+            }
+
+            // Wallpaper
+            const wall = localStorage.getItem('s_wallpaper');
+            if (wall) {
+                document.body.style.backgroundImage = `url('${wall}')`;
+                sessionStorage.setItem('win_wallpaper', wall);
+            }
+
+            // Tri
+            const sort = localStorage.getItem('s_sort_order');
+            if (sort) {
+                const sel = document.getElementById('s-sort-order');
+                if (sel) sel.value = sort;
+            }
+
+            // Vues
+            const views = localStorage.getItem('s_show_views');
+            if (views === 'false') {
+                const tog = document.getElementById('s-views-toggle');
+                if (tog) tog.classList.remove('on');
+            }
+
+            // Sons
+            const sounds = localStorage.getItem('s_sounds');
+            if (sounds === '1') {
+                const tog = document.getElementById('s-sound-toggle');
+                if (tog) tog.classList.add('on');
+            }
+        }
+
+        // ─── AVATAR ───
         function changeAvatar() {
             const url = prompt("Entrez l'URL de votre avatar:");
             if (url) {

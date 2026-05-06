@@ -714,9 +714,9 @@
         <div class="search-bar">
             <div class="search-wrap">
                 <i class="fas fa-search"></i>
-                <input type="text" id="store-search" placeholder="Chercher un jeu…" oninput="filterGames()">
+                <input type="text" id="store-search" placeholder="Chercher un jeu…" value="" oninput="filterGames()">
             </div>
-            <select id="store-category" onchange="filterGames()">
+            <select id="store-category" onchange="syncSelectToTag(this.value)">
                 <option value="all">Tous les genres</option>
             </select>
         </div>
@@ -1129,22 +1129,34 @@
                 const t = document.createElement('div');
                 t.className = 'tag' + (g === activeTag ? ' active' : '');
                 t.textContent = g === 'all' ? 'Tous' : g;
-                t.onclick = () => { activeTag = g; buildTags(); filterGames(); };
+                t.onclick = () => {
+                    activeTag = g;
+                    // Sync le select dropdown
+                    const sel = document.getElementById('store-category');
+                    sel.value = g;
+                    buildTags();
+                    filterGames();
+                };
                 container.appendChild(t);
             });
         }
 
+        // Sync menu déroulé → boutons tags
+        function syncSelectToTag(val) {
+            activeTag = val;
+            buildTags();
+            filterGames();
+        }
+
         function filterGames() {
-            const query    = document.getElementById('store-search').value.toLowerCase();
-            const category = document.getElementById('store-category').value;
-            const cards    = document.querySelectorAll('.game-card');
+            const query = document.getElementById('store-search').value.toLowerCase();
+            const cards = document.querySelectorAll('.game-card');
             cards.forEach(card => {
-                const title = card.querySelector('.card-title').innerText.toLowerCase();
-                const genre = card.getAttribute('data-genre');
+                const title  = card.querySelector('.card-title').innerText.toLowerCase();
+                const genre  = card.getAttribute('data-genre');
                 const matchQ = title.includes(query);
-                const matchC = (category === 'all' || genre === category);
-                const matchT = (activeTag === 'all' || genre === activeTag);
-                card.style.display = (matchQ && matchC && matchT) ? '' : 'none';
+                const matchG = (activeTag === 'all' || genre === activeTag);
+                card.style.display = (matchQ && matchG) ? '' : 'none';
             });
             const visible = [...cards].filter(c => c.style.display !== 'none');
             document.querySelector('.empty-msg')?.remove();

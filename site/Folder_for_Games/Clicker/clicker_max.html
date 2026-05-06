@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Clicker : L'Examen Final</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <style>
+        :root {
+            --paper-bg: #fdfdfd;
+            --line-blue: #a2d2ff;
+            --line-red: #ffafcc;
+            --ink-blue: #00308f;
+            --ink-red: #d90429;
+            --marker-yellow: rgba(255, 239, 0, 0.4);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+            background-color: #d1d1d1;
+            background-image: radial-gradient(#999 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--ink-blue);
+            user-select: none;
+            overflow: hidden;
+        }
+
+        #game-layout {
+            display: flex;
+            height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+            box-shadow: 0 0 50px rgba(0,0,0,0.3);
+        }
+
+        /* Panneau de Gauche - Feuille de papier */
+        .left-panel {
+            flex: 1;
+            background: var(--paper-bg);
+            background-image: 
+                linear-gradient(var(--line-red) 2px, transparent 2px),
+                linear-gradient(90deg, var(--line-blue) 1px, transparent 1px);
+            background-size: 100% 25px, 25px 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            border-right: 5px solid #888;
+            position: relative;
+        }
+
+        .score-display {
+            text-align: center;
+            margin-bottom: 50px;
+            background: var(--marker-yellow);
+            padding: 10px 20px;
+            transform: rotate(-1deg);
+            border: 1px dashed var(--ink-blue);
+        }
+
+        .score-number { font-size: 3rem; font-weight: bold; color: var(--ink-red); }
+        .qps { font-size: 1.2rem; font-style: italic; }
+
+        .main-button {
+            width: 250px;
+            height: 180px;
+            background: white;
+            border: 3px solid var(--ink-blue);
+            border-radius: 15px;
+            box-shadow: 5px 5px 0px var(--ink-blue);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s;
+            position: relative;
+        }
+
+        .main-button:active {
+            transform: translate(3px, 3px);
+            box-shadow: 2px 2px 0px var(--ink-blue);
+        }
+
+        .main-button::before {
+            content: "CAHIER D'EXERCICES";
+            font-size: 0.8rem;
+            position: absolute;
+            top: 10px;
+            text-decoration: underline;
+        }
+
+        .main-button span { font-size: 3rem; }
+
+        /* Particules style "Note" */
+        .particle {
+            position: absolute;
+            font-weight: bold;
+            color: var(--ink-red);
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            font-size: 1.5rem;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-100px) rotate(20deg); opacity: 0; }
+        }
+
+        /* Panneau de Droite - La Trousse/Le Casier */
+        .right-panel {
+            width: 450px;
+            background: #fff;
+            border-left: 2px solid var(--line-blue);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .store-header {
+            background: var(--ink-blue);
+            color: white;
+            padding: 20px;
+            font-size: 1.5rem;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .item {
+            padding: 15px;
+            border-bottom: 1px solid var(--line-blue);
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .item:hover { background-color: #f0f8ff; }
+        .item.disabled { opacity: 0.5; filter: grayscale(0.8); }
+
+        .item-info { flex-grow: 1; margin-left: 10px; }
+        .item-name { font-weight: bold; font-size: 1.1rem; color: var(--ink-blue); }
+        .item-cost { color: var(--ink-red); font-weight: bold; font-family: monospace; }
+        .item-count { font-size: 2.5rem; opacity: 0.3; font-weight: bold; }
+
+        .autobuy-toggle {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #eee;
+            padding: 5px;
+            border-radius: 5px;
+            font-size: 0.6rem;
+            margin-left: 10px;
+            border: 1px solid #ccc;
+        }
+
+        .autobuy-toggle input { cursor: pointer; }
+
+        /* Scrollbar style */
+        .right-panel::-webkit-scrollbar { width: 8px; }
+        .right-panel::-webkit-scrollbar-thumb { background: var(--line-blue); border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // --- Génération des 70 bâtiments version Ecole ---
+    const schoolItems = ["Crayon mine", "Gomme magique", "Règle 30cm", "Calculatrice", "Copain de classe", "Délégué", "Professeur", "Bibliothécaire", "Directeur", "Ministre Éduc."];
+    const initialBuildings = [];
+    for(let i=0; i<70; i++) {
+        const type = schoolItems[i % schoolItems.length];
+        const level = Math.floor(i / schoolItems.length) + 1;
+        initialBuildings.push({
+            id: i,
+            name: `${type} (Niv.${level})`,
+            baseCost: Math.floor(15 * Math.pow(1.9, i)),
+            baseCps: (0.3 * Math.pow(1.8, i)),
+            count: 0,
+            autoBuy: false
+        });
+    }
+
+    function App() {
+        const [knowledge, setKnowledge] = useState(0);
+        const [buildings, setBuildings] = useState(initialBuildings);
+        const [autoClicker, setAutoClicker] = useState(false);
+        const [particles, setParticles] = useState([]);
+        const audioCtx = useRef(null);
+
+        const playSound = (freq) => {
+            if (!audioCtx.current) audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.current.createOscillator();
+            const gain = audioCtx.current.createGain();
+            osc.frequency.setValueAtTime(freq, audioCtx.current.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.current.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.current.destination);
+            osc.start();
+            osc.stop(audioCtx.current.currentTime + 0.1);
+        };
+
+        const cps = buildings.reduce((total, b) => total + (b.baseCps * b.count), 0);
+
+        const study = (e) => {
+            const power = 1 + (cps * 0.05);
+            setKnowledge(prev => prev + power);
+            
+            const x = e ? e.clientX : window.innerWidth / 4 + (Math.random() * 60 - 30);
+            const y = e ? e.clientY : window.innerHeight / 2 + (Math.random() * 60 - 30);
+            
+            const pId = Date.now() + Math.random();
+            setParticles(prev => [...prev, { id: pId, x, y, val: "A+" }]);
+            setTimeout(() => setParticles(prev => prev.filter(p => p.id !== pId)), 800);
+            playSound(400);
+        };
+
+        useEffect(() => {
+            const onKeyDown = (e) => {
+                if (e.code === "Space") {
+                    e.preventDefault();
+                    study();
+                }
+                if (e.altKey && e.key.toLowerCase() === "x") {
+                    setAutoClicker(prev => !prev);
+                    playSound(800);
+                }
+            };
+            window.addEventListener("keydown", onKeyDown);
+            return () => window.removeEventListener("keydown", onKeyDown);
+        }, [cps]);
+
+        useEffect(() => {
+            const loop = setInterval(() => {
+                setKnowledge(prev => {
+                    let total = prev + (cps / 10);
+                    let newBuildings = null;
+                    buildings.forEach((b, idx) => {
+                        const cost = Math.ceil(b.baseCost * Math.pow(1.15, b.count));
+                        if (b.autoBuy && total >= cost) {
+                            total -= cost;
+                            if (!newBuildings) newBuildings = [...buildings];
+                            newBuildings[idx].count += 1;
+                            playSound(500);
+                        }
+                    });
+                    if (newBuildings) setBuildings(newBuildings);
+                    return total;
+                });
+                if (autoClicker) study();
+            }, 100);
+            return () => clearInterval(loop);
+        }, [cps, autoClicker, buildings]);
+
+        const buy = (id) => {
+            const b = buildings[id];
+            const cost = Math.ceil(b.baseCost * Math.pow(1.15, b.count));
+            if (knowledge >= cost) {
+                setKnowledge(prev => prev - cost);
+                const next = [...buildings];
+                next[id].count += 1;
+                setBuildings(next);
+                playSound(600);
+            }
+        };
+
+        const toggleAuto = (e, id) => {
+            e.stopPropagation();
+            const next = buildings.map(b => b.id === id ? {...b, autoBuy: !b.autoBuy} : b);
+            setBuildings(next);
+        };
+
+        return (
+            <div id="game-layout">
+                <div className="left-panel">
+                    <div className="score-display">
+                        <div className="score-number">{Math.floor(knowledge).toLocaleString()}</div>
+                        <div className="qps">Points de Savoir : {cps.toFixed(1)}/s</div>
+                        {autoClicker && <div style={{color: 'var(--ink-red)', fontSize: '12px', fontWeight: 'bold'}}>TRICHE ACTIVÉE </div>}
+                    </div>
+
+                    <button className="main-button" onClick={study}>
+                        <span>📝</span>
+                        RÉVISER
+                    </button>
+
+                    {particles.map(p => (
+                        <div key={p.id} className="particle" style={{left: p.x, top: p.y}}>{p.val}</div>
+                    ))}
+                </div>
+
+                <div className="right-panel">
+                    <div className="store-header">Matériel & Staff</div>
+                    {buildings.map((b) => {
+                        const cost = Math.ceil(b.baseCost * Math.pow(1.15, b.count));
+                        const canAfford = knowledge >= cost;
+                        return (
+                            <div 
+                                key={b.id} 
+                                className={`item ${!canAfford ? 'disabled' : ''}`}
+                                onClick={() => buy(b.id)}
+                            >
+                                <div className="item-info">
+                                    <span className="item-name">{b.name}</span>
+                                    <span className="item-cost">{cost.toLocaleString()} pts</span>
+                                </div>
+                                <div className="item-count">{b.count}</div>
+                                <div className="autobuy-toggle" onClick={(e) => toggleAuto(e, b.id)}>
+                                    <span>AUTO-BUY</span>
+                                    <input type="checkbox" checked={b.autoBuy} readOnly />
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+
+</body>
+</html>

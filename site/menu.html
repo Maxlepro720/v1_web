@@ -177,6 +177,15 @@
             box-shadow: 0 20px 50px rgba(0,0,0,.5), 0 0 0 1px rgba(230,62,47,.15);
         }
 
+        /* ─── LOCKED CARD STATE ─── */
+        .game-card.locked-card {
+            border-color: rgba(90,96,112,0.3);
+        }
+        .game-card.locked-card:hover {
+            border-color: rgba(90,96,112,0.5);
+            box-shadow: 0 20px 50px rgba(0,0,0,.5);
+        }
+
         .card-thumb {
             position: relative; overflow: hidden;
             height: 160px;
@@ -187,9 +196,42 @@
         }
         .game-card:hover .card-thumb img { transform: scale(1.06); }
 
+        /* Locked image blur effect */
+        .game-card.locked-card .card-thumb img {
+            filter: brightness(0.35) blur(2px) grayscale(0.4);
+        }
+        .game-card.locked-card:hover .card-thumb img {
+            filter: brightness(0.35) blur(2px) grayscale(0.4);
+            transform: none;
+        }
+
         .card-thumb-overlay {
             position: absolute; inset: 0;
             background: linear-gradient(to top, rgba(8,11,16,.9) 0%, transparent 60%);
+        }
+
+        /* Lock overlay centered icon */
+        .lock-overlay {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 8px; z-index: 2;
+        }
+        .lock-overlay .lock-icon {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: rgba(8,11,16,0.85);
+            border: 1.5px solid rgba(255,255,255,0.12);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; color: rgba(255,255,255,0.55);
+            backdrop-filter: blur(8px);
+        }
+        .lock-overlay .lock-label {
+            font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1.5px;
+            color: rgba(255,255,255,0.4);
+            background: rgba(8,11,16,0.7);
+            padding: 3px 10px; border-radius: 20px;
+            backdrop-filter: blur(8px);
         }
 
         .card-genre-badge {
@@ -214,6 +256,8 @@
             font-family: 'Syne', sans-serif;
             font-size: 15px; font-weight: 700; margin-bottom: 10px;
         }
+        /* Muted title for locked */
+        .game-card.locked-card .card-title { color: var(--muted); }
 
         .card-actions { display: flex; gap: 8px; }
         .btn {
@@ -224,10 +268,150 @@
         }
         .btn-play { background: var(--accent); color: #fff; }
         .btn-play:hover { background: var(--accent2); }
+        .btn-locked {
+            background: rgba(255,255,255,0.05);
+            color: var(--muted);
+            border: 1px solid rgba(255,255,255,0.08);
+            cursor: pointer;
+        }
+        .btn-locked:hover {
+            background: rgba(230,62,47,0.1);
+            color: #ff7b6e;
+            border-color: rgba(230,62,47,0.25);
+        }
         .btn-pin { background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--border); }
         .btn-pin:hover { background: rgba(245,200,66,.12); color: var(--gold); border-color: rgba(245,200,66,.3); }
         .btn-pinned { background: rgba(245,200,66,.12); color: var(--gold); border: 1px solid rgba(245,200,66,.3); }
         .btn-pinned:hover { background: rgba(255,255,255,.06); color: var(--muted); border-color: var(--border); }
+
+        /* ─── LOGIN REQUIRED MODAL ─── */
+        #login-required-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.75); z-index: 999999;
+            backdrop-filter: blur(8px);
+            animation: fadeInOverlay .2s ease;
+        }
+        @keyframes fadeInOverlay { from{opacity:0} to{opacity:1} }
+
+        #login-required-modal {
+            display: none; position: fixed;
+            top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95);
+            z-index: 9999999;
+            width: 380px; max-width: calc(100vw - 32px);
+            background: var(--surface2);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05) inset;
+            animation: modalPop .25s cubic-bezier(.34,1.56,.64,1) forwards;
+        }
+        @keyframes modalPop {
+            from { opacity:0; transform: translate(-50%, -50%) scale(0.88); }
+            to   { opacity:1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .lrm-top {
+            position: relative;
+            height: 130px;
+            background: linear-gradient(135deg, #1a0a08 0%, #2d0f0a 50%, #0d1520 100%);
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        .lrm-top::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse at 50% 120%, rgba(230,62,47,0.25) 0%, transparent 70%);
+        }
+        .lrm-top::after {
+            content: '';
+            position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(230,62,47,0.4), transparent);
+        }
+        .lrm-game-thumb {
+            position: absolute; inset: 0;
+            background-size: cover; background-position: center;
+            filter: brightness(0.2) blur(3px) saturate(0.5);
+        }
+        .lrm-lock-circle {
+            position: relative; z-index: 2;
+            width: 72px; height: 72px; border-radius: 50%;
+            background: rgba(8,11,16,0.9);
+            border: 2px solid rgba(230,62,47,0.5);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; color: var(--accent);
+            box-shadow: 0 0 30px rgba(230,62,47,0.3), 0 0 60px rgba(230,62,47,0.1);
+            animation: lockPulse 2.5s ease-in-out infinite;
+        }
+        @keyframes lockPulse {
+            0%,100% { box-shadow: 0 0 30px rgba(230,62,47,0.3), 0 0 60px rgba(230,62,47,0.1); }
+            50% { box-shadow: 0 0 40px rgba(230,62,47,0.5), 0 0 80px rgba(230,62,47,0.2); }
+        }
+
+        .lrm-body { padding: 28px 28px 24px; text-align: center; }
+        .lrm-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 20px; font-weight: 800;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+        .lrm-game-name {
+            font-family: 'Syne', sans-serif;
+            font-size: 13px; font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 14px;
+            letter-spacing: 0.5px;
+        }
+        .lrm-desc {
+            font-size: 13px; color: var(--muted); line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .lrm-desc strong { color: var(--text); font-weight: 600; }
+
+        .lrm-perks {
+            display: flex; flex-direction: column; gap: 8px;
+            margin-bottom: 24px; text-align: left;
+        }
+        .lrm-perk {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px; border-radius: 10px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            font-size: 12px; color: rgba(255,255,255,0.65);
+        }
+        .lrm-perk i {
+            font-size: 13px; color: var(--accent);
+            width: 18px; text-align: center; flex-shrink: 0;
+        }
+
+        .lrm-btns { display: flex; flex-direction: column; gap: 10px; }
+        .lrm-btn-login {
+            width: 100%; padding: 13px;
+            background: var(--accent); color: #fff;
+            border: none; border-radius: 12px;
+            font-size: 14px; font-weight: 700;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer; transition: all .2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            letter-spacing: 0.3px;
+        }
+        .lrm-btn-login:hover {
+            background: var(--accent2);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(230,62,47,0.4);
+        }
+        .lrm-btn-cancel {
+            width: 100%; padding: 11px;
+            background: transparent; color: var(--muted);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px; font-size: 13px; font-weight: 500;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer; transition: all .2s;
+        }
+        .lrm-btn-cancel:hover {
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+        }
 
         /* ─── TASKBAR ─── */
         #taskbar {
@@ -469,7 +653,10 @@
         }
         .poki-game-item:hover { background: var(--surface2); border-color: var(--border); }
         .poki-game-item.playing { background: rgba(230,62,47,.1); border-color: rgba(230,62,47,.3); }
+        .poki-game-item.poki-locked { opacity: 0.5; }
+        .poki-game-item.poki-locked:hover { background: rgba(255,255,255,0.03); }
         .poki-game-item img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+        .poki-game-item.poki-locked img { filter: grayscale(0.6) brightness(0.5); }
         .poki-game-info { flex: 1; min-width: 0; }
         .poki-game-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .poki-game-genre { font-size: 11px; color: var(--muted); margin-top: 2px; }
@@ -477,6 +664,11 @@
             width: 28px; height: 28px; border-radius: 50%;
             background: var(--accent); display: flex; align-items: center; justify-content: center;
             font-size: 10px; color: white; flex-shrink: 0; opacity: 0; transition: opacity .15s;
+        }
+        .poki-lock-icon {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center;
+            font-size: 10px; color: var(--muted); flex-shrink: 0;
         }
         .poki-game-item:hover .poki-play-icon { opacity: 1; }
         .poki-game-item.playing .poki-play-icon { opacity: 1; background: rgba(230,62,47,.6); }
@@ -607,6 +799,47 @@
         <div class="modal-btns">
             <button class="btn-confirm" onclick="checkAdminPassword()">Valider</button>
             <button class="btn-cancel" onclick="closeAdminModal()">Annuler</button>
+        </div>
+    </div>
+
+    <!-- LOGIN REQUIRED MODAL -->
+    <div id="login-required-overlay" onclick="closeLoginModal()"></div>
+    <div id="login-required-modal">
+        <div class="lrm-top">
+            <div class="lrm-game-thumb" id="lrm-thumb"></div>
+            <div class="lrm-lock-circle">
+                <i class="fas fa-lock"></i>
+            </div>
+        </div>
+        <div class="lrm-body">
+            <div class="lrm-title">Connexion requise</div>
+            <div class="lrm-game-name" id="lrm-game-name">— Jeu —</div>
+            <div class="lrm-desc">
+                Ce jeu est <strong>réservé aux membres</strong> connectés.<br>
+                Crée un compte gratuit pour y accéder instantanément.
+            </div>
+            <div class="lrm-perks">
+                <div class="lrm-perk">
+                    <i class="fas fa-unlock"></i>
+                    <span>Accès à tous les jeux du catalogue</span>
+                </div>
+                <div class="lrm-perk">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Sauvegarde de tes scores et progression</span>
+                </div>
+                <div class="lrm-perk">
+                    <i class="fas fa-thumbtack"></i>
+                    <span>Jeux épinglés synchronisés</span>
+                </div>
+            </div>
+            <div class="lrm-btns">
+                <button class="lrm-btn-login" onclick="goToLogin()">
+                    <i class="fas fa-sign-in-alt"></i> Se connecter / S'inscrire
+                </button>
+                <button class="lrm-btn-cancel" onclick="closeLoginModal()">
+                    Continuer en mode invité
+                </button>
+            </div>
         </div>
     </div>
 
@@ -773,19 +1006,20 @@
         // ─── DATA ───
         const API_URL = "https://project-3-api-2bgb.onrender.com";
 
+        // requiresLogin: true  → jeu bloqué pour les invités (non connectés)
         const games = [
-            {id:12, name:"Naruto",            title:"Naruto",              genre:"Animé",           link:"Media/Naruto.html",                                          img:"https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/naruto.jpg"},
-            {id:11, name:"Level_Devil",       title:"Level Devil",         genre:"Infinite",        link:"Folder_for_Games/Level_Devil/Jeu_Level_Devil.html",          img:"https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=204,height=204,fit=cover,f=auto/0c3d1446c6992c2b88a9498de054688b/level-devil.png"},
-            {id:10, name:"Life_Game",         title:"Jeu de la Vie",       genre:"Role Play",       link:"Folder_for_Games/RP_Cuisine/accueil_cuisine.html",           img:"https://www.notebookcheck.biz/fileadmin/Notebooks/News/_nc4/GTA5Logo.jpg"},
-            {id:9,  name:"Find_Meme",         title:"Trouve le Même",      genre:"Nerd",            link:"Folder_for_Games/Find_Meme/base_find_meme.html",             img:"https://m.media-amazon.com/images/I/61-1HFujrqL._AC_UF894,1000_QL80_.jpg"},
-            {id:8,  name:"Casino",            title:"Casino",              genre:"Jeu d'Argents",   link:"Folder_for_Games/Casino/banque.html",                        img:"Image/Image_Casino.avif"},
-            {id:7,  name:"Personnalité_Test", title:"Test de Personnalité", genre:"Nerd",           link:"Folder_for_Games/Personnality_Test/test_de_personnalité.html",img:"Image/Image_Personnality_Test.webp"},
-            {id:6,  name:"Orbital_Chaos",     title:"Orbital Chaos",       genre:"Survie",          link:"Folder_for_Games/Orbital_Chaos/Orbital_Chaos.html",          img:"Image/Image_Orbital_Chaos.png"},
-            {id:5,  name:"Snake",             title:"Snake",               genre:"Retro Gaming",    link:"Folder_for_Games/Snake/Snake_game.html",                     img:"Image/Image_Snake.webp"},
-            {id:4,  name:"Tower_Defense",     title:"Tower Defense",       genre:"Survie",          link:"Folder_for_Games/Tower_Defense/tower_defense.html",          img:"Image/Image_Tower_Defense.png"},
-            {id:3,  name:"Astro_Dodge",       title:"Astro Dodge",         genre:"Infinite",        link:"Folder_for_Games/jeu2/game.html",                            img:"Image/Image_Astro_Dodge.png"},
-            {id:2,  name:"Stickman_Runner",   title:"Stickman Runner",     genre:"Infinite",        link:"Folder_for_Games/jeu_3/game.html",                           img:"Image/Image_Stickman_Runner.png"},
-            {id:1,  name:"Skull_Arena",       title:"Skull Arena",         genre:"Survie",          link:"Folder_for_Games/jeu_1/game.html",                           img:"Image/Image_Skull_Arena.png"}
+            {id:12, name:"Naruto",            title:"Naruto",              genre:"Animé",           link:"Media/Naruto.html",                                          img:"https://raw.githubusercontent.com/Anime-Sama/IMG/img/contenu/naruto.jpg",                                                    requiresLogin: false},
+            {id:11, name:"Level_Devil",       title:"Level Devil",         genre:"Infinite",        link:"Folder_for_Games/Level_Devil/Jeu_Level_Devil.html",          img:"https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=204,height=204,fit=cover,f=auto/0c3d1446c6992c2b88a9498de054688b/level-devil.png", requiresLogin: false},
+            {id:10, name:"Life_Game",         title:"Jeu de la Vie",       genre:"Role Play",       link:"Folder_for_Games/RP_Cuisine/accueil_cuisine.html",           img:"https://www.notebookcheck.biz/fileadmin/Notebooks/News/_nc4/GTA5Logo.jpg",                                                requiresLogin: false},
+            {id:9,  name:"Find_Meme",         title:"Trouve le Même",      genre:"Nerd",            link:"Folder_for_Games/Find_Meme/base_find_meme.html",             img:"https://m.media-amazon.com/images/I/61-1HFujrqL._AC_UF894,1000_QL80_.jpg",                                              requiresLogin: false},
+            {id:8,  name:"Casino",            title:"Casino",              genre:"Jeu d'Argents",   link:"Folder_for_Games/Casino/banque.html",                        img:"Image/Image_Casino.avif",                                                                                                requiresLogin: true},
+            {id:7,  name:"Personnalité_Test", title:"Test de Personnalité", genre:"Nerd",           link:"Folder_for_Games/Personnality_Test/test_de_personnalité.html",img:"Image/Image_Personnality_Test.webp",                                                                                     requiresLogin: false},
+            {id:6,  name:"Orbital_Chaos",     title:"Orbital Chaos",       genre:"Survie",          link:"Folder_for_Games/Orbital_Chaos/Orbital_Chaos.html",          img:"Image/Image_Orbital_Chaos.png",                                                                                          requiresLogin: true},
+            {id:5,  name:"Snake",             title:"Snake",               genre:"Retro Gaming",    link:"Folder_for_Games/Snake/Snake_game.html",                     img:"Image/Image_Snake.webp",                                                                                                 requiresLogin: false},
+            {id:4,  name:"Tower_Defense",     title:"Tower Defense",       genre:"Survie",          link:"Folder_for_Games/Tower_Defense/tower_defense.html",          img:"Image/Image_Tower_Defense.png",                                                                                          requiresLogin: true},
+            {id:3,  name:"Astro_Dodge",       title:"Astro Dodge",         genre:"Infinite",        link:"Folder_for_Games/jeu2/game.html",                            img:"Image/Image_Astro_Dodge.png",                                                                                            requiresLogin: true},
+            {id:2,  name:"Stickman_Runner",   title:"Stickman Runner",     genre:"Infinite",        link:"Folder_for_Games/jeu_3/game.html",                           img:"Image/Image_Stickman_Runner.png",                                                                                        requiresLogin: true},
+            {id:1,  name:"Skull_Arena",       title:"Skull Arena",         genre:"Survie",          link:"Folder_for_Games/jeu_1/game.html",                           img:"Image/Image_Skull_Arena.png",                                                                                            requiresLogin: true}
         ];
 
         let installed = JSON.parse(localStorage.getItem('win_installed')) || [];
@@ -793,16 +1027,22 @@
         let counters  = {};
         let activeTag = 'all';
 
+        // ─── CHECK IF GUEST ───
+        function isGuest() {
+            const username = localStorage.getItem('username') || 'Invité';
+            return (username === 'Invité' || !username);
+        }
+
         // ─── INIT ───
         window.addEventListener('DOMContentLoaded', () => {
             const wall = sessionStorage.getItem('win_wallpaper');
             if (wall) document.body.style.backgroundImage = `url('${wall}')`;
 
             const username = localStorage.getItem('username') || 'Invité';
-            const isGuest  = (username === 'Invité');
+            const guest    = isGuest();
 
             const area = document.getElementById('header-user-area');
-            if (isGuest) {
+            if (guest) {
                 area.innerHTML = `
                     <button class="header-login-btn" onclick="window.location.href='connecte.html'">
                         <i class="fas fa-sign-in-alt"></i> Connexion
@@ -851,6 +1091,23 @@
                 .then(r => r.text())
                 .then(d => console.log("Vue comptée:", d))
                 .catch(err => console.error(err));
+        }
+
+        // ─── LOGIN REQUIRED MODAL ───
+        function showLoginModal(app) {
+            document.getElementById('lrm-game-name').textContent = app.title;
+            document.getElementById('lrm-thumb').style.backgroundImage = `url('${app.img}')`;
+            document.getElementById('login-required-overlay').style.display = 'block';
+            document.getElementById('login-required-modal').style.display = 'block';
+        }
+
+        function closeLoginModal() {
+            document.getElementById('login-required-overlay').style.display = 'none';
+            document.getElementById('login-required-modal').style.display = 'none';
+        }
+
+        function goToLogin() {
+            window.location.href = 'connecte.html';
         }
 
         // ─── FILTERS ───
@@ -912,26 +1169,40 @@
         function renderGames() {
             const container = document.getElementById('store-list');
             const showViews = localStorage.getItem('s_show_views') !== 'false';
+            const guest     = isGuest();
             container.innerHTML = '';
+
             getSortedGames().forEach((app, i) => {
-                const isPin = pinned.includes(app.id);
-                const card = document.createElement('div');
-                card.className = 'game-card';
+                const isPin    = pinned.includes(app.id);
+                const isLocked = guest && app.requiresLogin;
+                const card     = document.createElement('div');
+                card.className = 'game-card' + (isLocked ? ' locked-card' : '');
                 card.setAttribute('data-genre', app.genre);
                 card.style.animationDelay = `${i * 40}ms`;
+
                 card.innerHTML = `
                     <div class="card-thumb">
                         <img src="${app.img}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/6831/6831000.png'" alt="${app.title}">
                         <div class="card-thumb-overlay"></div>
                         <span class="card-genre-badge">${app.genre}</span>
                         ${showViews ? `<span class="card-views"><i class="fas fa-eye"></i> ${counters[app.name] || 0}</span>` : ''}
+                        ${isLocked ? `
+                        <div class="lock-overlay">
+                            <div class="lock-icon"><i class="fas fa-lock"></i></div>
+                            <div class="lock-label">Connexion requise</div>
+                        </div>` : ''}
                     </div>
                     <div class="card-body">
                         <div class="card-title">${app.title}</div>
                         <div class="card-actions">
-                            <button class="btn btn-play" onclick="launchGame('${app.name}','${app.link}','${app.title.replace(/'/g,"\\'")}',${app.id})">
-                                <i class="fas fa-play"></i> Jouer
-                            </button>
+                            ${isLocked
+                                ? `<button class="btn btn-locked" onclick="showLoginModal(games.find(g=>g.id===${app.id}))">
+                                        <i class="fas fa-lock"></i> Déverrouiller
+                                   </button>`
+                                : `<button class="btn btn-play" onclick="launchGame('${app.name}','${app.link}','${app.title.replace(/'/g,"\\'")}',${app.id})">
+                                        <i class="fas fa-play"></i> Jouer
+                                   </button>`
+                            }
                             <button class="btn ${isPin ? 'btn-pinned' : 'btn-pin'}" onclick="togglePin(${app.id})" title="${isPin?'Désépingler':'Épingler'}">
                                 <i class="fas fa-thumbtack"></i>
                             </button>
@@ -943,17 +1214,24 @@
         }
 
         function renderPinned() {
-            const bar = document.getElementById('pinned-bar');
+            const bar   = document.getElementById('pinned-bar');
+            const guest = isGuest();
             bar.innerHTML = '';
             if (pinned.length === 0) return;
             pinned.forEach(id => {
-                const app = games.find(g => g.id === id);
+                const app      = games.find(g => g.id === id);
                 if (!app) return;
+                const isLocked = guest && app.requiresLogin;
                 const div = document.createElement('div');
                 div.className = 'tb-item';
-                div.title = app.title;
-                div.innerHTML = `<img src="${app.img}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/6831/6831000.png'">`;
-                div.onclick = () => launchGame(app.name, app.link, app.title, app.id);
+                div.title = app.title + (isLocked ? ' 🔒' : '');
+                div.style.position = 'relative';
+                div.innerHTML = `<img src="${app.img}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/6831/6831000.png'" style="${isLocked ? 'filter:grayscale(0.6) brightness(0.5)' : ''}">
+                    ${isLocked ? `<i class="fas fa-lock" style="position:absolute;bottom:4px;right:4px;font-size:8px;color:var(--muted);"></i>` : ''}`;
+                div.onclick = () => {
+                    if (isLocked) showLoginModal(app);
+                    else launchGame(app.name, app.link, app.title, app.id);
+                };
                 bar.appendChild(div);
             });
         }
@@ -961,6 +1239,13 @@
         let currentGameId = null;
 
         function launchGame(name, link, title, id) {
+            // Safety check — should not be reachable for locked games, but just in case
+            const app   = games.find(g => g.id === id);
+            const guest = isGuest();
+            if (app && app.requiresLogin && guest) {
+                showLoginModal(app);
+                return;
+            }
             sendGameView(name);
             currentGameId = id;
             document.getElementById('game-overlay-name').textContent = title || name;
@@ -1004,21 +1289,30 @@
         });
 
         function renderPokiSidebar() {
-            const list = document.getElementById('poki-game-list');
+            const list  = document.getElementById('poki-game-list');
+            const guest = isGuest();
             list.innerHTML = '';
             games.forEach(app => {
                 const isPlaying = app.id === currentGameId;
+                const isLocked  = guest && app.requiresLogin;
                 const item = document.createElement('div');
-                item.className = 'poki-game-item' + (isPlaying ? ' playing' : '');
+                item.className = 'poki-game-item'
+                    + (isPlaying ? ' playing' : '')
+                    + (isLocked  ? ' poki-locked' : '');
                 item.innerHTML = `
                     <img src="${app.img}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/6831/6831000.png'">
                     <div class="poki-game-info">
                         <div class="poki-game-name">${app.title}</div>
                         <div class="poki-game-genre">${app.genre}</div>
                     </div>
-                    <div class="poki-play-icon"><i class="fas fa-play"></i></div>
+                    ${isLocked
+                        ? `<div class="poki-lock-icon"><i class="fas fa-lock"></i></div>`
+                        : `<div class="poki-play-icon"><i class="fas fa-play"></i></div>`
+                    }
                 `;
-                if (!isPlaying) {
+                if (isLocked) {
+                    item.onclick = () => showLoginModal(app);
+                } else if (!isPlaying) {
                     item.onclick = () => launchGame(app.name, app.link, app.title, app.id);
                 }
                 list.appendChild(item);
@@ -1047,7 +1341,6 @@
         // 1. Couleur d'accent
         function setAccent(val) {
             document.documentElement.style.setProperty('--accent', val);
-            // generate a lighter version for accent2
             document.documentElement.style.setProperty('--accent2', val);
             localStorage.setItem('s_accent', val);
         }
@@ -1134,7 +1427,6 @@
 
         // Restaurer les paramètres sauvegardés
         function restoreSettings() {
-            // Accent
             const accent = localStorage.getItem('s_accent');
             if (accent) {
                 document.documentElement.style.setProperty('--accent', accent);
@@ -1142,7 +1434,6 @@
                 if (picker) picker.value = accent;
             }
 
-            // Luminosité
             const brightness = localStorage.getItem('s_brightness');
             if (brightness) {
                 document.body.style.filter = `brightness(${brightness}%)`;
@@ -1150,7 +1441,6 @@
                 if (slider) { slider.value = brightness; document.getElementById('s-brightness-val').textContent = brightness + '%'; }
             }
 
-            // Taille cartes
             const cardSize = localStorage.getItem('s_card_size');
             if (cardSize) {
                 document.getElementById('store-list').style.gridTemplateColumns = `repeat(auto-fill, minmax(${cardSize}px, 1fr))`;
@@ -1158,7 +1448,6 @@
                 if (sel) sel.value = cardSize;
             }
 
-            // Police
             const font = localStorage.getItem('s_font');
             if (font) {
                 document.body.style.fontFamily = `'${font}', sans-serif`;
@@ -1166,7 +1455,6 @@
                 if (sel) sel.value = font;
             }
 
-            // Animations
             const anim = localStorage.getItem('s_anim');
             if (anim === '0') {
                 document.body.classList.add('no-anim');
@@ -1174,7 +1462,6 @@
                 if (tog) tog.classList.remove('on');
             }
 
-            // Taskbar
             const taskbar = localStorage.getItem('s_taskbar');
             if (taskbar === '0') {
                 document.getElementById('taskbar').classList.add('hidden');
@@ -1182,28 +1469,24 @@
                 if (tog) tog.classList.remove('on');
             }
 
-            // Wallpaper
             const wall = localStorage.getItem('s_wallpaper');
             if (wall) {
                 document.body.style.backgroundImage = `url('${wall}')`;
                 sessionStorage.setItem('win_wallpaper', wall);
             }
 
-            // Tri
             const sort = localStorage.getItem('s_sort_order');
             if (sort) {
                 const sel = document.getElementById('s-sort-order');
                 if (sel) sel.value = sort;
             }
 
-            // Vues
             const views = localStorage.getItem('s_show_views');
             if (views === 'false') {
                 const tog = document.getElementById('s-views-toggle');
                 if (tog) tog.classList.remove('on');
             }
 
-            // Sons
             const sounds = localStorage.getItem('s_sounds');
             if (sounds === '1') {
                 const tog = document.getElementById('s-sound-toggle');

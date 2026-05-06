@@ -1003,7 +1003,6 @@
     </div>
 
     <script>
-        document.getElementById('store-search').value = "";
         // ─── DATA ───
         const API_URL = "https://project-3-api-2bgb.onrender.com";
 
@@ -1036,6 +1035,7 @@
 
         // ─── INIT ───
         window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('store-search').value = "";
             const wall = sessionStorage.getItem('win_wallpaper');
             if (wall) document.body.style.backgroundImage = `url('${wall}')`;
 

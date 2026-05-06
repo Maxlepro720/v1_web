@@ -1035,7 +1035,6 @@
 
         // ─── INIT ───
         window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('store-search').value = "";
             const wall = sessionStorage.getItem('win_wallpaper');
             if (wall) document.body.style.backgroundImage = `url('${wall}')`;
 
@@ -1578,6 +1577,7 @@
             document.getElementById('clock-time').innerText = n.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
             document.getElementById('clock-date').innerText = n.toLocaleDateString();
         }
+        window.addEventListener('DOMContentLoaded', () => { setTimeout(() => { document.getElementById('store-search').value = ""; filterGames(); }, 2000); });
     </script>
 </body>
 </html>
